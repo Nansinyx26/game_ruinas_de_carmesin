@@ -96,6 +96,7 @@ class HUD {
     this.drawBossBar(ctx);
     this.drawMessage(ctx);
     this.drawIndicators(ctx);
+    this.drawTalkPrompt(ctx);
     this.drawMemory(ctx);
     this.drawAbilities(ctx, p);
     this.drawLevelUp(ctx);
@@ -661,6 +662,24 @@ class HUD {
     ctx.font = `italic 21px ${FONT_UI}`;
     const lines = wrapText(ctx, m.text, Math.min(820, VIEW_W - 120));
     lines.forEach((ln, i) => glowText(ctx, ln, VIEW_W / 2 + (Math.random() < 0.03 ? rand(-3, 3) : 0), y + 4 + i * 28, '#eaf4ff', 'rgba(80,160,255,0.95)', 14));
+    ctx.restore();
+  }
+
+  // Marcador de conversa acima do NPC mais próximo
+  drawTalkPrompt(ctx) {
+    const n = game.talkTarget;
+    if (!n) return;
+    const h = n.headPoint(), q = game.camera.toScreen(h.x, h.y - 16);
+    const key = game.input.lastDevice === 'pad' ? 'Y' : 'E';
+    ctx.save();
+    ctx.font = `bold 12px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `Falar · ${n.name}`, w = ctx.measureText(txt).width + 40, bob = Math.sin(this.time * 4) * 2;
+    ctx.fillStyle = 'rgba(3,7,16,0.82)';
+    techPanelPath(ctx, q.x - w / 2, q.y - 12 + bob, w, 24, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,212,122,0.8)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#ffd47a'; ctx.fillRect(q.x - w / 2 + 6, q.y - 7 + bob, 16, 14);
+    ctx.fillStyle = '#1a1200'; ctx.fillText(key, q.x - w / 2 + 14, q.y + 1 + bob);
+    ctx.fillStyle = '#eef3fa'; ctx.fillText(txt, q.x + 10, q.y + 1 + bob);
     ctx.restore();
   }
 

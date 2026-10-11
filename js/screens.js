@@ -10,7 +10,7 @@ const CONTROLS = [
   ['1 2 3 4', 'Habilidades ativas (gastam energia)'],
   ['I', 'Eclipse Absoluto (100 de energia)'],
   ['Tab / H', 'Árvore de habilidades'],
-  ['ESC', 'Pausa · pular história'], ['M · G · F1', 'Som · gráficos 3D/2D · debug'],
+  ['E · ESC', 'Conversar · pausa / pular história'], ['M · G · F1', 'Som · gráficos 3D/2D · debug'],
 ];
 const COMBO_LIST = [
   ['Leve · Leve · Leve', 'Descarga Tríplice'],

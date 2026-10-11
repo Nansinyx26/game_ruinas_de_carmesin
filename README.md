@@ -47,6 +47,7 @@ Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor 
 | 1 2 3 4 (ou U O P Ç) | Habilidades ativas dos atalhos |
 | I | **Eclipse Absoluto** (100 de energia, depois de desbloqueado) |
 | Tab / H | Árvore de habilidades |
+| E / F | Conversar com NPCs |
 | ESC | Pausa / pular história |
 | M | Som liga/desliga |
 | G | Gráficos 3D / 2D |

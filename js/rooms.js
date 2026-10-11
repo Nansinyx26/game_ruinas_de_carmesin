@@ -23,15 +23,53 @@ const THEMES = {
 const ROOM_DEFS = [
   { name: 'Instalação de Contenção', sub: 'CAPÍTULO I · O HOMEM DE PRETO', theme: 'lab', tiles: 12, pillars: 3,
     say: ['SISTEMA', 'Unidade ZERO despertada. Protocolo de contenção comprometido.'],
-    waves: [{ rastejador: 5 }, { rastejador: 7 }] },
+    waves: [{ rastejador: 5 }, { rastejador: 7 }],
+    npcs: [
+      { model: 'cientista', name: 'GRAVAÇÃO · PROJETO ZERO', at: [0.2, 0.28], facing: 0.8, lines: [
+        'Registro 0417. Projeto ZERO… a integração neural foi concluída.',
+        'Se esta gravação estiver tocando, a contenção falhou. Ou alguém a desligou de propósito.',
+        'A marca no pulso não é um defeito. Ela é a chave para… [sinal corrompido]',
+      ] },
+    ] },
   { name: 'Túneis de Serviço', sub: 'CAPÍTULO II · A ESPADA QUE DEVORA A TEMPESTADE', theme: 'tunnel', tiles: 13, pillars: 4,
     say: ['KAEL', 'A cada golpe ela fica mais forte. E algo em mim fica mais fraco.'],
     waves: [{ rastejador: 5, drone: 2 }, { rastejador: 6, drone: 3 }] },
   { name: 'Avenidas de Vesper', sub: 'CAPÍTULO III · O SEGREDO DA UNIDADE ZERO', theme: 'city', tiles: 13, pillars: 4,
     say: ['KAEL', 'Letreiros anunciando produtos para pessoas que já não existem.'],
+    npcs: [
+      { model: 'civil', variant: 0, name: 'SOBREVIVENTE', at: [0.88, 0.16], facing: 2.4, lines: [
+        'Fica longe da avenida principal. Os drones veem tudo que brilha.',
+        'Esse casaco… você é o homem de preto de que os Desconectados falam?',
+      ], after: [
+        'Você derrubou as sentinelas… Siga os cabos luminosos sob o asfalto. Eles levam ao refúgio.',
+        'Tem um terminal militar ainda ligado em algum lugar destas ruínas. Ninguém tem coragem de chegar perto.',
+      ] },
+    ],
     waves: [{ rastejador: 4, cacador: 2 }, { rastejador: 4, drone: 2, cacador: 2 }, { legionario: 1, rastejador: 4 }] },
   { name: 'Refúgio dos Desconectados', sub: 'CAPÍTULO IV · A CIDADE DOS ESQUECIDOS', theme: 'refuge', tiles: 14, pillars: 5,
     say: ['DESCONECTADA', 'A Legião de Ferro achou o refúgio! Eles vieram atrás de você, homem de preto!'],
+    npcs: [
+      { model: 'ancia', name: 'ANCIÃ DESCONECTADA', at: [0.14, 0.45], facing: 0.4, lines: [
+        'Você lutou por nós, homem de preto. Poucos lutariam por quem não pode pagar.',
+        'A Legião não esquece um rosto. E o seu… eles conhecem há muito tempo.',
+        'Se quer respostas, vá à Catedral. Mas os fiéis de NEXUS não dão nada de graça.',
+      ] },
+      { model: 'civil', variant: 1, name: 'COMERCIANTE', at: [0.86, 0.24], facing: 2.2, lines: [
+        'Filtros, cabos, baterias velhas… Tudo que a rede esqueceu, eu guardo.',
+        'Essa sua espada vale mais que o refúgio inteiro. Não que eu esteja oferecendo nada.',
+      ] },
+      { model: 'civil', variant: 2, name: 'COMBATENTE DESCONECTADA', at: [0.2, 0.84], facing: -0.6, lines: [
+        'A Legião vai voltar. Da próxima vez, estaremos prontos.',
+        'Sem rede, sem dono. É isso que está pintado nas paredes — e é isso que a gente defende.',
+      ] },
+      { model: 'civil', variant: 3, name: 'JOVEM DESCONECTADO', at: [0.82, 0.74], facing: 3.6, lines: [
+        'É verdade que a sua espada come raios?',
+        'Minha mãe dizia que o céu já foi azul de verdade. Você lembra disso?',
+      ] },
+      { model: 'civil', variant: 0, name: 'VIGIA', at: [0.32, 0.12], facing: 1.2, lines: [
+        'Eu estava de vigia na entrada. Quando eles vieram, nem deu tempo de gritar.',
+      ] },
+    ],
     waves: [{ legionario: 1, drone: 3, rastejador: 3 }, { cacador: 3, rastejador: 5 }, { legionario: 2, drone: 2, rastejador: 2 }] },
   { name: 'Catedral do Eclipse', sub: 'CAPÍTULO IV · OS FIÉIS DA MÁQUINA', theme: 'cathedral', tiles: 14, pillars: 5,
     say: ['SACERDOTE', 'O mensageiro do novo mundo chegou... ou a causa de sua destruição definitiva.'],

@@ -421,5 +421,5 @@ const R3D = {
 // Registro dos modelos 3D: MODELS3D.chave = { build(), pose(model, entidade, opções), demos }
 const MODELS3D = {};
 
-// [MODELOS 3D]
+// Os modelos ficam em js/models/<chave>.js (um arquivo por modelo), carregados pelo index.html
 

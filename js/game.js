@@ -37,6 +37,7 @@ class Game {
     this.skillUI = { tree: 0, sel: 'corte_eletrico', from: 'playing', msg: '', msgT: 0, msgRgb: '', fx: null };
     this.counter = new ComboCounter();
     this.enemies = [];
+    this.npcs = []; this.talkTarget = null;
     this.player = null; this.room = null; this.boss = null;
     this.state = 'title';
     this.time = 0; this.realTime = 0;
@@ -209,6 +210,12 @@ class Game {
     this.room = new Room(i);
     this.room.render(this.roomScale());
     this.director.reset(i);
+    // NPCs do setor (posicionados em pontos livres, longe dos pilares)
+    this.npcs.length = 0; this.talkTarget = null;
+    for (const d of this.room.def.npcs || []) {
+      const pt = npcSpot(this.room, d.at[0], d.at[1]);
+      this.npcs.push(new NPC(d, pt.x, pt.y));
+    }
     const p = this.player;
     p.x = this.room.w / 2; p.y = this.room.h - 70; p.z = 0;
     p.vx = p.vy = p.kbx = p.kby = 0;
@@ -239,6 +246,13 @@ class Game {
       this.skyFlash = 1; this.skyBoltX = rand(0.15, 0.85); this.skySeed = (Math.random() * 1e6) | 0;
       this.audio.play('thunder', 0.3);
     }
+    // Conversa com o NPC mais próximo ([E]; no gamepad o Y conversa em vez de atacar)
+    this.talkTarget = null;
+    if (p.state !== 'dead') {
+      let bd = 80;
+      for (const n of this.npcs) { const d = dist(p.x, p.y, n.x, n.y); if (d < bd && n.canTalk()) { bd = d; this.talkTarget = n; } }
+    }
+    if (this.talkTarget && inp.pressed.interact && !this.fadeCb) { this.talkTarget.talk(); inp.pressed.heavy = false; }
     if (!this.fadeCb) p.captureInput(inp);
     this.hud.update(dt);
     // Hit stop: congela a simulação por alguns milissegundos a cada impacto
@@ -250,6 +264,7 @@ class Game {
 
     p.update(sdt, this.fadeCb ? this.nullInput : inp);
     for (const e of this.enemies) e.update(sdt);
+    for (const n of this.npcs) n.update(sdt);
     this.separate();
     this.director.update();
     this.projectiles.update(sdt);
@@ -279,11 +294,24 @@ class Game {
     }
   }
 
+  // Há combate no setor? (NPCs se protegem e não conversam)
+  combatActive() {
+    const s = this.waves.state;
+    return s === 'intro' || s === 'spawning' || s === 'fighting' || s === 'between' || s === 'boss';
+  }
+
   // Separação entre corpos (inimigos entre si e com o jogador)
   separate() {
     const list = this.enemies, p = this.player;
     const pSolid = p.state !== 'dash' && p.state !== 'special' && p.state !== 'dead' &&
       !(p.state === 'attack' && p.attack && p.attack.def.thrust);
+    // NPCs são sólidos para Kael (a esquiva atravessa)
+    if (pSolid) {
+      for (const n of this.npcs) {
+        const dx = p.x - n.x, dy = p.y - n.y, min = n.radius + p.radius, d2 = dx * dx + dy * dy;
+        if (d2 < min * min && d2 > 0.0001) { const d = Math.sqrt(d2); p.x = n.x + (dx / d) * min; p.y = n.y + (dy / d) * min; }
+      }
+    }
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
       if (a.state === 'dying' || a.state === 'spawn') continue;
@@ -941,6 +969,7 @@ class Game {
       g.spr = this.queue3('kael', gp, o);
     }
     for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
+    for (const n of this.npcs) n.spr = this.queue3(n.key, n, this.opts3(n, 0));
     let cells = 0;
     for (let i = 0; i < this.pickups.count; i++) {
       const it = this.pickups.items[i];
@@ -1032,11 +1061,13 @@ class Game {
     room.drawDoor(ctx);
     p.drawShadow(ctx);
     for (const e of this.enemies) if (e.state !== 'spawn') e.drawShadow(ctx);
+    for (const n of this.npcs) if (!n.holo) n.drawShadow(ctx);
     this.projectiles.drawShadows(ctx);
     const list = this.drawList;
     list.length = 0;
     list.push(p);
     for (const e of this.enemies) list.push(e);
+    for (const n of this.npcs) list.push(n);
     for (const pl of room.pillars) list.push(pl);
     list.sort((a, b) => (a.x + a.y) - (b.x + b.y));
     for (const o of list) {
@@ -1052,6 +1083,7 @@ class Game {
     const flick = Math.sin(this.realTime * 9) * 6 + Math.sin(this.realTime * 23) * 3;
     L.add(isoX(p.x, p.y), isoY(p.x, p.y) - 30, (p.state === 'special' ? 620 : 470) + flick, 1);
     room.addLights(L, this.realTime);
+    for (const n of this.npcs) if (n.lightRgb) L.add(isoX(n.x, n.y), isoY(n.x, n.y) - 30, n.holo ? 150 : 95, 0.5);
     this.projectiles.addLights(L);
     for (const e of this.enemies) {
       if (e.isBoss) L.add(isoX(e.x, e.y), isoY(e.x, e.y) - 60 - e.jumpZ, e.phase === 3 ? 300 : 220, 0.7);
@@ -1087,6 +1119,7 @@ class Game {
     if (this.use3D) {
       p.drawEmissive(ctx);
       for (const e of this.enemies) e.drawEmissive(ctx);
+      for (const n of this.npcs) n.drawEmissive(ctx);
     }
     this.drawEclipseFx(ctx);
     this.arcs.draw(ctx, this.realTime);
