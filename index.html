@@ -146,14 +146,18 @@ const KEYMAP = {
   debug: ['F1'], debugKill: ['F2'], debugFury: ['F3'], mute: ['KeyM'], gfx: ['KeyG'],
   reroll: ['KeyR'], buyHeal: ['KeyC'], restart: ['KeyR'], toTitle: ['KeyT'],
   one: ['Digit1', 'Numpad1'], two: ['Digit2', 'Numpad2'], three: ['Digit3', 'Numpad3'],
+  ab1: ['Digit1', 'KeyU'], ab2: ['Digit2', 'KeyO'], ab3: ['Digit3', 'KeyP'], ab4: ['Digit4', 'Semicolon'],
+  skills: ['Tab', 'KeyH'], tabPrev: ['KeyQ'], tabNext: ['KeyE'], back: ['Escape', 'Backspace'],
+  interact: ['KeyE', 'KeyF'], debugXp: ['F4'],
 };
 // Layout padrão (Xbox): 0=A 1=B 2=X 3=Y 4=LB 5=RB 7=RT 8=Back 9=Start 12-15=D-pad
 const PADMAP = {
   up: [12], down: [13], left: [14], right: [15],
-  light: [2], heavy: [3], dash: [0, 4], special: [1, 5, 7],
+  light: [2], heavy: [3], dash: [0, 4], special: [1, 7],
+  ab1: [6], ab2: [5], ab3: [10], ab4: [11], skills: [8], tabPrev: [4], tabNext: [5], back: [1], interact: [3],
   pause: [9], confirm: [0], reroll: [2], buyHeal: [3], restart: [3], toTitle: [8],
 };
-const PREVENT_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F1', 'F2', 'F3', 'Tab']);
+const PREVENT_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F1', 'F2', 'F3', 'F4', 'Tab', 'Backspace']);
 
 class Input {
   constructor(canvas) {
@@ -556,6 +560,15 @@ class AudioSys {
           break;
         case 'upgrade':
           this.arp([523, 659, 784, 1046], 0.06, 0.25, 0.06);
+          break;
+        case 'skill':   // habilidade desbloqueada na árvore
+          this.arp([784, 988, 1175, 1568], 0.05, 0.35, 0.06);
+          this.osc('sine', 196, 392, 0.4, 0.06);
+          break;
+        case 'levelUp':
+          this.arp([392, 523, 659, 784, 1046, 1318], 0.07, 0.55, 0.07);
+          this.arp([196, 262, 330], 0.1, 1.1, 0.05, 'sine');
+          this.noise(0.6, 0.08, 'bandpass', 900, 5200, 1.2);
           break;
         case 'roomClear':
           this.arp([659, 784, 988, 1318], 0.09, 0.4, 0.06);
@@ -1326,19 +1339,19 @@ const ATTACKS = {
     name: null, windup: 0.06, active: 0.09, recovery: 0.2, chainFrac: 0.12,
     shape: { type: 'arc', range: 82, arc: 1.15 }, dmg: 10, kb: 190, launch: 0, stun: 0.3,
     hitstop: 0.045, shake: 0.13, lunge: 210, swing: [-1.35, 1.2], blade: 74,
-    rgb: '50,120,255', core: '210,235,255', sound: 'swing', fury: 4, arcs: 0.25,
+    rgb: '50,120,255', core: '210,235,255', sound: 'swing', fury: 4, arcs: 0.25, light: true,
   },
   light2: {
     name: null, windup: 0.06, active: 0.09, recovery: 0.2, chainFrac: 0.12,
     shape: { type: 'arc', range: 84, arc: 1.15 }, dmg: 11, kb: 200, launch: 0, stun: 0.3,
     hitstop: 0.045, shake: 0.13, lunge: 220, swing: [1.3, -1.25], blade: 76,
-    rgb: '50,120,255', core: '210,235,255', sound: 'swing', fury: 4, arcs: 0.25,
+    rgb: '50,120,255', core: '210,235,255', sound: 'swing', fury: 4, arcs: 0.25, light: true,
   },
   light3: {
     name: 'DESCARGA TRÍPLICE', windup: 0.1, active: 0.11, recovery: 0.32, chainFrac: 0.5,
     shape: { type: 'arc', range: 98, arc: 1.4 }, dmg: 22, kb: 380, launch: 0, stun: 0.55,
     hitstop: 0.085, shake: 0.3, heavy: true, lunge: 330, swing: [-1.9, 1.75], blade: 90,
-    rgb: '40,110,255', core: '200,230,255', sound: 'swingHeavy', fury: 7, zoom: 0.03, arcs: 0.8,
+    rgb: '40,110,255', core: '200,230,255', sound: 'swingHeavy', fury: 7, zoom: 0.03, arcs: 0.8, light: true,
   },
   spin: {
     name: 'CÍRCULO DA RUÍNA', windup: 0.07, active: 0.42, recovery: 0.26, chainFrac: 0.5,
@@ -1353,7 +1366,7 @@ const ATTACKS = {
     rgb: '70,100,255', core: '210,225,255', sound: 'swingHeavy', fury: 7, chargeable: true, zoom: 0.02, arcs: 0.5,
   },
   charged: {
-    name: 'SOBRECARGA', windup: 0.05, active: 0.12, recovery: 0.42, chainFrac: 0.55,
+    name: 'IMPACTO CARREGADO', windup: 0.05, active: 0.12, recovery: 0.42, chainFrac: 0.55,
     shape: { type: 'arc', range: 122, arc: 1.6 }, dmg: 34, kb: 600, launch: 430, stun: 0.9,
     hitstop: 0.13, shake: 0.55, heavy: true, heavyType: true, lunge: 400, swing: [-2.4, 2.0], blade: 106,
     rgb: '120,170,255', core: '240,250,255', sound: 'swingHeavy', fury: 10, zoom: 0.05, arcs: 1,
@@ -1383,13 +1396,46 @@ const ATTACKS = {
     hitstop: 0.04, shake: 0.18, lunge: 80, swing: [-1.5, 1.5], blade: 82, projectile: 'crescent',
     rgb: '140,210,255', core: '240,250,255', sound: 'thrust', fury: 5, arcs: 0.3,
   },
+  // ----- Habilidades ativas que usam o corpo de Kael (dano escala com o poder)
+  volt: {
+    name: 'ARCO VOLTAICO', windup: 0.07, active: 0.07, recovery: 0.2, chainFrac: 0.3,
+    shape: { type: 'arc', range: 70, arc: 0.9 }, dmg: 6, kb: 120, launch: 0, stun: 0.25,
+    hitstop: 0.03, shake: 0.12, lunge: 60, swing: [-0.9, 0.5], blade: 84, projectile: 'volt', ability: true, shock: true,
+    rgb: '90,170,255', core: '235,248,255', sound: 'thrust', fury: 0, arcs: 1,
+  },
+  zap: {
+    name: 'CORRENTE RELÂMPAGO', windup: 0.05, active: 0.08, recovery: 0.24, chainFrac: 0.3,
+    shape: { type: 'arc', range: 60, arc: 0.8 }, dmg: 0, kb: 0, launch: 0, stun: 0, noHit: true,
+    hitstop: 0, shake: 0.1, lunge: 0, swing: [1.6, -0.2], blade: 84, ability: true,
+    rgb: '130,200,255', core: '240,250,255', sound: 'swing', fury: 0, arcs: 0,
+  },
+  plasma: {
+    name: 'RUPTURA DE PLASMA', windup: 0.32, active: 0.08, recovery: 0.36, chainFrac: 0.4,
+    shape: { type: 'circle', radius: 170, offset: 0 }, dmg: 100, kb: 520, launch: 380, stun: 0.9,
+    hitstop: 0.1, shake: 0.5, heavy: true, radialKb: true, lunge: 0, swing: [-2.6, 0.5], blade: 96, plasma: true, ability: true, shock: true,
+    rgb: '120,200,255', core: '240,250,255', sound: 'swingHeavy', fury: 0, zoom: 0.05, arcs: 1,
+  },
+  storm: {
+    name: 'TEMPESTADE DE LÂMINAS', windup: 0.06, active: 0.58, recovery: 0.24, chainFrac: 0.4,
+    shape: { type: 'arc', range: 118, arc: 1.35 }, dmg: 19, kb: 110, launch: 0, stun: 0.3,
+    hitstop: 0.025, shake: 0.08, multiHit: 6, rehit: 0.09, lunge: 120, swing: [-1.2, 1.2], oscillate: 6, blade: 96, ability: true,
+    rgb: '200,225,255', core: '255,255,255', sound: 'swing', fury: 0, arcs: 0.5,
+  },
+  lunge: {
+    name: 'INVESTIDA SOMBRIA', windup: 0.02, active: 0.12, recovery: 0.26, chainFrac: 0.3,
+    shape: { type: 'capsule', length: 110, width: 30 }, dmg: 50, kb: 360, launch: 0, stun: 0.6,
+    hitstop: 0.07, shake: 0.22, heavy: true, lunge: 260, swing: [0, 0], blade: 98, thrust: true, ability: true,
+    rgb: '170,120,255', core: '240,230,255', sound: 'thrust', fury: 0, arcs: 0.5,
+  },
 };
 
 // ---------------------------------------------------------------------------
 // SISTEMA DE COMBOS: sequências de entradas com janela de tempo e buffer
 // ---------------------------------------------------------------------------
 const COMBO_TABLE = { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 'heavy', LH: 'uppercut', HH: 'slam' };
-const COMBO_REQUIRES = { uppercut: 'uppercut', slam: 'slam' }; // técnicas desbloqueáveis
+const COMBO_REQUIRES = { uppercut: 'uppercut', slam: 'slam' }; // técnicas das evoluções
+// Técnicas liberadas pela árvore de habilidades
+const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio' };
 
 class ComboSystem {
   constructor() {
@@ -1410,13 +1456,18 @@ class ComboSystem {
     this.buffer = null;
     return ok ? b : null;
   }
-  isUnlocked(id) { const req = COMBO_REQUIRES[id]; return !req || this.unlocked.has(req); }
+  isUnlocked(id) {
+    const req = COMBO_REQUIRES[id];
+    if (req && !this.unlocked.has(req)) return false;
+    const sk = COMBO_SKILLS[id];
+    return !sk || !game || !game.progress || game.progress.lv(sk) > 0;
+  }
 
   // Decide qual golpe executar para o input, considerando a cadeia em andamento
   resolve(type) {
     if (this.dashWindow > 0) {
       this.dashWindow = 0;
-      if (type === 'L') { this.seq = 'D'; return 'thrust'; }
+      if (type === 'L' && this.isUnlocked('thrust')) { this.seq = 'D'; return 'thrust'; }
       if (type === 'H' && this.isUnlocked('wave')) { this.seq = 'D'; return 'wave'; }
     }
     const s = this.seq + type;
@@ -1494,10 +1545,10 @@ const UPGRADES = [
     apply: (p) => { p.stats.dmgMult += 0.15; } },
   { id: 'speed', name: 'Servos Cinéticos', desc: '+10% de velocidade de movimento e esquivas mais longas.', icon: 'boot', max: 3, w: 8,
     apply: (p) => { p.stats.speedMult += 0.1; p.stats.dashMult += 0.1; } },
-  { id: 'lifesteal', name: 'Dreno de Energia', desc: 'A lâmina absorve energia: 4% do dano causado volta como vida.', icon: 'fang', max: 3, w: 8,
+  { id: 'lifesteal', name: 'Sifão Vital', desc: 'A lâmina absorve energia: 4% do dano causado volta como vida.', icon: 'fang', max: 3, w: 8,
     apply: (p) => { p.stats.lifesteal += 0.04; } },
   { id: 'vitality', name: 'Placas do Casaco', desc: 'O material desconhecido do casaco se reforça: +25 de vida máxima e cura 25.', icon: 'heart', max: 4, w: 9,
-    apply: (p) => { p.maxHp += 25; p.heal(25, false); } },
+    apply: (p) => { p.stats.hpBonus += 25; }, onPick: (p) => p.heal(25, false) },
   { id: 'fury', name: 'Capacitor Rúnico', desc: '+35% de energia acumulada a cada acerto.', icon: 'flame', max: 3, w: 7,
     apply: (p) => { p.stats.furyMult += 0.35; } },
   { id: 'crit', name: 'Memória de Combate', desc: 'Reflexos de um passado esquecido: +10% de chance de crítico (dano x2).', icon: 'eye', max: 3, w: 7,
@@ -1508,18 +1559,16 @@ const UPGRADES = [
     apply: (p) => { p.stats.armor = Math.min(0.5, p.stats.armor + 0.12); } },
   { id: 'souls', name: 'Ímã Eletromagnético', desc: '+50% de células de energia e coleta a distância.', icon: 'soul', max: 2, w: 5,
     apply: (p) => { p.stats.soulMult += 0.5; p.stats.magnet += 70; } },
-  { id: 'charge', name: 'Núcleo Instável', desc: 'Golpes pesados +20% de dano e Sobrecarga 40% mais rápida.', icon: 'bolt', max: 2, w: 6,
+  { id: 'charge', name: 'Núcleo Instável', desc: 'Golpes pesados +20% de dano e carga do Impacto 40% mais rápida.', icon: 'bolt', max: 2, w: 6,
     apply: (p) => { p.stats.heavyMult += 0.2; p.stats.chargeSpeed += 0.4; } },
   { id: 'orbs', name: 'Nanorreparo', desc: 'Cápsulas de reparo curam +60% e caem com mais frequência.', icon: 'orb', max: 2, w: 5,
     apply: (p) => { p.stats.healMult += 0.6; p.stats.orbChance += 0.08; } },
-  { id: 'chain', name: 'Arco Voltaico', desc: 'Acertos têm +20% de chance de liberar um raio que salta para outro inimigo.', icon: 'chain', max: 3, w: 8,
+  { id: 'chain', name: 'Condutor Iônico', desc: 'Acertos têm +20% de chance de liberar um raio que salta para outro inimigo.', icon: 'chain', max: 3, w: 8,
     apply: (p) => { p.stats.chain += 0.2; } },
   { id: 'combo_slam', name: 'Técnica: Colapso Magnético', desc: 'Pesado, Pesado: crava a lâmina no chão e libera uma onda de choque elétrica.', icon: 'scroll', max: 1, w: 9, combo: true,
     apply: (p) => { p.combo.unlocked.add('slam'); } },
   { id: 'combo_upper', name: 'Técnica: Relâmpago Ascendente', desc: 'Leve, Pesado: arremessa os inimigos para o alto envoltos em eletricidade.', icon: 'scroll', max: 1, w: 9, combo: true,
     apply: (p) => { p.combo.unlocked.add('uppercut'); } },
-  { id: 'combo_wave', name: 'Técnica: Vazio Tríplice', desc: 'O Corte do Vazio (Esquiva → Pesado) passa a disparar três ondas elétricas em leque.', icon: 'scroll', max: 1, w: 8, combo: true,
-    apply: (p) => { p.stats.voidSpread = 3; } },
 ];
 
 class UpgradeSystem {
@@ -1540,11 +1589,173 @@ class UpgradeSystem {
     return out;
   }
   apply(up, player) {
-    up.apply(player);
     this.levels[up.id] = this.level(up.id) + 1;
     this.history.push(up.id);
+    player.recalc();
+    if (up.onPick) up.onPick(player);
   }
 }
+
+// ---------------------------------------------------------------------------
+// PROGRESSÃO: experiência, níveis, atributos e pontos de habilidade
+// ---------------------------------------------------------------------------
+const PROG = {
+  maxLevel: 30,
+  // Experiência para sair do nível l (curva configurável: início rápido, fim lento)
+  xpToNext: (l) => Math.round(45 * Math.pow(l, 1.5) + 55),
+  // Pontos de habilidade ganhos ao alcançar o nível l (bônus a cada 5 níveis)
+  pointsAt: (l) => (l % 5 === 0 ? 2 : 1),
+  // Ganho de atributos por nível acima do 1
+  perLevel: { hp: 8, energy: 4, dmg: 0.04, power: 0.05, def: 0.008, cdr: 0.012, mob: 0.008 },
+};
+const XP_ENEMY = { rastejador: 14, drone: 20, sacerdote: 24, cacador: 26, legionario: 55, chefe: 900 };
+// Outras fontes de experiência
+const XP_SRC = { roomClear: (i) => 60 + 50 * i, memory: 120 };
+const SPECIAL_COST = 100;   // energia exigida pelo Eclipse Absoluto
+
+// Atributos de base do jogador (recalculados a partir do nível, evoluções e habilidades)
+const BASE_STATS = {
+  dmgMult: 1, speedMult: 1, dashMult: 1, lifesteal: 0, furyMult: 1, crit: 0.05,
+  dashCdMult: 1, iframeBonus: 0, armor: 0, soulMult: 1, magnet: 120,
+  heavyMult: 1, chargeSpeed: 1, healMult: 1, orbChance: 0, chain: 0, voidSpread: 1,
+  power: 1, cdr: 1, hpBonus: 0, energyBonus: 0, regen: 2.5, lightMult: 1, arcBonus: 0,
+  thrustMult: 1, spinHits: 3, spinMult: 1, counter: 0, guardBreak: 0, eliteMult: 1,
+  critHeal: 0, dodgeEnergy: 0, perfectBonus: 0, dashCharges: 1, voidBig: 0, showBars: 0,
+};
+
+// ---------------------------------------------------------------------------
+// HABILIDADES: quatro árvores com passivas, técnicas (combos) e ativas
+// kind: 'passiva' | 'tecnica' | 'ativa' | 'suprema'   col/row: posição no grafo
+// req: [[id, nível]] (todos exigidos)   lvl: nível de personagem exigido
+// energy/cd: custo e recarga das ativas   desc(l): efeito no nível l
+// ---------------------------------------------------------------------------
+const SKILL_TREES = [
+  { id: 'eletrica', name: 'TEMPESTADE NULA', sub: 'Árvore Elétrica', rgb: '80,160,255' },
+  { id: 'sombra', name: 'SOMBRA', sub: 'Árvore de Mobilidade', rgb: '170,120,255' },
+  { id: 'espadachim', name: 'ESPADACHIM', sub: 'Árvore de Combate', rgb: '220,228,240' },
+  { id: 'nucleo', name: 'NÚCLEO ZERO', sub: 'Árvore Tecnológica', rgb: '80,230,200' },
+];
+
+const SKILLS = {
+  // ----- Árvore elétrica — Tempestade Nula
+  corte_eletrico: { tree: 'eletrica', name: 'Corte Elétrico', kind: 'passiva', icon: 'spark', max: 3, lvl: 1, col: 1, row: 0, req: [],
+    desc: (l) => `Golpes leves liberam energia azul: +${8 * l}% de dano leve e +${12 * l}% de chance de arco elétrico no alvo.` },
+  pulso_fantasma: { tree: 'eletrica', name: 'Pulso Fantasma', kind: 'tecnica', icon: 'dash', max: 2, lvl: 2, col: 0, row: 1, req: [['corte_eletrico', 1]],
+    desc: (l) => `Esquiva → Leve: avanço instantâneo envolto em eletricidade azul${l >= 2 ? ', com +40% de dano' : ''}.` },
+  arco_voltaico: { tree: 'eletrica', name: 'Arco Voltaico', kind: 'ativa', icon: 'orbBolt', max: 3, lvl: 2, col: 2, row: 1, req: [['corte_eletrico', 1]], energy: 18, cd: 3.2,
+    desc: (l) => `Dispara ${l >= 3 ? 'três projéteis elétricos em leque' : 'um projétil elétrico perfurante'} (${26 + 10 * l} de dano cada).` },
+  corrente_relampago: { tree: 'eletrica', name: 'Corrente Relâmpago', kind: 'ativa', icon: 'chain', max: 3, lvl: 4, col: 2, row: 2, req: [['arco_voltaico', 1]], energy: 28, cd: 7,
+    desc: (l) => `Um raio salta entre até ${3 + l} inimigos próximos, causando ${22 + 10 * l} de dano em cada.` },
+  campo_magnetico: { tree: 'eletrica', name: 'Campo Magnético', kind: 'ativa', icon: 'field', max: 2, lvl: 5, col: 0, row: 2, req: [['pulso_fantasma', 1]], energy: 30, cd: 15,
+    desc: (l) => `Campo de ${4 + l}s ao redor de Kael: reduz 40% do dano recebido, destrói projéteis e eletrocuta quem entra (${10 + 5 * l}/s).` },
+  ruptura_plasma: { tree: 'eletrica', name: 'Ruptura de Plasma', kind: 'ativa', icon: 'burst', max: 3, lvl: 6, col: 1, row: 3, req: [['campo_magnetico', 1], ['corrente_relampago', 1]], energy: 42, cd: 11,
+    desc: (l) => `Concentra energia por um instante e explode em área (raio ${150 + 20 * l}, ${70 + 30 * l} de dano), lançando os inimigos.` },
+  eclipse_absoluto: { tree: 'eletrica', name: 'Eclipse Absoluto', kind: 'suprema', icon: 'eclipse', max: 3, lvl: 8, col: 1, row: 4, req: [['ruptura_plasma', 1]], energy: 100, cd: 0,
+    desc: (l) => `Tecla I (100 de energia): libera toda a energia da espada (raio ${270 + 30 * (l - 1)}, ${85 + 35 * (l - 1)} de dano)${l >= 3 ? ' e restaura 25% da vida' : ''}. Desperta algo dentro de Kael.` },
+
+  // ----- Árvore de mobilidade — Sombra
+  esquiva_sombria: { tree: 'sombra', name: 'Esquiva Sombria', kind: 'passiva', icon: 'shadow', max: 3, lvl: 1, col: 1, row: 0, req: [],
+    desc: (l) => `Recarga da esquiva ${12 * l}% menor e +${(0.04 * l).toFixed(2)}s de invencibilidade.` },
+  passo_fantasma: { tree: 'sombra', name: 'Passo Fantasma', kind: 'passiva', icon: 'wing', max: 2, lvl: 3, col: 0, row: 1, req: [['esquiva_sombria', 1]],
+    desc: (l) => `Acumula ${1 + l} cargas de esquiva: deslocamentos curtos em sequência, deixando ecos sombrios.` },
+  investida_sombria: { tree: 'sombra', name: 'Investida Sombria', kind: 'ativa', icon: 'lunge', max: 2, lvl: 3, col: 2, row: 1, req: [['esquiva_sombria', 2]], energy: 15, cd: 5,
+    desc: (l) => `Avança instantaneamente até o inimigo mais próximo à frente (alcance ${300 + 60 * l}) e golpeia (${35 + 15 * l} de dano).` },
+  reflexos: { tree: 'sombra', name: 'Reflexos Aumentados', kind: 'passiva', icon: 'reflex', max: 3, lvl: 5, col: 0, row: 2, req: [['passo_fantasma', 1]],
+    desc: (l) => `Esquivas perfeitas mais fáceis (+${30 * l}% de janela), câmera lenta mais longa e +${8 * l} de energia.` },
+  salto_dimensional: { tree: 'sombra', name: 'Salto Dimensional', kind: 'ativa', icon: 'teleport', max: 2, lvl: 7, col: 1, row: 3, req: [['investida_sombria', 1], ['reflexos', 1]], energy: 20, cd: 6,
+    desc: (l) => `Teletransporte de ${180 + 40 * l} na direção do movimento, atravessando inimigos; descargas na partida e na chegada (${30 + 15 * l}).` },
+
+  // ----- Árvore de combate — Espadachim
+  corte_duplo: { tree: 'espadachim', name: 'Corte Duplo', kind: 'tecnica', icon: 'twin', max: 1, lvl: 1, col: 1, row: 0, req: [],
+    desc: () => 'Leve, Leve, Leve: o terceiro golpe vira a Descarga Tríplice, dois cortes pesados em sequência.' },
+  lamina_giratoria: { tree: 'espadachim', name: 'Lâmina Giratória', kind: 'tecnica', icon: 'spin', max: 2, lvl: 2, col: 0, row: 1, req: [['corte_duplo', 1]],
+    desc: (l) => `Leve, Leve, Pesado: Círculo da Ruína, um giro que atinge todos ao redor${l >= 2 ? ' (+1 volta e +30% de dano)' : ''}.` },
+  contra_ataque: { tree: 'espadachim', name: 'Contra-ataque', kind: 'passiva', icon: 'counter', max: 3, lvl: 3, col: 2, row: 1, req: [['corte_duplo', 1]],
+    desc: (l) => `Após uma esquiva perfeita, o próximo golpe em 1,5s é crítico e causa +${40 * l}% de dano.` },
+  ruptura_guarda: { tree: 'espadachim', name: 'Ruptura de Guarda', kind: 'passiva', icon: 'break', max: 2, lvl: 4, col: 0, row: 2, req: [['lamina_giratoria', 1]],
+    desc: (l) => `+${30 * l}% de dano contra blindados e chefes; quebra a estabilidade ${l >= 2 ? 'e a super armadura ' : ''}com mais força.` },
+  tempestade_laminas: { tree: 'espadachim', name: 'Tempestade de Lâminas', kind: 'ativa', icon: 'blades', max: 3, lvl: 6, col: 2, row: 2, req: [['contra_ataque', 1]], energy: 28, cd: 9,
+    desc: (l) => `Sequência de ${5 + l} cortes rápidos em cone (${14 + 5 * l} de dano cada).` },
+  corte_vazio: { tree: 'espadachim', name: 'Corte do Vazio', kind: 'tecnica', icon: 'void', max: 3, lvl: 5, col: 1, row: 3, req: [['ruptura_guarda', 1]],
+    desc: (l) => `Esquiva → Pesado: golpe concentrado que libera ${l >= 2 ? 'três ondas elétricas em leque' : 'uma onda elétrica em linha reta'}${l >= 3 ? ', maiores e mais fortes' : ''}.` },
+
+  // ----- Árvore tecnológica — Núcleo ZERO
+  sobrecarga: { tree: 'nucleo', name: 'Sobrecarga', kind: 'ativa', icon: 'overload', max: 3, lvl: 2, col: 1, row: 0, req: [], energy: 25, cd: 16,
+    desc: (l) => `Por 6s: +${25 + 10 * l}% de dano e golpes 20% mais rápidos.` },
+  drenagem: { tree: 'nucleo', name: 'Drenagem de Energia', kind: 'passiva', icon: 'drain', max: 3, lvl: 3, col: 0, row: 1, req: [['sobrecarga', 1]],
+    desc: (l) => `+${30 * l}% de energia por acerto; acertos críticos recuperam ${l} de vida.` },
+  analise: { tree: 'nucleo', name: 'Análise de Alvo', kind: 'passiva', icon: 'scan', max: 2, lvl: 4, col: 2, row: 1, req: [['sobrecarga', 1]],
+    desc: (l) => `Revela pontos fracos: +${8 * l}% de crítico, +${10 * l}% de dano contra elites e chefes e barras de vida sempre visíveis.` },
+  escudo_energia: { tree: 'nucleo', name: 'Escudo de Energia', kind: 'ativa', icon: 'hex', max: 3, lvl: 5, col: 0, row: 2, req: [['drenagem', 1]], energy: 30, cd: 18,
+    desc: (l) => `Escudo que absorve ${40 + 25 * l} de dano por 8s.` },
+  sincronizacao: { tree: 'nucleo', name: 'Sincronização ZERO', kind: 'ativa', icon: 'sync', max: 2, lvl: 9, col: 1, row: 3, req: [['analise', 1], ['escudo_energia', 1]], energy: 40, cd: 40,
+    desc: (l) => `Por ${6 + 2 * l}s, recargas 2,5× mais rápidas e habilidades custam metade da energia.` },
+};
+for (const id in SKILLS) SKILLS[id].id = id;
+const SKILL_ACTIVE = (id) => SKILLS[id] && (SKILLS[id].kind === 'ativa');
+
+// Estado persistente da evolução de Kael
+class Progress {
+  constructor() { this.reset(); }
+  reset() {
+    this.level = 1; this.xp = 0; this.sp = 2;
+    this.skills = {}; this.slots = [null, null, null, null];
+  }
+  lv(id) { return this.skills[id] || 0; }
+  get xpNext() { return PROG.xpToNext(this.level); }
+  // Motivo pelo qual não dá para desbloquear/aprimorar (ou null se pode)
+  blocker(id) {
+    const s = SKILLS[id], cur = this.lv(id);
+    if (cur >= s.max) return 'Nível máximo';
+    if (this.level < s.lvl) return `Requer nível ${s.lvl}`;
+    for (const [rid, rl] of s.req) if (this.lv(rid) < rl) return `Requer ${SKILLS[rid].name}${rl > 1 ? ' ' + rl : ''}`;
+    if (this.sp < 1) return 'Sem pontos de habilidade';
+    return null;
+  }
+  reqMet(id) {
+    const s = SKILLS[id];
+    if (this.level < s.lvl) return false;
+    for (const [rid, rl] of s.req) if (this.lv(rid) < rl) return false;
+    return true;
+  }
+  learn(id) {
+    if (this.blocker(id)) return false;
+    this.skills[id] = this.lv(id) + 1;
+    this.sp -= 1;
+    // Ativas recém-desbloqueadas ocupam o primeiro atalho livre
+    if (SKILL_ACTIVE(id) && this.skills[id] === 1 && !this.slots.includes(id)) {
+      const k = this.slots.indexOf(null);
+      if (k >= 0) this.slots[k] = id;
+    }
+    return true;
+  }
+  bind(id, k) {
+    if (!SKILL_ACTIVE(id) || !this.lv(id)) return false;
+    const old = this.slots.indexOf(id);
+    if (old >= 0) this.slots[old] = this.slots[k];
+    this.slots[k] = id;
+    return true;
+  }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots }; }
+  load(o) {
+    this.reset();
+    if (!o) return;
+    this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0);
+    for (const id in o.skills || {}) if (SKILLS[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, SKILLS[id].max);
+    if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (SKILL_ACTIVE(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SALVAMENTO persistente (localStorage): progresso, missões, mundo e local
+// ---------------------------------------------------------------------------
+const SAVE_KEY = 'eclipse_zero_save_v1';
+const SaveSys = {
+  exists() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } },
+  read() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } },
+  write(data) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); return true; } catch (e) { return false; } },
+  clear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* armazenamento indisponível */ } },
+};
 
 // ---------------------------------------------------------------------------
 // MOTOR 3D: renderizador WebGL mínimo para personagens, inimigos e armas
@@ -2019,18 +2230,72 @@ const WHISPERS = [
 ];
 
 // ---------------------------------------------------------------------------
+// HABILIDADES ATIVAS (atalhos 1–4): 'attack' usa o corpo de Kael (animação,
+// rastro e hitbox de golpe); 'buff' é instantânea e pode ser usada em qualquer
+// momento. cast(p, nível, direção) devolve false quando não há como usá-la.
+// ---------------------------------------------------------------------------
+const FIELD_R = 120;   // raio do Campo Magnético
+const ABILITY_DEF = { hitstop: 0.035, shake: 0.14, fury: 0, heavy: false, sound: 'hit', ability: true };
+const FIELD_DEF = { hitstop: 0.001, shake: 0.02, fury: 0, heavy: false, sound: 'hit', ability: true };
+const ABILITIES = {
+  arco_voltaico: { type: 'attack', cast: (p, lv, wd) => { p.startAttack('volt', wd); return true; } },
+  corrente_relampago: { type: 'attack', cast: (p, lv, wd) => p.castChain(lv, wd) },
+  campo_magnetico: { type: 'buff', cast: (p, lv) => {
+    p.buffs.field = 4 + lv; p.fieldLv = lv; p.fieldTick = 0;
+    game.particles.ring(p.x, p.y, FIELD_R, '110,180,255', 0.45, 8);
+    game.arcs.crackle(p.x, p.y, 30, 6, FIELD_R, '150,205,255', 0.2);
+    game.audio.play('chargeTier', 1); game.audio.play('zap');
+    return true;
+  } },
+  ruptura_plasma: { type: 'attack', cast: (p, lv, wd) => {
+    const d = ATTACKS.plasma;
+    d.shape.radius = 150 + 20 * lv; d.dmg = 70 + 30 * lv;
+    p.startAttack('plasma', wd);
+    return true;
+  } },
+  investida_sombria: { type: 'attack', cast: (p, lv, wd) => p.castLunge(lv, wd) },
+  salto_dimensional: { type: 'attack', cast: (p, lv, wd) => p.castBlink(lv, wd) },
+  tempestade_laminas: { type: 'attack', cast: (p, lv, wd) => {
+    const d = ATTACKS.storm, n = 5 + lv;
+    d.multiHit = n; d.oscillate = n; d.dmg = 14 + 5 * lv; d.active = 0.09 * n + 0.04;
+    p.startAttack('storm', wd);
+    return true;
+  } },
+  sobrecarga: { type: 'buff', cast: (p, lv) => {
+    p.buffs.overload = 6; p.overloadMult = 1.25 + 0.1 * lv;
+    game.particles.flash(p.x, p.y, 30, 90, '90,160,255', 0.25);
+    game.particles.ring(p.x, p.y, 70, '120,190,255', 0.35, 5);
+    game.arcs.crackle(p.x, p.y, 34, 4, 50, '150,205,255', 0.18);
+    game.audio.play('chargeTier', 2);
+    return true;
+  } },
+  escudo_energia: { type: 'buff', cast: (p, lv) => {
+    p.buffs.shield = 8; p.shieldHp = p.shieldMax = Math.round((40 + 25 * lv) * p.stats.power);
+    game.particles.ring(p.x, p.y, 50, '90,240,210', 0.4, 6);
+    game.particles.flash(p.x, p.y, 34, 60, '120,255,220', 0.18);
+    game.audio.play('deflect');
+    return true;
+  } },
+  sincronizacao: { type: 'buff', cast: (p, lv) => {
+    p.buffs.sync = 6 + 2 * lv;
+    for (const id in p.cds) p.cds[id] *= 0.5;
+    game.particles.ring(p.x, p.y, 110, '80,230,200', 0.5, 6);
+    game.particles.ring(p.x, p.y, 60, '200,255,240', 0.3, 3);
+    game.glitch(0.15);
+    game.audio.play('memory');
+    return true;
+  } },
+};
+
+// ---------------------------------------------------------------------------
 // JOGADOR
 // ---------------------------------------------------------------------------
 class Player extends Entity {
   constructor(x, y) {
     super(x, y, 14);
     this.maxHp = 100; this.hp = 100;
-    this.fury = 0;
-    this.stats = {
-      dmgMult: 1, speedMult: 1, dashMult: 1, lifesteal: 0, furyMult: 1, crit: 0.05,
-      dashCdMult: 1, iframeBonus: 0, armor: 0, soulMult: 1, magnet: 120,
-      heavyMult: 1, chargeSpeed: 1, healMult: 1, orbChance: 0, chain: 0, voidSpread: 1,
-    };
+    this.fury = 0; this.maxEnergy = 100;   // energia da Tempestade Nula (habilidades e Eclipse)
+    this.stats = Object.assign({}, BASE_STATS);
     this.combo = new ComboSystem();
     this.state = 'idle'; this.stateTime = 0;
     this.attack = null;
@@ -2047,6 +2312,12 @@ class Player extends Entity {
     this.ghostTimer = 0;
     this.tmp = { x: 0, y: 0 };
     this.tmp2 = { x: 0, y: 0 };
+    this.cds = {};                 // recargas das habilidades ativas (por id)
+    this.buffs = { overload: 0, field: 0, shield: 0, sync: 0 };
+    this.shieldHp = 0; this.shieldMax = 0; this.fieldTick = 0; this.fieldLv = 1; this.overloadMult = 1;
+    this.counterT = 0;             // janela do contra-ataque após uma esquiva perfeita
+    this.abBuffer = -1; this.abBufT = 0;
+    this.dashStock = 1; this.dashGap = 0;
   }
 
   get dashing() { return this.state === 'dash'; }
@@ -2058,9 +2329,10 @@ class Player extends Entity {
     if (input.pressed.heavy) this.combo.bufferInput('H');
     if (input.pressed.dash) this.dashBuffer = 0.16;
     if (input.pressed.special) {
-      if (this.fury >= 100) this.specialBuffer = 0.25;
-      else { game.hud.furyDenied(); game.audio.play('uiDeny'); }
+      if (this.canEclipse()) this.specialBuffer = 0.25;
+      else this.denyEclipse();
     }
+    for (let k = 0; k < 4; k++) if (input.pressed['ab' + (k + 1)]) { this.abBuffer = k; this.abBufT = 0.25; }
   }
 
   update(dt, input) {
@@ -2070,11 +2342,17 @@ class Player extends Entity {
     if (this.flash > 0) this.flash -= dt;
     if (this.dashBuffer > 0) this.dashBuffer -= dt;
     if (this.specialBuffer > 0) this.specialBuffer -= dt;
+    if (this.abBufT > 0) this.abBufT -= dt;
     this.squash = approach(this.squash, 0, dt * 1.2);
     this.combo.update(dt, this.state === 'attack' || this.state === 'charge');
+    this.updateAbilities(dt);
 
     const mv = input.move, mag = Math.min(1, Math.hypot(mv.x, mv.y));
     const wd = mag > 0.15 ? screenToWorldDir(mv.x, mv.y, this.tmp) : null;
+    // Habilidades instantâneas (buffs) podem ser usadas a qualquer momento
+    if (this.abBufT > 0 && this.isBuffSlot(this.abBuffer) && this.state !== 'dead' && this.state !== 'special') {
+      this.abBufT = 0; this.castAbility(this.abBuffer, wd);
+    }
 
     switch (this.state) {
       case 'idle':
@@ -2118,8 +2396,9 @@ class Player extends Entity {
 
   // Ações disponíveis em estado livre: especial, esquiva ou golpe
   tryActions(wd) {
-    if (this.specialBuffer > 0 && this.fury >= 100) { this.specialBuffer = 0; this.startSpecial(); return true; }
-    if (this.dashBuffer > 0 && this.dashCd <= 0) { this.dashBuffer = 0; this.startDash(wd); return true; }
+    if (this.specialBuffer > 0 && this.canEclipse()) { this.specialBuffer = 0; this.startSpecial(); return true; }
+    if (this.abBufT > 0) { this.abBufT = 0; if (this.castAbility(this.abBuffer, wd)) return true; }
+    if (this.dashBuffer > 0 && this.canDash()) { this.dashBuffer = 0; this.startDash(wd); return true; }
     const b = this.combo.takeBuffer();
     if (b) { this.startAttack(this.combo.resolve(b), wd); return true; }
     return false;
@@ -2155,11 +2434,12 @@ class Player extends Entity {
     a.trail = null; a.started = false;
     a.charge = chargeLevel;
     a.mult = id === 'charged' ? 1 + chargeLevel : 1;
+    if (id === 'spin') def.multiHit = this.stats.spinHits;
     this.state = 'attack'; this.stateTime = 0;
     this.vx *= 0.2; this.vy *= 0.2;
     if (def.name) {
       let name = def.name;
-      if (id === 'charged' && chargeLevel >= 0.99) name = 'SOBRECARGA MÁXIMA';
+      if (id === 'charged' && chargeLevel >= 0.99) name = 'IMPACTO MÁXIMO';
       game.hud.comboName(name);
       game.audio.play('comboName');
     }
@@ -2169,6 +2449,7 @@ class Player extends Entity {
   bladeAngle(a, t) {
     const d = a.def;
     const p = clamp((t - d.windup) / d.active, 0, 1);
+    if (d.oscillate) return a.dir + Math.sin(p * Math.PI * d.oscillate) * d.swing[1];
     const e = d.multiHit ? p : easeOutCubic(p);
     return a.dir + lerp(d.swing[0], d.swing[1], e);
   }
@@ -2176,8 +2457,13 @@ class Player extends Entity {
   updateAttack(dt, input, wd) {
     const a = this.attack, d = a.def;
     const prevT = a.t;
-    a.t += dt;
+    a.t += dt * (this.buffs.overload > 0 ? 1.2 : 1);
     const tW = d.windup, tA = d.windup + d.active, tEnd = tA + d.recovery;
+    // Ruptura de Plasma: energia convergindo durante a preparação
+    if (d.plasma && a.t < tW) {
+      game.particles.converge(this.x, this.y, 26, 2, 150, '90,160,255', 0.3);
+      if (Math.random() < 0.4) game.arcs.crackle(this.x, this.y, 30, 1, 60, '150,205,255', 0.1);
+    }
 
     // Pesado segurado: ao fim da preparação, entra no estado de carga
     if (d.chargeable && prevT < tW && a.t >= tW && input.held.heavy) { this.enterCharge(); return; }
@@ -2198,8 +2484,10 @@ class Player extends Entity {
       game.audio.play(d.sound);
       a.trail = game.trails.create(d.rgb, d.core, d.thrust ? 0.1 : 0.14);
       this.squash = d.heavy ? 0.14 : 0.07;
-      if (d.projectile) this.fireCrescent(a.dir);
+      if (d.projectile === 'volt') this.fireVolt(a.dir);
+      else if (d.projectile) this.fireCrescent(a.dir);
       if (d.slamRing) this.slamEffects(a.dir);
+      if (d.plasma) this.plasmaEffects();
     }
 
     // Amostras do rastro da lâmina (sub-amostradas para curvas suaves)
@@ -2222,12 +2510,16 @@ class Player extends Entity {
     // Encadeamento: após o ponto de cancelamento, inputs armazenados disparam o próximo golpe
     const chainAt = tA + d.recovery * d.chainFrac;
     if (a.t >= chainAt) {
-      if (this.specialBuffer > 0 && this.fury >= 100) { this.specialBuffer = 0; this.endAttack(); this.startSpecial(); return; }
+      if (this.specialBuffer > 0 && this.canEclipse()) { this.specialBuffer = 0; this.endAttack(); this.startSpecial(); return; }
+      if (this.abBufT > 0 && this.abilityReady(this.abBuffer)) {
+        this.abBufT = 0; this.endAttack();
+        if (this.castAbility(this.abBuffer, wd)) return;
+      }
       const b = this.combo.takeBuffer();
       if (b) { this.startAttack(this.combo.resolve(b), wd); return; }
     }
     // Esquiva cancela a preparação e a recuperação (nunca os frames ativos)
-    if (this.dashBuffer > 0 && this.dashCd <= 0 && (a.t < tW || a.t >= tA)) {
+    if (this.dashBuffer > 0 && this.canDash() && (a.t < tW || a.t >= tA)) {
       this.dashBuffer = 0; this.endAttack(); this.startDash(wd); return;
     }
     if (a.t >= tEnd) { this.endAttack(); this.state = 'idle'; }
@@ -2240,6 +2532,7 @@ class Player extends Entity {
 
   processHits(a) {
     const d = a.def;
+    if (d.noHit) return;
     for (const e of game.enemies) {
       if (!e.canBeHit()) continue;
       const last = a.hits.get(e);
@@ -2257,9 +2550,22 @@ class Player extends Entity {
   }
 
   hitEnemy(e, d, a) {
-    let dmg = d.dmg * this.stats.dmgMult * a.mult * (d.heavyType ? this.stats.heavyMult : 1) * rand(0.9, 1.1);
-    const crit = Math.random() < this.stats.crit;
-    if (crit) dmg *= 2;
+    const S = this.stats;
+    let dmg = d.dmg * (d.ability ? S.power : S.dmgMult) * a.mult * (d.heavyType ? S.heavyMult : 1) * rand(0.9, 1.1);
+    if (d.light) dmg *= S.lightMult;
+    if (d.thrust && !d.ability) dmg *= S.thrustMult;
+    if (a.id === 'spin') dmg *= S.spinMult;
+    dmg *= this.targetMult(e);
+    let crit = Math.random() < S.crit;
+    // Contra-ataque: o golpe logo após uma esquiva perfeita é crítico e mais forte
+    if (this.counterT > 0 && S.counter > 0) {
+      crit = true; dmg *= 1 + S.counter; this.counterT = 0;
+      game.texts.spawn(e.x, e.y, (e.height || 40) + 26, 'CONTRA-ATAQUE', '#e3d6ff', 15, 0.8);
+    }
+    if (crit) { dmg *= 2; if (S.critHeal > 0) this.heal(S.critHeal, false); }
+    // Corte Elétrico: golpes leves soltam arcos mais vezes, e o arco reforça o golpe
+    const arc = Math.random() < (d.arcs || 0) + (d.light ? S.arcBonus : 0);
+    if (arc && d.light && S.arcBonus > 0) dmg *= 1.15;
     dmg = Math.max(1, Math.round(dmg * (e.vulnerable || 1)));
     // Direção do knockback: radial em golpes de área, misturada com a direção do golpe nos arcos
     const dx = e.x - this.x, dy = e.y - this.y, l = Math.hypot(dx, dy) || 1;
@@ -2271,10 +2577,10 @@ class Player extends Entity {
     }
     const kb = d.kb * (a.id === 'charged' ? 1 + a.charge * 0.5 : 1);
     const launch = d.launch * (a.id === 'charged' ? 0.6 + a.charge * 0.6 : 1);
-    if (!e.takeHit({ dmg, kx, ky, kb, launch, stun: d.stun, heavy: !!d.heavy, crit })) return;
+    if (!e.takeHit({ dmg, kx, ky, kb, launch, stun: d.stun, heavy: !!d.heavy, crit, shock: !!d.shock, breakArmor: S.guardBreak >= 0.6, poise: 1 + S.guardBreak })) return;
     game.onEnemyHit(e, dmg, crit, d, kx, ky);
     // A Tempestade Nula descarrega eletricidade no alvo
-    if (Math.random() < (d.arcs || 0)) {
+    if (arc) {
       const reach = Math.min(d.blade * 0.6, dist(this.x, this.y, e.x, e.y));
       game.arcs.spawn(this.x + Math.cos(a.dir) * reach * 0.5, this.y + Math.sin(a.dir) * reach * 0.5, 28,
         e.x, e.y, Math.min(e.height * 0.55, 46) + e.z, { w: d.heavy ? 2.2 : 1.5, life: d.heavy ? 0.2 : 0.13 });
@@ -2303,13 +2609,13 @@ class Player extends Entity {
 
   // Técnica "Corte do Vazio": onda elétrica perfurante em linha reta
   fireCrescent(dir) {
-    const n = this.stats.voidSpread, spread = 0.3;
+    const n = this.stats.voidSpread, spread = 0.3, big = this.stats.voidBig;
     for (let i = 0; i < n; i++) {
       const a = dir + (i - (n - 1) / 2) * spread;
       game.projectiles.spawn({
         x: this.x + Math.cos(a) * 30, y: this.y + Math.sin(a) * 30, z: 22,
-        vx: Math.cos(a) * 680, vy: Math.sin(a) * 680, r: 26,
-        dmg: Math.round(24 * this.stats.dmgMult), hostile: false, kind: 'crescent', life: 0.75, pierce: true,
+        vx: Math.cos(a) * 680, vy: Math.sin(a) * 680, r: big ? 36 : 26,
+        dmg: Math.round((big ? 34 : 24) * this.stats.dmgMult), hostile: false, kind: 'crescent', life: big ? 0.9 : 0.75, pierce: true,
       });
     }
     game.arcs.crackle(this.x + Math.cos(dir) * 36, this.y + Math.sin(dir) * 36, 24, 3, 40, '140,210,255');
@@ -2365,7 +2671,7 @@ class Player extends Entity {
     }
     this.vx = approach(this.vx, tvx, 1600 * dt);
     this.vy = approach(this.vy, tvy, 1600 * dt);
-    if (this.dashBuffer > 0 && this.dashCd <= 0) { this.dashBuffer = 0; this.combo.reset(); this.startDash(wd); return; }
+    if (this.dashBuffer > 0 && this.canDash()) { this.dashBuffer = 0; this.combo.reset(); this.startDash(wd); return; }
     if (!input.held.heavy) {
       const level = clamp(this.chargeTime / 0.95, 0, 1);
       this.combo.seq = '';
@@ -2379,8 +2685,9 @@ class Player extends Entity {
     this.dashDirX = dx; this.dashDirY = dy;
     this.facing = Math.atan2(dy, dx);
     this.state = 'dash'; this.stateTime = 0;
-    this.invuln = Math.max(this.invuln, 0.22 + this.stats.iframeBonus);
+    this.invuln = Math.max(this.invuln, (0.22 + this.stats.iframeBonus) * (1 + this.stats.perfectBonus));
     this.dashCd = 0.5 * this.stats.dashCdMult;
+    this.dashStock = Math.max(0, this.dashStock - 1); this.dashGap = 0.12;
     this.ghostTimer = 0;
     this.squash = -0.1;
     game.audio.play('dash');
@@ -2407,7 +2714,7 @@ class Player extends Entity {
   }
 
   startSpecial() {
-    this.fury = 0;
+    this.fury = Math.max(0, this.fury - SPECIAL_COST);
     this.state = 'special'; this.stateTime = 0;
     this.specialFired = false;
     this.invuln = Math.max(this.invuln, 1.25);
@@ -2439,7 +2746,8 @@ class Player extends Entity {
   // (raios em todos os inimigos próximos, lâminas radiais e limpeza de projéteis)
   // — mas desperta algo adormecido dentro de Kael
   fireSpecial() {
-    const R = 270, base = 85 * this.stats.dmgMult;
+    const lv = Math.max(1, game.progress.lv('eclipse_absoluto'));
+    const R = 270 + 30 * (lv - 1), base = (85 + 35 * (lv - 1)) * this.stats.power * (this.buffs.overload > 0 ? this.overloadMult : 1);
     for (const e of game.enemies) {
       if (!e.canBeHit()) continue;
       const dx = e.x - this.x, dy = e.y - this.y, d = Math.hypot(dx, dy);
@@ -2483,13 +2791,17 @@ class Player extends Entity {
     game.audio.play('thunder');
     game.room.addScorch(this.x, this.y, 150);
     game.hud.whisper();
+    if (lv >= 3) this.heal(Math.round(this.maxHp * 0.25));
   }
 
-  addFury(n) {
+  addFury(n) { this.gainEnergy(n * this.stats.furyMult); }
+  gainEnergy(n) {
     if (this.state === 'special') return;
     const before = this.fury;
-    this.fury = Math.min(100, this.fury + n * this.stats.furyMult);
-    if (before < 100 && this.fury >= 100) { game.hud.furyReady(); game.audio.play('chargeTier', 2); }
+    this.fury = Math.min(this.maxEnergy, this.fury + n);
+    if (before < SPECIAL_COST && this.fury >= SPECIAL_COST && game.progress.lv('eclipse_absoluto') > 0) {
+      game.hud.furyReady(); game.audio.play('chargeTier', 2);
+    }
   }
 
   applyLifesteal(dmg) {
@@ -2512,7 +2824,17 @@ class Player extends Entity {
 
   takeDamage(dmg, sx, sy, kb = 260) {
     if (this.state === 'dead' || this.invuln > 0 || game.state !== 'playing') return false;
-    dmg = Math.max(1, Math.round(dmg * (1 - this.stats.armor)));
+    dmg = Math.max(1, Math.round(dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1)));
+    // Escudo de Energia: absorve o dano antes da vida
+    if (this.shieldHp > 0) {
+      const ab = Math.min(this.shieldHp, dmg);
+      this.shieldHp -= ab; dmg -= ab;
+      game.particles.ring(this.x, this.y, 46, '90,240,210', 0.25, 4);
+      game.texts.spawn(this.x, this.y, 60, `-${ab}`, '#7fffe0', 16, 0.6);
+      game.audio.play('deflect');
+      if (this.shieldHp <= 0) this.onBuffEnd('shield');
+      if (dmg <= 0) { this.invuln = Math.max(this.invuln, 0.3); return true; }
+    }
     this.hp -= dmg;
     const dx = this.x - sx, dy = this.y - sy, l = Math.hypot(dx, dy) || 1;
     this.kbx += (dx / l) * kb; this.kby += (dy / l) * kb;
@@ -2529,6 +2851,343 @@ class Player extends Entity {
       this.state = 'hurt'; this.stateTime = 0;
     }
     return true;
+  }
+
+  // ------------------------------------------------------- evolução e poderes
+  // Recalcula os atributos a partir do nível, das evoluções, das habilidades
+  // passivas e das escolhas da história (fill: começa com vida cheia)
+  recalc(fill = false) {
+    const pr = game.progress, S = this.stats, L = pr.level - 1, PL = PROG.perLevel;
+    const oldMax = this.maxHp;
+    Object.assign(S, BASE_STATS);
+    this.combo.unlocked.clear();
+    S.dmgMult += PL.dmg * L; S.power += PL.power * L; S.armor += PL.def * L;
+    S.cdr = Math.max(0.6, 1 - PL.cdr * L); S.speedMult += PL.mob * L; S.dashMult += PL.mob * L * 0.5;
+    for (const u of UPGRADES) for (let i = game.upgrades.level(u.id); i > 0; i--) u.apply(this);
+    const lv = (id) => pr.lv(id);
+    let l;
+    if ((l = lv('corte_eletrico'))) { S.lightMult += 0.08 * l; S.arcBonus += 0.12 * l; }
+    if ((l = lv('pulso_fantasma')) >= 2) S.thrustMult = 1.4;
+    if ((l = lv('esquiva_sombria'))) { S.dashCdMult *= 1 - 0.12 * l; S.iframeBonus += 0.04 * l; }
+    if ((l = lv('passo_fantasma'))) S.dashCharges = 1 + l;
+    if ((l = lv('reflexos'))) { S.perfectBonus += 0.3 * l; S.energyBonus += 8 * l; }
+    if ((l = lv('lamina_giratoria')) >= 2) { S.spinHits = 4; S.spinMult = 1.3; }
+    if ((l = lv('contra_ataque'))) S.counter = 0.4 * l;
+    if ((l = lv('ruptura_guarda'))) S.guardBreak = 0.3 * l;
+    if ((l = lv('corte_vazio'))) { S.voidSpread = l >= 2 ? 3 : 1; S.voidBig = l >= 3 ? 1 : 0; }
+    if ((l = lv('drenagem'))) { S.furyMult += 0.3 * l; S.critHeal = l; }
+    if ((l = lv('analise'))) { S.crit += 0.08 * l; S.eliteMult += 0.1 * l; S.showBars = 1; }
+    const of = game.flags.oferta;
+    if (of === 0) S.dmgMult += 0.15; else if (of === 1) S.hpBonus += 15; else if (of === 2) S.crit += 0.1;
+    S.armor = Math.min(0.6, S.armor);
+    this.maxHp = Math.round(100 + PL.hp * L + S.hpBonus);
+    this.maxEnergy = Math.round(100 + PL.energy * L + S.energyBonus);
+    if (fill) this.hp = this.maxHp;
+    else if (this.maxHp > oldMax) this.hp += this.maxHp - oldMax;
+    this.hp = Math.min(this.hp, this.maxHp);
+    this.fury = Math.min(this.fury, this.maxEnergy);
+    this.dashStock = fill ? S.dashCharges : Math.min(this.dashStock, S.dashCharges);
+  }
+
+  canDash() { return this.dashStock >= 1 && this.dashGap <= 0; }
+  canEclipse() { return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST; }
+  denyEclipse() {
+    if (!game.progress.lv('eclipse_absoluto')) game.hud.toast(`Eclipse Absoluto bloqueado · Árvore Elétrica (nível ${SKILLS.eclipse_absoluto.lvl})`, '255,92,122');
+    game.hud.furyDenied();
+    game.audio.play('uiDeny');
+  }
+
+  // Recargas, energia passiva, cargas de esquiva e efeitos ativos
+  updateAbilities(dt) {
+    const S = this.stats, b = this.buffs;
+    const rate = b.sync > 0 ? 2.5 : 1;
+    for (const id in this.cds) if (this.cds[id] > 0) this.cds[id] = Math.max(0, this.cds[id] - dt * rate);
+    if (this.state !== 'dead') this.gainEnergy(S.regen * dt);
+    if (this.dashGap > 0) this.dashGap -= dt;
+    if (this.dashStock < S.dashCharges) this.dashStock = Math.min(S.dashCharges, this.dashStock + (dt * rate) / (0.5 * S.dashCdMult));
+    if (this.counterT > 0) this.counterT -= dt;
+    for (const k in b) {
+      if (b[k] <= 0) continue;
+      b[k] -= dt;
+      if (b[k] <= 0) this.onBuffEnd(k);
+    }
+    if (b.field > 0) this.updateField(dt);
+    if (b.overload > 0 && Math.random() < dt * 12) {
+      game.particles.sparks(this.x, this.y, rand(14, 50), rand(0, TAU), 1, '120,190,255', 160, Math.PI);
+    }
+  }
+
+  onBuffEnd(k) {
+    if (k === 'shield') {
+      if (this.shieldHp > 0) game.particles.ring(this.x, this.y, 40, '90,240,210', 0.25, 3);
+      this.shieldHp = 0;
+    }
+    this.buffs[k] = 0;
+  }
+
+  // Campo Magnético: eletrocuta quem está dentro e destrói projéteis hostis
+  updateField(dt) {
+    game.projectiles.clearInRadius(this.x, this.y, FIELD_R);
+    this.fieldTick -= dt;
+    if (this.fieldTick > 0) return;
+    this.fieldTick = 0.25;
+    const base = (10 + 5 * this.fieldLv) * 0.25 * this.stats.power;
+    for (const e of game.enemies) {
+      if (!e.canBeHit()) continue;
+      const dx = e.x - this.x, dy = e.y - this.y, rr = FIELD_R + e.radius;
+      if (dx * dx + dy * dy > rr * rr) continue;
+      const l = Math.hypot(dx, dy) || 1;
+      const dmg = Math.max(1, Math.round(base * this.targetMult(e) * (e.vulnerable || 1)));
+      game.arcs.spawn(this.x, this.y, 30, e.x, e.y, Math.min(e.height * 0.5, 40) + e.z, { w: 1.4, life: 0.12, rgb: '150,205,255' });
+      if (e.takeHit({ dmg, kx: dx / l, ky: dy / l, kb: 70, launch: 0, stun: 0.15, heavy: false, crit: false, shock: true })) {
+        game.onEnemyHit(e, dmg, false, FIELD_DEF, dx / l, dy / l);
+      }
+    }
+  }
+
+  // Atalho k (0–3): dados da habilidade atribuída
+  abilityInfo(k) {
+    const id = game.progress.slots[k];
+    return id ? { id, lv: game.progress.lv(id), S: SKILLS[id], A: ABILITIES[id] } : null;
+  }
+  abilityCost(id) { return Math.round(SKILLS[id].energy * (this.buffs.sync > 0 ? 0.5 : 1)); }
+  abilityReady(k) {
+    const inf = this.abilityInfo(k);
+    return !!(inf && inf.lv && inf.A && !(this.cds[inf.id] > 0) && this.fury >= this.abilityCost(inf.id));
+  }
+  isBuffSlot(k) { const inf = this.abilityInfo(k); return !!(inf && inf.A && inf.A.type === 'buff'); }
+
+  // Usa a habilidade do atalho k; devolve true quando Kael entrou num golpe
+  castAbility(k, wd) {
+    const inf = this.abilityInfo(k);
+    if (!inf || !inf.lv || !inf.A) {
+      game.hud.toast('Atalho vazio · atribua uma habilidade ativa na árvore [Tab]');
+      game.audio.play('uiDeny');
+      return false;
+    }
+    if ((this.cds[inf.id] || 0) > 0) { game.hud.abilityDenied(k); game.audio.play('uiDeny'); return false; }
+    const cost = this.abilityCost(inf.id);
+    if (this.fury < cost) { game.hud.abilityDenied(k); game.hud.furyDenied(); game.audio.play('uiDeny'); return false; }
+    if (!inf.A.cast(this, inf.lv, wd)) return false;
+    this.fury -= cost;
+    this.cds[inf.id] = inf.S.cd * this.stats.cdr;
+    game.hud.abilityUsed(k);
+    if (inf.A.type === 'buff') { game.hud.comboName(inf.S.name.toUpperCase()); game.audio.play('comboName'); }
+    return inf.A.type === 'attack';
+  }
+
+  // Alvo mais próximo dentro de um cone (score = distância + desvio angular)
+  findTarget(dir, range, cone, angW = 60) {
+    let best = null, bs = Infinity;
+    for (const e of game.enemies) {
+      if (!e.canBeHit()) continue;
+      const dx = e.x - this.x, dy = e.y - this.y, d = Math.hypot(dx, dy);
+      if (d > range + e.radius) continue;
+      const ad = Math.abs(angleDiff(dir, Math.atan2(dy, dx)));
+      if (ad > cone) continue;
+      const s = d + ad * angW;
+      if (s < bs) { bs = s; best = e; }
+    }
+    return best;
+  }
+
+  // Corrente Relâmpago: o raio salta de inimigo em inimigo
+  castChain(lv, wd) {
+    const dir = wd ? Math.atan2(wd.y, wd.x) : this.facing;
+    let cur = this.findTarget(dir, 340, Math.PI);
+    if (!cur) { game.hud.toast('Nenhum alvo ao alcance'); game.audio.play('uiDeny'); return false; }
+    this.facing = Math.atan2(cur.y - this.y, cur.x - this.x);
+    this.startAttack('zap', null);
+    const base = (22 + 10 * lv) * this.stats.power, hit = new Set();
+    let sx = this.x, sy = this.y, sz = 52;
+    for (let n = 0; n < 3 + lv && cur; n++) {
+      hit.add(cur);
+      const z = Math.min(cur.height * 0.55, 46) + cur.z;
+      game.arcs.spawn(sx, sy, sz, cur.x, cur.y, z, { w: 3, life: 0.34, jag: 0.28, rgb: '160,215,255' });
+      game.particles.flash(cur.x, cur.y, z, 44, '200,230,255', 0.14);
+      const dx = cur.x - sx, dy = cur.y - sy, l = Math.hypot(dx, dy) || 1;
+      const dmg = Math.max(1, Math.round(base * this.targetMult(cur) * (cur.vulnerable || 1) * rand(0.92, 1.08)));
+      if (cur.takeHit({ dmg, kx: dx / l, ky: dy / l, kb: 160, launch: 0, stun: 0.55, heavy: false, crit: false, shock: true })) {
+        game.onEnemyHit(cur, dmg, false, ABILITY_DEF, dx / l, dy / l);
+      }
+      sx = cur.x; sy = cur.y; sz = z;
+      let nx = null, nd = 250;
+      for (const e of game.enemies) {
+        if (hit.has(e) || !e.canBeHit()) continue;
+        const d = dist(sx, sy, e.x, e.y);
+        if (d < nd) { nd = d; nx = e; }
+      }
+      cur = nx;
+    }
+    game.audio.play('thunder', 0.45);
+    game.audio.play('zap');
+    game.camera.shake(0.22);
+    game.flashScreen('150,200,255', 0.12);
+    return true;
+  }
+
+  // Ecos sombrios ao longo de um deslocamento instantâneo
+  trailGhosts(x0, y0, x1, y1, f) {
+    for (let i = 0; i < 6; i++) {
+      const g = this.ghosts[i], k = i / 6;
+      g.x = lerp(x0, x1, k); g.y = lerp(y0, y1, k); g.f = f; g.life = 0.16 + k * 0.08;
+    }
+  }
+
+  // Investida Sombria: surge ao lado do inimigo à frente e golpeia
+  castLunge(lv, wd) {
+    const dir = wd ? Math.atan2(wd.y, wd.x) : this.facing;
+    const t = this.findTarget(dir, 300 + 60 * lv, 1.15, 90);
+    if (!t) { game.hud.toast('Nenhum alvo à frente'); game.audio.play('uiDeny'); return false; }
+    const a = Math.atan2(t.y - this.y, t.x - this.x);
+    const d = Math.max(0, dist(this.x, this.y, t.x, t.y) - (t.radius + this.radius + 6));
+    const x0 = this.x, y0 = this.y;
+    this.x += Math.cos(a) * d; this.y += Math.sin(a) * d;
+    game.room.collide(this, true);
+    this.trailGhosts(x0, y0, this.x, this.y, a);
+    game.arcs.spawn(x0, y0, 30, this.x, this.y, 30, { w: 2, life: 0.22, rgb: '190,150,255' });
+    game.particles.ring(x0, y0, 40, '170,120,255', 0.3, 4);
+    game.particles.smoke(x0, y0, 10, 6, '30,16,50', 14);
+    this.invuln = Math.max(this.invuln, 0.3);
+    ATTACKS.lunge.dmg = 35 + 15 * lv;
+    this.facing = a;
+    this.startAttack('lunge', null);
+    game.audio.play('dash');
+    return true;
+  }
+
+  // Salto Dimensional: teletransporte na direção do movimento, com descargas
+  castBlink(lv, wd) {
+    const a = wd ? Math.atan2(wd.y, wd.x) : this.facing, room = game.room;
+    let d = 180 + 40 * lv;
+    while (d > 30 && !room.canStand(this.x + Math.cos(a) * d, this.y + Math.sin(a) * d, this.radius)) d -= 10;
+    if (d <= 30) { game.hud.toast('Sem espaço para o salto'); game.audio.play('uiDeny'); return false; }
+    const x0 = this.x, y0 = this.y;
+    if (this.attack && this.attack.trail) this.attack.trail.release();
+    this.blinkBurst(x0, y0, lv);
+    this.x += Math.cos(a) * d; this.y += Math.sin(a) * d;
+    this.trailGhosts(x0, y0, this.x, this.y, a);
+    this.facing = a; this.vx = this.vy = this.kbx = this.kby = 0;
+    this.invuln = Math.max(this.invuln, 0.35);
+    this.blinkBurst(this.x, this.y, lv);
+    game.arcs.spawn(x0, y0, 30, this.x, this.y, 30, { w: 2.6, life: 0.26, rgb: '200,170,255' });
+    this.state = 'idle'; this.stateTime = 0;
+    this.combo.dashWindow = 0.32;   // pode emendar Pulso Fantasma ou Corte do Vazio
+    game.hud.comboName('SALTO DIMENSIONAL');
+    game.audio.play('dash'); game.audio.play('zap');
+    game.glitch(0.12);
+    return true;
+  }
+  blinkBurst(x, y, lv) {
+    const R = 95, base = (30 + 15 * lv) * this.stats.power;
+    game.particles.ring(x, y, R, '180,140,255', 0.35, 6);
+    game.particles.flash(x, y, 30, 70, '210,190,255', 0.16);
+    game.arcs.crackle(x, y, 30, 4, R * 0.8, '190,160,255', 0.16);
+    for (const e of game.enemies) {
+      if (!e.canBeHit()) continue;
+      const dx = e.x - x, dy = e.y - y, rr = R + e.radius;
+      if (dx * dx + dy * dy > rr * rr) continue;
+      const l = Math.hypot(dx, dy) || 1;
+      const dmg = Math.max(1, Math.round(base * this.targetMult(e) * (e.vulnerable || 1) * rand(0.92, 1.08)));
+      if (e.takeHit({ dmg, kx: dx / l, ky: dy / l, kb: 320, launch: 0, stun: 0.5, heavy: false, crit: false, shock: true })) {
+        game.onEnemyHit(e, dmg, false, ABILITY_DEF, dx / l, dy / l);
+      }
+    }
+  }
+
+  // Arco Voltaico: projéteis elétricos perfurantes
+  fireVolt(dir) {
+    const lv = game.progress.lv('arco_voltaico') || 1, n = lv >= 3 ? 3 : 1;
+    const dmg = Math.round((26 + 10 * lv) * this.stats.power);
+    for (let i = 0; i < n; i++) {
+      const a = dir + (i - (n - 1) / 2) * 0.24;
+      game.projectiles.spawn({
+        x: this.x + Math.cos(a) * 34, y: this.y + Math.sin(a) * 34, z: 30,
+        vx: Math.cos(a) * 880, vy: Math.sin(a) * 880, r: 16,
+        dmg, hostile: false, kind: 'volt', life: 0.6, pierce: true,
+      });
+    }
+    game.arcs.crackle(this.x + Math.cos(dir) * 40, this.y + Math.sin(dir) * 40, 30, 3, 36, '150,210,255');
+    game.audio.play('zap');
+    game.audio.play('thunder', 0.25);
+  }
+
+  // Ruptura de Plasma: a energia acumulada explode em volta de Kael
+  plasmaEffects() {
+    const R = ATTACKS.plasma.shape.radius, P_ = game.particles;
+    P_.ring(this.x, this.y, R, '90,170,255', 0.5, 12);
+    P_.ring(this.x, this.y, R * 0.6, '220,240,255', 0.35, 6);
+    P_.flash(this.x, this.y, 20, R * 1.2, '110,180,255', 0.22);
+    P_.debris(this.x, this.y, 14);
+    P_.dust(this.x, this.y, 16, 14, 220);
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * TAU + rand(-0.2, 0.2), r = R * rand(0.7, 1.05);
+      game.arcs.spawn(this.x, this.y, 20, this.x + Math.cos(a) * r, this.y + Math.sin(a) * r, 4, { w: 2.2, life: 0.28, jag: 0.3 });
+    }
+    game.projectiles.clearInRadius(this.x, this.y, R);
+    game.camera.shake(0.5);
+    game.flashScreen('140,190,255', 0.25);
+    game.audio.play('thunder', 0.7);
+    game.audio.play('stomp');
+    game.room.addScorch(this.x, this.y, R * 0.6);
+  }
+
+  // Bônus contra o alvo: Sobrecarga, Análise (elites/chefes), Ruptura de Guarda (blindados)
+  targetMult(e) {
+    const S = this.stats;
+    let m = this.buffs.overload > 0 ? this.overloadMult : 1;
+    if (e.elite || e.isBoss) m *= S.eliteMult;
+    if (e.isBoss || e.type === 'legionario' || e.superArmor) m *= 1 + S.guardBreak;
+    return m;
+  }
+
+  // Efeitos visíveis das habilidades ativas (camada emissiva, coordenadas de mundo)
+  drawAura(ctx, t) {
+    const b = this.buffs;
+    if (!(b.field > 0 || b.shield > 0 || b.overload > 0 || b.sync > 0)) return;
+    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    if (b.field > 0) {
+      const a = Math.min(1, b.field * 2);
+      GlowCache.drawFlat(ctx, '70,140,255', sx, sy, FIELD_R * 1.7, 0.2 * a);
+      ctx.strokeStyle = rgba('140,200,255', 0.6 * a); ctx.lineWidth = 2;
+      isoCirclePath(ctx, this.x, this.y, FIELD_R); ctx.stroke();
+      ctx.setLineDash([10, 14]); ctx.lineDashOffset = -t * 70;
+      ctx.strokeStyle = rgba('200,230,255', 0.45 * a);
+      isoCirclePath(ctx, this.x, this.y, FIELD_R * 0.7); ctx.stroke();
+      ctx.setLineDash([]);
+      if (Math.random() < 0.35) {
+        const q = rand(0, TAU), q2 = q + rand(0.4, 0.9);
+        game.arcs.spawn(this.x + Math.cos(q) * FIELD_R, this.y + Math.sin(q) * FIELD_R, 6,
+          this.x + Math.cos(q2) * FIELD_R, this.y + Math.sin(q2) * FIELD_R, 6, { w: 1.3, life: 0.1, rgb: '150,205,255' });
+      }
+    }
+    if (b.shield > 0 && this.shieldHp > 0) {
+      const a = 0.4 + 0.15 * Math.sin(t * 6), cy = sy - this.z - 34, R = 34;
+      GlowCache.draw(ctx, '60,220,190', sx, cy, 60, 0.22);
+      ctx.strokeStyle = rgba('120,255,220', a); ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        const q = (i / 6) * TAU + t * 0.6;
+        const x = sx + Math.cos(q) * R, y = cy + Math.sin(q) * R * 1.25;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = rgba('120,255,220', a * 0.4);
+      ctx.beginPath(); ctx.ellipse(sx, cy, R * 0.9, R * 1.12, 0, 0, TAU); ctx.stroke();
+    }
+    if (b.overload > 0) GlowCache.draw(ctx, '80,150,255', sx, sy - this.z - 30, 76, 0.22 + 0.1 * Math.sin(t * 22));
+    if (b.sync > 0) {
+      ctx.strokeStyle = 'rgba(90,240,210,0.5)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 2; i++) {
+        const k = (t * 0.9 + i * 0.5) % 1;
+        ctx.globalAlpha = 1 - k;
+        ctx.beginPath(); ctx.ellipse(sx, sy - this.z - k * 60, 26 + k * 10, 9 + k * 4, 0, 0, TAU); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
   }
 
   // ------------------------------------------------------------------ desenho
@@ -3024,7 +3683,7 @@ class Enemy extends Entity {
     this.hp -= h.dmg;
     this.flash = 0.11;
     this.hpBar = 2.5;
-    const armored = this.superArmor && !h.heavy;
+    const armored = this.superArmor && !h.heavy && !h.breakArmor;
     const k = (armored ? 0.12 : 1) / this.mass;
     this.kbx += h.kx * h.kb * k; this.kby += h.ky * h.kb * k;
     if (this.hp <= 0) { this.die(h); return true; }
@@ -3032,13 +3691,26 @@ class Enemy extends Entity {
       if (h.launch > 0 && this.launchable) { this.vz = Math.max(this.vz, h.launch / Math.sqrt(this.mass)); this.z = Math.max(this.z, 1); }
       else if (this.z > 0) this.vz = Math.max(this.vz, 240);   // malabarismo: golpes no ar mantêm o corpo suspenso
       this.interrupt();
-      this.stun = Math.max(this.stun, h.stun * this.stunMult);
+      // Máquinas sofrem curto-circuito com descargas elétricas (atordoamento maior)
+      const shock = h.shock && this.T.mech;
+      this.stun = Math.max(this.stun, h.stun * this.stunMult * (shock ? 1.5 : 1));
+      if (shock) game.arcs.crackle(this.x, this.y, this.height * 0.5 + this.z, 2, this.radius * 1.6, '160,215,255', 0.14);
       this.setState('stun');
     }
     this.onHurt(h);
     return true;
   }
   onHurt() {}
+
+  // Variante de elite: mais resistente e forte, aura dourada e recompensa maior
+  makeElite() {
+    this.elite = true;
+    this.maxHp = this.hp = Math.round(this.maxHp * 2.6);
+    this.dmg *= 1.25; this.speed *= 1.08; this.aggro *= 1.15;
+    this.radius = Math.round(this.radius * 1.15);
+    this.stunMult *= 0.6; this.mass *= 1.4;
+    return this;
+  }
 
   die(h) {
     this.interrupt();
@@ -3065,7 +3737,10 @@ class Enemy extends Entity {
     }
     const use3D = game.use3D && this.spr && this.spr.ok;
     if (use3D) R3D.blit(ctx, this.spr, sx, sy + rise);
-    else this.drawBody(ctx, sx, sy + rise, this.flash > 0 ? FLASH_PAL : this.pal);
+    else if (this.elite) {
+      ctx.translate(sx, sy + rise); ctx.scale(1.18, 1.18);
+      this.drawBody(ctx, 0, 0, this.flash > 0 ? FLASH_PAL : this.pal);
+    } else this.drawBody(ctx, sx, sy + rise, this.flash > 0 ? FLASH_PAL : this.pal);
     ctx.restore();
     if (use3D && this.state !== 'spawn') game.glows3D(ctx, this.type, this, this.spr, sx, sy);
     // Atordoamento forte: centelhas elétricas girando sobre a cabeça
@@ -3095,15 +3770,20 @@ class Enemy extends Entity {
 
   // Barra de vida pequena sobre a cabeça (desenhada após a iluminação)
   drawHpBar(ctx) {
-    if (this.hpBar <= 0 || this.state === 'dying' || this.state === 'spawn') return;
-    const w = this.radius > 20 ? 52 : 32;
-    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z - this.height - 14;
-    const a = Math.min(1, this.hpBar * 2);
+    const always = this.elite || game.player.stats.showBars;
+    if ((this.hpBar <= 0 && !always) || this.state === 'dying' || this.state === 'spawn') return;
+    const w = this.radius > 20 || this.elite ? 52 : 32;
+    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z - this.height * (this.elite ? 1.18 : 1) - 14;
+    const a = always ? 1 : Math.min(1, this.hpBar * 2);
     ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 6);
-    ctx.fillStyle = '#ff2e55';
+    ctx.fillStyle = this.elite ? '#ffb43a' : '#ff2e55';
     ctx.fillRect(sx - w / 2, sy, w * clamp(this.hp / this.maxHp, 0, 1), 4);
+    if (this.elite) {
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#ffd47a'; ctx.fillText('ELITE', sx, sy - 3);
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -3968,7 +4648,7 @@ class Boss extends Enemy {
     this.kbx += h.kx * h.kb * 0.03; this.kby += h.ky * h.kb * 0.03;
     if (this.hp <= 0) { this.hp = 0; this.die(h); return true; }
     if (this.state !== 'stagger' && this.state !== 'transition') {
-      this.poise -= h.dmg;
+      this.poise -= h.dmg * (h.poise || 1);
       if (this.poise <= 0) this.enterStagger();
     }
     const r = this.hp / this.maxHp;
@@ -4547,6 +5227,7 @@ class ProjectileSystem {
       case 'laser': return '255,80,80';
       case 'data': return '110,255,230';
       case 'crescent': return '140,210,255';
+      case 'volt': return '150,210,255';
       default: return '110,170,255';
     }
   }
@@ -4565,6 +5246,15 @@ class ProjectileSystem {
   clear() { this.count = 0; }
   clearHostile(fx) {
     for (let i = this.count - 1; i >= 0; i--) if (this.items[i].hostile) this.kill(i, fx);
+  }
+  // Campo Magnético e Ruptura de Plasma: destroem projéteis hostis dentro do raio
+  clearInRadius(x, y, r) {
+    for (let i = this.count - 1; i >= 0; i--) {
+      const p = this.items[i];
+      if (!p.hostile || dist2(p.x, p.y, x, y) > r * r) continue;
+      game.arcs.spawn(x, y, 30, p.x, p.y, p.z, { w: 1.4, life: 0.12, rgb: '150,205,255' });
+      this.kill(i, true);
+    }
   }
 
   update(dt) {
@@ -4593,8 +5283,10 @@ class ProjectileSystem {
           if (dist2(p.x, p.y, e.x, e.y) < rr * rr) {
             p.hits.add(e);
             const l = Math.hypot(p.vx, p.vy) || 1, kx = p.vx / l, ky = p.vy / l;
-            const dmg = Math.max(1, Math.round(p.dmg * (e.vulnerable || 1) * rand(0.9, 1.1)));
-            if (e.takeHit({ dmg, kx, ky, kb: 220, launch: 0, stun: 0.3, heavy: false, crit: false })) {
+            const dmg = Math.max(1, Math.round(p.dmg * (e.vulnerable || 1) * pl.targetMult(e) * rand(0.9, 1.1)));
+            const volt = p.kind === 'volt';
+            if (volt) game.arcs.crackle(e.x, e.y, Math.min(e.height * 0.5, 40) + e.z, 2, e.radius * 1.5, '160,215,255', 0.12);
+            if (e.takeHit({ dmg, kx, ky, kb: volt ? 160 : 220, launch: 0, stun: volt ? 0.45 : 0.3, heavy: false, crit: false, shock: volt })) {
               game.onEnemyHit(e, dmg, false, PROJ_HIT_DEF, kx, ky);
             }
             if (!p.pierce) { this.kill(i, true); continue outer; }
@@ -4628,7 +5320,7 @@ class ProjectileSystem {
   addLights(lighting) {
     for (let i = 0; i < this.count && i < 40; i++) {
       const p = this.items[i];
-      lighting.add(isoX(p.x, p.y), isoY(p.x, p.y) - p.z * 0.5, p.kind === 'crescent' ? 150 : 80, 0.55);
+      lighting.add(isoX(p.x, p.y), isoY(p.x, p.y) - p.z * 0.5, p.kind === 'crescent' || p.kind === 'volt' ? 150 : 80, 0.55);
     }
   }
 
@@ -4667,6 +5359,16 @@ class ProjectileSystem {
           ctx.fillStyle = 'rgba(230,255,250,0.95)';
           ctx.fillRect(-p.r * 0.55, -p.r * 0.55, p.r * 1.1, p.r * 1.1);
           ctx.restore();
+          break;
+        }
+        case 'volt': {   // Arco Voltaico: raio concentrado em movimento
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const l = Math.hypot(sv.x, sv.y) || 1, ux = sv.x / l, uy = sv.y / l;
+          GlowCache.draw(ctx, '70,150,255', sx, sy, p.r * 3.4, 0.8 * fade);
+          GlowCache.draw(ctx, '230,245,255', sx, sy, p.r * 1.3, fade);
+          ctx.lineJoin = 'round';
+          drawBolt(ctx, sx - ux * 46, sy - uy * 46, sx + ux * 10, sy + uy * 10,
+            mulberry32(i * 97 + Math.floor(game.realTime * 40)), 0.45, 1.8, '170,220,255', fade, false);
           break;
         }
         case 'crescent':
@@ -5016,6 +5718,9 @@ class Room {
     }
     return hit;
   }
+
+  // Ponto livre para Kael ficar de pé (Salto Dimensional)
+  canStand(x, y, r) { return x > r && y > r && x < this.w - r && y < this.h - r && !this.blocksPoint(x, y, r); }
 
   blocksPoint(x, y, r) {
     if (x < 0 || y < 0 || x > this.w || y > this.h) return true;
@@ -5670,6 +6375,8 @@ class WaveManager {
     // Embaralha para variar a ordem de entrada
     for (let i = list.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = list[i]; list[i] = list[j]; list[j] = t; }
     this.queue = list.map((t, i) => ({ type: t, delay: i === 0 ? 0 : rand(0.1, 0.28) }));
+    // A última onda de cada setor (a partir do segundo) traz uma unidade de elite
+    if (this.roomIndex >= 1 && this.waveIndex === this.def.waves.length - 1 && this.queue.length) this.queue[this.queue.length - 1].elite = true;
     this.state = 'spawning';
     this.timer = 0;
     game.hud.message(`ONDA ${this.waveIndex + 1} / ${this.def.waves.length}`, '', 1.3, true);
@@ -5704,7 +6411,8 @@ class WaveManager {
           const q = this.queue.shift();
           const minD = q.type === 'drone' || q.type === 'sacerdote' ? 300 : 230;
           const pt = game.room.randomPoint(60, game.player, minD);
-          this.spawnEnemy(q.type, pt.x, pt.y);
+          const e = this.spawnEnemy(q.type, pt.x, pt.y);
+          if (q.elite) e.makeElite();
           if (this.queue.length) this.timer += this.queue[0].delay;
         }
         if (!this.queue.length) this.state = 'fighting';
@@ -5735,6 +6443,7 @@ class WaveManager {
     game.audio.play('door');
     game.audio.play('roomClear');
     game.hud.message('SETOR LIBERADO', 'A comporta se abriu — siga para o norte', 2.6);
+    game.gainXP(XP_SRC.roomClear(this.roomIndex));
     if (!this.def.boss) game.spawnMemory();
   }
 }
@@ -5821,6 +6530,119 @@ function drawIcon(ctx, kind, x, y, s, color) {
       ctx.strokeRect(-12, -14, 24, 28);
       ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(7, -6); ctx.moveTo(-7, 0); ctx.lineTo(7, 0); ctx.moveTo(-7, 6); ctx.lineTo(3, 6); ctx.stroke();
       break;
+    // ----- Habilidades das árvores
+    case 'spark':
+      ctx.moveTo(2, -18); ctx.lineTo(-8, 0); ctx.lineTo(0, 0); ctx.lineTo(-4, 18); ctx.lineTo(10, -4); ctx.lineTo(2, -4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-16, -10); ctx.lineTo(-10, -6); ctx.moveTo(12, 10); ctx.lineTo(17, 14); ctx.moveTo(14, -14); ctx.lineTo(18, -18); ctx.stroke();
+      break;
+    case 'dash':
+      ctx.moveTo(-6, -12); ctx.lineTo(16, 0); ctx.lineTo(-6, 12); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-18, -8); ctx.lineTo(-8, -8); ctx.moveTo(-20, 0); ctx.lineTo(-6, 0); ctx.moveTo(-18, 8); ctx.lineTo(-8, 8); ctx.stroke();
+      break;
+    case 'orbBolt':
+      ctx.arc(6, 0, 8, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-18, -6); ctx.lineTo(-10, 2); ctx.lineTo(-6, -4); ctx.lineTo(0, 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(6, 0, 13, -1.2, 1.2); ctx.stroke();
+      break;
+    case 'field':
+      ctx.arc(0, 0, 15, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 8, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-3, -4); ctx.lineTo(3, -1); ctx.lineTo(-2, 2); ctx.lineTo(3, 5); ctx.stroke();
+      break;
+    case 'burst':
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * TAU;
+        ctx.moveTo(Math.cos(a) * 8, Math.sin(a) * 8); ctx.lineTo(Math.cos(a) * 18, Math.sin(a) * 18);
+      }
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU); ctx.fill();
+      break;
+    case 'eclipse':
+      ctx.arc(0, 0, 15, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.fill();
+      ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.beginPath(); ctx.arc(3, -2, 9, 0, TAU); ctx.fill(); ctx.restore();
+      break;
+    case 'shadow':
+      ctx.moveTo(-4, -16); ctx.quadraticCurveTo(10, -10, 6, 4); ctx.quadraticCurveTo(2, 14, -10, 16); ctx.quadraticCurveTo(0, 6, -4, -16); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(8, -14); ctx.quadraticCurveTo(18, -4, 12, 10); ctx.stroke();
+      break;
+    case 'lunge':
+      ctx.moveTo(-18, 12); ctx.lineTo(14, -12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(14, -12); ctx.lineTo(4, -12); ctx.moveTo(14, -12); ctx.lineTo(14, -2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-12, 14, 3, 0, TAU); ctx.arc(-4, 8, 2.5, 0, TAU); ctx.fill();
+      break;
+    case 'reflex':
+      ctx.moveTo(-18, 0); ctx.quadraticCurveTo(0, -14, 18, 0); ctx.quadraticCurveTo(0, 14, -18, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-2, -8); ctx.lineTo(-6, 2); ctx.lineTo(0, 2); ctx.lineTo(-2, 10); ctx.lineTo(6, -2); ctx.lineTo(0, -2); ctx.closePath(); ctx.fill();
+      break;
+    case 'teleport':
+      ctx.arc(-9, 6, 7, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(9, -6, 7, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.setLineDash([3, 4]); ctx.moveTo(-4, 1); ctx.lineTo(4, -2); ctx.stroke(); ctx.setLineDash([]);
+      break;
+    case 'twin':
+      ctx.moveTo(-16, 12); ctx.lineTo(8, -14); ctx.moveTo(-8, 16); ctx.lineTo(16, -10); ctx.stroke();
+      break;
+    case 'spin':
+      ctx.arc(0, 0, 14, -2.6, 2.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-8, 13); ctx.lineTo(-14, 6); ctx.lineTo(-4, 6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(10, 0); ctx.stroke();
+      break;
+    case 'counter':
+      ctx.moveTo(-14, -14); ctx.lineTo(14, 14); ctx.moveTo(14, -14); ctx.lineTo(-14, 14); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 5, 0, TAU); ctx.fill();
+      break;
+    case 'break':
+      ctx.moveTo(0, -16); ctx.lineTo(14, -10); ctx.quadraticCurveTo(14, 8, 0, 16); ctx.quadraticCurveTo(-14, 8, -14, -10); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2, -16); ctx.lineTo(-3, -4); ctx.lineTo(4, 2); ctx.lineTo(-2, 16); ctx.stroke();
+      break;
+    case 'blades':
+      for (let i = -1; i <= 1; i++) { ctx.moveTo(-14 + i * 4, 14 + i * 2); ctx.lineTo(12 + i * 4, -12 + i * 2); }
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 18, -0.9, 0.2); ctx.stroke();
+      break;
+    case 'void':
+      ctx.arc(-4, 0, 14, -1.1, 1.1); ctx.arc(-10, 0, 11, 0.95, -0.95, true); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(10, -8); ctx.lineTo(18, -8); ctx.moveTo(12, 0); ctx.lineTo(19, 0); ctx.moveTo(10, 8); ctx.lineTo(18, 8); ctx.stroke();
+      break;
+    case 'overload':
+      ctx.moveTo(0, -18); ctx.lineTo(14, -6); ctx.lineTo(14, 8); ctx.lineTo(0, 18); ctx.lineTo(-14, 8); ctx.lineTo(-14, -6); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(3, -11); ctx.lineTo(-6, 2); ctx.lineTo(1, 2); ctx.lineTo(-3, 12); ctx.lineTo(7, -2); ctx.lineTo(0, -2); ctx.closePath(); ctx.fill();
+      break;
+    case 'drain':
+      ctx.moveTo(0, -16); ctx.bezierCurveTo(12, -2, 10, 12, 0, 14); ctx.bezierCurveTo(-10, 12, -12, -2, 0, -16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-5, 4); ctx.lineTo(0, 9); ctx.lineTo(5, 4); ctx.moveTo(0, -4); ctx.lineTo(0, 9); ctx.stroke();
+      break;
+    case 'scan':
+      ctx.moveTo(-16, -8); ctx.lineTo(-16, -16); ctx.lineTo(-8, -16); ctx.moveTo(8, -16); ctx.lineTo(16, -16); ctx.lineTo(16, -8);
+      ctx.moveTo(16, 8); ctx.lineTo(16, 16); ctx.lineTo(8, 16); ctx.moveTo(-8, 16); ctx.lineTo(-16, 16); ctx.lineTo(-16, 8); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.stroke();
+      break;
+    case 'hex':
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU + Math.PI / 6;
+        if (i) ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); else ctx.moveTo(Math.cos(a) * 16, Math.sin(a) * 16);
+      }
+      ctx.closePath(); ctx.stroke();
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU + Math.PI / 6;
+        if (i) ctx.lineTo(Math.cos(a) * 8, Math.sin(a) * 8); else ctx.moveTo(Math.cos(a) * 8, Math.sin(a) * 8);
+      }
+      ctx.closePath(); ctx.fill();
+      break;
+    case 'sync':
+      ctx.arc(0, 0, 14, -0.3, 2.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 14, 2.85, 5.75); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(14, 4); ctx.lineTo(18, -4); ctx.lineTo(9, -3); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-14, -4); ctx.lineTo(-18, 4); ctx.lineTo(-9, 3); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill();
+      break;
+    case 'lock':
+      ctx.rect(-11, -2, 22, 16); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -4, 8, Math.PI, 0); ctx.lineTo(8, -2); ctx.moveTo(-8, -2); ctx.lineTo(-8, -4); ctx.stroke();
+      break;
   }
   ctx.restore();
 }
@@ -5858,6 +6680,8 @@ class HUD {
     this.displayScore = 0;
     this.bossGhost = 1;
     this.time = 0;
+    this.toasts = []; this.lvl = null; this.savedT = 0; this.xpFlash = 0;
+    this.abFx = [0, 0, 0, 0]; this.abDeny = [0, 0, 0, 0];
   }
   comboName(text, big = false) {
     this.names.push({ text, t: 0, max: big ? 1.7 : 1.15, big });
@@ -5889,6 +6713,12 @@ class HUD {
     if (this.tier) { this.tier.t += dt; if (this.tier.t > 1.2) this.tier = null; }
     if (this.furyReadyT > 0) this.furyReadyT -= dt;
     if (this.furyDeny > 0) this.furyDeny -= dt;
+    for (const q of this.toasts) q.t += dt;
+    this.toasts = this.toasts.filter((q) => q.t < q.max);
+    if (this.lvl) { this.lvl.t += dt; if (this.lvl.t >= this.lvl.max) this.lvl = null; }
+    if (this.savedT > 0) this.savedT -= dt;
+    if (this.xpFlash > 0) this.xpFlash -= dt;
+    for (let k = 0; k < 4; k++) { if (this.abFx[k] > 0) this.abFx[k] -= dt; if (this.abDeny[k] > 0) this.abDeny[k] -= dt; }
     // Barra "fantasma" de vida que drena com atraso
     if (p) {
       if (p.hp < this.ghostHp) { this.ghostDelay += dt; if (this.ghostDelay > 0.45) this.ghostHp = Math.max(p.hp, this.ghostHp - 70 * dt); }
@@ -5906,6 +6736,7 @@ class HUD {
     const p = game.player;
     if (!p) return;
     this.drawVitals(ctx, p);
+    this.drawObjective(ctx);
     this.drawScore(ctx);
     this.drawCombo(ctx);
     this.drawComboNames(ctx);
@@ -5913,8 +6744,233 @@ class HUD {
     this.drawMessage(ctx);
     this.drawIndicators(ctx);
     this.drawMemory(ctx);
+    this.drawAbilities(ctx, p);
+    this.drawLevelUp(ctx);
     this.drawSubtitle(ctx);
+    this.drawToasts(ctx);
+    this.drawSaved(ctx);
   }
+  // ------------------------------------------- progressão, habilidades e avisos
+  toast(text, rgb = '168,216,255') {
+    if (this.toasts.some((q) => q.text === text && q.t < 1)) return;
+    this.toasts.push({ text, rgb, t: 0, max: 2.4 });
+    if (this.toasts.length > 3) this.toasts.shift();
+  }
+  xpGain() { this.xpFlash = 0.5; }
+  levelUp(level, sp, fresh) { this.lvl = { level, sp, fresh, t: 0, max: 4.2 }; }
+  saved() { this.savedT = 2; }
+  abilityUsed(k) { this.abFx[k] = 0.35; }
+  abilityDenied(k) { this.abDeny[k] = 0.3; }
+
+  objectiveText() {
+    const w = game.waves;
+    if (w.def.boss) return game.boss ? 'Derrote NEXUS' : 'Alcance o núcleo de NEXUS';
+    if (w.state === 'cleared' || w.state === 'exiting') {
+      return game.pickups.find('memory') ? 'Recupere o fragmento de memória e siga para a saída ao norte' : 'Siga para a saída ao norte';
+    }
+    return `Elimine as forças de NEXUS · onda ${Math.max(1, w.waveIndex + 1)} / ${w.def.waves.length}`;
+  }
+
+  drawObjective(ctx) {
+    const txt = this.objectiveText();
+    if (!txt) return;
+    ctx.save();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+    ctx.fillStyle = 'rgba(255,190,90,0.85)';
+    ctx.fillText('◆ OBJETIVO', 24, 152);
+    ctx.letterSpacing = '0px';
+    ctx.font = `13px ${FONT_UI}`;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(txt, 25, 170);
+    ctx.fillStyle = '#e8edf6';
+    ctx.fillText(txt, 24, 169);
+    ctx.restore();
+  }
+
+  // Barra de habilidades: 4 atalhos + Eclipse Absoluto, com recarga e custo
+  drawAbilities(ctx, p) {
+    const pad = game.input.lastDevice === 'pad';
+    const keys = pad ? ['LT', 'RB', 'L3', 'R3'] : ['1', '2', '3', '4'];
+    const s = 52, gap = 10, es = 60;
+    const total = 4 * s + 3 * gap + 18 + es;
+    const x0 = Math.round(VIEW_W / 2 - total / 2), y = VIEW_H - 20 - s;
+    ctx.save();
+    ctx.fillStyle = 'rgba(3,7,16,0.55)';
+    techPanelPath(ctx, x0 - 12, y - 16, total + 24, s + 30, 10); ctx.fill();
+    ctx.strokeStyle = 'rgba(61,139,255,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+    for (let k = 0; k < 4; k++) this.abilitySlot(ctx, x0 + k * (s + gap), y, s, game.progress.slots[k], keys[k], k, p);
+    this.eclipseSlot(ctx, x0 + 4 * (s + gap) + 8, y + s - es, es, pad ? 'B' : 'I', p);
+    // Efeitos ativos (tempo restante)
+    const b = p.buffs, list = [];
+    if (b.overload > 0) list.push(['overload', b.overload, '80,160,255', 'Sobrecarga']);
+    if (b.field > 0) list.push(['field', b.field, '120,190,255', 'Campo']);
+    if (b.shield > 0) list.push(['hex', b.shield, '80,230,200', `Escudo ${p.shieldHp}`]);
+    if (b.sync > 0) list.push(['sync', b.sync, '80,230,200', 'Sincronia']);
+    if (p.counterT > 0) list.push(['counter', p.counterT, '220,228,240', 'Contra-ataque']);
+    ctx.font = `bold 11px ${FONT_UI}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    list.forEach(([icon, tLeft, rgb, label], i) => {
+      const txt = `${label} ${tLeft.toFixed(1)}s`, w = ctx.measureText(txt).width + 30;
+      const bx = x0 - 22 - w, by = VIEW_H - 38 - i * 24;
+      ctx.fillStyle = 'rgba(3,7,16,0.75)'; ctx.fillRect(bx, by, w, 20);
+      ctx.strokeStyle = rgba(rgb, 0.7); ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, 19);
+      drawIcon(ctx, icon, bx + 11, by + 10, 15, rgba(rgb, 1));
+      ctx.fillStyle = '#e8f0fb'; ctx.fillText(txt, bx + 22, by + 10);
+    });
+    ctx.restore();
+  }
+
+  abilitySlot(ctx, x, y, s, id, key, k, p) {
+    const S = id ? SKILLS[id] : null;
+    const tree = S ? SKILL_TREES.find((q) => q.id === S.tree) : null;
+    const rgb = tree ? tree.rgb : '120,130,150';
+    const cd = S ? (p.cds[id] || 0) : 0, total = S ? Math.max(0.01, S.cd * p.stats.cdr) : 1;
+    const cost = S ? p.abilityCost(id) : 0, noE = !!S && p.fury < cost;
+    const dx = this.abDeny[k] > 0 ? Math.sin(this.abDeny[k] * 70) * 3 : 0;
+    ctx.save();
+    ctx.translate(dx, 0);
+    ctx.fillStyle = 'rgba(5,10,20,0.92)';
+    techPanelPath(ctx, x, y, s, s, 8); ctx.fill();
+    if (S) {
+      const g = ctx.createLinearGradient(0, y, 0, y + s);
+      g.addColorStop(0, rgba(rgb, cd > 0 || noE ? 0.08 : 0.24)); g.addColorStop(1, rgba(rgb, 0.03));
+      ctx.fillStyle = g; ctx.fill();
+      drawIcon(ctx, S.icon, x + s / 2, y + s / 2, s * 0.6, noE || cd > 0 ? 'rgba(140,150,170,0.6)' : rgba(rgb, 1));
+      if (cd > 0) {
+        ctx.save();
+        techPanelPath(ctx, x, y, s, s, 8); ctx.clip();
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.beginPath(); ctx.moveTo(x + s / 2, y + s / 2);
+        ctx.arc(x + s / 2, y + s / 2, s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd / total, 0, 1));
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+        ctx.font = `bold 17px ${FONT_NUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(cd >= 1 ? String(Math.ceil(cd)) : cd.toFixed(1), x + s / 2, y + s / 2 + 1);
+      }
+      ctx.font = `bold 10px ${FONT_UI}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.fillStyle = noE ? '#ff5c7a' : '#8fc4ff';
+      ctx.fillText(String(cost), x + s - 4, y + 3);
+      if (this.abFx[k] > 0) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.draw(ctx, rgb, x + s / 2, y + s / 2, s * 1.1, this.abFx[k] * 2.2);
+        ctx.restore();
+      }
+      ctx.strokeStyle = rgba(rgb, cd > 0 || noE ? 0.35 : 0.9);
+    } else {
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(120,130,150,0.3)';
+    }
+    ctx.lineWidth = 1.3;
+    techPanelPath(ctx, x, y, s, s, 8); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const kw = ctx.measureText(key).width + 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(x + 2, y + s - 15, kw, 13);
+    ctx.fillStyle = '#dfe6f2'; ctx.fillText(key, x + 6, y + s - 8);
+    ctx.restore();
+  }
+
+  eclipseSlot(ctx, x, y, s, key, p) {
+    const learned = game.progress.lv('eclipse_absoluto') > 0;
+    const k = clamp(p.fury / SPECIAL_COST, 0, 1), ready = learned && k >= 1;
+    const cx = x + s / 2, cy = y + s / 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(5,10,20,0.95)';
+    ctx.beginPath(); ctx.arc(cx, cy, s / 2, 0, TAU); ctx.fill();
+    if (learned) {
+      ctx.strokeStyle = 'rgba(40,90,180,0.6)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(cx, cy, s / 2 - 3, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = ready ? '#d6ecff' : '#3d8bff';
+      ctx.beginPath(); ctx.arc(cx, cy, s / 2 - 3, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.stroke();
+      if (ready) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.draw(ctx, '80,150,255', cx, cy, s * (1.1 + 0.15 * Math.sin(this.time * 8)), 0.6);
+        ctx.restore();
+      }
+      drawIcon(ctx, 'eclipse', cx, cy, s * 0.55, ready ? '#eaf4ff' : 'rgba(140,170,220,0.6)');
+    } else {
+      ctx.strokeStyle = 'rgba(120,130,150,0.35)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx, cy, s / 2 - 2, 0, TAU); ctx.stroke();
+      drawIcon(ctx, 'lock', cx, cy - 4, s * 0.38, 'rgba(150,160,180,0.6)');
+      ctx.font = `bold 9px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(180,190,210,0.7)';
+      ctx.fillText(`NV ${SKILLS.eclipse_absoluto.lvl}`, cx, cy + 15);
+    }
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(cx - 9, y + s - 9, 18, 13);
+    ctx.fillStyle = ready ? '#ffffff' : '#9aa6b8'; ctx.fillText(key, cx, y + s - 2);
+    ctx.restore();
+  }
+
+  drawToasts(ctx) {
+    if (!this.toasts.length) return;
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 14px ${FONT_UI}`;
+    this.toasts.forEach((q, i) => {
+      const a = clamp(q.t < 0.15 ? q.t / 0.15 : q.t > q.max - 0.4 ? (q.max - q.t) / 0.4 : 1, 0, 1);
+      const y = VIEW_H - 104 - (this.toasts.length - 1 - i) * 26;
+      const w = ctx.measureText(q.text).width + 28;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(3,7,16,0.82)';
+      ctx.fillRect(VIEW_W / 2 - w / 2, y - 11, w, 22);
+      ctx.fillStyle = rgba(q.rgb, 1);
+      ctx.fillRect(VIEW_W / 2 - w / 2, y - 11, 3, 22);
+      ctx.fillText(q.text, VIEW_W / 2, y + 1);
+    });
+    ctx.restore();
+  }
+
+  drawLevelUp(ctx) {
+    const L = this.lvl;
+    if (!L) return;
+    const k = L.t / L.max, PL = PROG.perLevel;
+    const a = clamp(k < 0.06 ? k / 0.06 : k > 0.85 ? (1 - k) / 0.15 : 1, 0, 1);
+    const x = 14 - (1 - Math.min(1, L.t * 5)) * 40, y = 192, w = 398;
+    const fresh = L.fresh.length > 2 ? L.fresh.slice(0, 2).join(', ') + ` e mais ${L.fresh.length - 2}` : L.fresh.join(', ');
+    const h = fresh ? 108 : 86;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(16,8,34,0.82)';
+    techPanelPath(ctx, x, y, w, h, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(185,150,255,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    GlowCache.draw(ctx, '150,110,255', x + 60, y + 34, 90, 0.35 * (0.6 + 0.4 * Math.sin(this.time * 6)));
+    ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '4px'; ctx.fillStyle = '#c8b8ff';
+    ctx.fillText('EVOLUÇÃO', x + 16, y + 18);
+    ctx.font = `bold 28px ${FONT_TITLE}`;
+    glowText(ctx, `NÍVEL ${L.level}`, x + 16, y + 44, '#f4f0ff', 'rgba(150,110,255,0.95)', 16);
+    ctx.letterSpacing = '0px';
+    ctx.font = `bold 13px ${FONT_UI}`;
+    glowText(ctx, `+${L.sp} ponto${L.sp > 1 ? 's' : ''} · [Tab] árvore`, x + 196, y + 44, '#ffe7a8', 'rgba(255,180,60,0.7)', 8);
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#d9d2f5';
+    ctx.fillText(`+${PL.hp} vida · +${PL.energy} energia · +${Math.round(PL.dmg * 100)}% dano · +${Math.round(PL.power * 100)}% poder`, x + 16, y + 70);
+    if (fresh) {
+      ctx.font = `italic 12px ${FONT_UI}`; ctx.fillStyle = '#a8d8ff';
+      ctx.fillText(`Disponível: ${fresh}`, x + 16, y + 92);
+    }
+    ctx.restore();
+  }
+
+  drawSaved(ctx) {
+    if (this.savedT <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = clamp(this.savedT, 0, 1) * 0.85;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+    ctx.fillStyle = '#a8d8ff';
+    const r = (this.time * 3) % TAU, tw = ctx.measureText('PROGRESSO SALVO').width;
+    ctx.save(); ctx.translate(VIEW_W - 34 - tw, VIEW_H - 24); ctx.rotate(r);
+    ctx.strokeStyle = '#a8d8ff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU * 0.75); ctx.stroke();
+    ctx.restore();
+    ctx.fillText('PROGRESSO SALVO', VIEW_W - 22, VIEW_H - 24);
+    ctx.letterSpacing = '0px';
+    ctx.restore();
+  }
+
 
   bar(ctx, x, y, w, h, frac, ghost, fill, back = 'rgba(3,6,14,0.85)') {
     ctx.fillStyle = back;
@@ -5930,10 +6986,10 @@ class HUD {
   }
 
   drawVitals(ctx, p) {
-    const x = 24, y = 30, w = 300;
+    const x = 24, y = 30, w = 300, pr = game.progress;
     ctx.save();
     ctx.fillStyle = 'rgba(3,7,16,0.62)';
-    techPanelPath(ctx, x - 10, y - 20, w + 98, 112, 12); ctx.fill();
+    techPanelPath(ctx, x - 10, y - 20, w + 98, 136, 12); ctx.fill();
     ctx.strokeStyle = 'rgba(61,139,255,0.45)'; ctx.lineWidth = 1;
     ctx.stroke();
     ctx.font = `bold 10px ${FONT_TITLE}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
@@ -5946,6 +7002,10 @@ class HUD {
     const g = ctx.createLinearGradient(x, 0, x + w, 0);
     g.addColorStop(0, '#5a0a1e'); g.addColorStop(1, low ? `rgba(255,${(40 + 50 * Math.sin(this.time * 10)) | 0},90,1)` : '#ff2e55');
     this.bar(ctx, x, y, w, 18, p.hp / p.maxHp, this.ghostHp / p.maxHp, g);
+    if (p.shieldHp > 0) {   // Escudo de Energia sobre a barra de vida
+      ctx.fillStyle = 'rgba(90,240,210,0.55)';
+      ctx.fillRect(x, y, w * clamp(p.shieldHp / Math.max(1, p.shieldMax), 0, 1), 5);
+    }
     ctx.strokeStyle = 'rgba(255,92,122,0.8)'; ctx.lineWidth = 1.2;
     ctx.strokeRect(x - 0.5, y - 0.5, w + 1, 19);
     ctx.font = `bold 13px ${FONT_UI}`;
@@ -5954,26 +7014,32 @@ class HUD {
     ctx.fillStyle = '#ff8aa0';
     ctx.font = `bold 12px ${FONT_TITLE}`;
     ctx.fillText('VIDA', x + w + 10, y + 10);
-    // Energia da Tempestade Nula
+    // Energia da Tempestade Nula (habilidades; o Eclipse exige 100)
     const fy = y + 28, fw = 240;
-    const full = p.fury >= 100;
+    const full = p.canEclipse();
     const shake = this.furyDeny > 0 ? Math.sin(this.furyDeny * 80) * 4 : 0;
     const fg = ctx.createLinearGradient(x, 0, x + fw, 0);
     fg.addColorStop(0, '#0c2a66'); fg.addColorStop(1, full ? '#d6ecff' : '#3d8bff');
     if (full) { ctx.shadowColor = 'rgba(80,160,255,0.95)'; ctx.shadowBlur = 12 + 8 * Math.sin(this.time * 8); }
-    this.bar(ctx, x + shake, fy, fw, 11, p.fury / 100, 0, fg);
+    this.bar(ctx, x + shake, fy, fw, 11, p.fury / p.maxEnergy, 0, fg);
     ctx.shadowBlur = 0;
+    if (pr.lv('eclipse_absoluto') && p.maxEnergy > SPECIAL_COST) {
+      const mx = x + shake + fw * (SPECIAL_COST / p.maxEnergy);
+      ctx.fillStyle = 'rgba(230,240,255,0.85)'; ctx.fillRect(mx - 1, fy - 3, 2, 17);
+    }
     ctx.strokeStyle = full ? PAL.accentHi : 'rgba(61,139,255,0.75)';
     ctx.strokeRect(x + shake - 0.5, fy - 0.5, fw + 1, 12);
     ctx.fillStyle = full ? PAL.accentHi : PAL.accent;
     ctx.font = `bold 12px ${FONT_TITLE}`;
-    ctx.fillText(full ? (Math.floor(this.time * 3) % 2 ? '[I] ECLIPSE!' : 'ECLIPSE PRONTO') : 'ENERGIA', x + fw + 10 + shake, fy + 6);
-    // Esquiva (recarga)
-    const dy = fy + 20, dw = 90;
-    const ready = p.dashCd <= 0;
-    this.bar(ctx, x, dy, dw, 5, ready ? 1 : 1 - p.dashCd / (0.5 * p.stats.dashCdMult), 0, ready ? '#d6dde8' : '#5a6474');
+    ctx.fillText(full ? (Math.floor(this.time * 3) % 2 ? '[I] ECLIPSE!' : 'ECLIPSE PRONTO') : `ENERGIA ${Math.floor(p.fury)}`, x + fw + 10 + shake, fy + 6);
+    // Esquiva: uma barra por carga
+    const dy = fy + 20, n = p.stats.dashCharges, dw = Math.min(90, (90 - (n - 1) * 4) / n);
+    for (let k = 0; k < n; k++) {
+      const f = clamp(p.dashStock - k, 0, 1);
+      this.bar(ctx, x + k * (dw + 4), dy, dw, 5, f, 0, f >= 1 ? '#d6dde8' : '#5a6474');
+    }
     ctx.fillStyle = 'rgba(214,221,232,0.75)'; ctx.font = `11px ${FONT_UI}`;
-    ctx.fillText('ESQUIVA', x + dw + 8, dy + 3);
+    ctx.fillText(n > 1 ? `ESQUIVA ×${Math.floor(p.dashStock)}` : 'ESQUIVA', x + 98, dy + 3);
     // Fragmentos de memória recuperados
     const my = dy + 20;
     ctx.fillStyle = 'rgba(168,216,255,0.75)'; ctx.font = `bold 10px ${FONT_TITLE}`;
@@ -5987,6 +7053,22 @@ class HUD {
         ctx.fillStyle = PAL.accentHi; ctx.fill();
         ctx.save(); ctx.globalCompositeOperation = 'lighter'; GlowCache.draw(ctx, '90,170,255', cx, my, 12, 0.6); ctx.restore();
       } else { ctx.strokeStyle = 'rgba(168,216,255,0.35)'; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+    // Nível, experiência e pontos de habilidade
+    const ly = my + 22, xk = pr.level >= PROG.maxLevel ? 1 : pr.xp / pr.xpNext;
+    ctx.font = `bold 13px ${FONT_TITLE}`; ctx.fillStyle = '#d3c6ff';
+    ctx.fillText(`NV ${pr.level}`, x, ly);
+    const bx = x + 46, bw = 180;
+    ctx.fillStyle = 'rgba(3,6,14,0.85)'; ctx.fillRect(bx, ly - 3, bw, 6);
+    ctx.fillStyle = this.xpFlash > 0 ? '#e6dcff' : '#9b7dff'; ctx.fillRect(bx, ly - 3, bw * xk, 6);
+    ctx.strokeStyle = 'rgba(185,168,255,0.5)'; ctx.strokeRect(bx - 0.5, ly - 3.5, bw + 1, 7);
+    ctx.font = `10px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,210,240,0.75)';
+    ctx.fillText(pr.level >= PROG.maxLevel ? 'MÁX' : `${pr.xp}/${pr.xpNext} XP`, bx + bw + 8, ly);
+    if (pr.sp > 0) {
+      ctx.globalAlpha = 0.65 + 0.35 * Math.sin(this.time * 5);
+      ctx.font = `bold 11px ${FONT_TITLE}`; ctx.fillStyle = '#ffd47a';
+      ctx.fillText(`◆ ${pr.sp} [TAB]`, x + w + 10, ly);
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
   }
@@ -6180,7 +7262,7 @@ class HUD {
     ctx.font = `${st.whisper ? 'italic ' : ''}17px ${FONT_UI}`;
     const lines = wrapText(ctx, s.text, Math.min(760, VIEW_W - 120));
     const lh = 23, bw = Math.min(800, VIEW_W - 80), bh = 42 + lines.length * lh;
-    const bx = VIEW_W / 2 - bw / 2, by = VIEW_H - 40 - bh;
+    const bx = VIEW_W / 2 - bw / 2, by = VIEW_H - 138 - bh;
     if (!st.whisper) {
       ctx.fillStyle = 'rgba(2,6,14,0.72)';
       techPanelPath(ctx, bx, by, bw, bh, 12); ctx.fill();
@@ -6278,16 +7360,17 @@ class HUD {
 // ---------------------------------------------------------------------------
 const CONTROLS = [
   ['WASD / Setas', 'Mover'],
-  ['J', 'Ataque leve'],
-  ['K', 'Ataque pesado (segure: Sobrecarga)'],
+  ['J · K', 'Ataque leve · pesado (segure: Impacto)'],
   ['L / Espaço', 'Esquiva (invencível)'],
-  ['I', 'Eclipse Absoluto — energia cheia'],
-  ['ESC', 'Pausa · pular história'], ['M', 'Som · G gráficos 3D/2D'], ['F1', 'Modo debug (hitboxes)'],
+  ['1 2 3 4', 'Habilidades ativas (gastam energia)'],
+  ['I', 'Eclipse Absoluto (100 de energia)'],
+  ['Tab / H', 'Árvore de habilidades'],
+  ['ESC', 'Pausa · pular história'], ['M · G · F1', 'Som · gráficos 3D/2D · debug'],
 ];
 const COMBO_LIST = [
   ['Leve · Leve · Leve', 'Descarga Tríplice'],
   ['Leve · Leve · Pesado', 'Círculo da Ruína'],
-  ['Pesado (segurado)', 'Sobrecarga'],
+  ['Pesado (segurado)', 'Impacto Carregado'],
   ['Esquiva → Leve', 'Pulso Fantasma'],
   ['Esquiva → Pesado', 'Corte do Vazio'],
 ];
@@ -6366,9 +7449,7 @@ class Screens {
     ctx.restore();
     // Painel de controles e técnicas
     // Em telas estreitas o painel ocupa a largura toda (sobre a silhueta de Kael)
-    const wide = VIEW_W - 300 >= 800;
-    const pw = wide ? Math.min(860, VIEW_W - 300) : Math.min(860, VIEW_W - 60);
-    const px = (VIEW_W - pw) / 2 + (wide ? 60 : 0), py = VIEW_H * 0.49, ph = 222;
+    const { px, py, pw, ph } = this.titleLayout();
     ctx.save();
     ctx.fillStyle = 'rgba(2,6,14,0.78)';
     techPanelPath(ctx, px, py, pw, ph, 14); ctx.fill();
@@ -6382,29 +7463,344 @@ class Screens {
     ctx.letterSpacing = '0px';
     ctx.font = `13px ${FONT_UI}`;
     CONTROLS.forEach(([k, d], i) => {
-      ctx.fillStyle = PAL.accentHi; ctx.fillText(k, px + 24, py + 48 + i * 20);
-      ctx.fillStyle = '#c9d3e2'; ctx.fillText(d, px + 132, py + 48 + i * 20);
+      ctx.fillStyle = PAL.accentHi; ctx.fillText(k, px + 24, py + 48 + i * 21);
+      ctx.fillStyle = '#c9d3e2'; ctx.fillText(d, px + 132, py + 48 + i * 21);
     });
     COMBO_LIST.forEach(([k, d], i) => {
       ctx.fillStyle = '#c9d3e2'; ctx.fillText(k, px + col + 14, py + 48 + i * 22);
       ctx.fillStyle = '#7fc0ff'; ctx.fillText(d, px + col + 180, py + 48 + i * 22);
     });
     ctx.fillStyle = 'rgba(201,211,226,0.6)'; ctx.font = `12px ${FONT_UI}`;
-    ctx.fillText('Novas técnicas e evoluções entre os setores.', px + col + 14, py + 168);
-    ctx.fillText('Gamepad: X leve · Y pesado · A esquiva · B/RB Eclipse · Start pausa', px + col + 14, py + 190);
+    ctx.fillText('Técnicas e poderes se desbloqueiam na árvore de habilidades.', px + col + 14, py + 166);
+    ctx.fillText('Gamepad: X leve · Y pesado · A esquiva · B Eclipse', px + col + 14, py + 188);
+    ctx.fillText('LT · RB · L3 · R3 habilidades · Back árvore · Start pausa', px + col + 14, py + 208);
     ctx.restore();
-    // Chamada para começar + recorde
+    // Menu (continuar / novo jogo) + recorde
+    this.drawTitleMenu(ctx, t);
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 4);
-    ctx.font = `bold 21px ${FONT_TITLE}`;
-    ctx.letterSpacing = '3px';
-    const cxp = px + pw / 2;
-    glowText(ctx, 'Pressione ENTER ou J para despertar', cxp, VIEW_H * 0.9, PAL.accentHi, 'rgba(40,120,255,0.9)', 12);
-    ctx.letterSpacing = '0px';
-    ctx.globalAlpha = 1;
     ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,225,240,0.6)';
-    if (game.best > 0) ctx.fillText(`Recorde: ${game.best.toLocaleString('pt-BR')} pontos`, cxp, VIEW_H * 0.955);
+    if (game.best > 0 && !game.titleConfirm) ctx.fillText(`Recorde: ${game.best.toLocaleString('pt-BR')} pontos`, px + pw / 2, VIEW_H - 14);
+    ctx.restore();
+  }
+  // Painel de controles do título e itens do menu (também usados pelo mouse)
+  titleLayout() {
+    const wide = VIEW_W - 300 >= 800;
+    const pw = wide ? Math.min(860, VIEW_W - 300) : Math.min(860, VIEW_W - 60);
+    const px = (VIEW_W - pw) / 2 + (wide ? 60 : 0), py = VIEW_H * 0.47, ph = 228;
+    return { px, py, pw, ph };
+  }
+  titleMenuRects(n) {
+    const L = this.titleLayout(), w = 380, out = [];
+    for (let i = 0; i < n; i++) out.push({ x: L.px + L.pw / 2 - w / 2, y: L.py + L.ph + 14 + i * 38, w, h: 32 });
+    return out;
+  }
+  drawTitleMenu(ctx, t) {
+    const items = game.titleItems(), rects = this.titleMenuRects(items.length);
+    const save = items[0] === 'continue' ? SaveSys.read() : null;
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    items.forEach((it, i) => {
+      const r = rects[i], sel = i === game.titleSel, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+      let label = it === 'continue' ? 'CONTINUAR' : 'NOVO JOGO';
+      if (it === 'continue' && save && save.progress) {
+        const room = ROOM_DEFS[clamp(save.room | 0, 0, ROOM_DEFS.length - 1)];
+        label += `  ·  NÍVEL ${save.progress.level | 0}  ·  ${room.name.toUpperCase()}`;
+      }
+      ctx.font = `bold ${sel ? 19 : 16}px ${FONT_TITLE}`;
+      ctx.letterSpacing = '3px';
+      if (sel) {
+        ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 4);
+        const w = ctx.measureText(label).width / 2 + 26;
+        ctx.fillStyle = 'rgba(20,50,110,0.45)'; ctx.fillRect(cx - w, r.y + 2, w * 2, r.h - 4);
+        glowText(ctx, label, cx, cy, PAL.accentHi, 'rgba(40,120,255,0.9)', 12);
+        ctx.fillStyle = PAL.accent;
+        ctx.beginPath(); ctx.moveTo(cx - w - 4, cy - 6); ctx.lineTo(cx - w + 6, cy); ctx.lineTo(cx - w - 4, cy + 6); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = 'rgba(201,211,226,0.6)';
+        ctx.fillText(label, cx, cy);
+      }
+    });
+    ctx.letterSpacing = '0px';
+    if (game.titleConfirm) {
+      this.overlay(ctx, 0.75);
+      const w = Math.min(560, VIEW_W - 80), h = 150, x = VIEW_W / 2 - w / 2, y = VIEW_H / 2 - h / 2;
+      ctx.fillStyle = 'rgba(8,4,12,0.95)';
+      techPanelPath(ctx, x, y, w, h, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,92,122,0.7)'; ctx.stroke();
+      ctx.font = `bold 18px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = '#ff8aa0';
+      ctx.fillText('NOVO JOGO', VIEW_W / 2, y + 32);
+      ctx.letterSpacing = '0px';
+      ctx.font = `15px ${FONT_UI}`; ctx.fillStyle = '#dfe6f2';
+      ctx.fillText('Começar de novo apagará o progresso salvo de Kael.', VIEW_W / 2, y + 68);
+      ctx.font = `bold 14px ${FONT_UI}`; ctx.fillStyle = PAL.accentHi;
+      ctx.fillText('ENTER / J — confirmar        ESC — cancelar', VIEW_W / 2, y + 108);
+    }
+    ctx.restore();
+  }
+
+  // --------------------------------------------------- árvore de habilidades
+  skillLayout() {
+    const W = Math.min(1180, VIEW_W - 40), x0 = (VIEW_W - W) / 2;
+    const tabs = [], tw = W / 4;
+    for (let i = 0; i < 4; i++) tabs.push({ x: x0 + i * tw + 4, y: 84, w: tw - 8, h: 48 });
+    const gy = 146, gh = 512, gw = Math.round(W * 0.56), gx = x0;
+    const ix = x0 + gw + 14, iw = W - gw - 14;
+    const nodes = {};
+    for (const s of game.treeNodes(game.skillUI.tree)) nodes[s.id] = { x: gx + gw * (0.2 + 0.3 * s.col), y: gy + 54 + s.row * 100, r: 28 };
+    const btn = { x: ix + 18, y: gy + gh - 134, w: iw - 36, h: 42 };
+    const slots = [];
+    for (let k = 0; k < 4; k++) slots.push({ x: ix + 18 + k * 56, y: gy + gh - 64, w: 48, h: 48 });
+    const close = { x: x0 + W - 36, y: 20, w: 36, h: 36 };
+    return { W, x0, tabs, gx, gy, gw, gh, ix, iw, nodes, btn, slots, close };
+  }
+
+  skillShape(ctx, kind, x, y, r) {
+    ctx.beginPath();
+    if (kind === 'passiva') { ctx.arc(x, y, r, 0, TAU); return; }
+    if (kind === 'tecnica') {
+      const q = r * 1.15;
+      ctx.moveTo(x, y - q); ctx.lineTo(x + q, y); ctx.lineTo(x, y + q); ctx.lineTo(x - q, y); ctx.closePath();
+      return;
+    }
+    const n = kind === 'suprema' ? 8 : 6, rr = r * (kind === 'suprema' ? 1.18 : 1.06), off = Math.PI / n;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + off;
+      if (i) ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); else ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+  }
+
+  drawSkills(ctx, t) {
+    const pr = game.progress, ui = game.skillUI, L = this.skillLayout();
+    const tree = SKILL_TREES[ui.tree], trgb = tree.rgb;
+    this.overlay(ctx, 0.88);
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    // Cabeçalho: nível, experiência e pontos
+    ctx.textAlign = 'left';
+    ctx.font = `bold 24px ${FONT_TITLE}`; ctx.letterSpacing = '5px';
+    glowText(ctx, 'EVOLUÇÃO DE KAEL', L.x0, 36, '#eef5ff', 'rgba(40,120,255,0.8)', 14);
+    ctx.letterSpacing = '0px';
+    const xpk = pr.level >= PROG.maxLevel ? 1 : pr.xp / pr.xpNext;
+    ctx.font = `bold 13px ${FONT_TITLE}`; ctx.fillStyle = '#c8b8ff';
+    ctx.fillText(`NÍVEL ${pr.level}`, L.x0, 64);
+    ctx.fillStyle = 'rgba(3,6,14,0.9)'; ctx.fillRect(L.x0 + 70, 59, 240, 9);
+    ctx.fillStyle = '#9b7dff'; ctx.fillRect(L.x0 + 70, 59, 240 * xpk, 9);
+    ctx.strokeStyle = 'rgba(185,168,255,0.6)'; ctx.strokeRect(L.x0 + 69.5, 58.5, 241, 10);
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,225,240,0.75)';
+    ctx.fillText(pr.level >= PROG.maxLevel ? 'NÍVEL MÁXIMO' : `${pr.xp} / ${pr.xpNext} XP`, L.x0 + 322, 64);
+    ctx.textAlign = 'right';
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(255,220,150,0.85)';
+    ctx.fillText('PONTOS DE HABILIDADE', L.x0 + L.W - 104, 36);
+    ctx.letterSpacing = '0px';
+    ctx.font = `38px ${FONT_NUM}`;
+    glowText(ctx, String(pr.sp), L.x0 + L.W - 52, 44, pr.sp > 0 ? '#ffe7a8' : '#7d8799', pr.sp > 0 ? 'rgba(255,180,60,0.9)' : 'rgba(0,0,0,0)', 14);
+    // Fechar
+    const c = L.close;
+    ctx.strokeStyle = 'rgba(214,225,240,0.6)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(c.x + 11, c.y + 11); ctx.lineTo(c.x + c.w - 11, c.y + c.h - 11); ctx.moveTo(c.x + c.w - 11, c.y + 11); ctx.lineTo(c.x + 11, c.y + c.h - 11); ctx.stroke();
+
+    // Abas das quatro árvores
+    ctx.textAlign = 'center';
+    SKILL_TREES.forEach((tr, i) => {
+      const r = L.tabs[i], sel = i === ui.tree;
+      const nodes = game.treeNodes(i), learned = nodes.filter((s) => pr.lv(s.id) > 0).length;
+      const avail = nodes.some((s) => !pr.blocker(s.id));
+      ctx.fillStyle = sel ? rgba(tr.rgb, 0.2) : 'rgba(5,10,20,0.85)';
+      techPanelPath(ctx, r.x, r.y, r.w, r.h, 10); ctx.fill();
+      ctx.strokeStyle = rgba(tr.rgb, sel ? 0.95 : 0.35); ctx.lineWidth = sel ? 2 : 1; ctx.stroke();
+      ctx.font = `bold ${r.w < 200 ? 12 : 14}px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      ctx.fillStyle = sel ? '#ffffff' : rgba(tr.rgb, 0.85);
+      ctx.fillText(tr.name, r.x + r.w / 2, r.y + 17);
+      ctx.letterSpacing = '0px';
+      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,210,225,0.7)';
+      ctx.fillText(`${tr.sub} · ${learned}/${nodes.length}`, r.x + r.w / 2, r.y + 35);
+      if (avail) {
+        ctx.fillStyle = '#ffd47a';
+        ctx.beginPath(); ctx.arc(r.x + r.w - 12, r.y + 12, 4 + Math.sin(t * 6), 0, TAU); ctx.fill();
+      }
+    });
+
+    // Grafo da árvore selecionada
+    ctx.fillStyle = 'rgba(3,7,16,0.7)';
+    techPanelPath(ctx, L.gx, L.gy, L.gw, L.gh, 14); ctx.fill();
+    ctx.strokeStyle = rgba(trgb, 0.3); ctx.lineWidth = 1; ctx.stroke();
+    const list = game.treeNodes(ui.tree);
+    for (const s of list) {
+      const n = L.nodes[s.id];
+      for (const [rid, rl] of s.req) {
+        const m = L.nodes[rid];
+        if (!m) continue;
+        const ok = pr.lv(rid) >= rl;
+        ctx.strokeStyle = ok ? rgba(trgb, 0.85) : 'rgba(110,120,140,0.35)';
+        ctx.lineWidth = ok ? 3 : 2;
+        ctx.setLineDash(ok ? [] : [6, 6]);
+        ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(n.x, n.y); ctx.stroke();
+        if (ok) {
+          const k = (t * 0.8 + s.row * 0.2) % 1;
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          GlowCache.draw(ctx, trgb, lerp(m.x, n.x, k), lerp(m.y, n.y, k), 10, 0.8);
+          ctx.restore();
+        }
+      }
+    }
+    ctx.setLineDash([]);
+    for (const s of list) {
+      const n = L.nodes[s.id], lv = pr.lv(s.id), sel = s.id === ui.sel;
+      const can = !pr.blocker(s.id), met = pr.reqMet(s.id);
+      const state = lv >= s.max ? 'max' : lv > 0 ? 'learned' : met ? 'open' : 'locked';
+      if (sel || can) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.draw(ctx, can ? '255,200,90' : trgb, n.x, n.y, n.r * 2.4, sel ? 0.5 : 0.25 + 0.15 * Math.sin(t * 5));
+        ctx.restore();
+      }
+      this.skillShape(ctx, s.kind, n.x, n.y, n.r);
+      if (state === 'locked') ctx.fillStyle = '#070b14';
+      else {
+        const g = ctx.createRadialGradient(n.x, n.y - n.r * 0.4, 2, n.x, n.y, n.r * 1.2);
+        g.addColorStop(0, rgba(trgb, lv > 0 ? 0.55 : 0.18)); g.addColorStop(1, lv > 0 ? 'rgba(6,12,26,0.95)' : 'rgba(5,9,18,0.95)');
+        ctx.fillStyle = g;
+      }
+      ctx.fill();
+      ctx.lineWidth = state === 'max' ? 3 : 2;
+      ctx.strokeStyle = state === 'locked' ? 'rgba(110,120,140,0.4)' : can ? `rgba(255,212,122,${0.6 + 0.4 * Math.sin(t * 6)})`
+        : state === 'max' ? '#ffffff' : rgba(trgb, lv > 0 ? 0.95 : 0.5);
+      ctx.stroke();
+      if (lv >= 2) { this.skillShape(ctx, s.kind, n.x, n.y, n.r + 5); ctx.lineWidth = 1; ctx.strokeStyle = rgba(trgb, 0.6); ctx.stroke(); }
+      drawIcon(ctx, s.icon, n.x, n.y, n.r * 1.15, state === 'locked' ? 'rgba(120,130,150,0.45)' : lv > 0 ? '#f2f7ff' : rgba(trgb, 0.8));
+      if (state === 'locked') drawIcon(ctx, 'lock', n.x + n.r * 0.72, n.y + n.r * 0.72, 16, 'rgba(170,180,200,0.8)');
+      if (can) {
+        ctx.fillStyle = '#ffd47a';
+        ctx.beginPath(); ctx.arc(n.x + n.r * 0.8, n.y - n.r * 0.8, 8, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#1a1200'; ctx.font = `bold 13px ${FONT_UI}`; ctx.textAlign = 'center';
+        ctx.fillText('+', n.x + n.r * 0.8, n.y - n.r * 0.8 + 1);
+      }
+      if (sel) {
+        ctx.save();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]); ctx.lineDashOffset = -t * 20;
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 11, 0, TAU); ctx.stroke();
+        ctx.restore();
+      }
+      // Níveis (pontos) e nome
+      for (let k = 0; k < s.max; k++) {
+        ctx.fillStyle = k < lv ? rgba(trgb, 1) : 'rgba(255,255,255,0.14)';
+        ctx.fillRect(n.x - (s.max * 9) / 2 + k * 9 + 1, n.y + n.r + 6, 7, 3);
+      }
+      ctx.textAlign = 'center';
+      ctx.font = `${sel ? 'bold ' : ''}11px ${FONT_UI}`;
+      ctx.fillStyle = state === 'locked' ? 'rgba(150,160,180,0.6)' : '#dfe6f2';
+      ctx.fillText(s.name, n.x, n.y + n.r + 19);
+      if (state === 'locked' && pr.level < s.lvl) {
+        ctx.font = `bold 10px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,140,150,0.8)';
+        ctx.fillText(`NÍVEL ${s.lvl}`, n.x, n.y + n.r + 32);
+      }
+    }
+    // Confirmação visual do desbloqueio
+    if (ui.fx && L.nodes[ui.fx.id]) {
+      const n = L.nodes[ui.fx.id], k = ui.fx.t / 0.9;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.draw(ctx, '255,230,160', n.x, n.y, n.r * (2 + k * 3), (1 - k) * 0.9);
+      ctx.strokeStyle = rgba('255,240,200', 1 - k); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + k * 70, 0, TAU); ctx.stroke();
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * TAU + k, r = n.r + k * 90;
+        GlowCache.draw(ctx, trgb, n.x + Math.cos(a) * r, n.y + Math.sin(a) * r, 8, 1 - k);
+      }
+      ctx.restore();
+    }
+
+    // Painel de informações
+    const s = SKILLS[ui.sel], lv = pr.lv(s.id), x = L.ix, w = L.iw;
+    ctx.fillStyle = 'rgba(3,7,16,0.85)';
+    techPanelPath(ctx, x, L.gy, w, L.gh, 14); ctx.fill();
+    ctx.strokeStyle = rgba(trgb, 0.45); ctx.lineWidth = 1; ctx.stroke();
+    const KIND = { passiva: 'PASSIVA', tecnica: 'TÉCNICA DE COMBO', ativa: 'HABILIDADE ATIVA', suprema: 'HABILIDADE SUPREMA' };
+    ctx.textAlign = 'left';
+    let y = L.gy + 26;
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(trgb, 0.95);
+    ctx.fillText(`${KIND[s.kind]} · ${tree.name}`, x + 18, y);
+    ctx.letterSpacing = '0px';
+    y += 30;
+    ctx.font = `bold 24px ${FONT_TITLE}`;
+    glowText(ctx, s.name, x + 18, y, '#ffffff', rgba(trgb, 0.8), 10);
+    y += 28;
+    for (let k = 0; k < s.max; k++) {
+      ctx.fillStyle = k < lv ? rgba(trgb, 1) : 'rgba(255,255,255,0.15)';
+      ctx.fillRect(x + 18 + k * 22, y - 4, 18, 7);
+    }
+    ctx.font = `bold 12px ${FONT_UI}`; ctx.fillStyle = '#c9d3e2';
+    ctx.fillText(lv >= s.max ? `NÍVEL ${lv} / ${s.max} · MÁXIMO` : `NÍVEL ${lv} / ${s.max}`, x + 26 + s.max * 22, y);
+    y += 24;
+    if (s.kind === 'ativa' || s.kind === 'suprema') {
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#8fc4ff';
+      ctx.fillText(s.kind === 'suprema' ? `Custo: ${s.energy} de energia · tecla I` : `Custo: ${s.energy} de energia · Recarga: ${s.cd}s`, x + 18, y);
+      y += 22;
+    }
+    const para = (label, text, col) => {
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(168,216,255,0.7)';
+      ctx.fillText(label, x + 18, y); ctx.letterSpacing = '0px';
+      y += 18;
+      ctx.font = `14px ${FONT_UI}`; ctx.fillStyle = col;
+      for (const ln of wrapText(ctx, text, w - 36)) { ctx.fillText(ln, x + 18, y); y += 19; }
+      y += 8;
+    };
+    if (lv > 0) para('EFEITO ATUAL', s.desc(lv), '#e6edf8');
+    if (lv < s.max) para(lv > 0 ? 'PRÓXIMO NÍVEL' : 'EFEITO', s.desc(lv + 1), lv > 0 ? '#bfe0ff' : '#e6edf8');
+    // Requisitos
+    const reqs = [[`Nível de Kael ${s.lvl}`, pr.level >= s.lvl]];
+    for (const [rid, rl] of s.req) reqs.push([`${SKILLS[rid].name}${rl > 1 ? ` (nível ${rl})` : ''}`, pr.lv(rid) >= rl]);
+    let ry = Math.max(y + 4, L.btn.y - 22 - reqs.length * 19);
+    ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(168,216,255,0.7)';
+    ctx.fillText('REQUISITOS', x + 18, ry - 2); ctx.letterSpacing = '0px';
+    ry += 17;
+    ctx.font = `13px ${FONT_UI}`;
+    for (const [txt, ok] of reqs) {
+      ctx.fillStyle = ok ? '#7dffb0' : '#ff7d8f';
+      ctx.fillText(`${ok ? '✓' : '✗'}  ${txt}`, x + 18, ry); ry += 19;
+    }
+    // Botão de desbloqueio / aprimoramento
+    const why = pr.blocker(s.id), b = L.btn;
+    ctx.fillStyle = why ? 'rgba(30,34,44,0.9)' : `rgba(255,190,80,${0.2 + 0.08 * Math.sin(t * 5)})`;
+    techPanelPath(ctx, b.x, b.y, b.w, b.h, 10); ctx.fill();
+    ctx.strokeStyle = why ? 'rgba(120,130,150,0.5)' : '#ffd47a'; ctx.lineWidth = why ? 1 : 2; ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.font = `bold 14px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+    ctx.fillStyle = why ? 'rgba(180,190,205,0.75)' : '#fff3d6';
+    const btxt = why ? why.toUpperCase() : lv > 0 ? `[J] APRIMORAR → NÍVEL ${lv + 1} · 1 PONTO` : '[J] DESBLOQUEAR · 1 PONTO';
+    ctx.fillText(btxt, b.x + b.w / 2, b.y + b.h / 2 + 1);
+    ctx.letterSpacing = '0px';
+    // Atalhos (habilidades ativas)
+    ctx.textAlign = 'left';
+    if (s.kind === 'ativa') {
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(168,216,255,0.7)';
+      ctx.fillText(lv > 0 ? 'ATALHO · tecle 1–4 ou clique' : 'ATALHO (após desbloquear)', x + 18, L.slots[0].y - 10);
+      ctx.letterSpacing = '0px';
+      L.slots.forEach((r, k) => {
+        const id = pr.slots[k], mine = id === s.id;
+        ctx.fillStyle = mine ? rgba(trgb, 0.3) : 'rgba(5,10,20,0.9)';
+        techPanelPath(ctx, r.x, r.y, r.w, r.h, 7); ctx.fill();
+        ctx.strokeStyle = mine ? '#ffffff' : 'rgba(120,130,150,0.45)'; ctx.lineWidth = mine ? 2 : 1; ctx.stroke();
+        if (id) drawIcon(ctx, SKILLS[id].icon, r.x + r.w / 2, r.y + r.h / 2, 26, mine ? '#ffffff' : 'rgba(170,185,205,0.7)');
+        ctx.font = `bold 11px ${FONT_TITLE}`; ctx.fillStyle = '#dfe6f2';
+        ctx.fillText(String(k + 1), r.x + 4, r.y + r.h - 8);
+      });
+    } else {
+      ctx.font = `italic 12px ${FONT_UI}`; ctx.fillStyle = 'rgba(190,200,215,0.7)';
+      ctx.fillText(s.kind === 'suprema' ? 'Usada com a tecla I quando a energia chega a 100.'
+        : s.kind === 'tecnica' ? 'Técnicas entram nos combos da espada automaticamente.' : 'Passivas funcionam automaticamente.', x + 18, L.slots[0].y + 20);
+    }
+    // Mensagem e ajuda
+    ctx.textAlign = 'center';
+    if (ui.msgT > 0 && ui.msg) {
+      ctx.globalAlpha = clamp(ui.msgT * 2, 0, 1);
+      ctx.font = `bold 15px ${FONT_UI}`;
+      glowText(ctx, ui.msg, VIEW_W / 2, VIEW_H - 46, rgba(ui.msgRgb || '255,255,255', 1), rgba(ui.msgRgb || '255,255,255', 0.6), 10);
+      ctx.globalAlpha = 1;
+    }
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,210,225,0.6)';
+    ctx.fillText('Setas navegar · Q / E trocar árvore · J / Enter desbloquear · 1–4 atalho · Tab / Esc voltar · mouse', VIEW_W / 2, VIEW_H - 20);
     ctx.restore();
   }
 
@@ -6417,15 +7813,19 @@ class Screens {
     glowText(ctx, 'PAUSADO', VIEW_W / 2, VIEW_H * 0.18, '#eef5ff', 'rgba(40,120,255,0.9)', 20);
     ctx.letterSpacing = '0px';
     ctx.font = `15px ${FONT_UI}`; ctx.fillStyle = '#c9d3e2';
-    ctx.fillText('ESC — continuar      R — reiniciar      T — voltar ao título', VIEW_W / 2, VIEW_H * 0.27);
+    ctx.fillText('ESC — continuar      TAB — habilidades      R — reiniciar setor      T — título (progresso salvo)', VIEW_W / 2, VIEW_H * 0.27);
     ctx.fillStyle = PAL.accentHi;
-    ctx.fillText(`${ROOM_DEFS[game.waves.roomIndex].sub}   ·   memórias recuperadas: ${game.stats.memories} / ${MEMORIES.length}`, VIEW_W / 2, VIEW_H * 0.32);
+    ctx.fillText(`${ROOM_DEFS[game.waves.roomIndex].sub}   ·   nível ${game.progress.level}   ·   memórias: ${game.stats.memories} / ${MEMORIES.length}`, VIEW_W / 2, VIEW_H * 0.32);
     // Técnicas conhecidas
-    const p = game.player;
-    const list = COMBO_LIST.slice();
+    const p = game.player, lv = (id) => game.progress.lv(id);
+    const list = [['Leve · Leve', 'Golpes da Tempestade Nula'], ['Pesado (segurado)', 'Impacto Carregado']];
+    if (lv('corte_duplo')) list.push(['Leve · Leve · Leve', 'Descarga Tríplice']);
+    if (lv('lamina_giratoria')) list.push(['Leve · Leve · Pesado', 'Círculo da Ruína']);
+    if (lv('pulso_fantasma')) list.push(['Esquiva → Leve', 'Pulso Fantasma']);
+    if (lv('corte_vazio')) list.push(['Esquiva → Pesado', 'Corte do Vazio']);
     if (p.combo.unlocked.has('slam')) list.push(['Pesado · Pesado', 'Colapso Magnético']);
     if (p.combo.unlocked.has('uppercut')) list.push(['Leve · Pesado', 'Relâmpago Ascendente']);
-    list.push(['I (energia cheia)', 'Eclipse Absoluto']);
+    if (lv('eclipse_absoluto')) list.push(['I (100 de energia)', 'Eclipse Absoluto']);
     ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = PAL.accent;
     ctx.letterSpacing = '3px';
     ctx.fillText('TÉCNICAS', VIEW_W / 2 - 200, VIEW_H * 0.4);
@@ -6589,7 +7989,8 @@ class Screens {
     ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 4);
     ctx.font = `bold 19px ${FONT_TITLE}`;
     ctx.letterSpacing = '2px';
-    glowText(ctx, 'ENTER — jogar novamente      T — título', VIEW_W / 2, VIEW_H * 0.93, '#eef5ff', 'rgba(40,120,255,0.8)', 10);
+    glowText(ctx, victory ? 'ENTER — novo ciclo (mantém a evolução)      T — título' : 'ENTER — reconectar no último ponto seguro      T — título',
+      VIEW_W / 2, VIEW_H * 0.93, '#eef5ff', 'rgba(40,120,255,0.8)', 10);
     ctx.restore();
   }
 }
@@ -6729,11 +8130,11 @@ const CHAPTERS = {
       ['ANCIÃ DESCONECTADA', 'Sabemos quem te criou, homem de preto. Podemos ajudar… mas a Legião de Ferro está a caminho. Escolha rápido.'],
     ], choices: [
       { label: 'Deixar que examinem a Tempestade Nula', desc: 'Eles recalibram a lâmina: +15% de dano.',
-        pick: (g) => { g.player.stats.dmgMult += 0.15; return 'A lâmina responde com um zumbido grave. Por um instante, você lembra de um nome que não é o seu.'; } },
+        pick: (g) => { g.setFlag('oferta', 0); return 'A lâmina responde com um zumbido grave. Por um instante, você lembra de um nome que não é o seu.'; } },
       { label: 'Aceitar abrigo e cuidados', desc: 'Restaura toda a vida e concede +15 de vida máxima.',
-        pick: (g) => { g.player.maxHp += 15; g.player.hp = g.player.maxHp; g.hud.ghostHp = g.player.hp; return 'Pela primeira vez desde que despertou, alguém cuida de você sem pedir nada em troca.'; } },
+        pick: (g) => { g.setFlag('oferta', 1); g.player.hp = g.player.maxHp; g.hud.ghostHp = g.player.hp; return 'Pela primeira vez desde que despertou, alguém cuida de você sem pedir nada em troca.'; } },
       { label: 'Recusar e seguir sozinho', desc: 'Energia da espada cheia e +10% de chance de crítico.',
-        pick: (g) => { g.player.fury = 100; g.player.stats.crit += 0.1; return 'Você não confia em ninguém. Nem em si mesmo. A espada parece aprovar.'; } },
+        pick: (g) => { g.setFlag('oferta', 2); g.player.fury = g.player.maxEnergy; return 'Você não confia em ninguém. Nem em si mesmo. A espada parece aprovar.'; } },
     ] },
   ],
   4: () => [
@@ -7489,6 +8890,11 @@ class Game {
     this.screens = new Screens();
     this.story = new StoryScreen();
     this.upgrades = new UpgradeSystem();
+    this.progress = new Progress();
+    this.flags = {};
+    this.checkpoint = 0;
+    this.titleSel = 0; this.titleConfirm = false;
+    this.skillUI = { tree: 0, sel: 'corte_eletrico', from: 'playing', msg: '', msgT: 0, msgRgb: '', fx: null };
     this.counter = new ComboCounter();
     this.enemies = [];
     this.player = null; this.room = null; this.boss = null;
@@ -7605,12 +9011,8 @@ class Game {
     if (this.glitchT > 0) this.glitchT = Math.max(0, this.glitchT - dt);
 
     switch (this.state) {
-      case 'title':
-        if (!this.fadeCb && (inp.pressed.confirm || inp.mouse.clicked)) {
-          this.audio.unlock(); this.audio.play('uiSelect');
-          this.fadeTo(() => this.playStory(STORY.intro(), () => this.fadeTo(() => this.startRun())));
-        }
-        break;
+      case 'title': this.updateTitle(); break;
+      case 'skills': this.updateSkills(dt); break;
       case 'story': if (!this.fadeCb) this.story.update(dt, inp); break;
       case 'playing': this.updatePlaying(dt); break;
       case 'paused': this.updatePaused(); break;
@@ -7633,22 +9035,29 @@ class Game {
     this.fadeTarget = 0;
   }
 
-  startRun() {
+  // Começa (ou retoma, com 'save') a jornada de Kael
+  startRun(save = null) {
     this.audio.unlock();
     this.audio.startAmbient();
     this.stats = this.freshStats();
     this.upgrades.reset();
+    this.progress.reset();
+    this.flags = {};
+    if (save) this.applySave(save);
+    this.checkpoint = save ? clamp(save.room | 0, 0, ROOM_DEFS.length - 1) : 0;
     this.counter = new ComboCounter();
     this.player = new Player(0, 0);
+    this.player.recalc(true);
     this.hud.reset();
     this.rerollCost = 12;
     this.victoryTimer = 0;
     this.newRecord = false;
     this.ending = null; this.lostMemory = false; this.glitchT = 0;
     this.timeScale = 1; this.slowTimer = 0; this.hitStop = 0;
-    this.loadRoom(0);
+    this.loadRoom(this.checkpoint);
     this.state = 'playing';
     this.fade = 1; this.fadeTarget = 0;
+    this.saveGame();
   }
 
   loadRoom(i) {
@@ -7673,12 +9082,14 @@ class Game {
   updatePlaying(dt) {
     const inp = this.input, p = this.player;
     if (inp.pressed.pause && !this.fadeCb) { this.state = 'paused'; this.audio.play('uiMove'); return; }
+    if (inp.pressed.skills && !this.fadeCb && p.state !== 'dead') { this.openSkills('playing'); return; }
     if (this.debug) {
+      if (inp.pressed.debugXp) this.gainXP(400, p.x, p.y);
       if (inp.pressed.debugKill) {
         if (this.waves.state === 'intro') this.waves.timer = 0;
         for (const e of this.enemies) if (e.canBeHit()) e.takeHit({ dmg: 99999, kx: 0, ky: 0, kb: 0, launch: 0, stun: 0, heavy: true, crit: false });
       }
-      if (inp.pressed.debugFury) { p.fury = 100; p.hp = p.maxHp; }
+      if (inp.pressed.debugFury) { p.fury = p.maxEnergy; p.hp = p.maxHp; }
     }
     if (this.eclipse) this.eclipse.t += dt;
     if (this.skyFlash > 0) this.skyFlash = Math.max(0, this.skyFlash - dt * 2.5);
@@ -7770,7 +9181,7 @@ class Game {
     this.stats.dmgDealt += dmg;
     this.counter.addHit();
     this.stats.score += Math.round(dmg * 10 * this.counter.mult);
-    p.addFury((def.fury || 3) + dmg * 0.06);
+    if (!def.ability) p.addFury((def.fury || 3) + dmg * 0.06);
     p.applyLifesteal(dmg);
     this.addHitStop((def.hitstop || 0.04) * (crit ? 1.35 : 1) * (e.isBoss ? 0.8 : 1));
     this.camera.shake((def.shake || 0.1) * (crit ? 1.4 : 1));
@@ -7794,10 +9205,12 @@ class Game {
     this.stats.kills++;
     this.stats.score += Math.round(e.T.score * this.counter.mult);
     // Células de energia (moeda) e cápsulas de reparo
-    const total = Math.max(1, Math.round(randInt(e.T.souls[0], e.T.souls[1]) * p.stats.soulMult));
+    const total = Math.max(1, Math.round(randInt(e.T.souls[0], e.T.souls[1]) * p.stats.soulMult * (e.elite ? 2 : 1)));
     const n = Math.min(total, e.isBoss ? 16 : 6);
     for (let i = 0; i < n; i++) this.pickups.drop('soul', e.x, e.y, Math.floor(total / n) + (i < total % n ? 1 : 0));
-    if (!e.isBoss && Math.random() < e.T.orb + p.stats.orbChance) this.pickups.drop('health', e.x, e.y, 12);
+    if (!e.isBoss && (e.elite || Math.random() < e.T.orb + p.stats.orbChance)) this.pickups.drop('health', e.x, e.y, 12);
+    this.gainXP(this.xpFor(e), e.x, e.y);
+    if (e.elite) this.hud.toast('Unidade de elite destruída', '255,200,90');
     // Efeitos de morte: máquinas explodem em faíscas e peças; humanos sangram
     if (e.T.mech) {
       this.particles.sparks(e.x, e.y, 20, rand(0, TAU), 12, '255,200,140', 420, Math.PI);
@@ -7830,6 +9243,8 @@ class Game {
   // Um fragmento de memória surge em algum ponto do setor liberado
   spawnMemory() {
     if (this.stats.memories + this.stats.memLost >= MEMORIES.length) return;
+    const done = this.flags.memRooms || (this.flags.memRooms = []);
+    if (done.includes(this.waves.roomIndex)) return;   // a lembrança deste setor já foi encontrada (ou perdida)
     const pt = this.room.randomPoint(90, this.player, 220);
     this.pickups.place('memory', pt.x, pt.y);
     this.hud.say('KAEL', 'A espada está vibrando… Há uma lembrança presa neste lugar.', 3.8, 2.8);
@@ -7837,6 +9252,8 @@ class Game {
 
   collectMemory(x, y) {
     const idx = this.stats.memories++;
+    (this.flags.memRooms || (this.flags.memRooms = [])).push(this.waves.roomIndex);
+    this.gainXP(XP_SRC.memory, x, y);
     this.hud.memory(MEMORIES[Math.min(idx, MEMORIES.length - 1)], idx + 1);
     this.audio.play('memory');
     this.flashScreen('200,225,255', 0.5);
@@ -7882,7 +9299,8 @@ class Game {
     this.lastDodge = this.realTime;
     this.texts.spawn(p.x, p.y, 64, 'ESQUIVA PERFEITA!', '#9fd6ff', 17, 1.0);
     p.addFury(10);
-    this.slowMo(0.35, 0.22);
+    if (p.stats.counter > 0) p.counterT = 1.5;
+    this.slowMo(0.35, 0.22 * (1 + p.stats.perfectBonus));
     this.particles.ring(p.x, p.y, 60, '150,210,255', 0.35, 5);
     this.arcs.crackle(p.x, p.y, 26, 3, 36, '150,210,255', 0.15);
     this.audio.play('chargeTier', 1);
@@ -7932,7 +9350,7 @@ class Game {
     this.audio.play('uiSelect');
     // Fragmento de memória deixado para trás se perde para sempre
     this.lostMemory = !!this.pickups.find('memory');
-    if (this.lostMemory) this.stats.memLost++;
+    if (this.lostMemory) { this.stats.memLost++; (this.flags.memRooms || (this.flags.memRooms = [])).push(this.waves.roomIndex); }
     this.fadeTo(() => this.openUpgrade());
   }
 
@@ -7950,6 +9368,8 @@ class Game {
   // Entre os setores, o próximo capítulo da história (quando houver)
   goToNextRoom() {
     const next = this.waves.roomIndex + 1;
+    this.checkpoint = next;
+    this.saveGame();
     const enter = () => { this.state = 'playing'; this.loadRoom(next); this.fadeTarget = 0; };
     const chapter = CHAPTERS[next];
     if (chapter) this.fadeTo(() => this.playStory(chapter(), () => this.fadeTo(enter)));
@@ -8006,8 +9426,9 @@ class Game {
   updatePaused() {
     const inp = this.input;
     if (inp.pressed.pause) { this.state = 'playing'; this.audio.play('uiMove'); }
-    else if (inp.pressed.restart && !this.fadeCb) this.fadeTo(() => this.startRun());
-    else if (inp.pressed.toTitle && !this.fadeCb) this.fadeTo(() => { this.state = 'title'; this.audio.stopAmbient(); this.fadeTarget = 0; });
+    else if (inp.pressed.skills) this.openSkills('paused');
+    else if (inp.pressed.restart && !this.fadeCb) this.fadeTo(() => this.respawn(false));
+    else if (inp.pressed.toTitle && !this.fadeCb) this.fadeTo(() => { this.saveGame(); this.state = 'title'; this.audio.stopAmbient(); this.fadeTarget = 0; });
   }
 
   endRun(victory) {
@@ -8026,7 +9447,14 @@ class Game {
       this.newRecord = true;
       try { localStorage.setItem('eclipse_zero_best', String(this.best)); } catch (e) { /* armazenamento indisponível */ }
     } else this.newRecord = false;
-    if (victory) this.audio.play('victory');
+    if (victory) {
+      this.audio.play('victory');
+      // Novo ciclo: a evolução de Kael continua, a jornada recomeça
+      const sv = this.makeSave();
+      sv.room = 0; sv.flags = { cycle: (this.flags.cycle || 0) + 1 };
+      sv.stats = { soulsBank: this.stats.soulsBank };
+      SaveSys.write(sv);
+    } else this.saveGame();
     this.audio.stopAmbient();
   }
 
@@ -8038,8 +9466,227 @@ class Game {
     if (this.endLock > 0) { this.endLock -= dt; return; }
     const inp = this.input;
     if (this.fadeCb) return;
-    if (inp.pressed.confirm || inp.mouse.clicked) { this.audio.play('uiSelect'); this.fadeTo(() => this.startRun()); }
-    else if (inp.pressed.toTitle || inp.pressed.pause) this.fadeTo(() => { this.state = 'title'; this.fadeTarget = 0; });
+    if (inp.pressed.confirm || inp.mouse.clicked) {
+      this.audio.play('uiSelect');
+      if (this.state === 'victory') this.fadeTo(() => this.continueGame());
+      else this.fadeTo(() => this.respawn(true));
+    } else if (inp.pressed.toTitle || inp.pressed.pause) this.fadeTo(() => { this.state = 'title'; this.fadeTarget = 0; });
+  }
+
+  // ---------------------------------------------------- progressão e XP
+  xpFor(e) {
+    if (e.isBoss) return XP_ENEMY.chefe;
+    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1);
+  }
+
+  gainXP(n, x, y) {
+    const pr = this.progress;
+    n = Math.round(n);
+    if (n <= 0 || pr.level >= PROG.maxLevel) return;
+    pr.xp += n;
+    this.hud.xpGain(n);
+    if (x !== undefined) this.texts.spawn(x, y, 70, `+${n} XP`, '#b9a8ff', 13, 0.9);
+    const from = pr.level;
+    while (pr.level < PROG.maxLevel && pr.xp >= pr.xpNext) { pr.xp -= pr.xpNext; pr.level++; }
+    if (pr.level >= PROG.maxLevel) pr.xp = 0;
+    if (pr.level > from) this.onLevelUp(from, pr.level);
+  }
+
+  // Subida de nível: atributos, pontos de habilidade, vida e energia restauradas
+  onLevelUp(from, to) {
+    const p = this.player, pr = this.progress;
+    let sp = 0;
+    for (let l = from + 1; l <= to; l++) sp += PROG.pointsAt(l);
+    pr.sp += sp;
+    p.recalc();
+    p.hp = p.maxHp; p.fury = Math.max(p.fury, p.maxEnergy);
+    this.hud.ghostHp = p.hp;
+    const fresh = Object.values(SKILLS).filter((s) => s.lvl > from && s.lvl <= to).map((s) => s.name);
+    this.hud.levelUp(to, sp, fresh);
+    const P_ = this.particles;
+    P_.ring(p.x, p.y, 150, '170,140,255', 0.6, 10);
+    P_.ring(p.x, p.y, 90, '230,220,255', 0.4, 6);
+    P_.flash(p.x, p.y, 40, 160, '190,170,255', 0.3);
+    P_.embers(p.x, p.y, 0, 40, '190,160,255', 40, 220);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * TAU;
+      this.arcs.spawn(p.x + Math.cos(a) * 30, p.y + Math.sin(a) * 30, 320, p.x, p.y, 30, { w: 2, life: 0.35, rgb: '200,180,255' });
+    }
+    this.flashScreen('190,170,255', 0.3);
+    this.slowMo(0.5, 0.35);
+    this.audio.play('levelUp');
+    this.saveGame();
+  }
+
+  setFlag(k, v) {
+    this.flags[k] = v;
+    if (this.player) this.player.recalc();
+    this.saveGame();
+  }
+
+  // ------------------------------------------------------- salvamento
+  makeSave() {
+    const s = this.stats;
+    return {
+      v: 1, time: Date.now(), room: this.checkpoint,
+      progress: this.progress.toJSON(), upgrades: Object.assign({}, this.upgrades.levels), flags: this.flags,
+      stats: { memories: s.memories, memLost: s.memLost, soulsBank: s.soulsBank, soulsTotal: s.soulsTotal, score: Math.round(s.score), kills: s.kills, time: Math.round(s.time) },
+    };
+  }
+  saveGame() {
+    if (!this.player || this.state === 'title') return;
+    if (SaveSys.write(this.makeSave())) this.hud.saved();
+  }
+  applySave(s) {
+    this.progress.load(s.progress);
+    for (const id in s.upgrades || {}) {
+      const u = UPGRADES.find((q) => q.id === id);
+      if (u) this.upgrades.levels[id] = clamp(s.upgrades[id] | 0, 0, u.max);
+    }
+    this.flags = Object.assign({}, s.flags || {});
+    const st = s.stats || {}, d = this.stats;
+    for (const k of ['memories', 'memLost', 'soulsBank', 'soulsTotal', 'score', 'kills', 'time']) d[k] = Math.max(0, +st[k] || 0);
+  }
+
+  // Título: CONTINUAR / NOVO JOGO (com confirmação quando há progresso salvo)
+  titleItems() { return SaveSys.exists() ? ['continue', 'new'] : ['new']; }
+  updateTitle() {
+    const inp = this.input;
+    if (this.fadeCb) return;
+    const items = this.titleItems();
+    if (this.titleSel >= items.length) this.titleSel = 0;
+    if (this.titleConfirm) {
+      if (inp.pressed.confirm || inp.mouse.clicked) {
+        this.titleConfirm = false; SaveSys.clear(); this.titleSel = 0;
+        this.audio.play('uiSelect');
+        this.beginNewGame();
+      } else if (inp.pressed.back || inp.pressed.pause) { this.titleConfirm = false; this.audio.play('uiMove'); }
+      return;
+    }
+    if (inp.pressed.up || inp.pressed.down) { this.titleSel = (this.titleSel + 1) % items.length; this.audio.play('uiMove'); }
+    const rects = this.screens.titleMenuRects(items.length);
+    if (inp.mouse.moved || inp.mouse.clicked) {
+      rects.forEach((r, i) => {
+        if (inp.mouse.x >= r.x && inp.mouse.x <= r.x + r.w && inp.mouse.y >= r.y && inp.mouse.y <= r.y + r.h && this.titleSel !== i) {
+          this.titleSel = i; this.audio.play('uiMove');
+        }
+      });
+    }
+    if (inp.pressed.confirm || inp.mouse.clicked) {
+      this.audio.unlock(); this.audio.play('uiSelect');
+      if (items[this.titleSel] === 'continue') this.fadeTo(() => this.continueGame());
+      else if (SaveSys.exists()) this.titleConfirm = true;
+      else this.beginNewGame();
+    }
+  }
+  beginNewGame() { this.fadeTo(() => this.playStory(STORY.intro(), () => this.fadeTo(() => this.startRun()))); }
+  continueGame() {
+    const s = SaveSys.read();
+    this.startRun(s || null);
+    if (s) this.hud.toast(`Sinal restaurado · nível ${this.progress.level}`, '185,168,255');
+  }
+
+  // Derrota: Kael desperta no último ponto seguro, mantendo a evolução
+  respawn(penalty = true) {
+    const s = this.stats;
+    const lost = penalty ? Math.floor(s.soulsBank * 0.25) : 0;
+    s.soulsBank -= lost;
+    this.counter = new ComboCounter();
+    this.player = new Player(0, 0);
+    this.player.recalc(true);
+    this.hud.reset();
+    this.victoryTimer = 0; this.ending = null; this.glitchT = 0;
+    this.timeScale = 1; this.slowTimer = 0; this.hitStop = 0;
+    this.loadRoom(this.checkpoint);
+    this.state = 'playing';
+    this.fade = 1; this.fadeTarget = 0;
+    if (lost > 0) this.hud.toast(`${lost} células de energia se perderam`, '255,92,122');
+    this.saveGame();
+  }
+
+  // ------------------------------------------------ árvore de habilidades
+  openSkills(from = 'playing') {
+    const ui = this.skillUI;
+    ui.from = from; ui.msg = ''; ui.msgT = 0; ui.fx = null;
+    this.state = 'skills';
+    this.audio.play('uiMove');
+  }
+  closeSkills() { this.state = this.skillUI.from || 'playing'; this.audio.play('uiMove'); }
+  treeNodes(ti) {
+    const tid = SKILL_TREES[ti].id;
+    return Object.values(SKILLS).filter((s) => s.tree === tid);
+  }
+  setSkillTree(ti) {
+    const ui = this.skillUI;
+    ui.tree = (ti + SKILL_TREES.length) % SKILL_TREES.length;
+    const list = this.treeNodes(ui.tree);
+    ui.sel = (list.find((s) => s.row === 0) || list[0]).id;
+    this.audio.play('uiMove');
+  }
+  // Seleção pelo teclado: o nó mais próximo na direção pressionada
+  moveSkillSel(dx, dy) {
+    const ui = this.skillUI, cur = SKILLS[ui.sel];
+    let best = null, bs = Infinity;
+    for (const s of this.treeNodes(ui.tree)) {
+      if (s === cur) continue;
+      const ddx = s.col - cur.col, ddy = s.row - cur.row;
+      const along = ddx * dx + ddy * dy, side = Math.abs(ddx * dy) + Math.abs(ddy * dx);
+      if (along <= 0) continue;
+      const sc = along + side * 1.6;
+      if (sc < bs) { bs = sc; best = s; }
+    }
+    if (best) { ui.sel = best.id; this.audio.play('uiMove'); }
+  }
+  skillMsg(text, rgb = '255,92,122') { this.skillUI.msg = text; this.skillUI.msgRgb = rgb; this.skillUI.msgT = 2; }
+  learnSkill(id) {
+    const pr = this.progress, why = pr.blocker(id);
+    if (why) { this.audio.play('uiDeny'); this.skillMsg(why); return; }
+    const first = pr.lv(id) === 0;
+    pr.learn(id);
+    this.player.recalc();
+    this.skillUI.fx = { id, t: 0 };
+    const s = SKILLS[id];
+    let msg = first ? `${s.name} desbloqueada!` : `${s.name} aprimorada · nível ${pr.lv(id)}`;
+    const k = pr.slots.indexOf(id);
+    if (first && k >= 0) msg += ` Atalho ${k + 1}.`;
+    this.skillMsg(msg, '140,255,190');
+    this.audio.play('skill');
+    this.saveGame();
+  }
+  bindSkill(id, k) {
+    if (!SKILL_ACTIVE(id)) { this.skillMsg('Só habilidades ativas vão para os atalhos'); this.audio.play('uiDeny'); return; }
+    if (!this.progress.bind(id, k)) { this.skillMsg('Desbloqueie a habilidade primeiro'); this.audio.play('uiDeny'); return; }
+    this.skillMsg(`${SKILLS[id].name} → atalho ${k + 1}`, '140,200,255');
+    this.audio.play('uiSelect');
+    this.saveGame();
+  }
+  updateSkills(dt) {
+    const inp = this.input, ui = this.skillUI;
+    if (ui.fx) { ui.fx.t += dt; if (ui.fx.t > 0.9) ui.fx = null; }
+    if (ui.msgT > 0) ui.msgT -= dt;
+    if (inp.pressed.skills || inp.pressed.back) { this.closeSkills(); return; }
+    if (inp.pressed.tabPrev) this.setSkillTree(ui.tree - 1);
+    if (inp.pressed.tabNext) this.setSkillTree(ui.tree + 1);
+    if (inp.pressed.left) this.moveSkillSel(-1, 0);
+    if (inp.pressed.right) this.moveSkillSel(1, 0);
+    if (inp.pressed.up) this.moveSkillSel(0, -1);
+    if (inp.pressed.down) this.moveSkillSel(0, 1);
+    for (let k = 0; k < 4; k++) if (inp.pressed['ab' + (k + 1)]) this.bindSkill(ui.sel, k);
+    const L = this.screens.skillLayout(), m = inp.mouse;
+    const inR = (r) => m.x >= r.x && m.x <= r.x + r.w && m.y >= r.y && m.y <= r.y + r.h;
+    if (m.moved || m.clicked) {
+      for (const id in L.nodes) {
+        const n = L.nodes[id];
+        if (dist(m.x, m.y, n.x, n.y) <= n.r + 6 && ui.sel !== id) { ui.sel = id; this.audio.play('uiMove'); }
+      }
+    }
+    if (m.clicked) {
+      L.tabs.forEach((r, i) => { if (inR(r) && i !== ui.tree) this.setSkillTree(i); });
+      if (inR(L.btn)) this.learnSkill(ui.sel);
+      if (SKILL_ACTIVE(ui.sel)) L.slots.forEach((r, k) => { if (inR(r)) this.bindSkill(ui.sel, k); });
+      if (inR(L.close)) this.closeSkills();
+    }
+    if (inp.pressed.confirm) this.learnSkill(ui.sel);
   }
 
   // --------------------------------------------------------------- desenho
@@ -8084,6 +9731,7 @@ class Game {
       this.renderScreenFx(ctx);
       if (this.state === 'playing' || this.state === 'paused') this.hud.draw(ctx);
       if (this.state === 'paused') this.screens.drawPause(ctx);
+      else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);
       else if (this.state === 'gameover') this.screens.drawEnd(ctx, false, this.realTime);
       else if (this.state === 'victory') this.screens.drawEnd(ctx, true, this.realTime);
@@ -8114,6 +9762,7 @@ class Game {
     if (!m) return null;
     const def = MODELS3D[key];
     if (def.opts) Object.assign(o, def.opts(e));
+    if (e.elite) o.scale = (o.scale || 1) * 1.18;
     return R3D.queue(m, def.pose, e, o);
   }
   // Halos definidos pelo modelo, posicionados pelas âncoras projetadas
@@ -8281,7 +9930,11 @@ class Game {
     ctx.globalCompositeOperation = 'lighter';
     GlowCache.drawFlat(ctx, '60,120,255', isoX(p.x, p.y), isoY(p.x, p.y), 260, 0.14 + 0.08 * (p.fury / 100));
     if (p.state === 'charge') GlowCache.drawFlat(ctx, '120,180,255', isoX(p.x, p.y), isoY(p.x, p.y), 60 + p.chargeLevel * 30, 0.4 + 0.1 * p.chargeLevel);
+    for (const e of this.enemies) {
+      if (e.elite && e.state !== 'dying') GlowCache.drawFlat(ctx, '255,180,60', isoX(e.x, e.y), isoY(e.x, e.y), e.radius * 3.4, 0.4 + 0.12 * Math.sin(this.realTime * 5 + e.id));
+    }
     ctx.restore();
+    p.drawAura(ctx, this.realTime);
     for (const e of this.enemies) {
       if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
       if (e.state === 'spawn') this.drawSpawnSigil(ctx, e);
