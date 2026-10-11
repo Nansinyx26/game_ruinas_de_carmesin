@@ -4,7 +4,9 @@
 
 RPG de ação isométrico dark futurista em um único arquivo HTML. Tem exploração, combate com espada elétrica, evolução de habilidades, diálogos com escolhas e uma história em que o maior inimigo pode ser a própria memória do protagonista.
 
-Tudo é desenhado e sintetizado por código (Canvas 2D + Web Audio API), sem nenhum asset externo. Para jogar, basta abrir o `index.html` no navegador.
+Tudo é desenhado e sintetizado por código, sem nenhum asset externo nem biblioteca: Canvas 2D para os cenários e efeitos, um **motor 3D WebGL próprio** para os personagens, inimigos e armas (modelos low-poly montados por código e animados a cada quadro) e Web Audio API para os sons. Para jogar, basta abrir o `index.html` no navegador.
+
+Sem WebGL, o jogo volta automaticamente aos gráficos 2D. A tecla **G** alterna entre 3D e 2D a qualquer momento.
 
 ## A história
 
@@ -45,6 +47,7 @@ Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor 
 | I | **Eclipse Absoluto** (com a energia cheia) |
 | ESC | Pausa / pular história |
 | M | Som liga/desliga |
+| G | Gráficos 3D / 2D |
 | F1 | Modo debug (hitboxes) |
 
 Também funciona com gamepad: X leve · Y pesado · A esquiva · B/RB Eclipse · Start pausa.

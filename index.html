@@ -143,7 +143,7 @@ const KEYMAP = {
   left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
   light: ['KeyJ'], heavy: ['KeyK'], dash: ['KeyL', 'Space'], special: ['KeyI'],
   pause: ['Escape'], confirm: ['Enter', 'NumpadEnter', 'KeyJ', 'Space'],
-  debug: ['F1'], debugKill: ['F2'], debugFury: ['F3'], mute: ['KeyM'],
+  debug: ['F1'], debugKill: ['F2'], debugFury: ['F3'], mute: ['KeyM'], gfx: ['KeyG'],
   reroll: ['KeyR'], buyHeal: ['KeyC'], restart: ['KeyR'], toTitle: ['KeyT'],
   one: ['Digit1', 'Numpad1'], two: ['Digit2', 'Numpad2'], three: ['Digit3', 'Numpad3'],
 };
@@ -1547,6 +1547,429 @@ class UpgradeSystem {
 }
 
 // ---------------------------------------------------------------------------
+// MOTOR 3D: renderizador WebGL mínimo para personagens, inimigos e armas
+// Modelos low-poly montados por código (hierarquia de nós rígidos), posados a
+// cada quadro na CPU e desenhados num atlas; cada entidade vira um "sprite 3D"
+// encaixado na pipeline 2D (ordenação por profundidade, escuridão e brilhos).
+// Projeção idêntica à do jogo: tela = (x − y, (x + y)/2 − z); a câmera olha
+// na direção −(1, 1, 1). Referencial local dos modelos: +X = frente,
+// +Y = lado DIREITO do personagem (a projeção do jogo é espelhada), +Z = cima.
+// ---------------------------------------------------------------------------
+function hex3(c) {
+  if (Array.isArray(c)) return c;
+  const h = c.charAt(0) === '#' ? c.slice(1) : c;
+  const n = parseInt(h, 16);
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
+// Matrizes afins 3x4 (linha a linha): [a b c tx, d e f ty, g h i tz]
+const M3 = {
+  make() { const m = new Float32Array(12); m[0] = m[5] = m[10] = 1; return m; },
+  // Translação · Rz(yaw) · Ry(pitch) · Rx(roll) · Escala
+  trs(o, p, r, s) {
+    const cx = Math.cos(r[0]), sx = Math.sin(r[0]), cy = Math.cos(r[1]), sy = Math.sin(r[1]), cz = Math.cos(r[2]), sz = Math.sin(r[2]);
+    o[0] = cz * cy * s[0]; o[1] = (cz * sy * sx - sz * cx) * s[1]; o[2] = (cz * sy * cx + sz * sx) * s[2]; o[3] = p[0];
+    o[4] = sz * cy * s[0]; o[5] = (sz * sy * sx + cz * cx) * s[1]; o[6] = (sz * sy * cx - cz * sx) * s[2]; o[7] = p[1];
+    o[8] = -sy * s[0]; o[9] = cy * sx * s[1]; o[10] = cy * cx * s[2]; o[11] = p[2];
+    return o;
+  },
+  mul(o, a, b) {
+    const a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3], a4 = a[4], a5 = a[5], a6 = a[6], a7 = a[7], a8 = a[8], a9 = a[9], a10 = a[10], a11 = a[11];
+    const b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4], b5 = b[5], b6 = b[6], b7 = b[7], b8 = b[8], b9 = b[9], b10 = b[10], b11 = b[11];
+    o[0] = a0 * b0 + a1 * b4 + a2 * b8; o[1] = a0 * b1 + a1 * b5 + a2 * b9; o[2] = a0 * b2 + a1 * b6 + a2 * b10; o[3] = a0 * b3 + a1 * b7 + a2 * b11 + a3;
+    o[4] = a4 * b0 + a5 * b4 + a6 * b8; o[5] = a4 * b1 + a5 * b5 + a6 * b9; o[6] = a4 * b2 + a5 * b6 + a6 * b10; o[7] = a4 * b3 + a5 * b7 + a6 * b11 + a7;
+    o[8] = a8 * b0 + a9 * b4 + a10 * b8; o[9] = a8 * b1 + a9 * b5 + a10 * b9; o[10] = a8 * b2 + a9 * b6 + a10 * b10; o[11] = a8 * b3 + a9 * b7 + a10 * b11 + a11;
+    return o;
+  },
+};
+
+// Construtor de geometria: triângulos com posição, normal (facetada), cor e emissão.
+// Todas as formas aceitam cor ('#rrggbb' ou [r,g,b]) e emissão e (0 = fosco,
+// 1 = brilha com a própria cor). g.at(...) define um deslocamento/rotação
+// aplicado às próximas formas (g.at() sem argumentos zera).
+class G3 {
+  constructor() { this.d = []; this.m = null; }
+  at(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
+    this.m = (x || y || z || rx || ry || rz || sx !== 1 || sy !== 1 || sz !== 1) ? M3.trs(M3.make(), [x, y, z], [rx, ry, rz], [sx, sy, sz]) : null;
+    return this;
+  }
+  _p(v) {
+    const m = this.m;
+    if (!m) return v;
+    return [m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3], m[4] * v[0] + m[5] * v[1] + m[6] * v[2] + m[7], m[8] * v[0] + m[9] * v[1] + m[10] * v[2] + m[11]];
+  }
+  tri(a, b, c, col, e = 0) {
+    a = this._p(a); b = this._p(b); c = this._p(c);
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+    const k = hex3(col), d = this.d;
+    for (const p of [a, b, c]) d.push(p[0], p[1], p[2], nx, ny, nz, k[0], k[1], k[2], e);
+    return this;
+  }
+  quad(a, b, c, d, col, e = 0) { this.tri(a, b, c, col, e); return this.tri(a, c, d, col, e); }
+  // Polígono convexo (lista de pontos 3D em ordem)
+  poly(pts, col, e = 0) { for (let i = 1; i < pts.length - 1; i++) this.tri(pts[0], pts[i], pts[i + 1], col, e); return this; }
+  // Caixa centrada em (x, y, z) com dimensões (sx, sy, sz).
+  // o.taper: escala do topo (+Z) em X/Y; o.taperX / o.taperY separados; o.shift: [dx, dy] do topo
+  box(x, y, z, sx, sy, sz, col, e = 0, o = {}) {
+    const tx = o.taperX !== undefined ? o.taperX : (o.taper !== undefined ? o.taper : 1);
+    const ty = o.taperY !== undefined ? o.taperY : (o.taper !== undefined ? o.taper : 1);
+    const sh = o.shift || [0, 0];
+    const hx = sx / 2, hy = sy / 2, hz = sz / 2;
+    const b = [[x - hx, y - hy, z - hz], [x + hx, y - hy, z - hz], [x + hx, y + hy, z - hz], [x - hx, y + hy, z - hz]];
+    const t = [[x - hx * tx + sh[0], y - hy * ty + sh[1], z + hz], [x + hx * tx + sh[0], y - hy * ty + sh[1], z + hz],
+      [x + hx * tx + sh[0], y + hy * ty + sh[1], z + hz], [x - hx * tx + sh[0], y + hy * ty + sh[1], z + hz]];
+    this.quad(b[0], b[3], b[2], b[1], col, e);   // base
+    this.quad(t[0], t[1], t[2], t[3], o.top || col, o.topE !== undefined ? o.topE : e);   // topo
+    for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; this.quad(b[i], b[j], t[j], t[i], col, e); }
+    return this;
+  }
+  // Cilindro/cone: base centrada em (x, y, z), altura h ao longo do eixo (o.axis 'z' | 'x' | 'y'),
+  // raios r0 (base) e r1 (topo), seg lados. o.caps=false remove as tampas
+  cyl(x, y, z, r0, r1, h, seg, col, e = 0, o = {}) {
+    const ax = o.axis || 'z';
+    const P = (r, a, hh) => {
+      const c = Math.cos(a) * r, s = Math.sin(a) * r;
+      if (ax === 'z') return [x + c, y + s, z + hh];
+      if (ax === 'x') return [x + hh, y + c, z + s];
+      return [x + c, y + hh, z + s];
+    };
+    const ring0 = [], ring1 = [];
+    for (let i = 0; i < seg; i++) { const a = (i / seg) * Math.PI * 2 + (o.rot || 0); ring0.push(P(r0, a, 0)); ring1.push(P(r1, a, h)); }
+    for (let i = 0; i < seg; i++) {
+      const j = (i + 1) % seg;
+      if (r1 > 0.001) this.quad(ring0[i], ring0[j], ring1[j], ring1[i], col, e);
+      else this.tri(ring0[i], ring0[j], ring1[i], col, e);
+    }
+    if (o.caps !== false) {
+      if (r0 > 0.001) this.poly(ring0.slice().reverse(), o.capCol || col, e);
+      if (r1 > 0.001) this.poly(ring1, o.capCol || col, o.capE !== undefined ? o.capE : e);
+    }
+    return this;
+  }
+  // Esfera/elipsoide facetada
+  sphere(x, y, z, rx, ry, rz, seg, rings, col, e = 0) {
+    const P = (i, j) => {
+      const th = (j / rings) * Math.PI, ph = (i / seg) * Math.PI * 2;
+      return [x + Math.sin(th) * Math.cos(ph) * rx, y + Math.sin(th) * Math.sin(ph) * ry, z + Math.cos(th) * rz];
+    };
+    for (let j = 0; j < rings; j++) {
+      for (let i = 0; i < seg; i++) {
+        const a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1);
+        if (j === 0) this.tri(a, c, d, col, e);
+        else if (j === rings - 1) this.tri(a, b, c, col, e);
+        else this.quad(a, b, c, d, col, e);
+      }
+    }
+    return this;
+  }
+  // Prisma: polígono 2D (u, v) num plano, extrudado com espessura t (simétrica).
+  // plane 'xz' (u = x, v = z, espessura em y), 'yz' (u = y, v = z, espessura em x), 'xy' (espessura em z)
+  extrude(pts, t, col, e = 0, o = {}) {
+    const pl = o.plane || 'xz', h = t / 2;
+    const M = (u, v, w) => (pl === 'xz' ? [u, w, v] : pl === 'yz' ? [w, u, v] : [u, v, w]);
+    const n = pts.length;
+    const A = pts.map((p) => M(p[0], p[1], -h)), B = pts.map((p) => M(p[0], p[1], h));
+    const fan = (arr, c, ee) => { for (let i = 1; i < n - 1; i++) this.tri(arr[0], arr[i], arr[i + 1], c, ee); };
+    fan(A, o.faceCol || col, o.faceE !== undefined ? o.faceE : e);
+    fan(B, o.faceCol || col, o.faceE !== undefined ? o.faceE : e);
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; this.quad(A[i], A[j], B[j], B[i], o.edgeCol || col, o.edgeE !== undefined ? o.edgeE : e); }
+    return this;
+  }
+  // Tubo ao longo de uma polilinha (para cabos, veias e braços finos)
+  tube(pts, r, seg, col, e = 0) {
+    for (let k = 0; k < pts.length - 1; k++) {
+      const a = pts[k], b = pts[k + 1];
+      const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.hypot(dx, dy, dz) || 1;
+      const ux = dx / L, uy = dy / L, uz = dz / L;
+      // Base ortonormal perpendicular ao segmento
+      let px = -uy, py = ux, pz = 0;
+      if (Math.abs(uz) > 0.9) { px = 1; py = 0; pz = 0; }
+      let pl = Math.hypot(px, py, pz); px /= pl; py /= pl; pz /= pl;
+      const qx = uy * pz - uz * py, qy = uz * px - ux * pz, qz = ux * py - uy * px;
+      for (let i = 0; i < seg; i++) {
+        const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
+        const o0 = [Math.cos(a0) * px + Math.sin(a0) * qx, Math.cos(a0) * py + Math.sin(a0) * qy, Math.cos(a0) * pz + Math.sin(a0) * qz];
+        const o1 = [Math.cos(a1) * px + Math.sin(a1) * qx, Math.cos(a1) * py + Math.sin(a1) * qy, Math.cos(a1) * pz + Math.sin(a1) * qz];
+        this.quad([a[0] + o0[0] * r, a[1] + o0[1] * r, a[2] + o0[2] * r], [a[0] + o1[0] * r, a[1] + o1[1] * r, a[2] + o1[2] * r],
+          [b[0] + o1[0] * r, b[1] + o1[1] * r, b[2] + o1[2] * r], [b[0] + o0[0] * r, b[1] + o0[1] * r, b[2] + o0[2] * r], col, e);
+      }
+    }
+    return this;
+  }
+  get count() { return this.d.length / 10; }
+}
+
+// Nó da hierarquia: p = posição (relativa ao pai), r = [roll X, pitch Y, yaw Z], s = escala.
+// emi multiplica a emissão da sua geometria (e dos filhos); vis = false esconde a subárvore
+class N3 {
+  constructor(name, geo = null) {
+    this.name = name; this.geo = geo ? new Float32Array(geo.d) : null;
+    this.kids = []; this.p = [0, 0, 0]; this.r = [0, 0, 0]; this.s = [1, 1, 1];
+    this.emi = 1; this.vis = true; this.w = M3.make(); this.l = M3.make();
+  }
+  add(n) { this.kids.push(n); return n; }
+}
+
+class Model3 {
+  constructor(root) {
+    this.root = root; this.nodes = {}; this.anchors = {};
+    const walk = (n) => { this.nodes[n.name] = n; n.kids.forEach(walk); };
+    walk(root);
+    this.rest = {};
+    for (const k in this.nodes) { const n = this.nodes[k]; this.rest[k] = { p: n.p.slice(), r: n.r.slice(), s: n.s.slice() }; }
+  }
+  // Ponto de referência (para brilhos e efeitos): posição local num nó
+  anchor(name, node, p) { this.anchors[name] = { node: this.nodes[node], p }; return this; }
+  // Volta todos os nós à pose de repouso (chamar no início de cada pose)
+  reset() {
+    for (const k in this.rest) {
+      const n = this.nodes[k], r = this.rest[k];
+      n.p[0] = r.p[0]; n.p[1] = r.p[1]; n.p[2] = r.p[2];
+      n.r[0] = r.r[0]; n.r[1] = r.r[1]; n.r[2] = r.r[2];
+      n.s[0] = r.s[0]; n.s[1] = r.s[1]; n.s[2] = r.s[2];
+      n.emi = 1; n.vis = true;
+    }
+  }
+}
+
+const R3D_VS = `
+attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol;
+uniform vec4 uRect; uniform float uDepth;
+varying vec3 vNor; varying vec4 vCol;
+void main() {
+  float sx = aPos.x - aPos.y, sy = (aPos.x + aPos.y) * 0.5 - aPos.z;
+  gl_Position = vec4((sx - uRect.x) / uRect.z * 2.0 - 1.0, 1.0 - (sy - uRect.y) / uRect.w * 2.0, -(aPos.x + aPos.y + aPos.z) * uDepth, 1.0);
+  vNor = aNor; vCol = aCol;
+}`;
+const R3D_FS = `
+precision mediump float;
+varying vec3 vNor; varying vec4 vCol;
+uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
+uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
+void main() {
+  vec3 V = vec3(0.57735);
+  vec3 n = normalize(vNor);
+  if (dot(n, V) < 0.0) n = -n;
+  vec3 col = vCol.rgb; float e = vCol.a;
+  float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
+  if (uHolo > 0.5) {
+    // Holograma: só existe na passada emissiva (somado à cena)
+    if (uPass < 0.5) discard;
+    gl_FragColor = vec4(col * (0.25 + 0.9 * fres + e) * uEmi, 1.0);
+    return;
+  }
+  if (uGhost.a > 0.5) {
+    if (uPass < 0.5) { gl_FragColor = vec4(uGhost.rgb * (0.35 + 0.9 * fres), 1.0); } else { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }
+    return;
+  }
+  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi, 1.0); return; }
+  float key = max(dot(n, uKeyDir), 0.0);
+  float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
+  float rim = max(dot(n, uRimDir), 0.0);
+  float up = n.z * 0.5 + 0.5;
+  vec3 lit = col * (uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2)) + uRimCol * (rim * 0.55 + fres * 0.35);
+  lit += col * e * uEmi;
+  lit = mix(lit, vec3(1.0), uFlash);
+  gl_FragColor = vec4(lit, 1.0);
+}`;
+
+const R3D = {
+  ok: false, enabled: true, W: 2048, H: 2048,
+  canvas: null, gl: null, prog: null, buf: null, data: new Float32Array(1 << 18),
+  items: [], used: 0, scale: 1,
+  light: { amb: [0.42, 0.46, 0.58], key: [1.0, 0.97, 0.92], rim: [0.35, 0.6, 1.0] },
+  _m: M3.make(),
+
+  init() {
+    try {
+      const c = document.createElement('canvas');
+      c.width = this.W; c.height = this.H;
+      const gl = c.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: false });
+      if (!gl) return false;
+      const sh = (type, src) => {
+        const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+        return s;
+      };
+      const p = gl.createProgram();
+      gl.attachShader(p, sh(gl.VERTEX_SHADER, R3D_VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, R3D_FS));
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+      this.canvas = c; this.gl = gl; this.prog = p;
+      this.buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+      gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW);
+      this.loc = {};
+      for (const a of ['aPos', 'aNor', 'aCol']) this.loc[a] = gl.getAttribLocation(p, a);
+      for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo']) this.loc[u] = gl.getUniformLocation(p, u);
+      // Direções de luz no mundo: chave vindo de cima/esquerda da câmera, contraluz atrás à direita
+      const V = [0.57735, 0.57735, 0.57735], left = [-0.7071, 0.7071, 0], up = [-0.4082, -0.4082, 0.8165];
+      const comb = (a, b, c, ka, kb, kc) => { const v = [a[0] * ka + b[0] * kb + c[0] * kc, a[1] * ka + b[1] * kb + c[1] * kc, a[2] * ka + b[2] * kb + c[2] * kc]; const l = Math.hypot(v[0], v[1], v[2]); return v.map((q) => q / l); };
+      this.keyDir = comb(V, left, up, 0.55, 0.45, 0.75);
+      this.rimDir = comb(V, left, up, -0.8, -0.45, 0.4);
+      this.ok = true;
+    } catch (e) {
+      console.warn('Motor 3D indisponível, usando gráficos 2D:', e);
+      this.ok = false;
+    }
+    return this.ok;
+  },
+
+  get active() { return this.ok && this.enabled; },
+
+  // Enfileira um modelo para este quadro. pose(model, arg) posiciona os nós.
+  // o: { yaw, roll, pitch, scale, flash, ghost: 'r,g,b' | null, emi, holo, lift }
+  queue(model, pose, arg, o = {}) {
+    let it = this.items[this.used];
+    if (!it) it = this.items[this.used] = { model: null, pose: null, arg: null, o: null, ok: false, cx: 0, cy: 0, cw: 0, ch: 0, minX: 0, minY: 0, w: 0, h: 0, v0: 0, vn: 0, anchors: {} };
+    this.used++;
+    it.model = model; it.pose = pose; it.arg = arg; it.o = o; it.ok = false;
+    return it;
+  },
+
+  // Posa, transforma e desenha todos os modelos enfileirados no atlas
+  flush(scale) {
+    const n = this.used;
+    this.used = 0;
+    if (!this.active || !n) return;
+    let vo = 0;
+    // 1) Pose + transformação na CPU, calculando a caixa de cada sprite na tela
+    for (let i = 0; i < n; i++) {
+      const it = this.items[i], m = it.model, o = it.o;
+      m.reset();
+      // Um erro numa pose nunca deve derrubar o quadro: o modelo fica na pose de repouso
+      if (it.pose) { try { it.pose(m, it.arg, o); } catch (err) { if (!m.err) { m.err = true; console.error(err); } } }
+      const root = this._m;
+      const sc = o.scale || 1;
+      M3.trs(root, [0, 0, o.lift || 0], [o.roll || 0, o.pitch || 0, o.yaw || 0], [sc, sc, sc]);
+      it.v0 = vo / 10;
+      let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+      const stack = [[m.root, root, 1]];
+      while (stack.length) {
+        const [nd, parent, pe] = stack.pop();
+        if (!nd.vis) continue;
+        M3.trs(nd.l, nd.p, nd.r, nd.s);
+        M3.mul(nd.w, parent, nd.l);
+        const em = pe * nd.emi;
+        const g = nd.geo;
+        if (g) {
+          const w = nd.w, cnt = g.length;
+          if (vo + cnt > this.data.length) { const nd2 = new Float32Array(Math.max(this.data.length * 2, vo + cnt + 1024)); nd2.set(this.data.subarray(0, vo)); this.data = nd2; }
+          const D = this.data;
+          for (let k = 0; k < cnt; k += 10) {
+            const x = g[k], y = g[k + 1], z = g[k + 2], nx = g[k + 3], ny = g[k + 4], nz = g[k + 5];
+            const X = w[0] * x + w[1] * y + w[2] * z + w[3], Y = w[4] * x + w[5] * y + w[6] * z + w[7], Z = w[8] * x + w[9] * y + w[10] * z + w[11];
+            D[vo] = X; D[vo + 1] = Y; D[vo + 2] = Z;
+            D[vo + 3] = w[0] * nx + w[1] * ny + w[2] * nz; D[vo + 4] = w[4] * nx + w[5] * ny + w[6] * nz; D[vo + 5] = w[8] * nx + w[9] * ny + w[10] * nz;
+            D[vo + 6] = g[k + 6]; D[vo + 7] = g[k + 7]; D[vo + 8] = g[k + 8]; D[vo + 9] = g[k + 9] * em;
+            vo += 10;
+            const sx = X - Y, sy = (X + Y) * 0.5 - Z;
+            if (sx < minX) minX = sx; if (sx > maxX) maxX = sx; if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
+          }
+        }
+        for (let k = nd.kids.length - 1; k >= 0; k--) stack.push([nd.kids[k], nd.w, em]);
+      }
+      it.vn = vo / 10 - it.v0;
+      if (!it.vn) continue;
+      it.minX = minX - 2; it.minY = minY - 2; it.w = maxX - minX + 4; it.h = maxY - minY + 4;
+      // Pontos de referência projetados (relativos aos pés, em unidades de tela do mundo)
+      for (const k in m.anchors) {
+        const a = m.anchors[k], w = a.node.w, p = a.p;
+        const X = w[0] * p[0] + w[1] * p[1] + w[2] * p[2] + w[3], Y = w[4] * p[0] + w[5] * p[1] + w[6] * p[2] + w[7], Z = w[8] * p[0] + w[9] * p[1] + w[10] * p[2] + w[11];
+        const q = it.anchors[k] || (it.anchors[k] = { x: 0, y: 0, z: 0 });
+        q.x = X - Y; q.y = (X + Y) * 0.5 - Z; q.z = Z;
+      }
+    }
+    // 2) Empacota as células no atlas (prateleiras); reduz a escala se não couber
+    let s = scale;
+    for (let tries = 0; tries < 6; tries++) {
+      let x = 0, y = 0, rowH = 0, fit = true;
+      for (let i = 0; i < n; i++) {
+        const it = this.items[i];
+        if (!it.vn) { it.ok = false; continue; }
+        const cw = Math.ceil(it.w * s), ch = Math.ceil(it.h * s);
+        if (x + cw > this.W) { x = 0; y += rowH + 2; rowH = 0; }
+        if (y + ch > this.H / 2) { fit = false; break; }
+        it.cx = x; it.cy = y; it.cw = cw; it.ch = ch; it.ok = true;
+        x += cw + 2; rowH = Math.max(rowH, ch);
+      }
+      if (fit) break;
+      s *= 0.75;
+    }
+    this.scale = s;
+    // 3) Desenho: passada de cor (metade de cima) e emissiva (metade de baixo)
+    const gl = this.gl, L = this.loc;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+    if (this.data.byteLength > this.bufBytes || !this.bufBytes) { gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW); this.bufBytes = this.data.byteLength; }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data.subarray(0, vo));
+    gl.useProgram(this.prog);
+    gl.enableVertexAttribArray(L.aPos); gl.vertexAttribPointer(L.aPos, 3, gl.FLOAT, false, 40, 0);
+    gl.enableVertexAttribArray(L.aNor); gl.vertexAttribPointer(L.aNor, 3, gl.FLOAT, false, 40, 12);
+    gl.enableVertexAttribArray(L.aCol); gl.vertexAttribPointer(L.aCol, 4, gl.FLOAT, false, 40, 24);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.viewport(0, 0, this.W, this.H);
+    gl.clearColor(0, 0, 0, 0); gl.clearDepth(1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+    gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
+    gl.enable(gl.SCISSOR_TEST);
+    const lt = this.light;
+    gl.uniform3fv(L.uKeyDir, this.keyDir); gl.uniform3fv(L.uRimDir, this.rimDir);
+    gl.uniform3fv(L.uAmb, lt.amb); gl.uniform3fv(L.uKeyCol, lt.key);
+    gl.uniform1f(L.uDepth, 1 / 1200);
+    for (let pass = 0; pass < 2; pass++) {
+      gl.uniform1f(L.uPass, pass);
+      for (let i = 0; i < n; i++) {
+        const it = this.items[i];
+        if (!it.ok) continue;
+        const o = it.o;
+        const vy = this.H - (it.cy + (pass ? this.H / 2 : 0)) - it.ch;
+        gl.viewport(it.cx, vy, it.cw, it.ch);
+        gl.scissor(it.cx, vy, it.cw, it.ch);
+        gl.uniform4f(L.uRect, it.minX, it.minY, it.cw / s, it.ch / s);
+        gl.uniform1f(L.uFlash, o.flash || 0);
+        gl.uniform1f(L.uEmi, o.emi !== undefined ? o.emi : 1);
+        gl.uniform1f(L.uHolo, o.holo ? 1 : 0);
+        const rc = o.rim ? hex3(o.rim) : lt.rim;
+        gl.uniform3f(L.uRimCol, rc[0], rc[1], rc[2]);
+        if (o.ghost) { const gc = o.ghost; gl.uniform4f(L.uGhost, gc[0], gc[1], gc[2], 1); } else gl.uniform4f(L.uGhost, 0, 0, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, it.v0, it.vn);
+      }
+      gl.disable(gl.SCISSOR_TEST);
+      if (!pass) { gl.viewport(0, 0, this.W, this.H); gl.clear(gl.DEPTH_BUFFER_BIT); }
+      gl.enable(gl.SCISSOR_TEST);
+    }
+    gl.disable(gl.SCISSOR_TEST);
+  },
+
+  // Desenha a passada de cor do sprite com os pés em (sx, sy) (coordenadas do mundo isométrico)
+  blit(ctx, it, sx, sy) {
+    if (!it || !it.ok) return false;
+    const s = this.scale;
+    ctx.drawImage(this.canvas, it.cx, it.cy, it.cw, it.ch, sx + it.minX, sy + it.minY, it.cw / s, it.ch / s);
+    return true;
+  },
+  // Partes luminosas (somadas à cena depois da escuridão)
+  blitEmissive(ctx, it, sx, sy, alpha = 1) {
+    if (!it || !it.ok) return false;
+    const s = this.scale;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(this.canvas, it.cx, it.cy + this.H / 2, it.cw, it.ch, sx + it.minX, sy + it.minY, it.cw / s, it.ch / s);
+    ctx.restore();
+    return true;
+  },
+};
+
+// Registro dos modelos 3D: MODELS3D.chave = { build(), pose(model, entidade, opções), demos }
+const MODELS3D = {};
+
+// [MODELOS 3D]
+
+// ---------------------------------------------------------------------------
 // ENTIDADE BASE: posição no mundo, altura (z), knockback e sombra
 // ---------------------------------------------------------------------------
 class Entity {
@@ -2111,6 +2534,7 @@ class Player extends Entity {
   // ------------------------------------------------------------------ desenho
   draw(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z;
+    if (game.use3D && this.spr && this.spr.ok) { this.draw3D(ctx, sx, sy); return; }
     // Imagens residuais da esquiva (silhuetas de eletricidade azul)
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -2135,6 +2559,31 @@ class Player extends Entity {
       this.drawKael(ctx, sx, sy, this.flash > 0 ? FLASH_PAL : PLAYER_PAL, this.facing, true);
     }
     ctx.restore();
+  }
+
+  // Versão 3D: fantasmas da esquiva, o modelo e os halos (marca do pulso, lâmina)
+  blinking() {
+    return this.invuln > 0 && this.state === 'hurt' || (this.invuln > 0 && this.state !== 'dash' && this.state !== 'special' && this.state !== 'dead' && Math.floor(this.invuln * 18) % 2 === 0);
+  }
+  draw3D(ctx, sx, sy) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const g of this.ghosts) {
+      if (g.life <= 0 || !g.spr || !g.spr.ok) continue;
+      ctx.globalAlpha = (g.life / 0.22) * 0.6;
+      R3D.blit(ctx, g.spr, isoX(g.x, g.y), isoY(g.x, g.y));
+    }
+    ctx.restore();
+    ctx.save();
+    if (this.blinking()) ctx.globalAlpha = 0.55;
+    R3D.blit(ctx, this.spr, sx, sy);
+    ctx.restore();
+    game.glows3D(ctx, 'kael', this, this.spr, sx, sy);
+  }
+  // Partes luminosas do modelo (desenhadas depois da escuridão)
+  drawEmissive(ctx) {
+    if (!game.use3D || !this.spr || !this.spr.ok) return;
+    R3D.blitEmissive(ctx, this.spr, isoX(this.x, this.y), isoY(this.x, this.y) - this.z, this.blinking() ? 0.55 : 1);
   }
 
   // Kael Veyron procedural: casaco negro longo com fivelas, cabelo preto sobre os
@@ -2614,9 +3063,11 @@ class Enemy extends Entity {
     } else if (this.state === 'dying') {
       ctx.globalAlpha = clamp(1 - this.stateTime / 0.45, 0, 1);
     }
-    const pal = this.flash > 0 ? FLASH_PAL : this.pal;
-    this.drawBody(ctx, sx, sy + rise, pal);
+    const use3D = game.use3D && this.spr && this.spr.ok;
+    if (use3D) R3D.blit(ctx, this.spr, sx, sy + rise);
+    else this.drawBody(ctx, sx, sy + rise, this.flash > 0 ? FLASH_PAL : this.pal);
     ctx.restore();
+    if (use3D && this.state !== 'spawn') game.glows3D(ctx, this.type, this, this.spr, sx, sy);
     // Atordoamento forte: centelhas elétricas girando sobre a cabeça
     if (this.state === 'stun' && this.stun > 0.25 && this.z <= 0) {
       for (let i = 0; i < 3; i++) {
@@ -2624,6 +3075,22 @@ class Enemy extends Entity {
         game.addGlow(ctx, sx + Math.cos(a) * 10, sy - this.height - 8 + Math.sin(a) * 3, 6, '140,200,255', 0.85);
       }
     }
+  }
+
+  // Partes luminosas do modelo 3D (olhos, visores, núcleos), depois da escuridão
+  drawEmissive(ctx) {
+    if (!game.use3D || !this.spr || !this.spr.ok) return;
+    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z;
+    let a = 1, rise = 0;
+    ctx.save();
+    if (this.state === 'spawn') {
+      const k = clamp(this.stateTime / this.spawnDur, 0, 1);
+      rise = (1 - easeOutCubic(k)) * (this.height + 6);
+      a = 0.3 + 0.7 * k;
+      ctx.beginPath(); ctx.rect(sx - 120, sy - 260, 240, 260); ctx.clip();
+    } else if (this.state === 'dying') a = clamp(1 - this.stateTime / 0.45, 0, 1);
+    R3D.blitEmissive(ctx, this.spr, sx, sy + rise, a);
+    ctx.restore();
   }
 
   // Barra de vida pequena sobre a cabeça (desenhada após a iluminação)
@@ -3892,8 +4359,20 @@ class Boss extends Enemy {
     ctx.fill();
   }
 
+  // Holograma 3D: nada na camada sólida (só os halos); a figura é somada à cena depois
+  bossAlpha() {
+    if (this.state === 'intro') return clamp(this.stateTime / 1.6, 0, 1);
+    if (this.state === 'dying') return clamp(1 - (this.stateTime - 1.4) / 1.0, 0, 1);
+    return 1;
+  }
+  drawEmissive(ctx) {
+    if (!game.use3D || !this.spr || !this.spr.ok) return;
+    R3D.blitEmissive(ctx, this.spr, isoX(this.x, this.y), isoY(this.x, this.y) - this.jumpZ, this.bossAlpha());
+  }
+
   draw(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.jumpZ;
+    if (game.use3D && this.spr && this.spr.ok) { game.glows3D(ctx, 'nexus', this, this.spr, sx, sy, this.bossAlpha()); return; }
     ctx.save();
     if (this.state === 'intro') ctx.globalAlpha = clamp(this.stateTime / 1.6, 0, 1);   // fragmentos se reúnem
     if (this.state === 'dying') ctx.globalAlpha = clamp(1 - (this.stateTime - 1.4) / 1.0, 0, 1);
@@ -4246,6 +4725,13 @@ class PickupSystem {
     ctx.fillRect(gx - 9, gy - 220, 18, 220);
     GlowCache.drawFlat(ctx, '100,170,255', gx, gy, 50, 0.4 * pulse);
     GlowCache.draw(ctx, '120,190,255', gx, sy, 46, 0.6 * pulse);
+    if (game.use3D && p.spr && p.spr.ok) {
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      R3D.blit(ctx, p.spr, gx, sy + 10);
+      ctx.globalCompositeOperation = 'lighter';
+      R3D.blitEmissive(ctx, p.spr, gx, sy + 10, 1);
+      return;
+    }
     const w = 7 * Math.abs(Math.cos(time * 1.7)) + 2;
     ctx.globalAlpha = 1;
     ctx.fillStyle = 'rgba(170,215,255,0.85)';
@@ -4337,6 +4823,17 @@ class PickupSystem {
       const sx = isoX(p.x, p.y), sy = isoY(p.x, p.y) - p.z - bob;
       const blink = p.kind === 'health' && p.life < 3 && Math.floor(p.life * 8) % 2 === 0 ? 0.3 : 1;
       if (p.kind === 'memory') { this.drawMemory(ctx, p, time); continue; }
+      if (game.use3D && p.spr && p.spr.ok) {
+        // Item em 3D: corpo com luz própria + partes emissivas + brilho no chão
+        GlowCache.draw(ctx, p.kind === 'soul' ? '70,150,255' : '255,60,110', sx, sy, p.kind === 'soul' ? 12 : 18, 0.45 * blink);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = blink;
+        R3D.blit(ctx, p.spr, sx, sy);
+        ctx.globalCompositeOperation = 'lighter';
+        R3D.blitEmissive(ctx, p.spr, sx, sy, blink);
+        GlowCache.drawFlat(ctx, p.kind === 'soul' ? '70,140,255' : '255,50,100', sx, isoY(p.x, p.y), 14, 0.25);
+        continue;
+      }
       if (p.kind === 'soul') {
         // Célula de energia: pequeno cristal azul
         GlowCache.draw(ctx, '70,150,255', sx, sy, 14, 0.75);
@@ -5785,7 +6282,7 @@ const CONTROLS = [
   ['K', 'Ataque pesado (segure: Sobrecarga)'],
   ['L / Espaço', 'Esquiva (invencível)'],
   ['I', 'Eclipse Absoluto — energia cheia'],
-  ['ESC', 'Pausa · pular história'], ['M', 'Som liga/desliga'], ['F1', 'Modo debug (hitboxes)'],
+  ['ESC', 'Pausa · pular história'], ['M', 'Som · G gráficos 3D/2D'], ['F1', 'Modo debug (hitboxes)'],
 ];
 const COMBO_LIST = [
   ['Leve · Leve · Leve', 'Descarga Tríplice'],
@@ -5804,6 +6301,32 @@ class Screens {
   // Partículas de energia flutuando (título e telas finais)
   drawEmbers(ctx, t) { Backdrop.drawMotes(ctx, t); }
 
+  // Kael em 3D na tela de título, em grande escala, com a espada carregada
+  drawHero3D(ctx, t) {
+    if (!R3D.active || !game.model3('kael')) return false;
+    const k = game.titleKael || (game.titleKael = new Player(0, 0));
+    k.state = 'idle'; k.animTime = t; k.stateTime = t; k.fury = 100; k.moveSpeed = 0; k.flash = 0;
+    k.facing = 0.55 + 0.5 * Math.sin(t * 0.3);
+    const sc = 3.1;
+    const o = game.opts3(k, 0); o.scale = sc;
+    const it = game.queue3('kael', k, o);
+    R3D.flush(Math.min(3, game.scale));
+    if (!it || !it.ok) return false;
+    const x = Math.min(VIEW_W * 0.13, 160), y = VIEW_H * 0.985;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    GlowCache.drawFlat(ctx, '60,130,255', x, y, 140, 0.5);
+    ctx.restore();
+    R3D.blit(ctx, it, x, y);
+    R3D.blitEmissive(ctx, it, x, y, 1);
+    const def = MODELS3D.kael;
+    if (def.glows) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      def.glows(k, (name, r, rgb, a) => { const q = it.anchors[name]; if (q) GlowCache.draw(ctx, rgb, x + q.x, y + q.y, r * sc * 0.8, a); });
+      ctx.restore();
+    }
+    return true;
+  }
+
   drawTitle(ctx, t) {
     // Vesper sob o céu artificial, a torre central e Kael de costas com a espada acesa
     const sky = Backdrop.layer('title-sky', VIEW_W, VIEW_H, (g, w, h) => Backdrop.paintSky(g, w, h, 'city'));
@@ -5821,7 +6344,7 @@ class Screens {
     const vg = ctx.createLinearGradient(0, 0, 0, VIEW_H);
     vg.addColorStop(0, 'rgba(1,3,8,0.35)'); vg.addColorStop(0.5, 'rgba(1,3,8,0.15)'); vg.addColorStop(1, 'rgba(1,3,8,0.85)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    Backdrop.kael(ctx, Math.min(VIEW_W * 0.1, 120), VIEW_H * 0.99, 2.1, t);
+    if (!this.drawHero3D(ctx, t)) Backdrop.kael(ctx, Math.min(VIEW_W * 0.1, 120), VIEW_H * 0.99, 2.1, t);
     this.drawEmbers(ctx, t);
     // Título
     ctx.save();
@@ -6501,6 +7024,27 @@ const Backdrop = {
     ctx.restore();
   },
 
+  // A Tempestade Nula em 3D, girando devagar, centrada em (cx, cy)
+  sword3D(ctx, cx, cy, t) {
+    if (!R3D.active || !game.model3('espada')) return false;
+    const e = this.swordE || (this.swordE = { t: 0, facing: 0 });
+    e.t = t; e.facing = 0;
+    const it = game.queue3('espada', e, game.opts3(e, 0));
+    R3D.flush(Math.min(2.5, game.scale));
+    if (!it || !it.ok) return false;
+    const x = cx - (it.minX + it.w / 2), y = cy - (it.minY + it.h / 2);
+    R3D.blit(ctx, it, x, y);
+    R3D.blitEmissive(ctx, it, x, y, 1);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const rnd = mulberry32(Math.floor(t * 14)); ctx.lineJoin = 'round';
+    for (let k = 0; k < 4; k++) {
+      const px = cx + (rnd() - 0.5) * it.w * 0.6, py = cy + (rnd() - 0.5) * it.h * 0.7;
+      drawBolt(ctx, px, py, px + (rnd() - 0.5) * 120, py + (rnd() - 0.5) * 120, rnd, 0.4, 1.5, '90,170,255', 0.8);
+    }
+    ctx.restore();
+    return true;
+  },
+
   // Desenha o cenário de uma página da história
   draw(ctx, kind, t) {
     const W = VIEW_W, H = VIEW_H;
@@ -6555,7 +7099,7 @@ const Backdrop = {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         GlowCache.draw(ctx, '40,100,255', W * 0.78, H * 0.5, H * 0.6, 0.35);
         ctx.restore();
-        drawBigSword(ctx, W * 0.82, H * 0.08, H * 0.84, t);
+        if (!this.sword3D(ctx, W * 0.8, H * 0.5, t)) drawBigSword(ctx, W * 0.82, H * 0.08, H * 0.84, t);
         break;
       }
       case 'terminal': {
@@ -6925,6 +7469,10 @@ class Game {
     this.input = new Input(this.canvas);
     this.audio = new AudioSys();
     this.input.onFirstInput = () => this.audio.unlock();
+    // Gráficos 3D (WebGL) para personagens, inimigos e armas; G liga/desliga
+    R3D.init();
+    try { R3D.enabled = localStorage.getItem('eclipse_zero_3d') !== '0'; } catch (e) { /* armazenamento indisponível */ }
+    this.use3D = false; this.ghostProxies = []; this.titleKael = null;
     this.camera = new Camera();
     this.camera.baseZoom = 1.22;
     this.particles = new ParticleSystem();
@@ -7042,6 +7590,11 @@ class Game {
     inp.update();
     this.realTime += dt;
     if (inp.pressed.mute) this.audio.toggleMute();
+    if (inp.pressed.gfx && R3D.ok) {
+      R3D.enabled = !R3D.enabled;
+      try { localStorage.setItem('eclipse_zero_3d', R3D.enabled ? '1' : '0'); } catch (e) { /* armazenamento indisponível */ }
+      if (this.state === 'playing') this.hud.message(R3D.enabled ? 'GRÁFICOS 3D' : 'GRÁFICOS 2D', '', 1.2, true);
+    }
     if (inp.pressed.debug) this.debug = !this.debug;
     if (this.fade !== this.fadeTarget) {
       this.fade = approach(this.fade, this.fadeTarget, dt * 3.2);
@@ -7540,6 +8093,75 @@ class Game {
     ctx.restore();
   }
 
+  // ------------------------------------------------------------- modelos 3D
+  // Constrói (uma única vez) o modelo 3D de uma chave do registro MODELS3D
+  model3(key) {
+    const def = MODELS3D[key];
+    if (!def || def.broken) return null;
+    if (!def.model) {
+      try { def.model = def.build(); } catch (e) { console.error(e); def.broken = true; return null; }
+    }
+    return def.model;
+  }
+  // Opções reaproveitadas por entidade (sem alocar a cada quadro)
+  opts3(e, flash) {
+    const o = e._o3 || (e._o3 = {});
+    o.yaw = e.facing || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
+    return o;
+  }
+  queue3(key, e, o) {
+    const m = this.model3(key);
+    if (!m) return null;
+    const def = MODELS3D[key];
+    if (def.opts) Object.assign(o, def.opts(e));
+    return R3D.queue(m, def.pose, e, o);
+  }
+  // Halos definidos pelo modelo, posicionados pelas âncoras projetadas
+  glows3D(ctx, key, e, spr, sx, sy, alpha = 1) {
+    const def = MODELS3D[key];
+    if (!def || !def.glows || !spr || !spr.ok) return;
+    def.glows(e, (name, r, rgb, a) => {
+      const q = spr.anchors[name];
+      if (q) this.addGlow(ctx, sx + q.x, sy + q.y, r, rgb, a * alpha);
+    });
+  }
+  // Fantasma da esquiva: a entidade do jogador vista em pose de investida
+  ghostProxy(i, p, g) {
+    let gp = this.ghostProxies[i];
+    if (!gp || Object.getPrototypeOf(gp) !== p) gp = this.ghostProxies[i] = Object.create(p);
+    gp.state = 'dash'; gp.stateTime = 0.08; gp.facing = g.f; gp.attack = null; gp.flash = 0; gp.z = 0;
+    return gp;
+  }
+  // Posa e desenha no atlas todos os modelos 3D visíveis neste quadro
+  prepare3D() {
+    this.use3D = R3D.active;
+    if (!this.use3D) return;
+    const th = this.room.theme, lc = th.lamp.split(',').map((v) => v / 255);
+    R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
+    const p = this.player;
+    p.spr = this.queue3('kael', p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
+    let n = 0;
+    for (let i = 0; i < p.ghosts.length; i++) {
+      const g = p.ghosts[i];
+      g.spr = null;
+      if (g.life <= 0 || n >= 5) continue;
+      n++;
+      const gp = this.ghostProxy(i, p, g);
+      const o = g._o3 || (g._o3 = {});
+      o.yaw = g.f; o.ghost = [0.25, 0.55, 1.0]; o.flash = 0; o.emi = undefined; o.holo = false; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
+      g.spr = this.queue3('kael', gp, o);
+    }
+    for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
+    let cells = 0;
+    for (let i = 0; i < this.pickups.count; i++) {
+      const it = this.pickups.items[i];
+      it.spr = null;
+      const key = it.kind === 'memory' ? 'memoria' : it.kind === 'health' ? 'capsula' : (cells++ < 36 ? 'celula' : null);
+      if (key) it.spr = this.queue3(key, it, this.opts3(it, 0));
+    }
+    R3D.flush(Math.min(3, this.scale * this.camera.zoom));
+  }
+
   // Fundo atrás da sala: a cidade sob o céu artificial, o topo da torre ou a escuridão
   drawSky(ctx) {
     const th = this.room.theme, cam = this.camera, t = this.realTime;
@@ -7612,6 +8234,7 @@ class Game {
     ctx.fillStyle = PAL.bg;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     this.drawSky(ctx);
+    this.prepare3D();
 
     // 1) Camada sólida: cenário, sombras e corpos ordenados por profundidade
     ctx.save();
@@ -7668,6 +8291,10 @@ class Game {
     this.projectiles.draw(ctx);
     this.particles.drawEmissive(ctx);
     this.trails.draw(ctx);
+    if (this.use3D) {
+      p.drawEmissive(ctx);
+      for (const e of this.enemies) e.drawEmissive(ctx);
+    }
     this.drawEclipseFx(ctx);
     this.arcs.draw(ctx, this.realTime);
     ctx.restore();
@@ -7742,6 +8369,7 @@ class Game {
       `FPS: ${this.fps}   VIEW: ${VIEW_W}x${VIEW_H}   escala: ${this.scale.toFixed(2)}`,
       `Partículas: ${this.particles.count}/${this.particles.max}   Projéteis: ${this.projectiles.count}/${this.projectiles.items.length}   Coletáveis: ${this.pickups.count}`,
       `Inimigos: ${this.enemies.length}   Fichas de ataque: ${this.director.tokens.size}/${this.director.maxTokens}   Perigos: ${this.hazards.list.length}`,
+      `3D: ${R3D.ok ? (R3D.enabled ? 'ligado' : 'desligado') : 'indisponível'}   escala do atlas: ${R3D.scale.toFixed(2)}   (G alterna)`,
     ];
     if (p && this.state !== 'title') {
       lines.push(`Jogador: ${p.state}  invuln: ${Math.max(0, p.invuln).toFixed(2)}  cadeia: "${p.combo.seq}"  buffer: ${p.combo.buffer || '-'}  janela esquiva: ${Math.max(0, p.combo.dashWindow).toFixed(2)}`);
