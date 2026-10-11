@@ -1,0 +1,215 @@
+'use strict';
+// ECLIPSE ZERO · Projéteis do jogador e dos inimigos (pool)
+// ---------------------------------------------------------------------------
+// PROJÉTEIS com pooling (inimigos e jogador)
+// ---------------------------------------------------------------------------
+class ProjectileSystem {
+  constructor(max = 320) {
+    this.items = [];
+    for (let i = 0; i < max; i++) {
+      this.items.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, r: 8, dmg: 0, hostile: true, kind: 'orb',
+        life: 0, max: 1, pierce: false, hits: new Set(), dodgeCredited: false, angle: 0 });
+    }
+    this.count = 0;
+  }
+  spawn(o) {
+    if (this.count >= this.items.length) return null;
+    const p = this.items[this.count++];
+    p.x = o.x; p.y = o.y; p.z = o.z || 30; p.vx = o.vx; p.vy = o.vy; p.r = o.r || 8;
+    p.dmg = o.dmg || 10; p.hostile = o.hostile !== false; p.kind = o.kind || 'orb';
+    p.life = p.max = o.life || 2; p.pierce = !!o.pierce;
+    p.hits.clear(); p.dodgeCredited = false;
+    p.angle = Math.atan2(p.vy, p.vx);
+    return p;
+  }
+  color(p) {
+    switch (p.kind) {
+      case 'orb': return '200,120,255';
+      case 'laser': return '255,80,80';
+      case 'data': return '110,255,230';
+      case 'crescent': return '140,210,255';
+      case 'volt': return '150,210,255';
+      default: return '110,170,255';
+    }
+  }
+  burst(p) {
+    const c = this.color(p);
+    game.particles.sparks(p.x, p.y, p.z, p.angle + Math.PI, 7, c, 260, Math.PI);
+    game.particles.flash(p.x, p.y, p.z, 26, c, 0.12);
+  }
+  kill(i, fx) {
+    const p = this.items[i];
+    if (fx) this.burst(p);
+    const last = this.count - 1;
+    if (i !== last) { this.items[i] = this.items[last]; this.items[last] = p; }
+    this.count--;
+  }
+  clear() { this.count = 0; }
+  clearHostile(fx) {
+    for (let i = this.count - 1; i >= 0; i--) if (this.items[i].hostile) this.kill(i, fx);
+  }
+  // Campo Magnético e Ruptura de Plasma: destroem projéteis hostis dentro do raio
+  clearInRadius(x, y, r) {
+    for (let i = this.count - 1; i >= 0; i--) {
+      const p = this.items[i];
+      if (!p.hostile || dist2(p.x, p.y, x, y) > r * r) continue;
+      game.arcs.spawn(x, y, 30, p.x, p.y, p.z, { w: 1.4, life: 0.12, rgb: '150,205,255' });
+      this.kill(i, true);
+    }
+  }
+
+  update(dt) {
+    const pl = game.player;
+    outer:
+    for (let i = this.count - 1; i >= 0; i--) {
+      const p = this.items[i];
+      p.life -= dt;
+      if (p.life <= 0) { this.kill(i, p.hostile); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.kind === 'data' && Math.random() < 0.35) game.particles.emit(P.WISP, p.x, p.y, p.z, -p.vx * 0.1, -p.vy * 0.1, 10, 0.3, 1.6, '110,255,230', 0, 1);
+      if (game.room.blocksPoint(p.x, p.y, p.r * 0.4)) { this.kill(i, true); continue; }
+      if (p.hostile) {
+        const rr = p.r + pl.radius;
+        if (pl.state !== 'dead' && dist2(p.x, p.y, pl.x, pl.y) < rr * rr) {
+          if (pl.state === 'dash' && pl.invuln > 0) {
+            if (!p.dodgeCredited) { p.dodgeCredited = true; game.onPerfectDodge(pl); }
+            continue;
+          }
+          if (pl.takeDamage(p.dmg, p.x - p.vx * 0.05, p.y - p.vy * 0.05, 200)) { this.kill(i, true); continue; }
+        }
+      } else {
+        for (const e of game.enemies) {
+          if (!e.canBeHit() || p.hits.has(e)) continue;
+          const rr = p.r + e.radius;
+          if (dist2(p.x, p.y, e.x, e.y) < rr * rr) {
+            p.hits.add(e);
+            const l = Math.hypot(p.vx, p.vy) || 1, kx = p.vx / l, ky = p.vy / l;
+            const dmg = Math.max(1, Math.round(p.dmg * (e.vulnerable || 1) * pl.targetMult(e) * rand(0.9, 1.1)));
+            const volt = p.kind === 'volt';
+            if (volt) game.arcs.crackle(e.x, e.y, Math.min(e.height * 0.5, 40) + e.z, 2, e.radius * 1.5, '160,215,255', 0.12);
+            if (e.takeHit({ dmg, kx, ky, kb: volt ? 160 : 220, launch: 0, stun: volt ? 0.45 : 0.3, heavy: false, crit: false, shock: volt })) {
+              game.onEnemyHit(e, dmg, false, PROJ_HIT_DEF, kx, ky);
+            }
+            if (!p.pierce) { this.kill(i, true); continue outer; }
+          }
+        }
+      }
+    }
+  }
+
+  // Golpes do jogador destroem (aparam) projéteis inimigos
+  slashTest(shape, ox, oy, dir) {
+    for (let i = this.count - 1; i >= 0; i--) {
+      const p = this.items[i];
+      if (p.hostile && Hitbox.test(shape, ox, oy, dir, p.x, p.y, p.r)) {
+        game.onDeflect(p);
+        this.kill(i, true);
+      }
+    }
+  }
+
+  drawShadows(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    for (let i = 0; i < this.count; i++) {
+      const p = this.items[i];
+      ctx.beginPath();
+      ctx.ellipse(isoX(p.x, p.y), isoY(p.x, p.y), p.r * 1.1, p.r * 0.55, 0, 0, TAU);
+      ctx.fill();
+    }
+  }
+
+  addLights(lighting) {
+    for (let i = 0; i < this.count && i < 40; i++) {
+      const p = this.items[i];
+      lighting.add(isoX(p.x, p.y), isoY(p.x, p.y) - p.z * 0.5, p.kind === 'crescent' || p.kind === 'volt' ? 150 : 80, 0.55);
+    }
+  }
+
+  // Camada emissiva
+  draw(ctx) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < this.count; i++) {
+      const p = this.items[i];
+      const sx = isoX(p.x, p.y), sy = isoY(p.x, p.y) - p.z;
+      const fade = Math.min(1, p.life / 0.15);
+      switch (p.kind) {
+        case 'orb':   // orbe de dados do Culto
+          GlowCache.draw(ctx, '180,100,255', sx, sy, p.r * 3.4, 0.85 * fade);
+          GlowCache.draw(ctx, '245,225,255', sx, sy, p.r * 1.3, fade);
+          break;
+        case 'laser': {   // disparo do Drone Sentinela
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const l = Math.hypot(sv.x, sv.y) || 1, ux = sv.x / l, uy = sv.y / l;
+          ctx.globalAlpha = fade;
+          ctx.strokeStyle = 'rgba(255,70,70,0.55)'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(sx - ux * 22, sy - uy * 22); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,225,225,0.95)'; ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.moveTo(sx - ux * 18, sy - uy * 18); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.lineCap = 'butt';
+          GlowCache.draw(ctx, '255,60,60', sx, sy, p.r * 2.6, 0.7 * fade);
+          break;
+        }
+        case 'data': {   // fragmentos de dados de NEXUS
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          for (let k = 3; k >= 1; k--) GlowCache.draw(ctx, '60,220,200', sx - sv.x * k * 6, sy - sv.y * k * 6, p.r * (2.4 - k * 0.4), 0.3 * fade);
+          GlowCache.draw(ctx, '90,255,220', sx, sy, p.r * 3, 0.75 * fade);
+          ctx.save();
+          ctx.translate(sx, sy); ctx.rotate(p.life * 9);
+          ctx.globalAlpha = fade;
+          ctx.fillStyle = 'rgba(230,255,250,0.95)';
+          ctx.fillRect(-p.r * 0.55, -p.r * 0.55, p.r * 1.1, p.r * 1.1);
+          ctx.restore();
+          break;
+        }
+        case 'volt': {   // Arco Voltaico: raio concentrado em movimento
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const l = Math.hypot(sv.x, sv.y) || 1, ux = sv.x / l, uy = sv.y / l;
+          GlowCache.draw(ctx, '70,150,255', sx, sy, p.r * 3.4, 0.8 * fade);
+          GlowCache.draw(ctx, '230,245,255', sx, sy, p.r * 1.3, fade);
+          ctx.lineJoin = 'round';
+          drawBolt(ctx, sx - ux * 46, sy - uy * 46, sx + ux * 10, sy + uy * 10,
+            mulberry32(i * 97 + Math.floor(game.realTime * 40)), 0.45, 1.8, '170,220,255', fade, false);
+          break;
+        }
+        case 'crescent':
+        case 'blade': {
+          // Onda elétrica em crescente orientada pela velocidade
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const a = Math.atan2(sv.y, sv.x);
+          const isC = p.kind === 'crescent';
+          const R = isC ? 30 : 18;
+          ctx.globalAlpha = fade;
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(a);
+          ctx.scale(1, isC ? 1 : 0.6);
+          ctx.fillStyle = isC ? 'rgba(110,180,255,0.7)' : 'rgba(60,130,255,0.8)';
+          ctx.beginPath();
+          ctx.arc(0, 0, R, -1.2, 1.2);
+          ctx.arc(-R * 0.45, 0, R * 0.8, 1.0, -1.0, true);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(230,245,255,0.95)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, R, -1.1, 1.1); ctx.stroke();
+          if (isC) {
+            ctx.lineJoin = 'round';
+            drawBolt(ctx, Math.cos(-1.1) * R, Math.sin(-1.1) * R, Math.cos(1.1) * R, Math.sin(1.1) * R,
+              mulberry32(i * 131 + Math.floor(game.realTime * 30)), 0.5, 1.1, '150,210,255', fade, false);
+          }
+          ctx.restore();
+          GlowCache.draw(ctx, isC ? '90,160,255' : '60,120,255', sx, sy, R * 2.2, 0.5 * fade);
+          break;
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  drawDebug(ctx) {
+    for (let i = 0; i < this.count; i++) {
+      const p = this.items[i];
+      drawHurtbox(ctx, p.x, p.y, p.r, p.hostile ? '255,90,220' : '120,220,255');
+    }
+  }
+}
+
