@@ -81,6 +81,17 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 
 **Limitações conhecidas:** controles que o navegador não reconhece como "standard" podem ter botões trocados (o diagnóstico avisa); a vibração depende do navegador (Chrome/Edge sim; Firefox e Safari geralmente não); um botão do controle não conta como "gesto" para o navegador, então a tela cheia precisa ser ligada com um clique ou tecla (ou F11); no Safari antigo e em alguns navegadores de celular a Gamepad API é limitada.
 
+## Elenco de personagens (em desenvolvimento)
+
+Kael Veyron é o personagem inicial. Lyra Kaede, Drakos, Sera Vyne e Orion já existem nos dados e são liberados pela campanha (Capítulos I, II, III e IV concluídos), mas ainda aparecem como **EM BREVE**: ficam salvos como desbloqueados e passam a ser escolhíveis quando forem implementados. O desbloqueio mostra um aviso "NOVO ALIADO DESBLOQUEADO". Cada personagem tem 4 habilidades, 4 armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
+
+- **Dados** (`js/data/`): `characters.js` (fichas: atributos, cor-tema, lore, habilidades, armaduras, armas, condição de desbloqueio e `devStatus`: `ready` | `partial` | `coming_soon`), `abilities.js`, `armors.js`, `weapons.js` e `strings.js` (textos da interface, prontos para tradução).
+- **`RosterManager`** (`js/roster.js`): personagens desbloqueados, personagem ativo e armadura de cada um; `isUnlocked`, `unlock`, `setActive`, `equipArmor`, `checkUnlocks` e os eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`. O jogo chama `checkUnlocks` ao concluir um setor, ao derrotar NEXUS e ao registrar escolhas da história.
+- **Kael usa a própria ficha**: vida, energia, velocidade, raio, nome no HUD e modelo vêm de `CHARACTER_DEFS`. As 4 habilidades da ficha dele apontam para o que o jogo já tem (combos da espada, esquiva, Ruptura de Plasma e Sobrecarga); a árvore de habilidades continua a mesma.
+- **Salvamento v2**: guarda o elenco de cada espaço (desbloqueados, ativo, armaduras). Salvamentos antigos carregam com Kael ativo e armadura Padrão.
+
+Próximas fases: tela de elenco com os 5 cartões e menu de desenvolvimento → Lyra → Drakos, Sera e Orion → armaduras (visual e atributos) → popup animado de desbloqueio.
+
 ## Menus, salvamentos e configurações
 
 - **Capa** → **Tela inicial** (JOGAR, CONFIGURAÇÕES, CRÉDITOS, SAIR) → **Menu principal** (CONTINUAR, NOVO JOGO, CARREGAR, CONFIGURAÇÕES, SAIR) com o painel **Última missão**.
@@ -163,8 +174,10 @@ js/
   lighting.js       Lighting: escuridão com furos de luz
   combat.js         avisos de ataque, Hitbox, ATTACKS (golpes), ComboSystem, ComboCounter
   progression.js    UPGRADES/UpgradeSystem, PROG (curva de XP), SKILLS/SKILL_TREES, Progress
-  save.js           SaveSys: 5 espaços de salvamento no localStorage
+  save.js           SaveSys: 5 espaços de salvamento no localStorage (versão do conteúdo e migração)
   settings.js       SETTINGS_TABS, Settings: opções do jogador e onde cada uma é aplicada
+  data/             fichas do elenco: characters.js, abilities.js, armors.js, weapons.js, strings.js
+  roster.js         RosterManager: desbloqueios, personagem ativo e armaduras
   engine3d.js       motor 3D WebGL próprio (G3, N3, Model3, R3D) e o registro MODELS3D
   entity.js         Entity, base de jogador e inimigos
   abilities.js      ABILITIES: efeitos das habilidades ativas
@@ -218,6 +231,8 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Nova evolução entre setores | `UPGRADES` em `js/progression.js` |
 | Elementos do HUD | `js/hud.js` |
 | Menus, pausa, créditos, versão | `js/menus.js` (`CREDITS`, `GAME_VERSION`, `CHARACTERS` no topo do arquivo) |
+| Personagem, habilidade, armadura ou arma do elenco | `js/data/characters.js`, `abilities.js`, `armors.js`, `weapons.js` (`RosterManager.validate()` avisa no console se uma referência estiver errada) |
+| Condição de desbloqueio | campo `unlock` da ficha (`always`, `chapter_complete`, `boss_defeated`, `quest_complete`, `flag`) |
 | Nova opção de configuração | `SETTINGS_DEFAULT` e `SETTINGS_TABS` em `js/settings.js` (+ o efeito em `Settings.apply()` ou onde a opção é lida) |
 | Telas de evolução, árvore e finais | `js/screens.js` (desenho) e `js/game.js` (estado e entrada) |
 | Textos da história | `js/story.js` |

@@ -356,7 +356,7 @@ class HUD {
     ctx.font = `bold 10px ${FONT_TITLE}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(168,216,255,0.75)';
     ctx.letterSpacing = '2px';
-    ctx.fillText('KAEL VEYRON · UNIDADE ZERO', x, y - 9);
+    ctx.fillText(`${p.def.name} · ${p.def.title}`.toUpperCase(), x, y - 9);
     ctx.letterSpacing = '0px';
     // Vida
     const low = p.hp / p.maxHp < 0.3;

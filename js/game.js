@@ -15,6 +15,10 @@ class Game {
       if (!this.fsTried) { this.fsTried = true; if (Settings.v.display === 'full') Settings.applyDisplay(); }
     };
     this.input.onPadChange = (ev, info) => this.onPadChange(ev, info);
+    // Elenco de personagens: avisos de desbloqueio (o popup animado entra numa fase seguinte)
+    RosterManager.validate();
+    RosterManager.on('characterUnlocked', (d) => this.onCharacterUnlocked(d));
+    RosterManager.on('armorUnlocked', (a) => this.onArmorUnlocked(a));
     // Gráficos 3D (WebGL) para personagens, inimigos e armas; G liga/desliga
     R3D.init();
     KaelArt.init(); loadKaelPortraits();   // Kael com a arte oficial (js/kaelart.js)
@@ -218,6 +222,7 @@ class Game {
     this.progress.reset();
     this.flags = {};
     if (save) this.applySave(save);
+    RosterManager.load(save ? save.roster : null);   // jogo novo ou save v1: só Kael
     this.thumb = (save && save.thumb) || null; this.thumbT = this.realTime - 3;
     this.lookOff.x = this.lookOff.y = 0;
     this.checkpoint = save ? clamp(save.room | 0, 0, ROOM_DEFS.length - 1) : 0;
@@ -542,6 +547,9 @@ class Game {
   }
 
   onBossDefeated(b) {
+    const bosses = this.flags.bosses || (this.flags.bosses = []);
+    if (!bosses.includes('nexus')) bosses.push('nexus');
+    this.checkRosterUnlocks();
     this.particles.flash(b.x, b.y, 60, 260, '170,240,255', 0.5);
     this.particles.ring(b.x, b.y, 380, '90,220,255', 1.0, 18);
     for (let i = 0; i < 6; i++) this.particles.sparks(b.x, b.y, 60, (i / 6) * TAU, 14, '200,250,255', 700, 0.8);
@@ -581,6 +589,9 @@ class Game {
   goToNextRoom() {
     const next = this.waves.roomIndex + 1;
     this.checkpoint = next;
+    // Setor concluído = capítulo concluído: libera aliados e armaduras da história
+    this.flags.chapters = Math.max(this.flags.chapters | 0, next);
+    this.checkRosterUnlocks();
     this.saveGame();
     const enter = () => { this.state = 'playing'; this.loadRoom(next); this.fadeTarget = 0; };
     const chapter = CHAPTERS[next];
@@ -742,15 +753,34 @@ class Game {
 
   setFlag(k, v) {
     this.flags[k] = v;
+    this.checkRosterUnlocks();
     if (this.player) this.player.recalc();
     this.saveGame();
+  }
+
+  // ------------------------------------------------- elenco de personagens
+  // O que a campanha já cumpriu (para as condições de desbloqueio do roster)
+  rosterContext() {
+    const f = this.flags;
+    return { chapter: Math.max(f.chapters | 0, this.checkpoint | 0), flags: f, bosses: f.bosses || [], quests: f.quests || [] };
+  }
+  checkRosterUnlocks() { return RosterManager.checkUnlocks(this.rosterContext()); }
+  onCharacterUnlocked(d) {
+    const soon = d.devStatus === 'coming_soon';
+    this.hud.toast(`${soon ? t('newAllySoon') : t('newAlly')} · ${d.name.toUpperCase()}`, hexToRgb(d.color));
+    this.audio.play('memory');
+  }
+  onArmorUnlocked(a) {
+    const owner = a.owner === 'all' ? t('everyone') : (RosterManager.def(a.owner) || {}).name;
+    this.hud.toast(`${t('newArmor')} · ${a.name} (${owner})`, '185,168,255');
   }
 
   // ------------------------------------------------------- salvamento
   makeSave() {
     const s = this.stats;
     return {
-      v: 1, time: Date.now(), room: this.checkpoint, slot: this.slot, thumb: this.thumb,
+      v: SAVE_VERSION, time: Date.now(), room: this.checkpoint, slot: this.slot, thumb: this.thumb,
+      roster: RosterManager.toJSON(),
       progress: this.progress.toJSON(), upgrades: Object.assign({}, this.upgrades.levels), flags: this.flags,
       stats: { memories: s.memories, memLost: s.memLost, soulsBank: s.soulsBank, soulsTotal: s.soulsTotal, score: Math.round(s.score), kills: s.kills, time: Math.round(s.time) },
     };
@@ -1002,7 +1032,8 @@ class Game {
     const th = this.room.theme, lc = th.lamp.split(',').map((v) => v / 255);
     R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
     const p = this.player, art = KaelArt.active();
-    p.spr = art ? null : this.queue3('kael', p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
+    const mk = p.def.model || 'kael';   // sem modelo próprio: o do Kael
+    p.spr = art ? null : this.queue3(mk, p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
     let n = art ? 99 : 0;   // com a arte oficial, os fantasmas da esquiva também são sprites
     for (let i = 0; i < p.ghosts.length; i++) {
       const g = p.ghosts[i];
@@ -1012,7 +1043,7 @@ class Game {
       const gp = this.ghostProxy(i, p, g);
       const o = g._o3 || (g._o3 = {});
       o.yaw = g.f; o.ghost = [0.25, 0.55, 1.0]; o.flash = 0; o.emi = undefined; o.holo = false; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
-      g.spr = this.queue3('kael', gp, o);
+      g.spr = this.queue3(mk, gp, o);
     }
     for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
     for (const n of this.npcs) n.spr = this.queue3(n.key, n, this.opts3(n, 0));

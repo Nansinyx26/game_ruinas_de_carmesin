@@ -20,13 +20,13 @@ const CREDITS = [
 ];
 const CREDITS_THANKS = 'OBRIGADO POR FAZER PARTE DESSA JORNADA.';
 
-// Personagens da seleção: só Kael é jogável por enquanto; os outros aparecem bloqueados
-const CHARACTERS = [
-  { id: 'kael', name: 'KAEL VEYRON', role: 'A UNIDADE ZERO',
-    desc: 'Um jovem marcado pelo Eclipse. Desperta sem memórias em 2189, portando a Tempestade Nula — a lâmina que devora a energia de NEXUS — e um destino que não pode evitar.',
-    stats: [['VIDA', 0.6], ['ENERGIA', 0.72], ['ATAQUE', 0.8], ['DEFESA', 0.45], ['VELOCIDADE', 0.85]] },
-  { id: null }, { id: null }, { id: null },
-];
+// Personagens da seleção: a ficha do Kael vem de js/data/characters.js; os outros
+// três cartões continuam bloqueados até a tela de elenco completa (próxima fase)
+const KAEL_CARD = ((d) => ({
+  id: d.id, name: d.name.toUpperCase(), role: d.title.toUpperCase(), desc: d.lore,
+  stats: [['VIDA', d.rating.vida], ['ENERGIA', d.rating.energia], ['ATAQUE', d.rating.ataque], ['DEFESA', d.rating.defesa], ['VELOCIDADE', d.rating.velocidade]],
+}))(CHARACTERS_BY_ID.kael);
+const CHARACTERS = [KAEL_CARD, { id: null }, { id: null }, { id: null }];
 
 // Arte da capa (js/assets/capa.js) e pontos de interesse dela (coordenadas na imagem de 1024×1024)
 const CAPA = new Image();

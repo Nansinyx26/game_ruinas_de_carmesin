@@ -5,6 +5,8 @@
 // miniatura da tela e tempo de jogo, em até SAVE_SLOTS espaços independentes
 // ---------------------------------------------------------------------------
 const SAVE_KEY = 'eclipse_zero_save_v1';            // formato antigo (um único espaço)
+// Versão do conteúdo do salvamento: 1 = só Kael · 2 = com o elenco (roster)
+const SAVE_VERSION = 2;
 const SAVE_SLOTS = 5;
 const SAVE_LAST_KEY = 'eclipse_zero_last_slot';
 const SaveSys = {
@@ -18,7 +20,14 @@ const SaveSys = {
     } catch (e) { /* armazenamento indisponível */ }
   },
   read(n) {
-    try { const s = localStorage.getItem(this.key(n)); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+    try { const s = localStorage.getItem(this.key(n)); return s ? this.upgrade(JSON.parse(s)) : null; } catch (e) { return null; }
+  },
+  // Atualiza salvamentos de versões anteriores: v1 (só Kael) ganha o elenco inicial
+  // (Kael ativo, armadura Padrão); o resto do progresso continua igual
+  upgrade(s) {
+    if (!s || typeof s !== 'object') return null;
+    if ((s.v | 0) < 2) { s.roster = null; s.v = 2; }
+    return s;
   },
   exists(n) {
     if (n !== undefined) return !!this.read(n);

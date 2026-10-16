@@ -14,7 +14,6 @@ const PLAYER_PAL = {
 const FLASH_PAL = new Proxy({}, { get: () => '#ffffff' });
 const GHOST_PAL = new Proxy({}, { get: (t, k) => (k === 'vein' || k === 'mark' || k === 'eye' ? '#d8f0ff' : '#1f5fd8') });
 
-const BASE_SPEED = 235;
 const SPECIAL_DEF = { hitstop: 0.16, shake: 0.2, fury: 0, zoom: 0.06, heavy: true, sound: 'hitHeavy' };
 const PROJ_HIT_DEF = { hitstop: 0.03, shake: 0.08, fury: 3, heavy: false, sound: 'hit' };
 const CHAIN_DEF = { hitstop: 0.02, shake: 0.05, fury: 1, heavy: false, sound: 'hit' };
@@ -30,11 +29,13 @@ const WHISPERS = [
 ];
 
 class Player extends Entity {
-  constructor(x, y) {
-    super(x, y, 14);
-    this.maxHp = 100; this.hp = 100;
-    this.baseSpeed = BASE_SPEED;
-    this.fury = 0; this.maxEnergy = 100;   // energia da Tempestade Nula (habilidades e Eclipse)
+  // def: ficha do personagem (js/data/characters.js); por padrão o ativo do roster
+  constructor(x, y, def = RosterManager.activeDef) {
+    super(x, y, def.stats.radius);
+    this.def = def;
+    this.maxHp = def.stats.hp; this.hp = def.stats.hp;
+    this.baseSpeed = def.stats.speed;
+    this.fury = 0; this.maxEnergy = def.stats.energy;   // energia da Tempestade Nula (habilidades e Eclipse)
     this.stats = Object.assign({}, BASE_STATS);
     this.combo = new ComboSystem();
     this.state = 'idle'; this.stateTime = 0;
@@ -100,7 +101,7 @@ class Player extends Entity {
         if (this.tryActions(wd)) break;
         let tvx = 0, tvy = 0;
         if (wd) {
-          const sp = BASE_SPEED * this.stats.speedMult * mag;
+          const sp = this.baseSpeed * this.stats.speedMult * mag;
           tvx = wd.x * sp; tvy = wd.y * sp;
           this.facing = Math.atan2(wd.y, wd.x);
           this.state = 'run';
@@ -407,7 +408,7 @@ class Player extends Entity {
     let tvx = 0, tvy = 0;
     if (wd) {
       this.facing = angleLerp(this.facing, Math.atan2(wd.y, wd.x), 1 - Math.exp(-12 * dt));
-      tvx = wd.x * BASE_SPEED * 0.3; tvy = wd.y * BASE_SPEED * 0.3;
+      tvx = wd.x * this.baseSpeed * 0.3; tvy = wd.y * this.baseSpeed * 0.3;
     }
     this.vx = approach(this.vx, tvx, 1600 * dt);
     this.vy = approach(this.vy, tvy, 1600 * dt);
@@ -620,8 +621,9 @@ class Player extends Entity {
     const of = game.flags.oferta;
     if (of === 0) S.dmgMult += 0.15; else if (of === 1) S.hpBonus += 15; else if (of === 2) S.crit += 0.1;
     S.armor = Math.min(0.6, S.armor);
-    this.maxHp = Math.round(100 + PL.hp * L + S.hpBonus);
-    this.maxEnergy = Math.round(100 + PL.energy * L + S.energyBonus);
+    const B = this.def.stats;
+    this.maxHp = Math.round(B.hp + PL.hp * L + S.hpBonus);
+    this.maxEnergy = Math.round(B.energy + PL.energy * L + S.energyBonus);
     if (fill) this.hp = this.maxHp;
     else if (this.maxHp > oldMax) this.hp += this.maxHp - oldMax;
     this.hp = Math.min(this.hp, this.maxHp);
@@ -1010,7 +1012,7 @@ class Player extends Entity {
     const sword = withSword ? this.swordPose(side, bob) : null;
     if (sword && sword.behind) this.drawSword(ctx, sword, pal);
 
-    const speedK = Math.min(1, this.moveSpeed / BASE_SPEED);
+    const speedK = Math.min(1, this.moveSpeed / this.baseSpeed);
     const sway = -side * speedK * 9 + Math.sin(t * 3.1) * 1.4 + (this.state === 'dash' ? -side * 6 : 0);
     const y0 = -18 - bob, y1 = -40 - bob;   // cintura e ombros
 
