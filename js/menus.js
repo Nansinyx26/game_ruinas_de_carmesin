@@ -86,6 +86,16 @@ function softEdges(g, W, H, fade, sc) {
   if (fade.b) { const d = fade.b * sc; side(0, H, 0, H - d, 0, H - d, W, d); }
   g.restore();
 }
+// Qualquer imagem ajustada ao retângulo (cobrindo) com bordas esfumadas, em cache
+function imageLayer(key, img, w, h, fade) {
+  if (!img || !img.complete || !img.naturalWidth) return null;
+  const sc = clamp(game.scale, 0.5, 2), W = Math.round(w * sc), H = Math.round(h * sc);
+  return Backdrop.layer('img-' + key, W, H, (g) => {
+    const s = Math.max(W / img.naturalWidth, H / img.naturalHeight), iw = img.naturalWidth * s, ih = img.naturalHeight * s;
+    g.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+    softEdges(g, W, H, fade, sc);
+  });
+}
 function drawCapaLayer(ctx, key, x, y, w, h, fx, fy, zoom, fade, alpha = 1) {
   const c = capaLayer(key, w, h, fx, fy, zoom, fade);
   if (!c) return false;
@@ -741,9 +751,16 @@ class Menus {
     this.drawSkyBg(ctx, t);
     Backdrop.drawRain(ctx, t, 0.5);
     ctx.fillStyle = 'rgba(1,3,8,0.4)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    // Kael em 3D (ou a arte da capa, sem WebGL)
+    // Kael da ficha oficial (sem ela: o modelo 3D ou a arte da capa)
     const hx = (L.cards[0].x - 30) / 2 + 30;
-    if (!this.drawKael3D(ctx, t, hx, VIEW_H * 0.9, 6)) {
+    const bh = VIEW_H * 0.86, bw = bh * 310 / 584;
+    const body = imageLayer('kael-corpo', KAEL_PORTRAIT.body, bw, bh, { l: 80, r: 80, t: 90, b: 80 });
+    if (body) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.drawFlat(ctx, '60,130,255', hx, VIEW_H * 0.92, 200, 0.35);
+      ctx.restore();
+      ctx.drawImage(body, hx - bw / 2, VIEW_H * 0.1, bw, bh);
+    } else if (!this.drawKael3D(ctx, t, hx, VIEW_H * 0.9, 6)) {
       drawCapaLayer(ctx, 'personagem', 0, 0, L.cards[0].x - 30, VIEW_H, 580, 330, 1.6, { r: 220, b: 220 });
     }
     Backdrop.drawMotes(ctx, t);
@@ -755,7 +772,10 @@ class Menus {
       ctx.fillStyle = 'rgba(4,9,20,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
       ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h - 28); ctx.clip();
       if (ch.id) {
-        if (!drawCapaCrop(ctx, 'rosto', r.x - 6, r.y, r.w + 12, r.w + 12)) drawMenuIcon(ctx, 'sword', r.x + r.w / 2, r.y + 60, 40, PAL.accent);
+        if (kaelPortraitReady('face')) {
+          const im = KAEL_PORTRAIT.face, s = Math.max(r.w / im.naturalWidth, (r.h - 28) / im.naturalHeight);
+          ctx.drawImage(im, r.x + (r.w - im.naturalWidth * s) / 2, r.y, im.naturalWidth * s, im.naturalHeight * s);
+        } else if (!drawCapaCrop(ctx, 'rosto', r.x - 6, r.y, r.w + 12, r.w + 12)) drawMenuIcon(ctx, 'sword', r.x + r.w / 2, r.y + 60, 40, PAL.accent);
       } else {
         // Silhueta bloqueada
         const cx = r.x + r.w / 2, cy = r.y + 52;

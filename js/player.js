@@ -33,6 +33,7 @@ class Player extends Entity {
   constructor(x, y) {
     super(x, y, 14);
     this.maxHp = 100; this.hp = 100;
+    this.baseSpeed = BASE_SPEED;
     this.fury = 0; this.maxEnergy = 100;   // energia da Tempestade Nula (habilidades e Eclipse)
     this.stats = Object.assign({}, BASE_STATS);
     this.combo = new ComboSystem();
@@ -932,6 +933,7 @@ class Player extends Entity {
   // ------------------------------------------------------------------ desenho
   draw(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z;
+    if (KaelArt.active()) { KaelArt.drawPlayer(ctx, this, sx, sy); return; }
     if (game.use3D && this.spr && this.spr.ok) { this.draw3D(ctx, sx, sy); return; }
     // Imagens residuais da esquiva (silhuetas de eletricidade azul)
     ctx.save();
@@ -980,6 +982,7 @@ class Player extends Entity {
   }
   // Partes luminosas do modelo (desenhadas depois da escuridão)
   drawEmissive(ctx) {
+    if (KaelArt.active()) { KaelArt.drawEmissive(ctx, this, isoX(this.x, this.y), isoY(this.x, this.y) - this.z); return; }
     if (!game.use3D || !this.spr || !this.spr.ok) return;
     R3D.blitEmissive(ctx, this.spr, isoX(this.x, this.y), isoY(this.x, this.y) - this.z, this.blinking() ? 0.55 : 1);
   }

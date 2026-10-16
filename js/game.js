@@ -17,6 +17,7 @@ class Game {
     this.input.onPadChange = (ev, info) => this.onPadChange(ev, info);
     // Gráficos 3D (WebGL) para personagens, inimigos e armas; G liga/desliga
     R3D.init();
+    KaelArt.init(); loadKaelPortraits();   // Kael com a arte oficial (js/kaelart.js)
     this.use3D = false; this.ghostProxies = [];
     this.camera = new Camera();
     this.camera.baseZoom = 1.22;
@@ -1000,9 +1001,9 @@ class Game {
     if (!this.use3D) return;
     const th = this.room.theme, lc = th.lamp.split(',').map((v) => v / 255);
     R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
-    const p = this.player;
-    p.spr = this.queue3('kael', p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
-    let n = 0;
+    const p = this.player, art = KaelArt.active();
+    p.spr = art ? null : this.queue3('kael', p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
+    let n = art ? 99 : 0;   // com a arte oficial, os fantasmas da esquiva também são sprites
     for (let i = 0; i < p.ghosts.length; i++) {
       const g = p.ghosts[i];
       g.spr = null;
@@ -1161,8 +1162,8 @@ class Game {
     this.projectiles.draw(ctx);
     this.particles.drawEmissive(ctx);
     this.trails.draw(ctx);
+    p.drawEmissive(ctx);
     if (this.use3D) {
-      p.drawEmissive(ctx);
       for (const e of this.enemies) e.drawEmissive(ctx);
       for (const n of this.npcs) n.drawEmissive(ctx);
     }

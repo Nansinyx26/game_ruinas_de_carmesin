@@ -94,7 +94,7 @@ Configurações (salvas no navegador e aplicadas com **APLICAR**; **PADRÃO** re
 | Aba | Opções |
 |---|---|
 | JOGO | Dificuldade (Narrativa / Normal / Difícil: vida e dano dos inimigos), tremor de tela, números de dano, velocidade do texto |
-| VÍDEO | Janela / tela cheia, resolução interna (50–100%), personagens 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
+| VÍDEO | Janela / tela cheia, resolução interna (50–100%), visual do Kael (arte oficial ou modelo 3D), inimigos e NPCs em 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
 | ÁUDIO | Som liga/desliga, volume geral, efeitos sonoros, ambiente |
 | CONTROLES | Sensibilidade do analógico, zona morta, inverter eixo Y da câmera, vibração + diagnóstico e comandos |
 | IDIOMA | Português (Brasil), tamanho das legendas, falas durante o jogo |
@@ -169,6 +169,7 @@ js/
   entity.js         Entity, base de jogador e inimigos
   abilities.js      ABILITIES: efeitos das habilidades ativas
   player.js         Player (Kael): movimento, golpes, esquiva, habilidades, Eclipse, desenho 2D
+  kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)
   enemies.js        ENEMY_TYPES, Enemy, Crawler, Legionary, Shooter, Hunter, AIDirector
   boss.js           HazardSystem e Boss (NEXUS)
   projectiles.js    ProjectileSystem
@@ -181,6 +182,8 @@ js/
   story.js          MEMORIES, STORY, ENDINGS, CHAPTERS (textos da história)
   storyscreen.js    Backdrop (cenários pintados) e StoryScreen
   assets/capa.js    arte da capa embutida (data URI gerado de assets/images/capa.jpg)
+  assets/kael_sprites.js  sprites do Kael recortados da folha oficial (atlas embutido)
+  assets/kael_arte.js     ilustração de corpo inteiro e rosto do Kael (seleção de personagem)
   menus.js          Menus: capa, tela inicial, menu principal, carregar, personagem,
                     configurações, créditos, pausa, confirmações e avisos
   game.js           Game: loop, estados, eventos de combate, XP, salvamento, renderização
@@ -188,6 +191,8 @@ js/
   main.js           boot(): cria o jogo — sempre o último script
 assets/images/capa.jpg   arte da capa original (fonte do js/assets/capa.js)
 tools/gerar_capa.py      gera js/assets/capa.js a partir da imagem
+tools/gerar_sprites_kael.py  recorta a folha de sprites e a ficha do Kael (assets/images/kael_*.jpg)
+                             e gera js/assets/kael_sprites.js e js/assets/kael_arte.js
 ```
 
 ### Ordem de inicialização
@@ -221,6 +226,7 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Novo modelo 3D | crie `js/models/<chave>.js` com `MODELS3D.<chave> = { build, pose, opts, glows }` e inclua o `<script>` no `index.html` |
 | Estilos da página | `css/main.css` |
 | Trocar a capa | substitua `assets/images/capa.jpg` e gere `js/assets/capa.js` de novo (abaixo) |
+| Sprites do Kael | ajuste as caixas de cada quadro em `ANIMS` no `tools/gerar_sprites_kael.py` e rode `python3 tools/gerar_sprites_kael.py` (requer Pillow, numpy e scipy); a escolha do quadro por estado fica em `KaelArt.pick()` (`js/kaelart.js`) |
 
 Para gerar o `js/assets/capa.js` a partir da imagem: `python3 tools/gerar_capa.py` (requer Pillow). A imagem fica embutida no JavaScript para o jogo funcionar abrindo o `index.html` direto do disco sem bloquear as miniaturas dos salvamentos.
 
@@ -228,7 +234,7 @@ Para manter o projeto organizado, coloque código novo no arquivo da responsabil
 
 ### Dependências
 
-Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, modelos 3D e sons são gerados por código. A única imagem é a arte da capa, embutida em `js/assets/capa.js`. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
+Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, modelos 3D e sons são gerados por código. As imagens são a arte da capa (`js/assets/capa.js`) e a arte oficial do Kael (`js/assets/kael_sprites.js` e `js/assets/kael_arte.js`), todas embutidas no JavaScript. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
 
 ### Versão de arquivo único
 
