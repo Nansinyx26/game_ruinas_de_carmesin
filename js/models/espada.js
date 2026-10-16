@@ -37,7 +37,7 @@
       n.tilt.r[0] = 0.12 + Math.sin(t * 0.8) * 0.05;
       n.tilt.r[1] = Math.sin(t * 0.55) * 0.06;
       n.blade.emi = 1.6 + Math.sin(t * 5) * 0.15;
-      n.hilt.emi = 1.5;
+      n.hilt.emi = 1.4;
     },
     opts() { return OPT; },
     glows(e, add) {

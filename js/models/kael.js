@@ -16,14 +16,14 @@
 function buildTempestadeNula(g, k, part, lod) {
   k = k || 1;
   lod = lod === undefined ? 1 : lod;
-  const BL = '#101117', BL2 = '#16181f', BEV = '#272b35', EDGE = '#717b8e', VEIN = '#4da3ff', VEIN2 = '#9fd0ff';
+  const BL = '#101117', BL2 = '#16181f', BEV = '#272b35', EDGE = '#5a6272', VEIN = '#4da3ff', VEIN2 = '#9fd0ff';
   const GUARD = '#1d2028', GUARD2 = '#2c303b', GEDGE = '#5d6577', GRIP = '#101116', WRAP = '#262a33';
   const doBlade = !part || part === 'blade', doHilt = !part || part === 'hilt';
   g.at(0, 0, 0, 0, 0, 0, k, k, k);
   if (doBlade) {
     // Estações [u, meia-largura]: talão com entalhe junto à guarda, lâmina larga afinando até a ponta
     const st = lod ? [[0.4, 2.5], [2.6, 3.5], [4.4, 2.7], [6.6, 3.4], [19, 3.2], [32, 2.85], [41.5, 2.2], [47.5, 1.25], [52, 0]]
-      : [[0.4, 2.4], [2.6, 3.3], [4.4, 2.6], [6.6, 3.2], [27, 2.9], [44, 1.9], [52, 0]];
+      : [[0.4, 1.95], [2.6, 2.65], [4.4, 2.1], [6.6, 2.6], [27, 2.35], [44, 1.5], [52, 0]];
     const T = 0.62;
     const th = (w) => T * Math.min(1, w / 2.0);
     // Seção losangular: nervura central (preta) → bisel (cinza) → fio prateado
@@ -46,7 +46,8 @@ function buildTempestadeNula(g, k, part, lod) {
     const zig = lod ? [[1.0, 0], [5.0, 1.1], [9.5, -0.9], [14, 1.0], [18.5, -1.1], [23, 0.9], [27.5, -1.0], [32, 0.95], [36.5, -0.8], [40.5, 0.6], [44.5, -0.35], [48.5, 0]]
       : [[1.0, 0], [6.5, 1.1], [13, -1.0], [19.5, 1.05], [26, -0.95], [32.5, 0.9], [39, -0.7], [44.5, 0.3], [48.5, 0]];
     const br = lod ? [[3, [17, 2.3]], [4, [21, -2.2]], [6, [30.5, -2.1]], [7, [34.5, 1.9]], [9, [43, 1.3]], [1, [8, 2.3]]]
-      : [[2, [16.5, -2.1]], [4, [29.5, -1.9]], [5, [36, 1.8]]];
+      : [[2, [16.5, -1.7]], [4, [29.5, -1.5]], [5, [36, 1.4]]];
+    if (!lod) for (const z of zig) z[1] *= 0.8;
     const wAt = (u) => { for (let i = 0; i < st.length - 1; i++) if (u <= st[i + 1][0]) { const q = (u - st[i][0]) / (st[i + 1][0] - st[i][0]); return st[i][1] + (st[i + 1][1] - st[i][1]) * q; } return 0; };
     // A face da lâmina vai da nervura (y = th) ao bisel (y = 0.3·th): a veia acompanha essa inclinação
     const yOn = (u, v, f) => { const w = wAt(u), iw = Math.max(0.3, w - 0.75), q = Math.min(1, Math.abs(v) / iw); return f * (th(w) * (1 - 0.7 * q) + 0.24); };
@@ -66,12 +67,12 @@ function buildTempestadeNula(g, k, part, lod) {
     // Guarda angular: peça central em losango apontando sobre a lâmina, braços pontudos inclinados para o cabo
     g.extrude([[4.4, 0], [0.4, 2.5], [-2.8, 0], [0.4, -2.5]], 3.0, GUARD2, 0, { edgeCol: GEDGE });
     for (const s of [1, -1]) {
-      g.extrude([[1.2, s * 1.8], [1.1, s * 4.4], [-2.7, s * 7.9], [-1.5, s * 4.3], [-1.2, s * 2.0]], 2.0, GUARD, 0, { edgeCol: GEDGE });
-      if (lod) g.extrude([[0.8, s * 1.4], [3.8, s * 3.6], [1.1, s * 3.2]], 1.4, GUARD, 0, { edgeCol: GEDGE });
+      g.extrude([[1.2, s * 1.7], [1.0, s * 3.5], [-2.2, s * 6.0], [-1.3, s * 3.4], [-1.1, s * 1.9]], 2.0, GUARD, 0, { edgeCol: GEDGE });
+      if (lod) g.extrude([[0.8, s * 1.4], [3.4, s * 3.0], [1.0, s * 2.7]], 1.4, GUARD, 0, { edgeCol: GEDGE });
     }
-    // Runa azul brilhante no centro (atravessa a guarda, visível dos dois lados)
-    g.extrude([[2.3, 0], [0.2, 1.0], [-1.9, 0], [0.2, -1.0]], 3.3, VEIN, 1.5);
-    if (lod) g.extrude([[0.3, 0], [0.1, 1.7], [-0.1, 0], [0.1, -1.7]], 3.45, VEIN2, 1.6);
+    // Runa azul em losango no centro (atravessa a guarda, visível dos dois lados); filete claro só no modelo grande
+    g.extrude([[2.3, 0], [0.2, 1.0], [-1.9, 0], [0.2, -1.0]], 3.3, '#2f7fe8', 0.8);
+    if (lod) g.extrude([[0.25, 0], [0.12, 1.1], [-0.02, 0], [0.12, -1.1]], 3.42, VEIN2, 0.9);
     // Cabo trançado (anéis alternados)
     g.cyl(-11.6, 0, 0, 1.05, 1.0, 10.6, 6, GRIP, 0, { axis: 'x', caps: false });
     const nw = lod ? 4 : 2;
@@ -96,8 +97,9 @@ function buildTempestadeNula(g, k, part, lod) {
 
   // Paleta da arte conceito: preto quase puro, sombras, realces cinza-escuro, fivelas prateadas
   const C = {
-    coat: '#0f1014', coatHi: '#2a2c33', coatMid: '#1a1b21', coatDark: '#08090b', lining: '#040405', hood: '#15161b', shirt: '#0c0d10',
-    strap: '#1f2026', buckle: '#9aa0aa', pants: '#101115', boot: '#0b0b0e', sole: '#050506', lace: '#2a2c33',
+    // bases levemente quentes/neutras: depois do ambiente e do contraluz azulados o casaco lê como preto neutro
+    coat: '#121113', coatHi: '#2e2c2f', coatMid: '#1c1b1e', coatDark: '#09090a', lining: '#040405', hood: '#17161a', shirt: '#0e0d0f',
+    strap: '#211f22', buckle: '#9aa0aa', pants: '#121113', boot: '#0c0b0d', sole: '#050506', lace: '#2c2a2d',
     skin: '#b08870', skinShade: '#8a6553', lip: '#5e4034', eyeW: '#b4b9c2', iris: '#808a98', lash: '#060608',
     hair: '#09090b', hair2: '#131418', hair3: '#22232a', glove: '#0d0e11', mark: '#3d8bff',
   };
@@ -185,12 +187,13 @@ function buildTempestadeNula(g, k, part, lod) {
     return g;
   }
   // Ombros (referencial do tronco): articulação em (0, ±SHY, SHZ)
-  const SHY = 6.9, SHZ = 12.4;
+  const SHY = 6.7, SHZ = 10.6, TZK = SHZ / 12.4;   // TZK: compressão vertical do tronco
   // Anéis do casaco no tronco (z, rx, ry, cx) — da cintura aos ombros
   const SHELL = [[-1.6, 4.7, 6.4, 0], [4.0, 4.3, 6.1, 0], [8.4, 4.6, 6.9, -0.2], [11.6, 4.4, 7.5, -0.4], [13.2, 3.4, 7.1, -0.5], [14.3, 2.5, 4.2, -0.5]];
   const OPEN = [0.78, 0.7, 0.56, 0.48, 0.5, 0.62];
   function gTorso() {
     const g = new G3();
+    g.at(0, 0, 0, 0, 0, 0, 1, 1, TZK);
     // Camisa preta de gola alta (visível na abertura do casaco)
     arc(g, [[-1.6, 4.25, 5.8, 0.15], [8.4, 4.3, 6.3, 0.0], [13.8, 2.9, 5.0, -0.4]], -1.15, 1.15, 4, C.shirt);
     g.cyl(-0.3, 0, 13.0, 2.7, 2.35, 5.0, 6, C.shirt, 0, { caps: false });
@@ -224,12 +227,19 @@ function buildTempestadeNula(g, k, part, lod) {
     // Capuz abaixado: rolo volumoso em volta do pescoço e dos ombros...
     loft(g, [[12.6, 4.9, 7.6, -1.0], [15.4, 5.5, 8.1, -1.6], [17.8, 4.4, 6.8, -2.0]], [1.0, 1.05, 1.15], 7, [C.hood, C.coatMid]);
     // ...e bolsa do capuz caída nas costas (ponta até o meio das costas)
-    const HOOD = [[19.0, 3.0, 6.0, -5.4], [16.2, 3.6, 6.9, -6.8], [12.0, 2.8, 5.8, -7.1], [7.8, 1.6, 3.6, -6.5], [4.4, 0.3, 0.6, -5.6]];
-    arc(g, HOOD, 0, TWO, 6, [C.coatMid, C.hood, C.hood, C.coatDark]);
-    g.poly([0, 1, 2, 3, 4, 5].map((i) => EP(HOOD[0], i / 6 * TWO, 0.86).map((v, j) => (j === 2 ? v + 0.2 : v))), C.lining);
+    // gota pontuda e centrada, mais estreita que as costas, com a borda da abertura em cima
+    const HOOD = [[19.0, 3.0, 4.6, -5.4], [16.2, 3.6, 5.2, -6.8], [12.0, 2.8, 4.2, -7.1], [7.6, 1.6, 2.4, -6.6], [3.5, 0.3, 0.3, -5.8]];
+    arc(g, HOOD, 0, TWO, 6, [C.hood, C.hood, C.hood, C.coatDark]);
+    for (let i = 0; i < 6; i++) {
+      const a0 = i / 6 * TWO, a1 = (i + 1) / 6 * TWO, o = EP(HOOD[0], a0), p = EP(HOOD[0], a1), q = EP(HOOD[0], a1, 0.78), r = EP(HOOD[0], a0, 0.78);
+      q[2] += 0.25; r[2] += 0.25;
+      g.quad(o, p, q, r, C.coatHi);
+    }
+    g.poly([0, 1, 2, 3, 4, 5].map((i) => EP(HOOD[0], i / 6 * TWO, 0.78).map((v, j) => (j === 2 ? v + 0.25 : v))), C.lining);
     // Tira com fivela atrás da cintura, costura central e fenda das costas
     arc(g, [[0.0, 4.82, 6.6, 0], [1.7, 4.82, 6.6, 0]], 2.2, TWO - 2.2, 4, C.strap);
     buckle(g, 'x', -4.95, 0, 0.85, 1.55, -1);
+    g.at();
     return g;
   }
 
@@ -274,31 +284,35 @@ function buildTempestadeNula(g, k, part, lod) {
     faceQuad(g, [-0.55, 4.25, 0.55, 4.25, 0.5, 4.45, -0.5, 4.45], 0.08, C.lip);
     g.tri(FP(0, 5.65, 0.06), FP(-0.45, 5.9, 0.04), FP(0.45, 5.9, 0.04), C.skinShade);
     // Cabelo: calota volumosa (maior que a cabeça) + mechas desgrenhadas
-    g.sphere(-0.6, 0, 9.7, 5.0, 5.3, 5.0, 7, 4, C.hair);
+    g.sphere(-1.3, 0, 9.0, 5.2, 5.3, 5.6, 6, 4, C.hair);
     const H = C.hair2, H3 = C.hair3;
     // franja longa: cobre a testa e cai entre/sobre os olhos (o esquerdo fica meio escondido)
-    lock(g, [2.6, -3.0, 12.8], [4.65, -3.4, 10.4], [4.5, -3.1, 7.3], 1.35, 0.8, H);
-    lock(g, [3.2, -1.5, 13.2], [5.05, -1.85, 10.6], [4.75, -1.45, 6.7], 1.25, 0.8, H3);
-    lock(g, [3.4, 0.1, 13.3], [5.15, 0.2, 10.9], [4.75, 0.55, 8.0], 1.25, 0.8, H);
-    lock(g, [3.2, 1.5, 13.1], [5.0, 1.85, 10.7], [4.55, 2.3, 8.55], 1.2, 0.8, H3);
-    lock(g, [2.6, 3.0, 12.7], [4.5, 3.5, 10.4], [4.05, 3.75, 7.5], 1.3, 0.8, H);
-    lock(g, [2.6, -0.6, 14.0], [4.9, -0.8, 12.0], [5.1, -0.3, 9.6], 1.6, 0.9, H3);
+    lock(g, [1.2, -3.0, 13.6], [4.4, -3.6, 10.9], [4.2, -3.9, 8.0], 1.3, 0.8, H);
+    lock(g, [1.6, -1.5, 14.1], [4.9, -1.8, 11.3], [4.85, -1.55, 8.4], 1.2, 0.8, H3);
+    lock(g, [1.7, 0.1, 14.2], [5.05, 0.2, 11.2], [4.75, 0.55, 8.0], 1.25, 0.8, H);
+    lock(g, [1.6, 1.5, 14.0], [4.9, 1.85, 11.0], [4.55, 2.3, 8.55], 1.2, 0.8, H3);
+    lock(g, [1.2, 3.0, 13.5], [4.4, 3.5, 10.7], [4.05, 3.75, 7.5], 1.3, 0.8, H);
+    lock(g, [0.8, -0.6, 14.6], [4.6, -0.8, 12.4], [5.1, -0.3, 9.6], 1.6, 0.9, H3);
     // mechas laterais até o queixo (emolduram o rosto)
     for (const s of [-1, 1]) {
-      lock(g, [-0.2, s * 4.8, 11.6], [0.4, s * 5.6, 7.6], [0.9, s * 4.8, 3.6], 1.35, 0.9, H);
+      // a esquerda fica mais para trás e mais fina: libera bochecha e nariz na vista 3/4 esquerda
+      if (s < 0) lock(g, [-1.3, -4.8, 11.6], [-0.9, -5.5, 7.6], [-0.4, -4.7, 4.0], 1.1, 0.85, H);
+      else lock(g, [-0.2, 4.8, 11.6], [0.4, 5.6, 7.6], [0.9, 4.8, 3.6], 1.35, 0.9, H);
       lock(g, [-2.0, s * 5.1, 11.6], [-2.1, s * 6.1, 7.2], [-1.6, s * 5.3, 2.9], 1.85, 0.9, s > 0 ? H3 : H);
     }
     // nuca com pontas para baixo
-    lock(g, [-4.6, -2.5, 10.2], [-6.1, -3.1, 6.6], [-5.5, -2.9, 2.4], 2.0, 1.0, H);
-    lock(g, [-4.6, 2.5, 10.2], [-6.1, 3.1, 6.6], [-5.5, 2.9, 2.6], 2.0, 1.0, H);
-    lock(g, [-4.2, 0, 8.4], [-5.3, 0.1, 4.8], [-4.8, 0.3, 1.0], 2.4, 1.0, H3);
-    // topo: mechas varridas para trás e pontas rebeldes para os lados
-    lock(g, [1.8, -1.6, 14.0], [-1.6, -2.3, 15.1], [-5.8, -3.2, 13.4], 2.2, 1.0, H3);
-    lock(g, [1.8, 1.9, 14.0], [-1.4, 2.6, 15.0], [-5.9, 3.7, 12.8], 2.2, 1.0, H);
-    lock(g, [-1.0, 0, 14.6], [-3.7, 0.2, 15.2], [-7.6, 0.6, 12.4], 2.4, 1.0, H3);
+    lock(g, [-5.2, -2.4, 12.8], [-7.0, -3.2, 7.4], [-5.9, -3.0, 2.4], 2.3, 1.0, H);
+    lock(g, [-5.2, 2.4, 12.8], [-7.0, 3.2, 7.4], [-5.9, 3.0, 2.6], 2.3, 1.0, H);
+    lock(g, [-5.6, 0, 12.4], [-7.1, 0.1, 6.0], [-5.2, 0.3, 1.0], 2.5, 1.0, H3);
+    // topo arredondado: mechas que sobem e se abrem para trás/para os lados + pontas rebeldes no cocuruto
+    lock(g, [1.8, -1.6, 14.0], [-1.4, -2.6, 16.2], [-5.6, -3.6, 14.8], 2.2, 1.0, H3);
+    lock(g, [1.8, 1.9, 14.0], [-1.2, 2.9, 16.0], [-5.7, 4.0, 14.4], 2.2, 1.0, H);
+    lock(g, [-1.0, 0, 14.6], [-3.6, 0.2, 16.6], [-7.4, 0.6, 14.6], 2.4, 1.0, H3);
+    lock(g, [-1.6, -1.1, 14.5], [-3.0, -1.8, 16.2], [-4.6, -2.6, 16.6], 1.4, 0.8, H);
+    lock(g, [-2.0, 1.2, 14.5], [-3.4, 1.9, 16.0], [-5.0, 2.7, 16.2], 1.4, 0.8, H3);
+    lock(g, [-3.6, 0.2, 14.0], [-5.2, 0.3, 15.4], [-7.0, 0.5, 15.6], 1.5, 0.8, H);
     lock(g, [0.4, -3.9, 13.4], [0.2, -5.9, 13.0], [-0.4, -7.0, 10.6], 1.5, 0.9, H);
     lock(g, [-2.6, 3.8, 13.3], [-3.6, 5.9, 12.6], [-4.3, 6.9, 9.8], 1.5, 0.9, H);
-    lock(g, [0.6, 1.2, 14.6], [-0.4, 1.0, 15.9], [-2.6, 0.4, 16.2], 1.4, 0.8, H3);
     return g;
   }
 
@@ -306,59 +320,59 @@ function buildTempestadeNula(g, k, part, lod) {
   // Braço (s = −1 esquerdo, +1 direito): ombro com costura, manga larga com tira e fivela
   function gUpper(s) {
     const g = new G3();
-    g.sphere(0, s * 0.3, -1.0, 2.75, 2.75, 2.7, 6, 3, C.coatMid);
-    g.cyl(0, 0, -9.8, 2.2, 2.55, 9.0, 6, C.coat, 0, { caps: false });
+    g.sphere(0, s * 0.3, -1.0, 2.4, 2.4, 2.5, 6, 3, C.coatMid);
+    g.cyl(0, 0, -9.8, 1.9, 2.2, 9.0, 6, C.coat, 0, { caps: false });
     // camada do ombro (sobreposta, borda mais clara)
-    plate(g, 'z', 0, s * 0.4, 1.72, 2.6, 2.2, C.coatHi);
-    band(g, 0, 0, -4.8, 4.8, 4.8, 1.0, C.strap);
-    buckle(g, 'y', 0, s * 2.45, -4.8, 1.2, s);
+    plate(g, 'z', 0, s * 0.4, 1.5, 2.0, 1.7, C.coatMid);
+    band(g, 0, 0, -4.8, 4.2, 4.2, 1.0, C.strap);
+    buckle(g, 'y', 0, s * 2.15, -4.8, 1.15, s);
     return g;
   }
   // Antebraço: manga em camadas, 2 tiras largas com fivelas, luva preta sem dedos
   function gFore(s) {
     const g = new G3();
-    g.cyl(0, 0, -8.0, 2.6, 2.25, 8.0, 6, C.coat, 0, { caps: false });
-    band(g, 0.1, 0, -3.2, 4.4, 4.4, 1.1, C.strap);
-    band(g, 0.1, 0, -5.9, 4.9, 4.9, 1.3, C.strap);
-    buckle(g, 'y', 0.1, s * 2.27, -3.2, 1.05, s);
-    buckle(g, 'y', 0.1, s * 2.5, -5.9, 1.2, s);
+    g.cyl(0, 0, -8.0, 2.3, 2.0, 8.0, 6, C.coat, 0, { caps: false });
+    band(g, 0.1, 0, -3.2, 3.9, 3.9, 1.1, C.strap);
+    band(g, 0.1, 0, -5.9, 4.4, 4.4, 1.3, C.strap);
+    buckle(g, 'y', 0.1, s * 2.0, -3.2, 1.0, s);
+    buckle(g, 'y', 0.1, s * 2.25, -5.9, 1.15, s);
     // punho da luva, dorso da mão e dedos de pele à mostra
-    g.box(0.2, 0, -9.0, 2.6, 2.9, 2.2, C.glove);
-    g.box(0.45, 0, -10.8, 2.3, 3.0, 2.0, C.glove, 0, { taperX: 1.1 });
-    g.box(0.75, 0, -12.2, 1.6, 2.6, 1.1, C.skin, 0, { taperY: 0.9 });
+    g.box(0.3, 0, -9.9, 2.4, 2.6, 3.8, C.glove, 0, { taperY: 0.92, shift: [-0.15, 0] });
+    g.box(0.75, 0, -12.2, 1.5, 2.4, 1.1, C.skin, 0, { taperY: 0.9 });
     return g;
   }
   function gMark() {
     const g = new G3();
-    band(g, 0.15, 0, -8.15, 3.0, 3.1, 0.55, C.mark, 1.3);
-    plate(g, 'y', 0.2, -1.6, -8.75, 0.8, 1.9, C.mark, 1.5);
-    plate(g, 'y', 0.2, -1.62, -8.75, 0.25, 2.4, '#a8d0ff', 1.6);
-    plate(g, 'x', 1.62, -0.4, -8.75, 1.0, 0.9, C.mark, 1.4);
+    band(g, 0.15, 0, -8.15, 2.75, 2.8, 0.55, C.mark, 1.3);
+    plate(g, 'y', 0.2, -1.45, -8.75, 0.8, 1.9, C.mark, 1.5);
+    plate(g, 'y', 0.2, -1.47, -8.75, 0.25, 2.4, '#a8d0ff', 1.6);
+    plate(g, 'x', 1.5, -0.4, -8.75, 1.0, 0.9, C.mark, 1.4);
     return g;
   }
 
   // ------------------------------------------------------------- pernas (calça folgada, botas pesadas)
-  const LTH = 11.0, LSH = 10.6, ANK = 3.6;   // coxa, canela, tornozelo→sola
+  const LTH = 12.8, LSH = 12.2, ANK = 3.6;   // coxa, canela, tornozelo→sola
   function gThigh(s) {
     const g = new G3();
     g.cyl(0, 0, -LTH, 2.5, 3.0, LTH + 0.4, 6, C.pants, 0, { caps: false });
-    band(g, 0, 0, -5.4, 5.2, 5.4, 0.9, C.strap);
-    g.box(0.3, s * 2.9, -7.0, 2.8, 1.3, 3.2, C.strap);
-    buckle(g, 'x', 2.68, 0.6 * s, -5.4, 1.0);
-    plate(g, 'y', 0.3, s * 3.57, -6.2, 1.1, 0.9, C.buckle);
+    band(g, 0, 0, -6.2, 5.2, 5.4, 0.9, C.strap);
+    g.box(0.3, s * 2.9, -8.0, 2.8, 1.3, 3.4, C.strap);
+    buckle(g, 'x', 2.62, 0.6 * s, -6.2, 1.0);
+    plate(g, 'y', 0.3, s * 3.57, -7.2, 1.1, 0.9, C.buckle);
     return g;
   }
   function gShin(s) {
     const g = new G3();
-    g.cyl(0, 0, -4.6, 2.4, 2.55, 4.8, 6, C.pants, 0, { caps: false });
+    const bt = -LSH + 7.2;   // topo do cano da bota
+    g.cyl(0, 0, bt - 0.6, 2.4, 2.55, 0.8 - bt, 6, C.pants, 0, { caps: false });
     // cano alto da bota pesada com dobra, cadarço e 2 tiras com fivelas
-    g.cyl(0.1, 0, -LSH, 2.55, 2.85, 6.6, 6, C.boot, 0, { caps: false });
-    band(g, 0.1, 0, -4.2, 5.9, 5.9, 0.9, C.coatMid);
-    band(g, 0.1, 0, -5.9, 5.6, 5.6, 0.85, C.strap);
-    band(g, 0.1, 0, -8.2, 5.7, 5.7, 0.85, C.strap);
-    buckle(g, 'y', 0.4, s * 2.86, -5.9, 1.15, s);
-    buckle(g, 'y', 0.4, s * 2.86, -8.2, 1.15, s);
-    plate(g, 'x', 2.82, 0, -7.0, 1.0, 4.6, C.lace);
+    g.cyl(0.1, 0, -LSH, 2.55, 2.85, 7.2, 6, C.boot, 0, { caps: false });
+    band(g, 0.1, 0, bt + 0.4, 5.9, 5.9, 0.9, C.coatMid);
+    band(g, 0.1, 0, -LSH + 4.9, 5.6, 5.6, 0.85, C.strap);
+    band(g, 0.1, 0, -LSH + 2.5, 5.7, 5.7, 0.85, C.strap);
+    buckle(g, 'y', 0.4, s * 2.86, -LSH + 4.9, 1.15, s);
+    buckle(g, 'y', 0.4, s * 2.86, -LSH + 2.5, 1.15, s);
+    plate(g, 'x', 2.82, 0, -LSH + 3.7, 1.0, 4.8, C.lace);
     return g;
   }
   function gFoot(s) {
@@ -371,30 +385,44 @@ function buildTempestadeNula(g, k, part, lod) {
   }
 
   // ------------------------------------------------------------- abas do casaco
-  // Casca curva que alarga para baixo, barra rasgada em pontas irregulares; pivô no topo
+  // Casca curva que alarga para baixo, barra rasgada em pontas irregulares. Cada aba tem dois nós:
+  // parte de cima (pivô no quadril, ~45% do comprimento) e barra (filha, pivô na dobra) para o pano
+  // dobrar em vez de girar como tábua. kr = raio relativo (abas laterais por dentro, sem z-fighting
+  // onde se sobrepõem); slit = [a0, a1] forro escuro no fundo da fenda das costas.
   const rxAt = (z) => 5.2 + (1 - z) * 0.1, ryAt = (z) => 7.0 + (1 - z) * 0.12;
-  function gPanel(a0, a1, L, seed) {
+  const PANEL2 = '#151416', HEMF = 0.45;
+  function gPanel(a0, a1, L, seed, kr, slit) {
     const am = (a0 + a1) / 2, zt = 1.0;
-    const pv = [Math.cos(am) * rxAt(zt), Math.sin(am) * ryAt(zt), zt];
+    const RX = (z) => rxAt(z) * kr, RY = (z) => ryAt(z) * kr;
+    const pv = [Math.cos(am) * RX(zt), Math.sin(am) * RY(zt), zt];
     const ca = Math.cos(-am), sa = Math.sin(-am);
-    const T = (th, z) => { const x = Math.cos(th) * rxAt(z) - pv[0], y = Math.sin(th) * ryAt(z) - pv[1]; return [ca * x - sa * y, sa * x + ca * y, z - zt]; };
-    const g = new G3();
-    const n = 4, z1 = zt - L * 0.55, zb = zt - L;
+    const T = (th, z, k = 1) => { const x = Math.cos(th) * RX(z) * k - pv[0], y = Math.sin(th) * RY(z) * k - pv[1]; return [ca * x - sa * y, sa * x + ca * y, z - zt]; };
+    const zs = zt - L * HEMF, zb = zt - L, zo = zs + 0.9;
+    const cp = T(am, zs);
+    const S = (v) => { v[0] -= cp[0]; v[1] -= cp[1]; v[2] -= cp[2]; return v; };
+    const gU = new G3(), gL = new G3();
+    const n = 3;
     const jag = [0, 1.9, 0.6, 2.4, 0.2, 1.4, 1.0, 2.1];
     for (let j = 0; j < n; j++) {
       const t0 = mix(a0, a1, j / n), t1 = mix(a0, a1, (j + 1) / n);
       const b0 = zb + jag[(j + seed) % 8] * 0.7, b1 = zb + jag[(j + 1 + seed) % 8] * 0.7;
-      g.quad(T(t0, zt), T(t1, zt), T(t1, z1), T(t0, z1), j % 2 ? C.coat : '#141519');
-      g.quad(T(t0, z1), T(t1, z1), T(t1, b1), T(t0, b0), (j + seed) % 3 === 0 ? C.coatDark : C.coat);
+      gU.quad(T(t0, zt), T(t1, zt), T(t1, zs), T(t0, zs), (j + seed) % 2 ? C.coat : PANEL2);
+      gL.quad(S(T(t0, zo)), S(T(t1, zo)), S(T(t1, b1)), S(T(t0, b0)), (j + seed) % 3 === 0 ? PANEL2 : C.coat);
       const tm = (t0 + t1) / 2 + (((j + seed) % 3) - 1) * 0.07;
-      g.tri(T(t0, b0), T(t1, b1), T(tm, zb - 1.0 - ((j * 5 + seed) % 4) * 0.8), C.coatDark);
+      gL.tri(S(T(t0, b0)), S(T(t1, b1)), S(T(tm, zb - 1.0 - ((j * 5 + seed) % 4) * 0.8)), C.coatDark);
     }
-    return { g, pv, am };
+    if (slit) {
+      const k = 0.965;
+      gU.quad(T(slit[0], zt, k), T(slit[1], zt, k), T(slit[1], zs, k), T(slit[0], zs, k), C.lining);
+      gL.quad(S(T(slit[0], zo, k)), S(T(slit[1], zo, k)), S(T(slit[1], zb + 1.2, k)), S(T(slit[0], zb + 1.2, k)), C.lining);
+    }
+    return { gU, gL, pv, am, cp };
   }
-  // [nome, ângulo inicial, final (graus), comprimento, semente] — aberto na frente, fenda nas costas
+  // [nome, ângulo inicial, final (graus), comprimento, semente, raio, forro da fenda (graus)]
+  // Arcos alargados para as abas vizinhas se sobreporem; fenda das costas de ~16° com forro no fundo
   const PANELS = [
-    ['cFR', 40, 88, 21.4, 1], ['cSR', 82, 132, 22.2, 2], ['cBR', 126, 177, 22.6, 3],
-    ['cBL', -177, -126, 22.4, 4], ['cSL', -132, -82, 22.0, 5], ['cFL', -88, -40, 21.6, 6],
+    ['cFR', 34, 94, 24.9, 1, 1.0], ['cSR', 78, 136, 25.7, 2, 0.975], ['cBR', 122, 172, 26.1, 3, 1.0, [171, 180.5]],
+    ['cBL', -172, -122, 25.9, 4, 1.0, [-180.5, -171]], ['cSL', -136, -78, 25.5, 5, 0.975], ['cFL', -94, -34, 25.1, 6, 1.0],
   ];
 
   // ------------------------------------------------------------ parâmetros de pose
@@ -412,21 +440,22 @@ function buildTempestadeNula(g, k, part, lod) {
   const num = (v, d = 0) => (typeof v === 'number' && isFinite(v) ? v : d);
   function furyOf(e) { return cl(num(e.fury) / 100, 0, 1); }
 
+  const HZR = 26.5;   // altura do quadril em repouso (pernas longas)
   // Repouso (base de todas as poses). hz = altura do quadril (o solver soma HZ0); mãos somam HAND0
   function rest(P, e) {
     const t = num(e.animTime), br = Math.sin(t * 2.2);
     P.bz = 0; P.br = 0; P.bp = 0; P.by = 0; P.sq = cl(num(e.squash), -0.3, 0.3); P.fallA = 0; P.fallD = 0;
-    P.hz = 23.0 + br * 0.12; P.hy = 0.08;
+    P.hz = HZR + br * 0.12; P.hy = 0.08;
     P.tp = 0.08 + br * 0.015; P.tr = 0; P.ty = 0.1;
     P.hp = 0.04; P.hyw = -0.12; P.hr = 0.03;
     set3(P.fL, 1.4, -4.6, 0); set3(P.fR, -1.4, 4.8, 0);
-    // espada baixa ao lado da perna direita, ponta para baixo/frente quase tocando o chão
-    set3(P.hR, 4.6, 8.8, 23.4 + br * 0.2); set3(P.pR, -0.8, 0.7, -0.2);
-    set3(P.hL, 0.8, -8.5, 19.8 + br * 0.2); set3(P.pL, -0.8, -0.5, -0.2);
-    set3(P.bd, 0.8, 0.36, -0.42); set3(P.bu, 0, 0, 1);
+    // espada relaxada, baixa e ao lado da perna direita: a lâmina cai na diagonal para fora, ponta perto do chão
+    set3(P.hR, 2.5, 9.6, 24.6 + br * 0.2); set3(P.pR, -0.8, 0.7, -0.2);
+    set3(P.hL, 0.8, -8.3, 21.5 + br * 0.2); set3(P.pL, -0.8, -0.5, -0.2);
+    set3(P.bd, 0.30, 0.78, -0.45); set3(P.bu, 0, 0, 1);
     P.bs = 1; P.reach = 0; P.grip2 = 0; P.fc = 1;
     P.cB = 0.04; P.cFl = 0.02; P.cFq = 1.7; P.flare = 0.06;
-    P.vein = 0.8 + furyOf(e) * 0.8; P.rune = 1; P.markE = 1;
+    P.vein = 0.55 + furyOf(e) * 0.6; P.rune = 1; P.markE = 1;
     P.toeL = 0; P.toeR = 0;
     return P;
   }
@@ -437,16 +466,16 @@ function buildTempestadeNula(g, k, part, lod) {
     const k = cl((num(e.moveSpeed) - 20) / 200, 0, 1.15);
     const ph = t * 13, s = Math.sin(ph), c = Math.cos(ph);
     P.bz = Math.abs(c) * 1.8 * k;
-    P.hz = 23.0 - 1.2 * k;
+    P.hz = HZR - 1.2 * k;
     P.tp = mix(P.tp, 0.3, k); P.ty = mix(P.ty, -s * 0.16, k); P.hy = s * 0.14 * k;
     P.hp = mix(P.hp, -0.12, k); P.hyw = mix(P.hyw, s * 0.1, k);
     set3(P.fL, mix(P.fL[0], s * 9 + 1, k), -4.4, Math.max(0, c) * 5.5 * k);
     set3(P.fR, mix(P.fR[0], -s * 9 + 1, k), 4.6, Math.max(0, -c) * 5.5 * k);
     P.toeL = Math.max(0, -s) * 0.5 * k; P.toeR = Math.max(0, s) * 0.5 * k;
-    set3(P.hL, mix(P.hL[0], -s * 9 + 2, k), mix(P.hL[1], -9.8, k), mix(P.hL[2], 23 + Math.abs(s) * 2.5, k));
-    set3(P.hR, mix(P.hR[0], s * 3 - 2.5, k), mix(P.hR[1], 10.6, k), mix(P.hR[2], 23.5, k));
-    // espada baixa arrastada para trás na corrida
-    set3(P.bd, mix(P.bd[0], -0.88, k * 0.87), mix(P.bd[1], 0.3, k), mix(P.bd[2], -0.3, k));
+    set3(P.hL, mix(P.hL[0], -s * 9 + 2, k), mix(P.hL[1], -9.8, k), mix(P.hL[2], 24.7 + Math.abs(s) * 2.5, k));
+    set3(P.hR, mix(P.hR[0], s * 3 - 2.5, k), mix(P.hR[1], 10.4, k), mix(P.hR[2], 23.5, k));
+    // espada baixa e rente ao corpo, ponta para trás perto do chão
+    set3(P.bd, mix(P.bd[0], -0.62, k), mix(P.bd[1], 0.55, k), mix(P.bd[2], -0.56, k));
     P.cB = 0.04 + 0.8 * k; P.flare = 0.06 + 0.08 * k;
     P.cFl = 0.02 + 0.1 * k; P.cFq = mix(1.7, 17, k);
     return P;
@@ -467,6 +496,7 @@ function buildTempestadeNula(g, k, part, lod) {
     return base + mix(num(sw[0]), num(sw[1]), eoc(pa));
   }
 
+  const HZA = HZR - 1.2;   // quadril na base de combate
   function attackPose(P, e) {
     const a = e.attack, d = a && a.def;
     if (!d || typeof d !== 'object') return rest(P, e);
@@ -486,10 +516,23 @@ function buildTempestadeNula(g, k, part, lod) {
     A.rune = active ? 1.6 : 1.2;
     set3(A.bu, 0, 0, 1);
     set3(A.fL, 5.5, -5.6, 0); set3(A.fR, -4.5, 6.2, 0);
-    A.hz = 21.8; A.tp = 0.16; A.hp = 0.0; A.hyw = 0;
+    A.hz = HZA; A.tp = 0.16; A.hp = 0.0; A.hyw = 0;
     A.cB = 0.35; A.flare = 0.12; A.cFl = 0.05; A.cFq = 12;
-    if (d.thrust) {
-      // Estocada reta à frente, corpo projetado (Pulso Fantasma / Investida Sombria, mais baixa e pesada)
+    if (d.thrust && d.ability) {
+      // Investida Sombria: corpo baixo e projetado, perna de trás estendida, mão livre jogada para trás
+      const k = eoc(cl(pa * 1.7, 0, 1));
+      set3(A.hR, mix(-4, 16, k), mix(9.5, 3.0, k), 26.5);
+      set3(A.pR, -0.3, 0.7, -0.8);
+      set3(A.bd, 1, -0.05, -0.08); set3(A.bu, 0, 1, 0);
+      A.ty = mix(0.4, -0.45, k); A.tp = mix(0.05, 0.5, k); A.hy = A.ty * 0.3;
+      A.hp = -0.32; A.hyw = -A.ty * 0.6;
+      set3(A.fL, mix(4, 10, k), -5.0, 0); set3(A.fR, mix(-4, -12, k), 5.8, 0); A.toeR = 0.7 * k;
+      A.hz = mix(HZR - 1, 21.5, k);
+      set3(A.hL, mix(0, -10, k), -10, mix(26, 25.5, k)); set3(A.pL, -0.3, -0.8, -0.2);
+      A.cB = mix(0.3, 1.1, k); A.flare = 0.1; A.cFl = 0.06; A.cFq = 22;
+      A.vein += 0.3;
+    } else if (d.thrust) {
+      // Pulso Fantasma: estocada reta à frente, corpo projetado
       const k = eoc(cl(pa * 1.7, 0, 1)), hv = d.heavy ? 1 : 0;
       set3(A.hR, mix(-4, 17, k), mix(9.5, 3.5, k), 29 - hv * 1.5);
       set3(A.pR, -0.3, 0.7, -0.8);
@@ -497,8 +540,8 @@ function buildTempestadeNula(g, k, part, lod) {
       A.ty = mix(0.35, -0.5, k); A.tp = mix(0.0, 0.36 + hv * 0.14, k); A.hy = A.ty * 0.3;
       A.hp = -0.2 - hv * 0.06; A.hyw = -A.ty * 0.7;
       set3(A.fL, mix(4, 10 + hv * 2, k), -4.6, 0); set3(A.fR, mix(-4, -9 - hv * 2, k), 5.6, 0); A.toeR = 0.35 * k;
-      A.hz = mix(22, 19.8 - hv * 1.2, k);
-      set3(A.hL, mix(0, -8, k), -11, mix(25, 27, k)); set3(A.pL, -0.5, -0.8, -0.3);
+      A.hz = mix(HZR - 1, 23.3 - hv * 1.2, k);
+      set3(A.hL, mix(0, -8, k), -11, mix(26.7, 28.7, k)); set3(A.pL, -0.5, -0.8, -0.3);
       A.cB = mix(0.3, 0.95 + hv * 0.2, k);
       if (hv) A.vein += 0.3;
     } else if (d.multiHit && !d.oscillate) {
@@ -508,9 +551,9 @@ function buildTempestadeNula(g, k, part, lod) {
       set3(A.hR, Math.cos(p0) * 15, Math.sin(p0) * 15, 28);
       set3(A.pR, -0.2, 0.5, -1);
       set3(A.bd, Math.cos(p0 + 0.08), Math.sin(p0 + 0.08), -0.05); set3(A.bu, -Math.sin(p0), Math.cos(p0), 0);
-      A.ty = 0.25; A.tp = 0.18; A.hz = 21; A.hp = 0.0;
-      set3(A.fL, 3, -6, 0); set3(A.fR, -3, 6, 0);
-      set3(A.hL, -6, -12, 29); set3(A.pL, -0.3, -0.6, -0.5);
+      A.ty = 0.25; A.tp = 0.2; A.hz = HZR - 2.5; A.hp = 0.0;
+      set3(A.fL, 3, -6.5, 0); set3(A.fR, -3, 6.5, 0);
+      set3(A.hL, -6, -12, 30.5); set3(A.pL, -0.3, -0.6, -0.5);
       A.flare = 0.12 + 0.45 * Math.min(1, tt / tW + pa * 2); A.cB = 0.25; A.cFl = 0.08; A.cFq = 20;
     } else {
       // Arco horizontal: altura da mão e da ponta (relativa ao rastro 2D do golpe) por tipo de golpe
@@ -520,39 +563,52 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (num(d.launch) > 500) { z0 = 20; z1 = 44; o0 = -12; o1 = 16; crouch = 2.5; }
       else if (num(d.launch) > 300) { z0 = 24; z1 = 40; o0 = -10; o1 = 12; crouch = 3; }
       else if (d.heavyType) { z0 = 36; z1 = 22; o0 = 14; o1 = -12; crouch = 3; }
-      else if (d.heavy) { z0 = 33; z1 = 24; o0 = 8; o1 = -8; crouch = 1.8; }
-      else if (d.oscillate) { z0 = 29; z1 = 29; o0 = 0; o1 = 0; crouch = 1.4; }
-      else if (d.projectile) { z0 = 32; z1 = 30; o0 = 2; o1 = 2; crouch = 1; }
+      else if (d.heavy) { z0 = 33; z1 = 24; o0 = 8; o1 = -8; crouch = d.light ? 3.5 : 1.8; }
+      else if (d.oscillate) { z0 = 29; z1 = 29; o0 = 0; o1 = 0; crouch = 2.2; }
+      else if (d.projectile) { z0 = 32; z1 = 30; o0 = 2; o1 = 2; crouch = 1.5; }
+      else crouch = 2.4;
       const trailZ = 26 + (num(d.launch) > 300 ? pa * 18 : 0);
-      const hz = mix(z0, z1, ee), tipZ = Math.max(1, trailZ + mix(o0, o1, ee));
-      const rh = (d.oscillate ? 15.5 : 14) - 2.5 * Math.max(0, -Math.cos(phi));
+      // preparação: lâmina armada mais alta e recolhida junto ao corpo, soltando no início do ativo
+      const raise = mode === 0 && !d.oscillate ? (tt < tW ? 1 : Math.max(0, 1 - pa * 3)) : 0;
+      const hz = mix(z0, z1, ee) + 6 * raise, tipZ = Math.max(1, trailZ + mix(o0, o1, ee));
+      const rh = ((d.oscillate ? 15.5 : 14) - 2.5 * Math.max(0, -Math.cos(phi))) * (1 - 0.3 * raise);
       set3(A.hR, Math.cos(phi) * rh, Math.sin(phi) * rh, hz);
       set3(A.pR, -0.2, 0.6, -1);
-      set3(A.bd, Math.cos(phi), Math.sin(phi), (tipZ - hz) / Math.max(20, 52 - 4));
+      set3(A.bd, Math.cos(phi), Math.sin(phi), (tipZ - hz) / Math.max(20, 52 - 4) + 0.55 * raise);
       set3(A.bu, -Math.sin(phi), Math.cos(phi), 0);
-      A.ty = cl(phi * 0.55, -1.05, 1.05); A.hy = A.ty * 0.35; A.hyw = -A.ty * 0.45;
+      // tronco acompanha a lâmina; na preparação gira para o lado oposto ao golpe (lê como carga)
+      const sw1 = Array.isArray(d.swing) ? num(d.swing[1]) : 0;
+      const wind = tt < tW && !d.oscillate ? -Math.sign(sw1) * 0.4 : 0;
+      A.ty = cl(phi * 0.75 + wind, -1.15, 1.15); A.hy = A.ty * 0.35; A.hyw = -A.ty * 0.45;
       const ck = tt >= tW ? 1 : cl(tt / tW, 0, 1);
-      if (mode === 1) { A.hz = 21.8 - crouch * mix(0.2, 1, ee); A.tp = 0.14 + crouch * 0.05 * mix(-1, 1.6, ee); }
-      else if (mode === 2) { A.hz = 21.8 - crouch * mix(1, 0.15, ee); A.tp = mix(0.42, -0.08, ee); A.hp = mix(0.12, -0.2, ee); }
-      else { A.hz = 21.8 - crouch * ck; A.tp = 0.14 + crouch * 0.05; }
+      if (mode === 1) { A.hz = HZA - crouch * mix(0.2, 1, ee); A.tp = 0.14 + crouch * 0.05 * mix(-1, 1.6, ee); }
+      else if (mode === 2) { A.hz = HZA - crouch * mix(1, 0.15, ee); A.tp = mix(0.42, -0.08, ee); A.hp = mix(0.12, -0.2, ee); }
+      else { A.hz = HZA - crouch * ck; A.tp = 0.22 + crouch * 0.025; A.hp = -0.1; }
       const c = Math.cos(A.ty * 0.6), s = Math.sin(A.ty * 0.6);
-      set3(A.hL, c * -3 - s * -11, s * -3 + c * -11, 25); set3(A.pL, -0.4, -0.8, -0.4);
+      set3(A.hL, c * -3 - s * -11, s * -3 + c * -11, 26.7); set3(A.pL, -0.4, -0.8, -0.4);
       if (g2) A.grip2 = 1;
-      if (crouch > 0) { set3(A.fL, 6.5, -6.4, 0); set3(A.fR, -5.5, 7.0, 0); }
-      A.cB = 0.3 + crouch * 0.05; A.flare = 0.12 + Math.abs(A.ty) * 0.12;
+      // passo: pé esquerdo à frente, direito atrás
+      if (mode === 0) { set3(A.fL, 8.5, -6.0, 0); set3(A.fR, -6, 6.8, 0); A.toeR = 0.2; }
+      else { set3(A.fL, 6.5, -6.4, 0); set3(A.fR, -5.5, 7.0, 0); }
+      A.cB = 0.35 + crouch * 0.08; A.flare = 0.12 + Math.abs(A.ty) * 0.12; A.cFl = 0.07;
       if (mode === 2) {
         // Ruptura de Plasma: concentra energia agachado (mão livre à frente) e explode abrindo os braços
-        set3(A.hL, mix(9, 1, ee), mix(-4.5, -15, ee), mix(25, 33, ee)); set3(A.pL, mix(-1, 0.2, ee), -0.8, -0.3);
+        set3(A.hL, mix(9, 1, ee), mix(-4.5, -15, ee), mix(26.5, 34.7, ee)); set3(A.pL, mix(-1, 0.2, ee), -0.8, -0.3);
         A.vein = 2.4; A.rune = 2.2; A.markE = 2.2;
         A.flare = mix(0.1, 0.55, ee); A.cB = mix(0.2, -0.1, ee); A.cFl = 0.1; A.cFq = 24;
         set3(A.fL, 5.5, -7.6, 0); set3(A.fR, -5, 8.0, 0);
       }
     }
-    if (cast) {
-      // Habilidades elétricas: mão esquerda (com a marca) estendida lançando o raio
-      set3(A.hL, 15.5, -3.2, 31.5); set3(A.pL, -0.4, -1, -0.2);
+    if (cast && d.noHit) {
+      // Corrente Relâmpago: mão esquerda (com a marca) erguida acima da cabeça; o raio nasce dela (z ≈ 52)
+      set3(A.hL, 6, -5, 50); set3(A.pL, -0.2, -1, 0.6);
+      A.markE = 2.4;
+      A.ty = Math.min(A.ty, 0.1) - 0.15; A.hyw = 0.05; A.hp = -0.18; A.tp = 0.05;
+    } else if (cast) {
+      // Arco Voltaico: braço esquerdo quase reto à frente, mão na altura do projétil (z ≈ 30)
+      set3(A.hL, 17, -2, 29); set3(A.pL, -0.4, -1, -0.2);
       A.markE = active ? 2.4 : 1.7;
-      A.ty = Math.min(A.ty, 0.15) - 0.15; A.hyw = 0.12;
+      A.ty = Math.min(A.ty, 0.15) - 0.25; A.hyw = 0.15;
     }
     // Fases: preparação (vem do repouso), ativo, recuperação (volta ao repouso)
     if (tt < tW) {
@@ -576,9 +632,9 @@ function buildTempestadeNula(g, k, part, lod) {
     rest(P, e);
     const t = num(e.animTime), lvl = cl(num(e.chargeLevel), 0, 2);
     const tr = Math.sin(t * 47) * 0.012 * (1 + lvl);
-    P.hz = 19.6; P.tp = 0.18 + tr; P.ty = -0.5; P.hy = -0.15; P.hyw = 0.4; P.hp = -0.02;
-    set3(P.fL, 5.5, -6.6, 0); set3(P.fR, -6, 6.6, 0);
-    set3(P.hR, -2.0, 8.6, 41); set3(P.pR, -0.2, 1, -0.6);
+    P.hz = HZR - 3.6; P.tp = 0.2 + tr; P.ty = -0.5; P.hy = -0.15; P.hyw = 0.4; P.hp = -0.02;
+    set3(P.fL, 6, -6.8, 0); set3(P.fR, -6.5, 6.8, 0);
+    set3(P.hR, -2.0, 8.6, 42.5); set3(P.pR, -0.2, 1, -0.6);
     set3(P.bd, -0.72, 0.36, 0.6); set3(P.bu, 0.2, 0.6, 0.2);
     P.grip2 = 1; set3(P.pL, 0.5, -0.8, -0.6);
     P.vein = 1 + lvl * 0.6 + 0.15 * Math.sin(t * 30) + furyOf(e) * 0.2; P.rune = 1.3 + lvl * 0.4;
@@ -590,11 +646,11 @@ function buildTempestadeNula(g, k, part, lod) {
     rest(P, e);
     const k = eoc(cl(num(e.stateTime, 0.1) / 0.05, 0, 1));
     const D = copyP(PA, P);
-    D.hz = 20.4; D.tp = 0.62; D.ty = -0.12; D.hp = -0.45; D.hyw = 0.1;
-    set3(D.fL, 7.5, -4.4, 0.5); set3(D.fR, -11, 5, 3.2); D.toeR = 0.7;
-    set3(D.hR, -6.5, 12, 25.5); set3(D.pR, 0.3, 0.6, -0.6);
-    set3(D.hL, -6, -12, 27); set3(D.pL, 0.3, -0.6, -0.6);
-    set3(D.bd, -0.92, 0.3, -0.12); set3(D.bu, 0, 0, 1);
+    D.hz = HZR - 2.6; D.tp = 0.62; D.ty = -0.12; D.hp = -0.45; D.hyw = 0.1;
+    set3(D.fL, 8.5, -4.4, 0.5); set3(D.fR, -12.5, 5, 3.6); D.toeR = 0.7;
+    set3(D.hR, -6.5, 12, 26.5); set3(D.pR, 0.3, 0.6, -0.6);
+    set3(D.hL, -6, -12, 28); set3(D.pL, 0.3, -0.6, -0.6);
+    set3(D.bd, -0.9, 0.36, -0.24); set3(D.bu, 0, 0, 1);
     D.cB = 1.15; D.flare = 0.12; D.cFl = 0.12; D.cFq = 24;
     mixP(P, P, D, k);
     return P;
@@ -604,9 +660,9 @@ function buildTempestadeNula(g, k, part, lod) {
     rest(P, e);
     const st = num(e.stateTime);
     const amt = st < 0.05 ? st / 0.05 : Math.max(0, 1 - (st - 0.05) / 0.35);
-    P.tp = 0.08 - 0.42 * amt; P.bp = -0.06 * amt; P.hp = 0.04 + 0.5 * amt; P.hz = 23 - 1.4 * amt;
-    set3(P.hR, mix(P.hR[0], -2, amt), mix(P.hR[1], 12.5, amt), mix(P.hR[2], 27, amt));
-    set3(P.hL, mix(P.hL[0], -3, amt), mix(P.hL[1], -12.5, amt), mix(P.hL[2], 28, amt));
+    P.tp = 0.08 - 0.42 * amt; P.bp = -0.06 * amt; P.hp = 0.04 + 0.5 * amt; P.hz = HZR - 1.4 * amt;
+    set3(P.hR, mix(P.hR[0], -2, amt), mix(P.hR[1], 12.5, amt), mix(P.hR[2], 28.7, amt));
+    set3(P.hL, mix(P.hL[0], -3, amt), mix(P.hL[1], -12.5, amt), mix(P.hL[2], 29.7, amt));
     set3(P.bd, mix(P.bd[0], 0.4, amt), mix(P.bd[1], 0.65, amt), mix(P.bd[2], -0.15, amt));
     set3(P.fL, mix(1.4, 4, amt), -5, 0); set3(P.fR, mix(-1.4, -4.5, amt), 5.2, 0);
     P.cB = 0.04 - 0.35 * amt; P.flare = 0.06 + 0.1 * amt; P.cFl = 0.05;
@@ -620,18 +676,18 @@ function buildTempestadeNula(g, k, part, lod) {
     const strike = st > 0.45 ? eoc(cl((st - 0.45) / 0.12, 0, 1)) : 0;
     const back = st > 0.75 ? smooth(cl((st - 0.75) / 0.3, 0, 1)) : 0;
     const U = copyP(PA, R);
-    U.hz = 22.6; U.tp = -0.12; U.hp = -0.3; U.ty = 0; U.hyw = 0; U.fc = 0;
+    U.hz = HZR - 0.4; U.tp = -0.12; U.hp = -0.3; U.ty = 0; U.hyw = 0; U.fc = 0;
     set3(U.fL, 2.5, -4.2, 2.0); set3(U.fR, -2.5, 4.4, 1.0); U.toeL = 0.4; U.toeR = 0.5;
-    set3(U.hR, 2.0, 1.8, 55.5); set3(U.pR, 0, 1, -0.2); set3(U.pL, 0, -1, -0.2);
+    set3(U.hR, 2.0, 1.8, 57); set3(U.pR, 0, 1, -0.2); set3(U.pL, 0, -1, -0.2);
     set3(U.bd, 0.1, -0.03, 1); set3(U.bu, 0, 1, 0); U.grip2 = 1;
     U.cB = 0.25; U.flare = 0.24; U.cFl = 0.08; U.cFq = 20;
     U.vein = 2.2; U.rune = 2.2; U.markE = 1.8;
     mixP(P, R, U, rise);
     if (strike > 0) {
       const S = copyP(PC, U);
-      S.hz = 19.8; S.tp = 0.4; S.hp = 0.15; S.toeL = 0; S.toeR = 0;
+      S.hz = HZR - 3.2; S.tp = 0.4; S.hp = 0.15; S.toeL = 0; S.toeR = 0;
       set3(S.fL, 6, -5.5, 0); set3(S.fR, -6, 6, 0);
-      set3(S.hR, 15, 3, 23); set3(S.bd, 0.86, 0.05, -0.5); set3(S.bu, 0, 1, 0);
+      set3(S.hR, 15, 3, 24.5); set3(S.bd, 0.86, 0.05, -0.5); set3(S.bu, 0, 1, 0);
       S.flare = 0.18; S.cB = 0.5;
       mixP(P, P, S, strike);
       if (back > 0) mixP(P, P, R, back);
@@ -707,6 +763,14 @@ function buildTempestadeNula(g, k, part, lod) {
   }
 
   const POLE_KL = [1, -0.25, 0.1], POLE_KR = [1, 0.25, 0.1];
+  // Dados de oclusão por entidade (pose → glows), sem alocar por quadro
+  const OCC = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function occOf(e) {
+    if (!OCC || !e || typeof e !== 'object') return null;
+    let o = OCC.get(e);
+    if (!o) { o = { mid: 0, tip: 0, hilt: 0 }; OCC.set(e, o); }
+    return o;
+  }
   function solve(m, P, e, t, dead) {
     const n = m.nodes;
     const sq = P.sq;
@@ -736,8 +800,24 @@ function buildTempestadeNula(g, k, part, lod) {
     HT[0] = P.hR[0]; HT[1] = P.hR[1]; HT[2] = P.hR[2] + HAND0;
     ik(n.armRu, n.armRf, SR, HT, AUP, AFO, P.pR, HND);
     const sw = n.sword;
+    // Alcance do golpe: a ponta tenta chegar a ~0.9 × blade do centro do corpo, sem passar de 62
+    let bs = 1;
     if (!dead) {
       sw.p[0] = HND[0] + BD[0] * 4.4; sw.p[1] = HND[1] + BD[1] * 4.4; sw.p[2] = HND[2] + BD[2] * 4.4;
+      if (P.reach > 0) {
+        const hx = BD[0], hy = BD[1], hl = Math.hypot(hx, hy) || 1;
+        const gx = sw.p[0], gy = sw.p[1];
+        const gd = (gx * hx + gy * hy) / hl, gg = gx * gx + gy * gy;
+        const disc = gd * gd - gg + P.reach * P.reach;
+        const tl = (-gd + Math.sqrt(Math.max(0, disc))) / hl;
+        bs = cl(tl / BLADE_L, 1, BLADE_MAX / BLADE_L);
+      }
+      // A ponta nunca fura o chão (z ≥ 1): levanta a lâmina mantendo a direção horizontal
+      const Lt = BLADE_L * bs, tz = P.bz + sw.p[2] + BD[2] * Lt;
+      if (tz < 1 && BD[2] < 0) {
+        const z = cl((1 - P.bz - sw.p[2]) / Lt, -0.98, 0.98), h = Math.hypot(BD[0], BD[1]) || 1, q = Math.sqrt(1 - z * z) / h;
+        BD[0] *= q; BD[1] *= q; BD[2] = z;
+      }
       UP[0] = P.bu[0]; UP[1] = P.bu[1]; UP[2] = P.bu[2];
       if (P.fc > 0.001) {
         // Mostra a face larga da lâmina para a câmera (giro do punho em torno da lâmina)
@@ -753,18 +833,22 @@ function buildTempestadeNula(g, k, part, lod) {
       }
       orient(sw.r, BD, UP);
     }
-    // Alcance do golpe: a ponta tenta chegar a ~0.9 × blade do centro do corpo, sem passar de 62
-    let bs = 1;
-    if (P.reach > 0) {
-      const hx = BD[0], hy = BD[1], hl = Math.hypot(hx, hy) || 1;
-      const gx = sw.p[0], gy = sw.p[1];
-      const gd = (gx * hx + gy * hy) / hl, gg = gx * gx + gy * gy;
-      const disc = gd * gd - gg + P.reach * P.reach;
-      const tl = (-gd + Math.sqrt(Math.max(0, disc))) / hl;
-      bs = cl(tl / BLADE_L, 1, BLADE_MAX / BLADE_L);
-    }
     n.blade.s[0] = bs;
-    n.blade.emi = P.vein; n.hilt.emi = P.rune;
+    n.blade.emi = P.vein; n.hilt.emi = Math.min(P.rune, 1.4);
+    // Oclusão aproximada dos halos da espada pelo corpo (os halos são desenhados sem profundidade)
+    const oc = occOf(e);
+    if (oc) {
+      if (dead) { oc.mid = 0; oc.tip = 0; oc.hilt = 0; }
+      else {
+        const ya = num(e.facing) + P.by, cy = Math.cos(ya), sy = Math.sin(ya);
+        const hid = (u) => {
+          const x = sw.p[0] + BD[0] * u, y = sw.p[1] + BD[1] * u, z = P.bz + sw.p[2] + BD[2] * u;
+          const X = cy * x - sy * y, Y = sy * x + cy * y;
+          return cl((-(X + Y) - 3) / 4, 0, 1) * cl((12 - Math.abs(X - Y)) / 4, 0, 1) * (z > 1 && z < 62 ? 1 : 0);
+        };
+        oc.mid = hid(26 * bs); oc.tip = hid(50 * bs); oc.hilt = hid(-4.4);
+      }
+    }
     // Braço esquerdo (livre ou na empunhadura)
     if (P.grip2 > 0.001 && !dead) {
       HND2[0] = mix(P.hL[0], HND[0] - BD[0] * 4.0, P.grip2);
@@ -773,19 +857,27 @@ function buildTempestadeNula(g, k, part, lod) {
       ik(n.armLu, n.armLf, SL, HND2, AUP, AFO, P.pL, T2);
     } else { HT[0] = P.hL[0]; HT[1] = P.hL[1]; HT[2] = P.hL[2] + HAND0; ik(n.armLu, n.armLf, SL, HT, AUP, AFO, P.pL, T2); }
     n.mark.emi = P.markE * (0.85 + 0.2 * Math.sin(t * 4));
-    // Abas do casaco: inclinação desejada (no quadril) → pitch/roll locais de cada aba
+    // Abas do casaco: inclinação desejada (no quadril) → pitch/roll locais; a parte de cima recebe ~35%
+    // do ângulo e a barra (nó filho) o resto, para o pano dobrar. Vento/flare limitados a ~0.6 rad.
     const legL = n.thighL.r[1], legR = n.thighR.r[1];
-    const fl = P.flare + Math.max(0, P.cB) * 0.12;
+    const fl = P.flare + Math.max(0, P.cB) * 0.06;
     for (let i = 0; i < PANELS.length; i++) {
-      const nd = n[PANELS[i][0]], am = nd.r[2];
+      const nd = n[PANELS[i][0]], hem = n[PANELS[i][0] + '2'], am = nd.r[2];
       const ox = Math.cos(am), oy = Math.sin(am);
       const leg = oy < 0 ? legL : legR;
       const w = Math.sin(t * P.cFq + i * 1.7) * P.cFl;
-      let tx = -P.cB * (0.5 + 0.5 * Math.max(0, -ox)) + ox * (fl + w), ty = oy * (fl + w);
+      let tx = -P.cB * 0.5 * (0.45 + 0.55 * Math.max(0, -ox)) + ox * (fl + w), ty = oy * (fl + w);
+      let tl = Math.hypot(tx, ty);
+      if (tl > 0.6) { tx *= 0.6 / tl; ty *= 0.6 / tl; }
       if (ox > 0.2) tx += Math.max(0, -leg) * 0.95;          // perna à frente empurra a aba da frente
-      else if (ox < -0.2) tx -= Math.max(0, leg) * 0.6;      // perna atrás empurra a aba de trás
+      else if (ox < -0.2) tx -= Math.max(0, leg) * 0.5;      // perna atrás empurra a aba de trás
+      tl = Math.hypot(tx, ty);
+      if (tl > 1.0) { tx /= tl; ty /= tl; }
       const lx = tx * ox + ty * oy, ly = -tx * oy + ty * ox;
-      nd.r[1] = -lx; nd.r[0] = ly;
+      nd.r[1] = -lx * 0.35; nd.r[0] = ly * 0.35;
+      // barra: nas costas cai um pouco mais (pano pesado), em vez de seguir reta como espeto
+      const droop = ox < -0.2 ? Math.max(0, lx) * 0.18 : 0;
+      hem.r[1] = -lx * 0.65 + droop; hem.r[0] = ly * 0.65;
     }
   }
 
@@ -802,11 +894,11 @@ function buildTempestadeNula(g, k, part, lod) {
     const g1 = adiff(0, 3 * PI / 4 - f), g2 = adiff(0, -PI / 4 - f);
     const gam = Math.abs(adiff(g1, -2.2)) < Math.abs(adiff(g2, -2.2)) ? g1 : g2;
     P.sq = 0; P.fallD = gam; P.fallA = k * 1.42; P.bz = k * 1.5;
-    P.hz = 23 - 1.6 * k; P.tr = -0.1 * k; P.tp = 0.07 + 0.08 * k; P.ty = 0.1;
+    P.hz = HZR - 1.6 * k; P.tr = -0.1 * k; P.tp = 0.07 + 0.08 * k; P.ty = 0.1;
     P.hr = 0.3 * k; P.hp = 0.1 - 0.3 * k; P.hyw = -0.35 * k;
     set3(P.fL, 1.5, -4.6, mix(0, 0.8, k)); set3(P.fR, mix(-1.6, -3, k), 5.0, mix(0, 2.6, k));
-    set3(P.hL, mix(P.hL[0], 6, k), mix(P.hL[1], -13, k), mix(P.hL[2], 32, k));
-    set3(P.hR, mix(P.hR[0], 4, k), mix(P.hR[1], 12.5, k), mix(P.hR[2], 25, k));
+    set3(P.hL, mix(P.hL[0], 6, k), mix(P.hL[1], -13, k), mix(P.hL[2], 33.7, k));
+    set3(P.hR, mix(P.hR[0], 4, k), mix(P.hR[1], 12.5, k), mix(P.hR[2], 26.7, k));
     P.vein = mix(P.vein, 0.35, k); P.rune = mix(1, 0.5, k); P.markE = mix(1, 0.6, k);
     P.cB = 0.04 - 0.2 * k; P.flare = 0.06 + 0.12 * k; P.cFl = 0.01;
     solve(m, P, e, t, true);
@@ -837,16 +929,19 @@ function buildTempestadeNula(g, k, part, lod) {
       const fall = root.add(new N3('fall'));
       const body = fall.add(new N3('body'));
       const hips = body.add(new N3('hips', gHips()));
-      hips.p = [0, 0, 23 + HZ0];
+      hips.p = [0, 0, 26.5 + HZ0];
+      const D2R = PI / 180;
       for (const pd of PANELS) {
-        const r = gPanel(pd[1] * PI / 180, pd[2] * PI / 180, pd[3], pd[4]);
-        const nd = hips.add(new N3(pd[0], r.g));
+        const r = gPanel(pd[1] * D2R, pd[2] * D2R, pd[3], pd[4], pd[5], pd[6] ? [pd[6][0] * D2R, pd[6][1] * D2R] : null);
+        const nd = hips.add(new N3(pd[0], r.gU));
         nd.p = r.pv.slice(); nd.r = [0, 0, r.am];
+        const hem = nd.add(new N3(pd[0] + '2', r.gL));
+        hem.p = r.cp.slice();
       }
       const torso = body.add(new N3('torso', gTorso()));
-      torso.p = [0, 0, 23.5 + HZ0];
+      torso.p = [0, 0, 27 + HZ0];
       const head = torso.add(new N3('head', gHead()));
-      head.p = [0.2, 0, 15.3]; head.s = [1.08, 1.08, 1.08];
+      head.p = [0.2, 0, 13.8]; head.s = [1.08, 1.08, 1.08];
       const mkArm = (s, nm) => {
         const u = body.add(new N3('arm' + nm + 'u', gUpper(s)));
         const f = u.add(new N3('arm' + nm + 'f', gFore(s)));
@@ -918,9 +1013,14 @@ function buildTempestadeNula(g, k, part, lod) {
       } else if (st === 'charge') { const l = cl(num(e.chargeLevel), 0, 2); glow = 0.45 + l * 0.2 + 0.1 * Math.sin(t * 30); big = l >= 2 ? 1 : 0; }
       else if (st === 'special') { glow = 1; big = 1; }
       const energy = dead ? 0.05 : Math.max(glow, 0.1 + 0.25 * furyOf(e));
-      add('swordMid', Math.min(14, 6 + energy * 8) + big * 8, '50,120,255', Math.min(0.42, 0.1 + energy * 0.3) + big * 0.15);
-      add('hilt', 4.5, '80,160,255', dead ? 0.2 : 0.35);
-      if (glow > 0) add('swordTip', Math.min(12, 4 + glow * 6) + big * 8, '170,215,255', Math.min(0.45, glow * 0.42) + big * 0.2);
+      // Halos atrás do corpo (vista de costas) são atenuados; a ponta, fora da silhueta, assume o brilho
+      const oc = OCC && OCC.get(e), hm = oc ? oc.mid : 0, ht = oc ? oc.tip : 0, hh = oc ? oc.hilt : 0;
+      add('swordMid', Math.min(14, 6 + energy * 8) + big * 8 * (1 - hm), '50,120,255', (Math.min(0.42, 0.1 + energy * 0.3) + big * 0.15) * (1 - 0.7 * hm));
+      add('hilt', 4.5, '80,160,255', (dead ? 0.2 : 0.35) * (1 - 0.7 * hh));
+      const tg = Math.max(glow, hm * energy * 0.6);
+      if (tg > 0) add('swordTip', Math.min(12, 4 + tg * 6) + big * 8 * (1 - ht), '170,215,255', (Math.min(0.45, tg * 0.42) + big * 0.2) * (1 - 0.7 * ht));
+      // Investida Sombria: acento roxo discreto no peito durante o golpe
+      if (atk && d.thrust && d.ability && num(a.t) < num(d.windup) + num(d.active)) add('chest', 9, '170,120,255', 0.3);
     },
 
     demos: (function () {
