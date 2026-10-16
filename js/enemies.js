@@ -20,7 +20,7 @@ class Enemy extends Entity {
     super(x, y, T.radius);
     this.id = ENEMY_ID++;
     this.type = type; this.T = T; this.level = level;
-    this.maxHp = this.hp = Math.round(T.hp * (1 + level * 0.16));
+    this.maxHp = this.hp = Math.round(T.hp * (1 + level * 0.16) * Settings.diff.hp);
     this.dmg = T.dmg * (1 + level * 0.1);
     this.speed = T.speed * (1 + level * 0.03);
     this.aggro = 1 + level * 0.06;          // reduz recargas em salas avançadas

@@ -563,7 +563,7 @@ class Player extends Entity {
 
   takeDamage(dmg, sx, sy, kb = 260) {
     if (this.state === 'dead' || this.invuln > 0 || game.state !== 'playing') return false;
-    dmg = Math.max(1, Math.round(dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1)));
+    dmg = Math.max(1, Math.round(dmg * Settings.diff.dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1)));
     // Escudo de Energia: absorve o dano antes da vida
     if (this.shieldHp > 0) {
       const ab = Math.min(this.shieldHp, dmg);

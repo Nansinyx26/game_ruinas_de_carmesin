@@ -46,6 +46,7 @@ const P_EMISSIVE = [true, true, false, false, true, true, false, false, true];
 class ParticleSystem {
   constructor(max = 1800) {
     this.max = max;
+    this.quality = 1;               // fração das partículas emitidas (configurações)
     this.items = [];
     for (let i = 0; i < max; i++) {
       this.items.push({ type: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, max: 1, size: 1, size2: 1,
@@ -57,6 +58,8 @@ class ParticleSystem {
   // Emite uma partícula; devolve o objeto (ou null se o pool estiver cheio)
   emit(type, x, y, z, vx, vy, vz, life, size, rgb, grav = 0, drag = 0) {
     if (this.count >= this.max) return null;
+    // Qualidade dos efeitos (configurações): parte das partículas não é emitida
+    if (this.quality < 1 && Math.random() > this.quality) return null;
     const p = this.items[this.count++];
     p.type = type; p.x = x; p.y = y; p.z = z; p.vx = vx; p.vy = vy; p.vz = vz;
     p.life = p.max = life; p.size = size; p.size2 = size; p.rgb = rgb;

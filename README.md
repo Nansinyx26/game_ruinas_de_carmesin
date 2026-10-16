@@ -48,12 +48,58 @@ Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor 
 | I | **Eclipse Absoluto** (100 de energia, depois de desbloqueado) |
 | Tab / H | Árvore de habilidades |
 | E / F | Conversar com NPCs |
-| ESC | Pausa / pular história |
+| ESC | Pausa (menu de pausa) / pular história / voltar nos menus |
 | M | Som liga/desliga |
 | G | Gráficos 3D / 2D |
 | F1 | Modo debug (hitboxes; F2 elimina inimigos, F3 enche vida e energia, F4 dá XP) |
 
-Gamepad (layout padrão): X leve · Y pesado · A esquiva · B/RT Eclipse · LT, RB, L3, R3 habilidades · Back árvore · Start pausa.
+Nos menus: setas (ou mouse) navegam, Enter/J confirma, Esc volta, Q/E trocam de aba, Del apaga um salvamento.
+
+### Controle (gamepad)
+
+Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e genéricos reconhecidos pelo navegador (Gamepad API, mapeamento "standard"). Os nomes e ícones dos botões mudam conforme o controle conectado (A/B/X/Y ou ✕/○/□/△).
+
+| Xbox | PlayStation | Ação |
+|---|---|---|
+| Analógico esquerdo / D-pad | Analógico esquerdo / D-pad | Mover (e navegar nos menus) |
+| RT ou X | R2 ou □ | Ataque leve |
+| RB ou Y | R1 ou △ | Ataque pesado (segure para o Impacto Carregado) |
+| B ou A | ○ ou ✕ | Esquiva |
+| LT | L2 | Eclipse Absoluto |
+| LB + X / Y / B / A | L1 + □ / △ / ○ / ✕ | Habilidades 1 / 2 / 3 / 4 |
+| X (perto de um NPC) | □ (perto de um NPC) | Conversar (no lugar do ataque leve) |
+| Analógico direito | Analógico direito | Olhar ao redor (câmera) |
+| View / Back | Create / Share | Árvore de habilidades |
+| Menu / Start | Options | Pausa |
+| A · B | ✕ · ○ | Confirmar · voltar nos menus |
+| LB · RB | L1 · R1 | Trocar de aba nos menus |
+
+- **Conectar:** por USB, ligue o cabo e aperte qualquer botão com a janela do jogo em foco. Por Bluetooth, pareie o controle nas configurações do sistema (Xbox: botão de parear; DualShock 4/DualSense: segure Share/Create + PS; GameSir: modo XInput/Android) e aperte um botão.
+- Ao conectar ou desconectar aparece um aviso discreto no topo da tela. Se o controle desconectar durante a ação, o jogo pausa e toda a entrada do controle é zerada (Kael não continua andando sozinho).
+- **Configurações → CONTROLES** mostra o estado (conectado, nome, tipo, mapeamento, "EM USO"), um **diagnóstico ao vivo** (analógicos com a zona morta, gatilhos e botões que acendem), a lista completa de comandos e as instruções de conexão. Ali também se ajustam sensibilidade, zona morta, eixo Y invertido da câmera e vibração.
+- O teclado e o mouse continuam funcionando ao mesmo tempo; a interface mostra os ícones do último dispositivo usado.
+
+**Limitações conhecidas:** controles que o navegador não reconhece como "standard" podem ter botões trocados (o diagnóstico avisa); a vibração depende do navegador (Chrome/Edge sim; Firefox e Safari geralmente não); um botão do controle não conta como "gesto" para o navegador, então a tela cheia precisa ser ligada com um clique ou tecla (ou F11); no Safari antigo e em alguns navegadores de celular a Gamepad API é limitada.
+
+## Menus, salvamentos e configurações
+
+- **Capa** → **Tela inicial** (JOGAR, CONFIGURAÇÕES, CRÉDITOS, SAIR) → **Menu principal** (CONTINUAR, NOVO JOGO, CARREGAR, CONFIGURAÇÕES, SAIR) com o painel **Última missão**.
+- **5 espaços de salvamento** independentes, cada um com miniatura da tela, setor, data, nível e tempo de jogo. NOVO JOGO usa o primeiro espaço livre (ou pede um para substituir); em CARREGAR, um espaço vazio começa um jogo novo ali. O salvamento é automático (níveis, habilidades, troca de setor, pausa, saída). Saves da versão anterior viram o espaço 1.
+- **Seleção de personagem:** Kael (modelo 3D) e três personagens ainda bloqueados.
+- **Pausa:** RETOMAR, HABILIDADES, CONFIGURAÇÕES, REINICIAR SETOR, SAIR PARA O MENU, SAIR DO JOGO, com técnicas e evoluções conhecidas.
+- **SAIR** fecha a janela quando o jogo roda como aplicativo; no navegador (que não deixa uma página fechar a própria aba) aparece uma tela de despedida.
+
+Configurações (salvas no navegador e aplicadas com **APLICAR**; **PADRÃO** restaura a aba):
+
+| Aba | Opções |
+|---|---|
+| JOGO | Dificuldade (Narrativa / Normal / Difícil: vida e dano dos inimigos), tremor de tela, números de dano, velocidade do texto |
+| VÍDEO | Janela / tela cheia, resolução interna (50–100%), personagens 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
+| ÁUDIO | Som liga/desliga, volume geral, efeitos sonoros, ambiente |
+| CONTROLES | Sensibilidade do analógico, zona morta, inverter eixo Y da câmera, vibração + diagnóstico e comandos |
+| IDIOMA | Português (Brasil), tamanho das legendas, falas durante o jogo |
+
+As teclas M (som) e G (3D/2D) também atualizam as configurações salvas.
 
 ## Progressão e habilidades
 
@@ -117,7 +163,8 @@ js/
   lighting.js       Lighting: escuridão com furos de luz
   combat.js         avisos de ataque, Hitbox, ATTACKS (golpes), ComboSystem, ComboCounter
   progression.js    UPGRADES/UpgradeSystem, PROG (curva de XP), SKILLS/SKILL_TREES, Progress
-  save.js           SaveSys (localStorage)
+  save.js           SaveSys: 5 espaços de salvamento no localStorage
+  settings.js       SETTINGS_TABS, Settings: opções do jogador e onde cada uma é aplicada
   engine3d.js       motor 3D WebGL próprio (G3, N3, Model3, R3D) e o registro MODELS3D
   entity.js         Entity, base de jogador e inimigos
   abilities.js      ABILITIES: efeitos das habilidades ativas
@@ -130,12 +177,17 @@ js/
   waves.js          WaveManager (ondas, porta, chefe)
   ui.js             wrapText, glowText, drawIcon (ícones procedurais)
   hud.js            HUD
-  screens.js        Screens: título, pausa, árvore de habilidades, evoluções, finais
+  screens.js        Screens: árvore de habilidades, evoluções, derrota e finais
   story.js          MEMORIES, STORY, ENDINGS, CHAPTERS (textos da história)
   storyscreen.js    Backdrop (cenários pintados) e StoryScreen
+  assets/capa.js    arte da capa embutida (data URI gerado de assets/images/capa.jpg)
+  menus.js          Menus: capa, tela inicial, menu principal, carregar, personagem,
+                    configurações, créditos, pausa, confirmações e avisos
   game.js           Game: loop, estados, eventos de combate, XP, salvamento, renderização
   models/           modelos 3D (um arquivo por modelo, registrados em MODELS3D)
   main.js           boot(): cria o jogo — sempre o último script
+assets/images/capa.jpg   arte da capa original (fonte do js/assets/capa.js)
+tools/gerar_capa.py      gera js/assets/capa.js a partir da imagem
 ```
 
 ### Ordem de inicialização
@@ -160,18 +212,23 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Nova sala / ondas | `ROOM_DEFS` e `THEMES` em `js/rooms.js` |
 | Nova evolução entre setores | `UPGRADES` em `js/progression.js` |
 | Elementos do HUD | `js/hud.js` |
-| Novas telas e menus | `js/screens.js` (desenho) e `js/game.js` (estado e entrada) |
+| Menus, pausa, créditos, versão | `js/menus.js` (`CREDITS`, `GAME_VERSION`, `CHARACTERS` no topo do arquivo) |
+| Nova opção de configuração | `SETTINGS_DEFAULT` e `SETTINGS_TABS` em `js/settings.js` (+ o efeito em `Settings.apply()` ou onde a opção é lida) |
+| Telas de evolução, árvore e finais | `js/screens.js` (desenho) e `js/game.js` (estado e entrada) |
 | Textos da história | `js/story.js` |
 | Novos sons | `AudioSys.play()` em `js/audio.js` |
 | Teclas e botões | `KEYMAP` e `PADMAP` em `js/controls.js` |
 | Novo modelo 3D | crie `js/models/<chave>.js` com `MODELS3D.<chave> = { build, pose, opts, glows }` e inclua o `<script>` no `index.html` |
 | Estilos da página | `css/main.css` |
+| Trocar a capa | substitua `assets/images/capa.jpg` e gere `js/assets/capa.js` de novo (abaixo) |
+
+Para gerar o `js/assets/capa.js` a partir da imagem: `python3 tools/gerar_capa.py` (requer Pillow). A imagem fica embutida no JavaScript para o jogo funcionar abrindo o `index.html` direto do disco sem bloquear as miniaturas dos salvamentos.
 
 Para manter o projeto organizado, coloque código novo no arquivo da responsabilidade correspondente (ou crie um arquivo novo e inclua-o no `index.html` na posição certa) em vez de voltar a concentrar tudo no `index.html`.
 
 ### Dependências
 
-Nenhuma. Não há bibliotecas, CDNs, fontes externas, imagens nem arquivos de áudio: gráficos, modelos 3D e sons são gerados por código. Os dados salvos ficam no `localStorage` do navegador (`eclipse_zero_save_v1`, `eclipse_zero_best`, `eclipse_zero_3d`).
+Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, modelos 3D e sons são gerados por código. A única imagem é a arte da capa, embutida em `js/assets/capa.js`. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
 
 ### Versão de arquivo único
 

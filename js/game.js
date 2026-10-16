@@ -9,11 +9,15 @@ class Game {
     this.ctx = this.canvas.getContext('2d');
     this.input = new Input(this.canvas);
     this.audio = new AudioSys();
-    this.input.onFirstInput = () => this.audio.unlock();
+    // Primeiro gesto do jogador: destrava o áudio e, se escolhido, entra em tela cheia
+    this.input.onFirstInput = () => {
+      this.audio.unlock();
+      if (!this.fsTried) { this.fsTried = true; if (Settings.v.display === 'full') Settings.applyDisplay(); }
+    };
+    this.input.onPadChange = (ev, info) => this.onPadChange(ev, info);
     // Gráficos 3D (WebGL) para personagens, inimigos e armas; G liga/desliga
     R3D.init();
-    try { R3D.enabled = localStorage.getItem('eclipse_zero_3d') !== '0'; } catch (e) { /* armazenamento indisponível */ }
-    this.use3D = false; this.ghostProxies = []; this.titleKael = null;
+    this.use3D = false; this.ghostProxies = [];
     this.camera = new Camera();
     this.camera.baseZoom = 1.22;
     this.particles = new ParticleSystem();
@@ -28,18 +32,21 @@ class Game {
     this.waves = new WaveManager();
     this.hud = new HUD();
     this.screens = new Screens();
+    this.menu = new Menus();
     this.story = new StoryScreen();
     this.upgrades = new UpgradeSystem();
     this.progress = new Progress();
     this.flags = {};
     this.checkpoint = 0;
-    this.titleSel = 0; this.titleConfirm = false;
+    this.slot = 0;                 // espaço de salvamento em uso (1..SAVE_SLOTS)
+    this.thumb = null; this.thumbT = 0; this.thumbBroken = false;
+    this.lookOff = { x: 0, y: 0 };
     this.skillUI = { tree: 0, sel: 'corte_eletrico', from: 'playing', msg: '', msgT: 0, msgRgb: '', fx: null };
     this.counter = new ComboCounter();
     this.enemies = [];
     this.npcs = []; this.talkTarget = null;
     this.player = null; this.room = null; this.boss = null;
-    this.state = 'title';
+    this.state = 'menu';
     this.time = 0; this.realTime = 0;
     this.hitStop = 0; this.timeScale = 1; this.slowTimer = 0;
     this.screenFlash = { rgb: '255,255,255', a: 0 };
@@ -62,8 +69,14 @@ class Game {
     this.stats = this.freshStats();
     this.fps = 60; this.fpsAcc = 0; this.fpsFrames = 0;
     this.errors = new Set();
+    this.renderScale = Settings.v.renderScale / 100;
+    this.nextT = 0;
     this.resize();
+    Settings.apply(this, true);
     window.addEventListener('resize', () => this.resize());
+    document.addEventListener('fullscreenchange', () => Settings.onFullscreenChange());
+    // Ao fechar ou trocar de aba no celular, guarda o progresso (tempo de jogo, miniatura)
+    window.addEventListener('pagehide', () => this.saveGame());
     this.last = performance.now();
     this.loopBound = (t) => this.loop(t);
     requestAnimationFrame(this.loopBound);
@@ -75,7 +88,8 @@ class Game {
 
   // Ajusta a resolução interna à janela (nítido em telas de alta densidade)
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Resolução interna: densidade da tela × escala escolhida nas configurações
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * (this.renderScale || 1);
     const cw = Math.max(320, window.innerWidth), ch = Math.max(240, window.innerHeight);
     VIEW_W = Math.round(clamp((VIEW_H * cw) / ch, 960, 1760));
     this.canvas.width = Math.floor(cw * dpr);
@@ -112,9 +126,25 @@ class Game {
     return { x: ((cx - r.left) * kx - this.offX) / this.scale, y: ((cy - r.top) * ky - this.offY) / this.scale };
   }
 
-  onBlur() { if (this.state === 'playing') this.state = 'paused'; }
+  onBlur() { if (this.state === 'playing') this.pauseGame(); }
+
+  // Controle conectado/desconectado: aviso discreto; sem controle no meio da ação, o jogo pausa
+  onPadChange(ev, info) {
+    if (ev === 'connected') this.menu.notify(`Controle conectado · ${info.labels.name}`, '110,190,255', 'pad');
+    else {
+      this.menu.notify('Controle desconectado', '255,120,140', 'pad');
+      if (this.state === 'playing') this.pauseGame();
+    }
+  }
 
   loop(now) {
+    // Limite de FPS (configurações): pula quadros até chegar a hora do próximo
+    const lim = Settings.v.fpsLimit;
+    if (lim) {
+      const iv = 1000 / lim;
+      if (now < this.nextT - iv * 0.25) { requestAnimationFrame(this.loopBound); return; }
+      this.nextT = now - this.nextT > iv ? now + iv : this.nextT + iv;
+    }
     const raw = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
     this.fpsAcc += raw; this.fpsFrames++;
@@ -136,10 +166,12 @@ class Game {
     const inp = this.input;
     inp.update();
     this.realTime += dt;
-    if (inp.pressed.mute) this.audio.toggleMute();
+    this.menu.tick(dt);
+    // Atalhos M (som) e G (3D/2D) também atualizam as configurações salvas
+    if (inp.pressed.mute) { Settings.v.sound = this.audio.toggleMute(); Settings.save(); }
     if (inp.pressed.gfx && R3D.ok) {
       R3D.enabled = !R3D.enabled;
-      try { localStorage.setItem('eclipse_zero_3d', R3D.enabled ? '1' : '0'); } catch (e) { /* armazenamento indisponível */ }
+      Settings.v.gfx3d = R3D.enabled; Settings.save();
       if (this.state === 'playing') this.hud.message(R3D.enabled ? 'GRÁFICOS 3D' : 'GRÁFICOS 2D', '', 1.2, true);
     }
     if (inp.pressed.debug) this.debug = !this.debug;
@@ -152,11 +184,11 @@ class Game {
     if (this.glitchT > 0) this.glitchT = Math.max(0, this.glitchT - dt);
 
     switch (this.state) {
-      case 'title': this.updateTitle(); break;
+      case 'menu': this.menu.update(dt, inp); break;
       case 'skills': this.updateSkills(dt); break;
       case 'story': if (!this.fadeCb) this.story.update(dt, inp); break;
       case 'playing': this.updatePlaying(dt); break;
-      case 'paused': this.updatePaused(); break;
+      case 'paused': this.menu.update(dt, inp); break;
       case 'upgrade': this.updateUpgrade(dt); break;
       case 'gameover':
       case 'victory': this.updateEnd(dt); break;
@@ -185,6 +217,8 @@ class Game {
     this.progress.reset();
     this.flags = {};
     if (save) this.applySave(save);
+    this.thumb = (save && save.thumb) || null; this.thumbT = this.realTime - 3;
+    this.lookOff.x = this.lookOff.y = 0;
     this.checkpoint = save ? clamp(save.room | 0, 0, ROOM_DEFS.length - 1) : 0;
     this.counter = new ComboCounter();
     this.player = new Player(0, 0);
@@ -228,7 +262,7 @@ class Game {
 
   updatePlaying(dt) {
     const inp = this.input, p = this.player;
-    if (inp.pressed.pause && !this.fadeCb) { this.state = 'paused'; this.audio.play('uiMove'); return; }
+    if (inp.pressed.pause && !this.fadeCb) { this.pauseGame(); return; }
     if (inp.pressed.skills && !this.fadeCb && p.state !== 'dead') { this.openSkills('playing'); return; }
     if (this.debug) {
       if (inp.pressed.debugXp) this.gainXP(400, p.x, p.y);
@@ -246,13 +280,13 @@ class Game {
       this.skyFlash = 1; this.skyBoltX = rand(0.15, 0.85); this.skySeed = (Math.random() * 1e6) | 0;
       this.audio.play('thunder', 0.3);
     }
-    // Conversa com o NPC mais próximo ([E]; no gamepad o Y conversa em vez de atacar)
+    // Conversa com o NPC mais próximo ([E]; no gamepad o X conversa em vez de atacar)
     this.talkTarget = null;
     if (p.state !== 'dead') {
       let bd = 80;
       for (const n of this.npcs) { const d = dist(p.x, p.y, n.x, n.y); if (d < bd && n.canTalk()) { bd = d; this.talkTarget = n; } }
     }
-    if (this.talkTarget && inp.pressed.interact && !this.fadeCb) { this.talkTarget.talk(); inp.pressed.heavy = false; }
+    if (this.talkTarget && inp.pressed.interact && !this.fadeCb) { this.talkTarget.talk(); inp.pressed.light = false; }
     if (!this.fadeCb) p.captureInput(inp);
     this.hud.update(dt);
     // Hit stop: congela a simulação por alguns milissegundos a cada impacto
@@ -282,9 +316,12 @@ class Game {
     for (let i = 0; i < this.enemies.length; i++) { const e = this.enemies[i]; if (e.alive) this.enemies[w++] = e; }
     this.enemies.length = w;
 
-    // Câmera com leve antecipação do movimento
+    // Câmera com leve antecipação do movimento; o analógico direito olha ao redor
     const lx = p.x + p.vx * 0.18, ly = p.y + p.vy * 0.18;
-    this.camera.follow(isoX(lx, ly), isoY(lx, ly) - 30, dt);
+    const lk = inp.look, lf = 1 - Math.exp(-6 * dt);
+    this.lookOff.x += (lk.x * 150 - this.lookOff.x) * lf;
+    this.lookOff.y += (lk.y * 110 - this.lookOff.y) * lf;
+    this.camera.follow(isoX(lx, ly) + this.lookOff.x, isoY(lx, ly) - 30 + this.lookOff.y, dt);
 
     if (p.state === 'dead' && p.stateTime > 2.2 && !this.fadeCb) this.fadeTo(() => this.endRun(false));
     if (this.victoryTimer > 0) {
@@ -362,8 +399,11 @@ class Game {
     this.particles.flash(hx, hy, hz, crit ? 48 : def.heavy ? 38 : 26, crit ? '240,250,255' : '190,220,255', 0.1);
     this.particles.blood(e.x, e.y, hz, dir, def.heavy ? 8 : 5, e.T.blood);
     if (def.heavy) this.particles.ring(e.x, e.y, 42, '120,190,255', 0.22, 4);
-    this.texts.spawn(e.x, e.y, (e.height || 40) + e.z + (e.jumpZ || 0), crit ? `${dmg}!` : dmg,
-      crit ? PAL.accentHi : def.heavy ? '#8fd0ff' : '#ffffff', crit ? 31 : def.heavy ? 25 : 21);
+    if (Settings.v.damageNumbers) {
+      this.texts.spawn(e.x, e.y, (e.height || 40) + e.z + (e.jumpZ || 0), crit ? `${dmg}!` : dmg,
+        crit ? PAL.accentHi : def.heavy ? '#8fd0ff' : '#ffffff', crit ? 31 : def.heavy ? 25 : 21);
+    }
+    if (def.heavy || crit) this.input.rumble(0.25, 0.35, 70);
     this.audio.play(def.heavy ? 'hitHeavy' : 'hit');
     if (crit) this.audio.play('crit');
   }
@@ -449,11 +489,13 @@ class Game {
     this.particles.blood(p.x, p.y, 26, Math.atan2(dy, dx), 8, '150,10,30');
     this.particles.sparks(p.x, p.y, 26, Math.atan2(dy, dx), 6, '255,90,110', 300);
     this.audio.play('playerHurt');
+    this.input.rumble(0.7, 0.5, 170);
     this.flashScreen('255,20,50', 0.22);
     this.glitch(0.1);
   }
 
   onPlayerDeath() {
+    this.input.rumble(1, 0.8, 420);
     this.slowMo(0.3, 1.4);
     this.camera.shake(0.6);
     this.camera.zoomPunch(0.08);
@@ -485,6 +527,7 @@ class Game {
   }
 
   onBossDying(b) {
+    this.input.rumble(1, 1, 650);
     this.slowMo(0.25, 2.2);
     this.flashScreen('220,250,255', 0.85);
     this.glitch(0.8);
@@ -591,12 +634,22 @@ class Game {
     }
   }
 
-  updatePaused() {
-    const inp = this.input;
-    if (inp.pressed.pause) { this.state = 'playing'; this.audio.play('uiMove'); }
-    else if (inp.pressed.skills) this.openSkills('paused');
-    else if (inp.pressed.restart && !this.fadeCb) this.fadeTo(() => this.respawn(false));
-    else if (inp.pressed.toTitle && !this.fadeCb) this.fadeTo(() => { this.saveGame(); this.state = 'title'; this.audio.stopAmbient(); this.fadeTarget = 0; });
+  // Pausa: o menu de pausa (js/menus.js) assume a entrada até RETOMAR
+  pauseGame() {
+    if (this.state !== 'playing') return;
+    this.captureThumb();          // a tela ainda mostra o último quadro da ação
+    this.state = 'paused';
+    this.menu.openPause();
+    this.audio.play('uiMove');
+  }
+  resume() { this.state = 'playing'; this.audio.play('uiMove'); }
+  // Volta ao menu principal (o progresso é salvo antes)
+  toMenu() {
+    this.saveGame();
+    this.state = 'menu';
+    this.menu.toMain();
+    this.audio.stopAmbient();
+    this.fadeTarget = 0;
   }
 
   endRun(victory) {
@@ -621,7 +674,7 @@ class Game {
       const sv = this.makeSave();
       sv.room = 0; sv.flags = { cycle: (this.flags.cycle || 0) + 1 };
       sv.stats = { soulsBank: this.stats.soulsBank };
-      SaveSys.write(sv);
+      if (this.slot) SaveSys.write(this.slot, sv);
     } else this.saveGame();
     this.audio.stopAmbient();
   }
@@ -638,7 +691,7 @@ class Game {
       this.audio.play('uiSelect');
       if (this.state === 'victory') this.fadeTo(() => this.continueGame());
       else this.fadeTo(() => this.respawn(true));
-    } else if (inp.pressed.toTitle || inp.pressed.pause) this.fadeTo(() => { this.state = 'title'; this.fadeTarget = 0; });
+    } else if (inp.pressed.toTitle || inp.pressed.pause) this.fadeTo(() => this.toMenu());
   }
 
   // ---------------------------------------------------- progressão e XP
@@ -696,14 +749,27 @@ class Game {
   makeSave() {
     const s = this.stats;
     return {
-      v: 1, time: Date.now(), room: this.checkpoint,
+      v: 1, time: Date.now(), room: this.checkpoint, slot: this.slot, thumb: this.thumb,
       progress: this.progress.toJSON(), upgrades: Object.assign({}, this.upgrades.levels), flags: this.flags,
       stats: { memories: s.memories, memLost: s.memLost, soulsBank: s.soulsBank, soulsTotal: s.soulsTotal, score: Math.round(s.score), kills: s.kills, time: Math.round(s.time) },
     };
   }
   saveGame() {
-    if (!this.player || this.state === 'title') return;
-    if (SaveSys.write(this.makeSave())) this.hud.saved();
+    if (!this.player || !this.slot || this.state === 'menu' || this.state === 'victory') return;
+    if (SaveSys.write(this.slot, this.makeSave())) this.hud.saved();
+  }
+  // Miniatura 16:9 da tela atual para a lista de salvamentos
+  captureThumb() {
+    if (this.thumbBroken) return;
+    try {
+      const c = this.thumbCanvas || (this.thumbCanvas = document.createElement('canvas'));
+      c.width = 192; c.height = 108;
+      const src = this.canvas;
+      let sw = src.width, sh = sw * 9 / 16;
+      if (sh > src.height) { sh = src.height; sw = sh * 16 / 9; }
+      c.getContext('2d').drawImage(src, (src.width - sw) / 2, (src.height - sh) / 2, sw, sh, 0, 0, 192, 108);
+      this.thumb = c.toDataURL('image/jpeg', 0.62);
+    } catch (e) { this.thumbBroken = true; }
   }
   applySave(s) {
     this.progress.load(s.progress);
@@ -716,40 +782,16 @@ class Game {
     for (const k of ['memories', 'memLost', 'soulsBank', 'soulsTotal', 'score', 'kills', 'time']) d[k] = Math.max(0, +st[k] || 0);
   }
 
-  // Título: CONTINUAR / NOVO JOGO (com confirmação quando há progresso salvo)
-  titleItems() { return SaveSys.exists() ? ['continue', 'new'] : ['new']; }
-  updateTitle() {
-    const inp = this.input;
-    if (this.fadeCb) return;
-    const items = this.titleItems();
-    if (this.titleSel >= items.length) this.titleSel = 0;
-    if (this.titleConfirm) {
-      if (inp.pressed.confirm || inp.mouse.clicked) {
-        this.titleConfirm = false; SaveSys.clear(); this.titleSel = 0;
-        this.audio.play('uiSelect');
-        this.beginNewGame();
-      } else if (inp.pressed.back || inp.pressed.pause) { this.titleConfirm = false; this.audio.play('uiMove'); }
-      return;
-    }
-    if (inp.pressed.up || inp.pressed.down) { this.titleSel = (this.titleSel + 1) % items.length; this.audio.play('uiMove'); }
-    const rects = this.screens.titleMenuRects(items.length);
-    if (inp.mouse.moved || inp.mouse.clicked) {
-      rects.forEach((r, i) => {
-        if (inp.mouse.x >= r.x && inp.mouse.x <= r.x + r.w && inp.mouse.y >= r.y && inp.mouse.y <= r.y + r.h && this.titleSel !== i) {
-          this.titleSel = i; this.audio.play('uiMove');
-        }
-      });
-    }
-    if (inp.pressed.confirm || inp.mouse.clicked) {
-      this.audio.unlock(); this.audio.play('uiSelect');
-      if (items[this.titleSel] === 'continue') this.fadeTo(() => this.continueGame());
-      else if (SaveSys.exists()) this.titleConfirm = true;
-      else this.beginNewGame();
-    }
+  // Novo jogo no espaço escolhido: história de abertura e o primeiro setor
+  newGame(slot) {
+    this.slot = slot;
+    SaveSys.clear(slot);
+    this.fadeTo(() => this.playStory(STORY.intro(), () => this.fadeTo(() => this.startRun())));
   }
-  beginNewGame() { this.fadeTo(() => this.playStory(STORY.intro(), () => this.fadeTo(() => this.startRun()))); }
-  continueGame() {
-    const s = SaveSys.read();
+  // Continua o salvamento de um espaço (sem argumento: o espaço em uso)
+  continueGame(slot = this.slot) {
+    const s = SaveSys.read(slot);
+    this.slot = slot;
     this.startRun(s || null);
     if (s) this.hud.toast(`Sinal restaurado · nível ${this.progress.level}`, '185,168,255');
   }
@@ -890,15 +932,15 @@ class Game {
     ctx.setTransform(this.scale, 0, 0, this.scale, this.offX, this.offY);
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, VIEW_W, VIEW_H); ctx.clip();
-    if (this.state === 'title') {
-      this.screens.drawTitle(ctx, this.realTime);
+    if (this.state === 'menu') {
+      this.menu.draw(ctx, this.realTime);
     } else if (this.state === 'story') {
       this.story.draw(ctx, this.realTime);
     } else if (this.player && this.room) {
       this.renderWorld(ctx);
       this.renderScreenFx(ctx);
-      if (this.state === 'playing' || this.state === 'paused') this.hud.draw(ctx);
-      if (this.state === 'paused') this.screens.drawPause(ctx);
+      if (this.state === 'playing') this.hud.draw(ctx);
+      if (this.state === 'paused') this.menu.draw(ctx, this.realTime);
       else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);
       else if (this.state === 'gameover') this.screens.drawEnd(ctx, false, this.realTime);
@@ -906,7 +948,10 @@ class Game {
     }
     if (this.debug) this.drawDebugInfo(ctx);
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade.toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    this.menu.drawNotice(ctx);
     ctx.restore();
+    // Atualiza a miniatura do salvamento a cada poucos segundos de ação
+    if (this.state === 'playing' && this.realTime - this.thumbT > 6 && this.fade < 0.02 && !this.fadeCb) { this.thumbT = this.realTime; this.captureThumb(); }
   }
 
   // ------------------------------------------------------------- modelos 3D
@@ -1162,19 +1207,22 @@ class Game {
     ctx.restore();
   }
 
+  // Pós-processamento (configurações): 0 desligado, 1 reduzido, 2 completo.
+  // O aviso vermelho de vida baixa continua sempre visível (é informação de jogo).
   renderScreenFx(ctx) {
-    ctx.drawImage(this.vignette, 0, 0, VIEW_W, VIEW_H);
+    const fx = Settings.v.postfx;
+    if (fx > 0) { ctx.globalAlpha = fx === 1 ? 0.6 : 1; ctx.drawImage(this.vignette, 0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
     const p = this.player;
     let red = this.hurtVignette;
     if (p.state !== 'dead' && p.hp / p.maxHp < 0.3) red = Math.max(red, 0.3 + 0.18 * Math.sin(this.realTime * 6));
-    if (red > 0) { ctx.globalAlpha = clamp(red, 0, 1); ctx.drawImage(this.redVignette, 0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
+    if (red > 0) { ctx.globalAlpha = clamp(red, 0, 1) * (fx === 0 ? 0.7 : 1); ctx.drawImage(this.redVignette, 0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
     if (this.screenFlash.a > 0) {
-      ctx.fillStyle = rgba(this.screenFlash.rgb, this.screenFlash.a);
+      ctx.fillStyle = rgba(this.screenFlash.rgb, this.screenFlash.a * [0.35, 0.6, 1][fx]);
       ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     }
     // Interferência digital: faixas deslocadas da imagem (NEXUS, memórias, Eclipse)
-    if (this.glitchT > 0) {
-      const k = Math.min(1, this.glitchT * 3), c = this.canvas, s = this.scale;
+    if (this.glitchT > 0 && fx > 0) {
+      const k = Math.min(1, this.glitchT * 3) * (fx === 1 ? 0.5 : 1), c = this.canvas, s = this.scale;
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       for (let i = 0; i < 7; i++) {
@@ -1197,7 +1245,7 @@ class Game {
       `Inimigos: ${this.enemies.length}   Fichas de ataque: ${this.director.tokens.size}/${this.director.maxTokens}   Perigos: ${this.hazards.list.length}`,
       `3D: ${R3D.ok ? (R3D.enabled ? 'ligado' : 'desligado') : 'indisponível'}   escala do atlas: ${R3D.scale.toFixed(2)}   (G alterna)`,
     ];
-    if (p && this.state !== 'title') {
+    if (p && this.state !== 'menu') {
       lines.push(`Jogador: ${p.state}  invuln: ${Math.max(0, p.invuln).toFixed(2)}  cadeia: "${p.combo.seq}"  buffer: ${p.combo.buffer || '-'}  janela esquiva: ${Math.max(0, p.combo.dashWindow).toFixed(2)}`);
       lines.push(`Hit stop: ${Math.max(0, this.hitStop).toFixed(3)}  escala de tempo: ${this.timeScale.toFixed(2)}  ondas: ${this.waves.state}`);
       lines.push('F1 debug · F2 eliminar inimigos · F3 energia e vida cheias');

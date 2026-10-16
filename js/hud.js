@@ -42,7 +42,12 @@ class HUD {
   }
   message(title, sub = '', dur = 2, small = false, low = false) { this.msg = { title, sub, t: 0, max: dur, small, low }; }
   // Legenda com o nome de quem fala (com atraso opcional)
-  say(who, text, dur = 3.5, delay = 0) { this.sub = { who, text, t: -delay, max: dur }; }
+  // Legenda de fala. 'force': conversa pedida pelo jogador (aparece mesmo com 'Falas durante o jogo' desligado)
+  say(who, text, dur = 3.5, delay = 0, force = false) {
+    if (!force && !Settings.v.gameSubs) return;
+    const rate = Settings.textRate();
+    this.sub = { who, text, t: -delay, max: dur * (rate < 1 ? 1.35 : 1) };
+  }
   // Algo adormecido dentro de Kael sussurra após o Eclipse Absoluto
   whisper() { this.say('???', WHISPERS[this.whisperIdx++ % WHISPERS.length], 3.2, 0.7); }
   memory(text, idx) { this.mem = { text, idx, t: 0, max: 6 }; }
@@ -144,8 +149,9 @@ class HUD {
 
   // Barra de habilidades: 4 atalhos + Eclipse Absoluto, com recarga e custo
   drawAbilities(ctx, p) {
-    const pad = game.input.lastDevice === 'pad';
-    const keys = pad ? ['LT', 'RB', 'L3', 'R3'] : ['1', '2', '3', '4'];
+    const pad = game.input.lastDevice === 'pad', P = game.input.padLabels;
+    // No controle: segure LB/L1 e aperte X, Y, B ou A (□ △ ○ ✕ no PlayStation)
+    const keys = pad ? [P.x, P.y, P.b, P.a].map((b) => `${P.lb}+${b}`) : ['1', '2', '3', '4'];
     const s = 52, gap = 10, es = 60;
     const total = 4 * s + 3 * gap + 18 + es;
     const x0 = Math.round(VIEW_W / 2 - total / 2), y = VIEW_H - 20 - s;
@@ -154,7 +160,7 @@ class HUD {
     techPanelPath(ctx, x0 - 12, y - 16, total + 24, s + 30, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(61,139,255,0.3)'; ctx.lineWidth = 1; ctx.stroke();
     for (let k = 0; k < 4; k++) this.abilitySlot(ctx, x0 + k * (s + gap), y, s, game.progress.slots[k], keys[k], k, p);
-    this.eclipseSlot(ctx, x0 + 4 * (s + gap) + 8, y + s - es, es, pad ? 'B' : 'I', p);
+    this.eclipseSlot(ctx, x0 + 4 * (s + gap) + 8, y + s - es, es, pad ? P.lt : 'I', p);
     // Efeitos ativos (tempo restante)
     const b = p.buffs, list = [];
     if (b.overload > 0) list.push(['overload', b.overload, '80,160,255', 'Sobrecarga']);
@@ -252,7 +258,8 @@ class HUD {
       ctx.fillText(`NV ${SKILLS.eclipse_absoluto.lvl}`, cx, cy + 15);
     }
     ctx.font = `bold 11px ${FONT_TITLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(cx - 9, y + s - 9, 18, 13);
+    const kw = Math.max(18, ctx.measureText(key).width + 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(cx - kw / 2, y + s - 9, kw, 13);
     ctx.fillStyle = ready ? '#ffffff' : '#9aa6b8'; ctx.fillText(key, cx, y + s - 2);
     ctx.restore();
   }
@@ -610,12 +617,13 @@ class HUD {
     const st = SPEAKERS[s.who] || { color: PAL.accentHi, glow: 'rgba(60,140,255,0.7)' };
     const k = s.t / s.max;
     const a = clamp(k < 0.08 ? k / 0.08 : k > 0.85 ? (1 - k) / 0.15 : 1, 0, 1);
-    const shown = s.text.slice(0, Math.floor(s.t * 48));
+    const shown = s.text.slice(0, Math.floor(s.t * 48 * Settings.textRate()));
+    const fs = Settings.v.subtitleSize ? 21 : 17;
     ctx.save();
     ctx.globalAlpha = a * (st.whisper ? 0.65 + 0.35 * Math.sin(this.time * 9) : 1);
-    ctx.font = `${st.whisper ? 'italic ' : ''}17px ${FONT_UI}`;
+    ctx.font = `${st.whisper ? 'italic ' : ''}${fs}px ${FONT_UI}`;
     const lines = wrapText(ctx, s.text, Math.min(760, VIEW_W - 120));
-    const lh = 23, bw = Math.min(800, VIEW_W - 80), bh = 42 + lines.length * lh;
+    const lh = Math.round(fs * 1.35), bw = Math.min(800, VIEW_W - 80), bh = 42 + lines.length * lh;
     const bx = VIEW_W / 2 - bw / 2, by = VIEW_H - 138 - bh;
     if (!st.whisper) {
       ctx.fillStyle = 'rgba(2,6,14,0.72)';
@@ -629,7 +637,7 @@ class HUD {
     ctx.fillStyle = st.color;
     ctx.fillText(s.who, VIEW_W / 2 + jx, by + 10);
     ctx.letterSpacing = '0px';
-    ctx.font = `${st.whisper ? 'italic ' : ''}17px ${FONT_UI}`;
+    ctx.font = `${st.whisper ? 'italic ' : ''}${fs}px ${FONT_UI}`;
     // Distribui o texto já digitado pelas linhas
     let left = shown.length;
     lines.forEach((ln, i) => {
@@ -670,7 +678,7 @@ class HUD {
     const n = game.talkTarget;
     if (!n) return;
     const h = n.headPoint(), q = game.camera.toScreen(h.x, h.y - 16);
-    const key = game.input.lastDevice === 'pad' ? 'Y' : 'E';
+    const key = game.input.lastDevice === 'pad' ? game.input.padLabels.x : 'E';
     ctx.save();
     ctx.font = `bold 12px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const txt = `Falar · ${n.name}`, w = ctx.measureText(txt).width + 40, bob = Math.sin(this.time * 4) * 2;

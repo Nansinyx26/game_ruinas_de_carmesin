@@ -1,25 +1,8 @@
 'use strict';
-// ECLIPSE ZERO · Telas: título, pausa, árvore de habilidades, evoluções, derrota e final
+// ECLIPSE ZERO · Telas do jogo: árvore de habilidades, evoluções, derrota e final
 // ---------------------------------------------------------------------------
-// TELAS: título, pausa, evoluções, derrota e final
+// TELAS: árvore de habilidades, evoluções, derrota e final (menus e pausa: js/menus.js)
 // ---------------------------------------------------------------------------
-const CONTROLS = [
-  ['WASD / Setas', 'Mover'],
-  ['J · K', 'Ataque leve · pesado (segure: Impacto)'],
-  ['L / Espaço', 'Esquiva (invencível)'],
-  ['1 2 3 4', 'Habilidades ativas (gastam energia)'],
-  ['I', 'Eclipse Absoluto (100 de energia)'],
-  ['Tab / H', 'Árvore de habilidades'],
-  ['E · ESC', 'Conversar · pausa / pular história'], ['M · G · F1', 'Som · gráficos 3D/2D · debug'],
-];
-const COMBO_LIST = [
-  ['Leve · Leve · Leve', 'Descarga Tríplice'],
-  ['Leve · Leve · Pesado', 'Círculo da Ruína'],
-  ['Pesado (segurado)', 'Impacto Carregado'],
-  ['Esquiva → Leve', 'Pulso Fantasma'],
-  ['Esquiva → Pesado', 'Corte do Vazio'],
-];
-
 class Screens {
   overlay(ctx, a = 0.72) {
     ctx.fillStyle = `rgba(1,3,8,${a})`;
@@ -28,162 +11,6 @@ class Screens {
 
   // Partículas de energia flutuando (título e telas finais)
   drawEmbers(ctx, t) { Backdrop.drawMotes(ctx, t); }
-
-  // Kael em 3D na tela de título, em grande escala, com a espada carregada
-  drawHero3D(ctx, t) {
-    if (!R3D.active || !game.model3('kael')) return false;
-    const k = game.titleKael || (game.titleKael = new Player(0, 0));
-    k.state = 'idle'; k.animTime = t; k.stateTime = t; k.fury = 100; k.moveSpeed = 0; k.flash = 0;
-    k.facing = 0.55 + 0.5 * Math.sin(t * 0.3);
-    const sc = 3.1;
-    const o = game.opts3(k, 0); o.scale = sc;
-    const it = game.queue3('kael', k, o);
-    R3D.flush(Math.min(3, game.scale));
-    if (!it || !it.ok) return false;
-    const x = Math.min(VIEW_W * 0.13, 160), y = VIEW_H * 0.985;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    GlowCache.drawFlat(ctx, '60,130,255', x, y, 140, 0.5);
-    ctx.restore();
-    R3D.blit(ctx, it, x, y);
-    R3D.blitEmissive(ctx, it, x, y, 1);
-    const def = MODELS3D.kael;
-    if (def.glows) {
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      def.glows(k, (name, r, rgb, a) => { const q = it.anchors[name]; if (q) GlowCache.draw(ctx, rgb, x + q.x, y + q.y, r * sc * 0.8, a); });
-      ctx.restore();
-    }
-    return true;
-  }
-
-  drawTitle(ctx, t) {
-    // Vesper sob o céu artificial, a torre central e Kael de costas com a espada acesa
-    const sky = Backdrop.layer('title-sky', VIEW_W, VIEW_H, (g, w, h) => Backdrop.paintSky(g, w, h, 'city'));
-    ctx.drawImage(sky, 0, 0, VIEW_W, VIEW_H);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    GlowCache.draw(ctx, '90,170,255', VIEW_W * 0.5, VIEW_H * 0.12, 60, 0.4 + 0.3 * Math.sin(t * 3));
-    ctx.restore();
-    if (Math.sin(t * 0.9) > 0.97) {
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
-      ctx.fillStyle = 'rgba(150,190,255,0.08)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-      drawBolt(ctx, VIEW_W * (0.2 + 0.6 * ((Math.floor(t * 0.9 / TAU) * 0.37) % 1)), 0, VIEW_W * 0.5, VIEW_H * 0.14, mulberry32(Math.floor(t * 18)), 0.25, 2.5, '170,220,255', 0.9);
-      ctx.restore();
-    }
-    Backdrop.drawRain(ctx, t, 0.9);
-    const vg = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    vg.addColorStop(0, 'rgba(1,3,8,0.35)'); vg.addColorStop(0.5, 'rgba(1,3,8,0.15)'); vg.addColorStop(1, 'rgba(1,3,8,0.85)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    if (!this.drawHero3D(ctx, t)) Backdrop.kael(ctx, Math.min(VIEW_W * 0.1, 120), VIEW_H * 0.99, 2.1, t);
-    this.drawEmbers(ctx, t);
-    // Título
-    ctx.save();
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const jx = Math.sin(t * 37) > 0.985 ? rand(-6, 6) : 0;
-    ctx.font = `bold 98px ${FONT_TITLE}`;
-    ctx.letterSpacing = '22px';
-    glowText(ctx, 'ECLIPSE', VIEW_W / 2 + 11 + jx, VIEW_H * 0.2, '#eef5ff', 'rgba(60,140,255,0.85)', 30);
-    ctx.font = `bold 46px ${FONT_TITLE}`;
-    ctx.letterSpacing = '40px';
-    glowText(ctx, 'ZERO', VIEW_W / 2 + 20, VIEW_H * 0.31, PAL.accent, 'rgba(40,120,255,1)', 28);
-    ctx.letterSpacing = '0px';
-    ctx.strokeStyle = 'rgba(61,139,255,0.7)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(VIEW_W / 2 - 210, VIEW_H * 0.31); ctx.lineTo(VIEW_W / 2 - 90, VIEW_H * 0.31); ctx.moveTo(VIEW_W / 2 + 90, VIEW_H * 0.31); ctx.lineTo(VIEW_W / 2 + 210, VIEW_H * 0.31); ctx.stroke();
-    ctx.font = `italic 16px ${FONT_UI}`;
-    ctx.fillStyle = 'rgba(214,225,240,0.82)';
-    wrapText(ctx, '“Quando o último céu artificial se apagar, os mortos se lembrarão de como viver… e os vivos desejarão nunca ter nascido.”', 640)
-      .forEach((ln, i) => ctx.fillText(ln, VIEW_W / 2, VIEW_H * 0.385 + i * 22));
-    ctx.restore();
-    // Painel de controles e técnicas
-    // Em telas estreitas o painel ocupa a largura toda (sobre a silhueta de Kael)
-    const { px, py, pw, ph } = this.titleLayout();
-    ctx.save();
-    ctx.fillStyle = 'rgba(2,6,14,0.78)';
-    techPanelPath(ctx, px, py, pw, ph, 14); ctx.fill();
-    ctx.strokeStyle = 'rgba(61,139,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.textBaseline = 'middle';
-    const col = pw / 2;
-    ctx.font = `bold 13px ${FONT_TITLE}`; ctx.fillStyle = PAL.accent; ctx.textAlign = 'left';
-    ctx.letterSpacing = '3px';
-    ctx.fillText('CONTROLES', px + 24, py + 22);
-    ctx.fillText('TÉCNICAS DA TEMPESTADE NULA', px + col + 14, py + 22);
-    ctx.letterSpacing = '0px';
-    ctx.font = `13px ${FONT_UI}`;
-    CONTROLS.forEach(([k, d], i) => {
-      ctx.fillStyle = PAL.accentHi; ctx.fillText(k, px + 24, py + 48 + i * 21);
-      ctx.fillStyle = '#c9d3e2'; ctx.fillText(d, px + 132, py + 48 + i * 21);
-    });
-    COMBO_LIST.forEach(([k, d], i) => {
-      ctx.fillStyle = '#c9d3e2'; ctx.fillText(k, px + col + 14, py + 48 + i * 22);
-      ctx.fillStyle = '#7fc0ff'; ctx.fillText(d, px + col + 180, py + 48 + i * 22);
-    });
-    ctx.fillStyle = 'rgba(201,211,226,0.6)'; ctx.font = `12px ${FONT_UI}`;
-    ctx.fillText('Técnicas e poderes se desbloqueiam na árvore de habilidades.', px + col + 14, py + 166);
-    ctx.fillText('Gamepad: X leve · Y pesado · A esquiva · B Eclipse', px + col + 14, py + 188);
-    ctx.fillText('LT · RB · L3 · R3 habilidades · Back árvore · Start pausa', px + col + 14, py + 208);
-    ctx.restore();
-    // Menu (continuar / novo jogo) + recorde
-    this.drawTitleMenu(ctx, t);
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,225,240,0.6)';
-    if (game.best > 0 && !game.titleConfirm) ctx.fillText(`Recorde: ${game.best.toLocaleString('pt-BR')} pontos`, px + pw / 2, VIEW_H - 14);
-    ctx.restore();
-  }
-  // Painel de controles do título e itens do menu (também usados pelo mouse)
-  titleLayout() {
-    const wide = VIEW_W - 300 >= 800;
-    const pw = wide ? Math.min(860, VIEW_W - 300) : Math.min(860, VIEW_W - 60);
-    const px = (VIEW_W - pw) / 2 + (wide ? 60 : 0), py = VIEW_H * 0.47, ph = 228;
-    return { px, py, pw, ph };
-  }
-  titleMenuRects(n) {
-    const L = this.titleLayout(), w = 380, out = [];
-    for (let i = 0; i < n; i++) out.push({ x: L.px + L.pw / 2 - w / 2, y: L.py + L.ph + 14 + i * 38, w, h: 32 });
-    return out;
-  }
-  drawTitleMenu(ctx, t) {
-    const items = game.titleItems(), rects = this.titleMenuRects(items.length);
-    const save = items[0] === 'continue' ? SaveSys.read() : null;
-    ctx.save();
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    items.forEach((it, i) => {
-      const r = rects[i], sel = i === game.titleSel, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
-      let label = it === 'continue' ? 'CONTINUAR' : 'NOVO JOGO';
-      if (it === 'continue' && save && save.progress) {
-        const room = ROOM_DEFS[clamp(save.room | 0, 0, ROOM_DEFS.length - 1)];
-        label += `  ·  NÍVEL ${save.progress.level | 0}  ·  ${room.name.toUpperCase()}`;
-      }
-      ctx.font = `bold ${sel ? 19 : 16}px ${FONT_TITLE}`;
-      ctx.letterSpacing = '3px';
-      if (sel) {
-        ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 4);
-        const w = ctx.measureText(label).width / 2 + 26;
-        ctx.fillStyle = 'rgba(20,50,110,0.45)'; ctx.fillRect(cx - w, r.y + 2, w * 2, r.h - 4);
-        glowText(ctx, label, cx, cy, PAL.accentHi, 'rgba(40,120,255,0.9)', 12);
-        ctx.fillStyle = PAL.accent;
-        ctx.beginPath(); ctx.moveTo(cx - w - 4, cy - 6); ctx.lineTo(cx - w + 6, cy); ctx.lineTo(cx - w - 4, cy + 6); ctx.closePath(); ctx.fill();
-        ctx.globalAlpha = 1;
-      } else {
-        ctx.fillStyle = 'rgba(201,211,226,0.6)';
-        ctx.fillText(label, cx, cy);
-      }
-    });
-    ctx.letterSpacing = '0px';
-    if (game.titleConfirm) {
-      this.overlay(ctx, 0.75);
-      const w = Math.min(560, VIEW_W - 80), h = 150, x = VIEW_W / 2 - w / 2, y = VIEW_H / 2 - h / 2;
-      ctx.fillStyle = 'rgba(8,4,12,0.95)';
-      techPanelPath(ctx, x, y, w, h, 14); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,92,122,0.7)'; ctx.stroke();
-      ctx.font = `bold 18px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = '#ff8aa0';
-      ctx.fillText('NOVO JOGO', VIEW_W / 2, y + 32);
-      ctx.letterSpacing = '0px';
-      ctx.font = `15px ${FONT_UI}`; ctx.fillStyle = '#dfe6f2';
-      ctx.fillText('Começar de novo apagará o progresso salvo de Kael.', VIEW_W / 2, y + 68);
-      ctx.font = `bold 14px ${FONT_UI}`; ctx.fillStyle = PAL.accentHi;
-      ctx.fillText('ENTER / J — confirmar        ESC — cancelar', VIEW_W / 2, y + 108);
-    }
-    ctx.restore();
-  }
 
   // --------------------------------------------------- árvore de habilidades
   skillLayout() {
@@ -449,52 +276,6 @@ class Screens {
     ctx.restore();
   }
 
-  drawPause(ctx) {
-    this.overlay(ctx, 0.78);
-    ctx.save();
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `bold 54px ${FONT_TITLE}`;
-    ctx.letterSpacing = '10px';
-    glowText(ctx, 'PAUSADO', VIEW_W / 2, VIEW_H * 0.18, '#eef5ff', 'rgba(40,120,255,0.9)', 20);
-    ctx.letterSpacing = '0px';
-    ctx.font = `15px ${FONT_UI}`; ctx.fillStyle = '#c9d3e2';
-    ctx.fillText('ESC — continuar      TAB — habilidades      R — reiniciar setor      T — título (progresso salvo)', VIEW_W / 2, VIEW_H * 0.27);
-    ctx.fillStyle = PAL.accentHi;
-    ctx.fillText(`${ROOM_DEFS[game.waves.roomIndex].sub}   ·   nível ${game.progress.level}   ·   memórias: ${game.stats.memories} / ${MEMORIES.length}`, VIEW_W / 2, VIEW_H * 0.32);
-    // Técnicas conhecidas
-    const p = game.player, lv = (id) => game.progress.lv(id);
-    const list = [['Leve · Leve', 'Golpes da Tempestade Nula'], ['Pesado (segurado)', 'Impacto Carregado']];
-    if (lv('corte_duplo')) list.push(['Leve · Leve · Leve', 'Descarga Tríplice']);
-    if (lv('lamina_giratoria')) list.push(['Leve · Leve · Pesado', 'Círculo da Ruína']);
-    if (lv('pulso_fantasma')) list.push(['Esquiva → Leve', 'Pulso Fantasma']);
-    if (lv('corte_vazio')) list.push(['Esquiva → Pesado', 'Corte do Vazio']);
-    if (p.combo.unlocked.has('slam')) list.push(['Pesado · Pesado', 'Colapso Magnético']);
-    if (p.combo.unlocked.has('uppercut')) list.push(['Leve · Pesado', 'Relâmpago Ascendente']);
-    if (lv('eclipse_absoluto')) list.push(['I (100 de energia)', 'Eclipse Absoluto']);
-    ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = PAL.accent;
-    ctx.letterSpacing = '3px';
-    ctx.fillText('TÉCNICAS', VIEW_W / 2 - 200, VIEW_H * 0.4);
-    ctx.fillText('EVOLUÇÕES', VIEW_W / 2 + 220, VIEW_H * 0.4);
-    ctx.letterSpacing = '0px';
-    ctx.font = `14px ${FONT_UI}`;
-    // Colunas: sequência (alinhada à direita) → nome da técnica (alinhado à esquerda)
-    const cx = VIEW_W / 2 - 200;
-    list.forEach(([k, n], i) => {
-      const y = VIEW_H * 0.45 + i * 24;
-      ctx.textAlign = 'right'; ctx.fillStyle = '#c9d3e2'; ctx.fillText(k, cx - 14, y);
-      ctx.textAlign = 'center'; ctx.fillStyle = PAL.accent; ctx.fillText('→', cx, y);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#7fc0ff'; ctx.fillText(n, cx + 14, y);
-    });
-    ctx.textAlign = 'center';
-    const ups = UPGRADES.filter((u) => game.upgrades.level(u.id) > 0);
-    if (!ups.length) { ctx.fillStyle = 'rgba(201,211,226,0.6)'; ctx.fillText('Nenhuma ainda', VIEW_W / 2 + 220, VIEW_H * 0.45); }
-    ups.forEach((u, i) => {
-      ctx.fillStyle = '#c9d3e2';
-      ctx.fillText(`${u.name}${u.max > 1 ? ` (${game.upgrades.level(u.id)}/${u.max})` : ''}`, VIEW_W / 2 + 220, VIEW_H * 0.45 + i * 24);
-    });
-    ctx.restore();
-  }
-
   // Retângulos dos cartões de evolução (também usados para o mouse)
   cardRects() {
     const n = game.upgradeChoices.length;
@@ -634,7 +415,7 @@ class Screens {
     ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 4);
     ctx.font = `bold 19px ${FONT_TITLE}`;
     ctx.letterSpacing = '2px';
-    glowText(ctx, victory ? 'ENTER — novo ciclo (mantém a evolução)      T — título' : 'ENTER — reconectar no último ponto seguro      T — título',
+    glowText(ctx, victory ? 'ENTER — novo ciclo (mantém a evolução)      T / ESC — menu' : 'ENTER — reconectar no último ponto seguro      T / ESC — menu',
       VIEW_W / 2, VIEW_H * 0.93, '#eef5ff', 'rgba(40,120,255,0.8)', 10);
     ctx.restore();
   }

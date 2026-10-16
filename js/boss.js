@@ -135,7 +135,7 @@ class Boss extends Enemy {
     this.isBoss = true;
     this.name = 'NEXUS — A CONSCIÊNCIA DO ECLIPSE';
     this.T = Object.assign({}, ENEMY_TYPES.legionario, { score: 6000, souls: [40, 50], orb: 0, blood: '60,200,220', glow: '120,255,235', height: 128, mech: true });
-    this.maxHp = this.hp = 2600;
+    this.maxHp = this.hp = Math.round(2600 * Settings.diff.hp);
     this.radius = 38; this.mass = 14; this.height = 128;
     this.dmg = 22; this.speed = 92;
     this.launchable = false; this.stunMult = 0;

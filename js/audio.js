@@ -8,7 +8,8 @@ class AudioSys {
     this.ctx = null;
     this.master = null;
     this.muted = false;
-    this.volume = 0.55;
+    this.volume = 0.55; this.sfxVol = 1; this.ambVol = 1;
+    this.sfx = null; this.amb = null;
     this.last = {};
     this.noiseBuf = null;
     this.ambient = null;
@@ -28,6 +29,9 @@ class AudioSys {
       comp.attack.value = 0.003; comp.release.value = 0.2;
       this.master.connect(comp);
       comp.connect(c.destination);
+      // Canais separados para efeitos e ambiente (volumes nas configurações)
+      this.sfx = c.createGain(); this.sfx.gain.value = this.sfxVol; this.sfx.connect(this.master);
+      this.amb = c.createGain(); this.amb.gain.value = this.ambVol; this.amb.connect(this.master);
       // Buffer de ruído branco reutilizado por todos os sons de "sopro" e impacto
       const len = Math.floor(c.sampleRate * 1.5);
       this.noiseBuf = c.createBuffer(1, len, c.sampleRate);
@@ -40,6 +44,18 @@ class AudioSys {
   toggleMute() {
     this.muted = !this.muted;
     if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.02);
+    return !this.muted;
+  }
+
+  // Volumes vindos das configurações (0..1); 'sound' liga/desliga tudo
+  setMix(sound, master, sfx, amb) {
+    this.muted = !sound;
+    this.volume = 0.69 * master; this.sfxVol = sfx; this.ambVol = amb;
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, t, 0.02);
+    this.sfx.gain.setTargetAtTime(this.sfxVol, t, 0.02);
+    this.amb.gain.setTargetAtTime(this.ambVol, t, 0.02);
   }
 
   // Evita sobreposição excessiva do mesmo som (ex.: vários acertos no mesmo frame)
@@ -60,7 +76,7 @@ class AudioSys {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(dest || this.master);
+    o.connect(g); g.connect(dest || this.sfx);
     o.start(t); o.stop(t + dur + 0.05);
     return o;
   }
@@ -78,7 +94,7 @@ class AudioSys {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f); f.connect(g); g.connect(this.master);
+    src.connect(f); f.connect(g); g.connect(this.sfx);
     src.start(t, Math.random() * 1.2); src.stop(t + dur + 0.05);
   }
 
@@ -227,7 +243,7 @@ class AudioSys {
           const lfo = c.createOscillator(), lfoG = c.createGain();
           lfo.frequency.value = 23; lfoG.gain.value = 0.22;
           lfo.connect(lfoG); lfoG.connect(env.gain);
-          lp.connect(env); env.connect(this.master);
+          lp.connect(env); env.connect(this.sfx);
           for (const f of [55, 62, 74, 93]) {
             const o = c.createOscillator(); o.type = 'sawtooth';
             o.frequency.setValueAtTime(f * 1.25, t);
@@ -336,7 +352,7 @@ class AudioSys {
       const o = c.createOscillator(); o.type = type; o.frequency.value = f;
       o.connect(lp); o.start(); oscs.push(o);
     }
-    lp.connect(out); out.connect(this.master);
+    lp.connect(out); out.connect(this.amb);
     lfo.start(); oscs.push(lfo);
     this.ambient = { out, oscs };
   }

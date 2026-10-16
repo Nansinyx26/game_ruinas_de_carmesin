@@ -503,7 +503,7 @@ class StoryScreen {
     if (pg && pg.choices) { const k = pg.choices.findIndex((c) => !(c.locked && c.locked(game))); this.sel = Math.max(0, k); }
   }
   total(pg) { let n = 0; for (const l of pg.lines) n += (Array.isArray(l) ? l[1] : l).length; return n; }
-  revealed() { return this.t * 60 >= this.total(this.page); }
+  revealed() { return this.t * 60 * Settings.textRate() >= this.total(this.page); }
   next() {
     if (this.finished) return;
     this.i++;
@@ -627,7 +627,7 @@ class StoryScreen {
       ctx.globalAlpha = 1;
     }
     // Texto digitado
-    let budget = Math.floor(this.t * 60);
+    let budget = Math.floor(this.t * 60 * Settings.textRate());
     ctx.textAlign = pg.quote ? 'center' : 'left';
     for (const b of L.blocks) {
       if (budget <= 0) break;

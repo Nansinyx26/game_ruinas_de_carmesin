@@ -54,7 +54,7 @@ class NPC extends Entity {
   talk() {
     const pool = game.waves.state === 'cleared' && this.after ? this.after : this.lines;
     if (!pool.length) return;
-    game.hud.say(this.name, pool[this.line % pool.length], 4.4);
+    game.hud.say(this.name, pool[this.line % pool.length], 4.4, 0, true);
     this.line++;
     this.talkT = 3.4;
     game.audio.play('uiMove');

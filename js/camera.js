@@ -12,7 +12,8 @@ class Camera {
     this.time = 0;
     this.out = { x: 0, y: 0 };
   }
-  shake(amount) { this.trauma = Math.min(1, this.trauma + amount); }
+  // A intensidade segue a opção 'Tremor de tela' das configurações
+  shake(amount) { this.trauma = Math.min(1, this.trauma + amount * (Settings.v.shake / 100)); }
   zoomPunch(amount) { this.punch = Math.max(this.punch, amount); }
   snap(x, y) { this.x = x; this.y = y; }
   follow(tx, ty, dt, speed = 6) {
