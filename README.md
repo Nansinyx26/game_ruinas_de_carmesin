@@ -112,6 +112,21 @@ Configurações (salvas no navegador e aplicadas com **APLICAR**; **PADRÃO** re
 
 As teclas M (som) e G (3D/2D) também atualizam as configurações salvas.
 
+## HUD (interface durante a ação)
+
+O HUD segue o quadro "HUD EM JOGO" da folha de referência e se reorganiza sozinho em qualquer largura de tela (960 a 1760 pixels lógicos):
+
+| Canto | O que mostra |
+|---|---|
+| Superior esquerdo | **Retrato circular** do personagem ativo (rosto da ficha oficial do Kael; para os outros, silhueta na cor-tema), nome e título, **VIDA** (com a barra que drena com atraso e o Escudo de Energia por cima) e **ENERGIA** em barras anguladas, marca dos 100 do Eclipse, cargas de **esquiva**, **memórias** recuperadas, pontos de habilidade para gastar (`[TAB]` ou o botão do controle), **nível** (emblema sob o retrato) e **experiência**. Com vida baixa o retrato e a barra pulsam em vermelho |
+| Superior direito | **Radar** com N/L/S/O: planta do setor, seta do jogador, inimigos (vermelho; elites em dourado), NEXUS, NPCs, a **saída** (acesa quando o setor é liberado) e o **fragmento de memória**; o que está fora do alcance fica preso à borda apontando a direção. O radar acompanha a câmera isométrica (para cima na tela = para cima no radar), por isso o norte, onde fica a saída, aparece na diagonal superior direita. Abaixo: **pontuação** e o painel de **missão** (setor, nome do setor e objetivo atual) |
+| Inferior direito | **Habilidades em losangos** com recarga, custo de energia (vermelho quando falta) e a tecla (1–4) ou o botão do controle (segure LB/L1 + X/Y/B/A ou □/△/○/✕); o **Eclipse Absoluto** em destaque enche de baixo para cima até os 100 de energia. Acima, os efeitos ativos com o tempo restante |
+| Inferior esquerdo | **Células de energia** (como o item da referência) e o aviso "PROGRESSO SALVO" |
+
+No meio ficam os elementos temporários: combo (abaixo da missão), nomes das técnicas, letreiros, fragmentos de memória, evolução de nível, legendas (tamanho Normal/Grande nas configurações), avisos curtos e o marcador de conversa. Eles se encaixam no espaço livre entre os painéis (`HUD.freeSpan`); um aviso longo quebra em duas linhas; os letreiros dos chefes sobem para não cobrir a legenda; e um painel fixo coberto por um letreiro ou memória fica translúcido enquanto o aviso estiver na tela. As setas-guia da saída, da memória e de NEXUS aparecem ao redor do personagem quando o alvo está fora da tela ou atrás de um painel.
+
+Desempenho: molduras, retrato, planta do radar, losangos e o preenchimento das barras são desenhados uma vez em canvases em cache (`HUD.layer`, na resolução real da tela) e só são refeitos quando a escala muda; a cada quadro o HUD só copia essas camadas e desenha números e marcadores.
+
 ## Progressão e habilidades
 
 Kael ganha **experiência** derrotando inimigos (elites valem o triplo), liberando setores, recuperando memórias e vencendo NEXUS. Cada nível aumenta vida, energia, dano, poder das habilidades, defesa, velocidade e reduz as recargas, além de dar **pontos de habilidade** (dois a cada cinco níveis).
@@ -191,7 +206,8 @@ js/
   rooms.js          THEMES, ROOM_DEFS e Room (cenário pré-renderizado e colisões)
   waves.js          WaveManager (ondas, porta, chefe)
   ui.js             wrapText, glowText, drawIcon (ícones procedurais)
-  hud.js            HUD
+  hud.js            HUD: retrato, vida/energia, radar, missão, habilidades em losangos, células,
+                    combo, letreiros, legendas e avisos (camadas em cache)
   screens.js        Screens: árvore de habilidades, evoluções, derrota e finais
   story.js          MEMORIES, STORY, ENDINGS, CHAPTERS (textos da história)
   storyscreen.js    Backdrop (cenários pintados) e StoryScreen
@@ -233,7 +249,7 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Novo inimigo | `ENEMY_TYPES`, uma classe em `js/enemies.js` e `createEnemy()` |
 | Nova sala / ondas | `ROOM_DEFS` e `THEMES` em `js/rooms.js` |
 | Nova evolução entre setores | `UPGRADES` em `js/progression.js` |
-| Elementos do HUD | `js/hud.js` |
+| Elementos do HUD | `js/hud.js`: posições em `HUD.layout()` e `HUDV` (bloco de vida/energia), áreas ocupadas em `HUD.buildZones()`, desenho estático em `HUD.layer()` |
 | Menus, pausa, créditos, versão | `js/menus.js` (`CREDITS`, `GAME_VERSION`, `CHARACTERS` no topo do arquivo) |
 | Personagem, habilidade, armadura ou arma do elenco | `js/data/characters.js`, `abilities.js`, `armors.js`, `weapons.js` (`RosterManager.validate()` avisa no console se uma referência estiver errada) |
 | Condição de desbloqueio | campo `unlock` da ficha (`always`, `chapter_complete`, `boss_defeated`, `quest_complete`, `flag`) |

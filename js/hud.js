@@ -46,6 +46,7 @@ const SPEAKERS = {
   '???': { color: '#a8d8ff', glow: 'rgba(60,140,255,0.9)', whisper: true },
   'KAEL': { color: '#dfe6f2', glow: 'rgba(60,140,255,0.6)' },
 };
+const SPEAKER_DEFAULT = { color: PAL.accentHi, glow: 'rgba(60,140,255,0.7)' };
 
 // Bloco de vida/energia (canto superior esquerdo): retrato (px, py, pr) e barras a partir de x
 const HUDV = { px: 60, py: 64, pr: 40, x: 112, tab: 64, hpY: 28, hpH: 20, hpW: 304, hpTip: 12, enY: 54, enH: 13, enW: 236, enTip: 8, right: 446, bottom: 124 };
@@ -168,7 +169,7 @@ class HUD {
     this.drawTalkPrompt(ctx);
     // Avisos temporários
     this.drawComboNames(ctx);
-    this.drawMessage(ctx);
+    this.drawMessage(ctx, L);
     this.drawMemory(ctx, L);
     this.drawLevelUp(ctx, L);
     this.drawSubtitle(ctx);
@@ -212,8 +213,11 @@ class HUD {
     if (p.counterT > 0) B.push(['counter', p.counterT, '220,228,240', 'Contra-ataque']);
     L.lvlY = L.compact ? 266 : 140;
     L.cellsX = 20; L.cellsY = VIEW_H - 80; L.cellsS = 58;
+    // Legenda (caixa e linhas) e altura do letreiro, que sobe para não cobrir a legenda
+    this.subBox(ctx);
+    L.msgY = this.msg ? this.msgY(this.msg) : 0;
     this.buildZones(L);
-    this.collectOverlays(ctx);
+    this.collectOverlays(ctx, L);
     return L;
   }
   zone(side, x0, y0, x1, y1) {
@@ -260,11 +264,11 @@ class HUD {
     this.tempN++;
   }
   // Letreiros e memórias: os painéis fixos que eles cobrem ficam translúcidos
-  collectOverlays(ctx) {
+  collectOverlays(ctx, L) {
     this.tempN = 0;
     const m = this.msg;
     if (m) {
-      const y = VIEW_H * (m.low ? 0.72 : 0.3);
+      const y = L.msgY;
       ctx.save();
       ctx.font = `bold ${m.small ? 30 : 42}px ${FONT_TITLE}`; ctx.letterSpacing = m.small ? '4px' : '5px';
       let w = ctx.measureText(m.title).width;
@@ -416,8 +420,9 @@ class HUD {
     g.beginPath(); g.arc(c, c, r, 0, TAU); g.clip();
     g.fillStyle = '#04070f'; g.fillRect(0, 0, S, S);
     if (face) {
-      const im = KAEL_PORTRAIT.face, k = im.naturalWidth / 268;   // recorte do rosto na ficha (268×336)
-      g.drawImage(im, 16 * k, 38 * k, 236 * k, 236 * k, c - r, c - r, 2 * r, 2 * r);
+      // Recorte do rosto na ficha (268×336): da franja ao queixo, com os olhos um pouco acima do centro
+      const im = KAEL_PORTRAIT.face, k = im.naturalWidth / 268;
+      g.drawImage(im, 30 * k, 60 * k, 208 * k, 208 * k, c - r, c - r, 2 * r, 2 * r);
     } else {
       const bg = g.createLinearGradient(0, c - r, 0, c + r);
       bg.addColorStop(0, rgba(rgb, 0.38)); bg.addColorStop(1, 'rgba(4,7,15,1)');
@@ -432,7 +437,7 @@ class HUD {
       g.beginPath(); g.moveTo(c - r * 0.8, c + r * 0.62); g.quadraticCurveTo(c - r * 0.7, c + r * 0.36, c - r * 0.2, c + r * 0.3); g.stroke();
     }
     const vg = g.createRadialGradient(c, c - r * 0.1, r * 0.5, c, c, r);
-    vg.addColorStop(0, 'rgba(2,4,10,0)'); vg.addColorStop(1, 'rgba(2,4,10,0.62)');
+    vg.addColorStop(0, 'rgba(2,4,10,0)'); vg.addColorStop(1, 'rgba(2,4,10,0.5)');
     g.fillStyle = vg; g.fillRect(0, 0, S, S);
     const bt = g.createLinearGradient(0, c + r * 0.3, 0, c + r);
     bt.addColorStop(0, rgba(rgb, 0)); bt.addColorStop(1, rgba(rgb, 0.3));
@@ -824,7 +829,8 @@ class HUD {
   }
 
   // ------------------------------------------- habilidades (losangos) e Eclipse
-  paintSlot(g, S, d, rgb, state) {
+  // Losango de um atalho (com o ícone da habilidade) no estado 'empty', 'off' ou 'on'
+  paintSlot(g, S, d, rgb, state, icon) {
     const c = S / 2;
     diamondPath(g, c, c, d);
     g.fillStyle = 'rgba(5,10,20,0.93)'; g.fill();
@@ -840,6 +846,7 @@ class HUD {
     if (on) { g.shadowColor = rgba(rgb, 0.9); g.shadowBlur = 9; }
     diamondPath(g, c, c, d); g.strokeStyle = rgba(rgb, on ? 0.95 : 0.4); g.lineWidth = 1.6; g.stroke();
     g.shadowBlur = 0;
+    if (icon) drawIcon(g, icon, c, c, d * 1.1, on ? rgba(rgb, 1) : 'rgba(140,150,170,0.6)');
   }
   // Tecla sob um losango (no controle, o botão desenhado como na tela de controles)
   keyCap(ctx, cx, y, key, hot) {
@@ -886,9 +893,9 @@ class HUD {
     const cost = S ? p.abilityCost(id) : 0, noE = !!S && p.fury < cost;
     const x = cx + (this.abDeny[k] > 0 ? Math.sin(this.abDeny[k] * 70) * 3 : 0);
     const state = !S ? 'empty' : cd > 0 || noE ? 'off' : 'on', fs = 2 * d + 24;
-    this.blit(ctx, this.layer(`losango-${rgb}-${state}-${d}`, fs, fs, (g) => this.paintSlot(g, fs, d, rgb, state)), x - fs / 2, cy - fs / 2);
+    const icon = S ? S.icon : '';
+    this.blit(ctx, this.layer(`losango-${rgb}-${state}-${d}-${icon}`, fs, fs, (g) => this.paintSlot(g, fs, d, rgb, state, icon)), x - fs / 2, cy - fs / 2);
     if (S) {
-      drawIcon(ctx, S.icon, x, cy, d * 1.1, state === 'on' ? rgba(rgb, 1) : 'rgba(140,150,170,0.6)');
       if (cd > 0) {
         ctx.save();
         diamondPath(ctx, x, cy, d - 1); ctx.clip();
@@ -998,21 +1005,31 @@ class HUD {
     ctx.save();
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `bold 14px ${FONT_UI}`;
-    const n = this.toasts.length;
-    this.toasts.forEach((q, i) => {
+    // Empilhados de baixo para cima no espaço livre entre as células e as habilidades;
+    // um aviso que não cabe em uma linha quebra em duas (e só encolhe se ainda faltar espaço)
+    let yb = VIEW_H - 35;
+    for (let i = this.toasts.length - 1; i >= 0; i--) {
+      const q = this.toasts[i];
       const a = clamp(q.t < 0.15 ? q.t / 0.15 : q.t > q.max - 0.4 ? (q.max - q.t) / 0.4 : 1, 0, 1);
-      const y = VIEW_H - 46 - (n - 1 - i) * 26;
-      const w = ctx.measureText(q.text).width + 28;
-      const S = this.freeSpan(y - 12, y + 12), k = Math.min(1, (S.max - S.min) / w);
+      const S = this.freeSpan(yb - 40, yb), room = S.max - S.min;
+      let w = ctx.measureText(q.text).width + 28, lines = null;
+      if (w > room) {
+        lines = this.wrapCached(ctx, q.text, room - 28, 2);
+        w = 28;
+        for (const ln of lines) w = Math.max(w, ctx.measureText(ln).width + 28);
+      }
+      const h = lines ? 38 : 22, k = Math.min(1, room / w);
       const cx = clamp(VIEW_W / 2, S.min + (w * k) / 2, S.max - (w * k) / 2);
       ctx.save();
-      ctx.translate(cx, y); ctx.scale(k, k);
+      ctx.translate(cx, yb - (h * k) / 2); ctx.scale(k, k);
       ctx.globalAlpha = a;
-      ctx.fillStyle = 'rgba(3,7,16,0.84)'; ctx.fillRect(-w / 2, -11, w, 22);
-      ctx.fillStyle = rgba(q.rgb, 1); ctx.fillRect(-w / 2, -11, 3, 22);
-      ctx.fillText(q.text, 0, 1);
+      ctx.fillStyle = 'rgba(3,7,16,0.84)'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = rgba(q.rgb, 1); ctx.fillRect(-w / 2, -h / 2, 3, h);
+      if (lines) { ctx.fillText(lines[0], 0, -7); if (lines[1]) ctx.fillText(lines[1], 0, 10); }
+      else ctx.fillText(q.text, 0, 1);
       ctx.restore();
-    });
+      yb -= h * k + 4;
+    }
     ctx.restore();
   }
 
@@ -1137,8 +1154,11 @@ class HUD {
       ctx.scale(scale * fit, scale * fit);
       ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(2,6,16,0.85)';
       ctx.strokeText(n.text, 0, 0);
-      const g = ctx.createLinearGradient(0, -16, 0, 16);
-      g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, PAL.accentHi); g.addColorStop(1, '#3d8bff');
+      let g = this.nameGrad;   // degradê em coordenadas locais: criado uma vez só
+      if (!g) {
+        g = this.nameGrad = ctx.createLinearGradient(0, -16, 0, 16);
+        g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, PAL.accentHi); g.addColorStop(1, '#3d8bff');
+      }
       glowText(ctx, n.text, 0, 0, g, 'rgba(40,120,255,0.95)', 16);
       // Linhas decorativas
       const w = tw / 2 + 14;
@@ -1186,7 +1206,16 @@ class HUD {
     ctx.restore();
   }
 
-  drawMessage(ctx) {
+  // Letreiros dos chefes ('low') ficam abaixo da ação; se houver uma legenda na tela, sobem
+  // até logo acima da caixa dela (deslizando, caso a fala comece depois do letreiro)
+  msgY(m) {
+    const base = VIEW_H * (m.low ? 0.72 : 0.3);
+    if (!m.low) return base;
+    const B = this.sb, lift = B && B.on ? Math.max(0, base - (B.by - 44)) : 0;
+    this.msgLift = m.t < 0.05 ? lift : approach(this.msgLift || 0, lift, this.frameDt * 600);
+    return base - this.msgLift;
+  }
+  drawMessage(ctx, L) {
     const m = this.msg;
     if (!m) return;
     const k = m.t / m.max;
@@ -1194,7 +1223,7 @@ class HUD {
     ctx.save();
     ctx.globalAlpha = clamp(a, 0, 1);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const y = VIEW_H * (m.low ? 0.72 : 0.3);   // letreiros do chefe ficam abaixo da ação
+    const y = L.msgY;
     if (m.small) {
       ctx.font = `bold 30px ${FONT_TITLE}`;
       ctx.letterSpacing = '4px';
@@ -1217,26 +1246,36 @@ class HUD {
     ctx.restore();
   }
 
+  // Caixa da legenda atual (linhas já quebradas), calculada uma vez por quadro em layout().
+  // Ela deixa livres as colunas dos cantos (efeitos ativos e habilidades).
+  subBox(ctx) {
+    const s = this.sub, B = this.sb || (this.sb = {});
+    B.on = !!s && s.t >= 0;
+    if (!B.on) return B;
+    B.st = SPEAKERS[s.who] || SPEAKER_DEFAULT;
+    B.fs = Settings.v.subtitleSize ? 21 : 17;
+    B.font = `${B.st.whisper ? 'italic ' : ''}${B.fs}px ${FONT_UI}`;
+    B.bw = Math.min(800, VIEW_W - 340);
+    ctx.save();
+    ctx.font = B.font;
+    B.lines = this.wrapCached(ctx, s.text, B.bw - 40);
+    ctx.restore();
+    B.lh = Math.round(B.fs * 1.35); B.bh = 42 + B.lines.length * B.lh;
+    B.bx = VIEW_W / 2 - B.bw / 2; B.by = VIEW_H - 138 - B.bh;
+    return B;
+  }
   // Legenda de diálogo na parte de baixo da tela (texto digitado aos poucos)
   drawSubtitle(ctx) {
-    const s = this.sub;
-    if (!s || s.t < 0) return;
-    const st = SPEAKERS[s.who] || { color: PAL.accentHi, glow: 'rgba(60,140,255,0.7)' };
-    const k = s.t / s.max;
+    const s = this.sub, B = this.sb;
+    if (!s || !B || !B.on) return;
+    const st = B.st, k = s.t / s.max;
     const a = clamp(k < 0.08 ? k / 0.08 : k > 0.85 ? (1 - k) / 0.15 : 1, 0, 1);
-    const shown = s.text.slice(0, Math.floor(s.t * 48 * Settings.textRate()));
-    const fs = Settings.v.subtitleSize ? 21 : 17;
-    // A caixa deixa livres as colunas dos cantos (efeitos ativos e habilidades)
-    const bw = Math.min(800, VIEW_W - 340);
+    const shown = Math.floor(s.t * 48 * Settings.textRate());
     ctx.save();
     ctx.globalAlpha = a * (st.whisper ? 0.65 + 0.35 * Math.sin(this.time * 9) : 1);
-    ctx.font = `${st.whisper ? 'italic ' : ''}${fs}px ${FONT_UI}`;
-    const lines = this.wrapCached(ctx, s.text, bw - 40);
-    const lh = Math.round(fs * 1.35), bh = 42 + lines.length * lh;
-    const bx = VIEW_W / 2 - bw / 2, by = VIEW_H - 138 - bh;
     if (!st.whisper) {
       ctx.fillStyle = 'rgba(2,6,14,0.72)';
-      techPanelPath(ctx, bx, by, bw, bh, 12); ctx.fill();
+      techPanelPath(ctx, B.bx, B.by, B.bw, B.bh, 12); ctx.fill();
       ctx.strokeStyle = st.glow; ctx.lineWidth = 1; ctx.stroke();
     }
     const jx = st.glitch && Math.random() < 0.08 ? rand(-4, 4) : 0;
@@ -1244,15 +1283,15 @@ class HUD {
     ctx.font = `bold 12px ${FONT_TITLE}`;
     ctx.letterSpacing = '3px';
     ctx.fillStyle = st.color;
-    ctx.fillText(s.who, VIEW_W / 2 + jx, by + 10);
+    ctx.fillText(s.who, VIEW_W / 2 + jx, B.by + 10);
     ctx.letterSpacing = '0px';
-    ctx.font = `${st.whisper ? 'italic ' : ''}${fs}px ${FONT_UI}`;
+    ctx.font = B.font;
     // Distribui o texto já digitado pelas linhas
-    let left = shown.length;
-    lines.forEach((ln, i) => {
-      const part = ln.slice(0, Math.max(0, left));
+    let left = shown;
+    B.lines.forEach((ln, i) => {
+      const part = left >= ln.length ? ln : ln.slice(0, Math.max(0, left));
       left -= ln.length + 1;
-      glowText(ctx, part, VIEW_W / 2 + jx, by + 30 + i * lh, st.whisper ? '#cfe6ff' : '#eef3fa', st.glow, st.whisper ? 14 : 6);
+      glowText(ctx, part, VIEW_W / 2 + jx, B.by + 30 + i * B.lh, st.whisper ? '#cfe6ff' : '#eef3fa', st.glow, st.whisper ? 14 : 6);
     });
     ctx.restore();
   }
@@ -1320,8 +1359,15 @@ class HUD {
     ctx.save();
     const pp = cam.toScreen(isoX(pl.x, pl.y), isoY(pl.x, pl.y) - 30), ox = pp.x, oy = pp.y;
     const off = (x, y) => x < 0 || x > VIEW_W || y < 0 || y > VIEW_H;
+    // Setas em direções parecidas (saída e memória lado a lado) vão para um anel mais afastado
+    const used = this.guideA || (this.guideA = []);
+    used.length = 0;
     const guide = (sx, sy, rgb, label) => {
-      const a = Math.atan2(sy - oy, sx - ox), ex = ox + Math.cos(a) * 118, ey = oy + Math.sin(a) * 86;
+      const a = Math.atan2(sy - oy, sx - ox);
+      let ring = 0;
+      for (const u of used) { const d = Math.abs(((a - u + Math.PI * 3) % TAU) - Math.PI); if (d < 0.5) ring++; }
+      used.push(a);
+      const k0 = 1 + ring * 0.4, ex = ox + Math.cos(a) * 118 * k0, ey = oy + Math.sin(a) * 86 * k0;
       const k = 0.7 + 0.3 * Math.sin(this.time * 5);
       ctx.save();
       ctx.translate(ex, ey); ctx.rotate(a);
