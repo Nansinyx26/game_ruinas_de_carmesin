@@ -205,7 +205,7 @@ const Backdrop = {
   },
 
   // Silhuetas dos aliados, no mesmo estilo da do Kael, com a luz na cor-tema de cada um
-  // pose: 'stand' | 'aim' (Lyra mirando) | 'kneel' (Drakos derrotado) | 'scan' (drone de Sera)
+  // pose: 'stand' | 'aim' (Lyra mirando) | 'kneel' (Drakos derrotado) | 'crouch' (Orion agachado)
   // dir: 1 = virado para a direita, -1 = para a esquerda. focus: ponto de tela que o
   // drone de Sera rodeia (senão fica sobre o ombro). Devolve pontos de interesse em
   // coordenadas de tela ({ drone } para Sera).
@@ -289,10 +289,14 @@ const Backdrop = {
         break;
       }
       case 'sera': {
-        poly([-10, -74, 10, -74, 13, -40, 16 + sway * 0.4, -12, -15 + sway * 0.4, -12, -12, -40]);   // jaleco longo
-        ctx.fillRect(-7, -14, 5, 14); ctx.fillRect(2, -14, 5, 14);
-        ctx.beginPath(); ctx.arc(0, -84, 8.5, 0, TAU); ctx.fill();
-        poly([-10, -82, -10, -92, -4, -97, 4, -97, 10, -92, 10, -76, 5, -79, -6, -79, -10, -76]);   // cabelo curto
+        // Jaleco longo acinturado, aberto embaixo
+        poly([-9, -74, 9, -74, 7, -54, 13, -32, 17 + sway * 0.4, -12, -16 + sway * 0.4, -12, -12, -32, -7, -54]);
+        ctx.fillRect(-6, -14, 4.5, 14); ctx.fillRect(2, -14, 4.5, 14);
+        ctx.beginPath(); ctx.arc(1, -84, 8, 0, TAU); ctx.fill();                       // cabeça
+        poly([-8, -82, -8, -91, -3, -95, 5, -95, 10, -90, 10, -84, 4, -88, -4, -86]);  // cabelo preso
+        // Rabo de cavalo balançando atrás da cabeça
+        ctx.beginPath(); ctx.moveTo(-6, -92); ctx.quadraticCurveTo(-19 + sway * 0.6, -90, -17 + sway, -68);
+        ctx.lineTo(-13 + sway * 0.8, -70); ctx.quadraticCurveTo(-13, -83, -5, -86); ctx.closePath(); ctx.fill();
         limb(4.5, 6, -70, 24, -64); limb(4.5, -8, -70, -11, -46);
         // Drone orbitando sobre o ombro (ou em volta do ponto 'focus')
         const fx = focus ? (focus.x - x) / (s * dir) : -18, fy = focus ? (focus.y - y) / s : -108;
@@ -314,6 +318,24 @@ const Backdrop = {
         break;
       }
       case 'orion': {
+        if (pose === 'crouch') {
+          // Ajoelhado na borda da luz, limpando uma das lâminas sobre o joelho
+          limb(8, 3, -28, 22, -27, 23, -1);                                              // perna da frente: coxa reta, canela em pé
+          limb(8, -2, -28, -5, -3, -24, -2);                                             // perna de trás: joelho no chão
+          poly([-8, -29, 8, -29, 11, -58, -6, -61]);                                     // tronco quase ereto
+          ctx.beginPath(); ctx.ellipse(4, -70, 8, 9.5, 0.1, 0, TAU); ctx.fill();         // capuz
+          ctx.beginPath(); ctx.moveTo(-4, -61); ctx.quadraticCurveTo(-13 + sway * 0.5, -58, -15 + sway, -38);   // cachecol caído nas costas
+          ctx.lineTo(-10 + sway * 0.8, -39); ctx.quadraticCurveTo(-8, -52, -1, -56); ctx.closePath(); ctx.fill();
+          limb(4.5, 8, -55, 17, -42, 25, -38); limb(4.5, -2, -55, 6, -42, 17, -37);      // braços à frente do corpo
+          limb(2.5, 25, -38, 46, -40);                                                   // lâmina sobre o joelho
+          light(() => {
+            ctx.strokeStyle = `rgba(${rgb},0.9)`; ctx.lineWidth = 1.1;
+            ctx.beginPath(); ctx.moveTo(26, -39); ctx.lineTo(46, -41); ctx.stroke();
+            GlowCache.draw(ctx, rgb, 38 + Math.sin(t * 2.4) * 6, -40, 12, 0.7);          // o pano corre pelo fio
+            ctx.fillStyle = `rgba(${rgb},0.8)`; ctx.fillRect(6, -72, 6, 1.4);           // visor
+          });
+          break;
+        }
         poly([-8, -40, -15, 0, -8, 0, -1, -24, 6, 0, 13, 0, 9, -40]);                 // base baixa
         poly([-9, -76, 13, -74, 9, -40, -9, -40]);                                     // tronco inclinado
         ctx.beginPath(); ctx.ellipse(3, -84, 8.5, 10, 0, 0, TAU); ctx.fill();           // capuz
@@ -512,7 +534,7 @@ const Backdrop = {
         // Primeira página: Sera de frente para o terminal, o drone rodeando a tela;
         // depois ela se vira para Kael e o drone lê a marca no pulso dele
         const fig = recruited
-          ? this.ally(ctx, 'sera', W * 0.72, H * 0.97, 1.6, t, 'scan', 1)
+          ? this.ally(ctx, 'sera', W * 0.72, H * 0.97, 1.6, t, 'stand', 1)
           : this.ally(ctx, 'sera', W * 0.72, H * 0.97, 1.6, t, 'stand', -1, { x: W * 0.6, y: H * 0.98 - 147 });
         const kx = W * 0.89, ky = H * 0.97, ks = 1.7;
         this.kael(ctx, kx, ky, ks, t);
@@ -531,8 +553,11 @@ const Backdrop = {
       }
       case 'shadows':   // Orion na borda da luz da fogueira do refúgio
         this.corridor(ctx, t, '255,150,60', true);
-        this.kael(ctx, W * 0.8, H * 0.97, 1.6, t);
-        this.ally(ctx, 'orion', W * 0.935, H * 0.965, 1.5, t, 'stand', -1);
+        this.backlight(ctx, '255,150,60', W * 0.8, H * 0.88, 320, 0.22);
+        // Primeiro ajoelhado na penumbra, limpando as lâminas; depois entra na luz, diante de Kael
+        if (recruited) this.ally(ctx, 'orion', W * 0.78, H * 0.965, 1.5, t, 'stand', 1);
+        else this.ally(ctx, 'orion', W * 0.955, H * 0.96, 1.4, t, 'crouch', -1);
+        this.kael(ctx, W * 0.86, H * 0.97, 1.6, t);
         break;
       case 'vigil': {   // Base da torre: quem chegou até aqui (pg.cast) e Kael no centro
         const sky = this.layer('bg-tower', W, H, (g, w, h) => this.paintSky(g, w, h, 'tower'));
@@ -545,13 +570,16 @@ const Backdrop = {
         const fog = ctx.createLinearGradient(0, H * 0.78, 0, H);
         fog.addColorStop(0, 'rgba(2,6,12,0)'); fog.addColorStop(1, 'rgba(2,6,12,0.85)');
         ctx.fillStyle = fog; ctx.fillRect(0, H * 0.78, W, H * 0.22);
-        const slots = { sera: [0.625, 1.35, 1], lyra: [0.7, 1.35, 1], drakos: [0.875, 1.4, -1], orion: [0.945, 1.35, -1] };
-        this.backlight(ctx, '90,170,255', W * 0.79, H * 0.86, 340, 0.3);
+        // Kael diante da porta; os aliados em semicírculo, virados para ele (distância em px,
+        // para o grupo não se espalhar nem sair da tela em telas largas ou estreitas)
+        const kx = Math.min(W * 0.78, W - 250);
+        const slots = { sera: [-200, 1.3, 1], lyra: [-100, 1.35, 1], drakos: [100, 1.4, -1], orion: [186, 1.3, -1] };
+        this.backlight(ctx, '90,170,255', kx, H * 0.86, 340, 0.3);
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        GlowCache.drawFlat(ctx, '60,140,255', W * 0.79, H * 0.98, 300, 0.3);
+        GlowCache.drawFlat(ctx, '60,140,255', kx, H * 0.98, 300, 0.3);
         ctx.restore();
-        for (const id of (pg && pg.cast) || []) { const sl = slots[id]; if (sl) this.ally(ctx, id, W * sl[0], H * 0.975, sl[1], t, 'stand', sl[2]); }
-        this.kael(ctx, W * 0.79, H * 0.98, 1.5, t);
+        for (const id of (pg && pg.cast) || []) { const sl = slots[id]; if (sl) this.ally(ctx, id, kx + sl[0], H * 0.975, sl[1], t, 'stand', sl[2]); }
+        this.kael(ctx, kx, H * 0.98, 1.5, t);
         this.drawRain(ctx, t, 0.5);
         break;
       }
@@ -807,8 +835,8 @@ class StoryScreen {
     this.t += dt;
     if (this.lock > 0) { this.lock -= dt; return; }
     if (!this.revealed()) game.audio.play('type');
-    if (inp.pressed.pause) {
-      // Pula até a próxima escolha (escolhas nunca são puladas)
+    if (inp.pressed.pause || inp.pressed.back) {
+      // ESC, Start ou B pulam até a próxima escolha (escolhas nunca são puladas)
       if (pg.choices) { this.t = 999; return; }
       let j = this.i + 1;
       while (j < this.pages.length && !this.pages[j].choices) j++;
@@ -860,7 +888,7 @@ class StoryScreen {
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
     ctx.fillStyle = d.color;
-    ctx.fillText(t('newAlly'), x + 24, y + 18);
+    ctx.fillText(t(this.page.again ? 'allyRejoined' : 'newAlly'), x + 24, y + 18);   // novo ciclo: já estava liberado
     ctx.font = `bold 24px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
     glowText(ctx, d.name.toUpperCase(), x + 24, y + 43, '#ffffff', `rgba(${rgb},0.9)`, 12);
     ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
@@ -992,7 +1020,10 @@ class StoryScreen {
     // Rodapé: progresso e dicas
     ctx.textAlign = 'right'; ctx.font = `13px ${FONT_UI}`;
     ctx.fillStyle = 'rgba(200,215,235,0.55)';
-    const hint = pg.choices ? '↑ ↓ escolher · ENTER / J confirmar · 1 2 3' : (this.revealed() ? 'ENTER / J — continuar' : 'ENTER / J — mostrar tudo') + '   ·   ESC — pular';
+    // Dicas com os botões do último dispositivo usado (teclado ou controle)
+    const pad = game.input.lastDevice === 'pad', P = game.input.padLabels;
+    const ok = pad ? P.a : 'ENTER / J', skip = pad ? P.b : 'ESC';
+    const hint = pg.choices ? `↑ ↓ escolher · ${ok} confirmar${pad ? '' : ' · 1 2 3'}` : `${ok} — ${this.revealed() ? 'continuar' : 'mostrar tudo'}   ·   ${skip} — pular`;
     ctx.globalAlpha = 0.6 + 0.4 * Math.sin(rt * 3);
     ctx.fillText(hint, VIEW_W - 30, VIEW_H - 22);
     ctx.globalAlpha = 1;

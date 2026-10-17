@@ -1,17 +1,17 @@
 'use strict';
 // ECLIPSE ZERO · Rádio dos aliados: falas curtas durante o jogo
 // ---------------------------------------------------------------------------
-// RÁDIO: depois de recrutados, Lyra, Drakos, Sera e Orion falam com Kael pelo
-// rádio em três momentos: início de setor, aparição do chefe e fragmento de
+// RÁDIO: depois de encontrados, Lyra, Drakos, Sera e Orion falam com Kael pelo
+// rádio em três momentos: início de setor, aparição de NEXUS e fragmento de
 // memória recuperado. Os textos ficam em ALLY_RADIO (js/story.js). Para não
 // poluir a tela:
 //   · no máximo uma fala por evento, e cada evento fala uma vez por jornada
 //     (morrer e voltar ao início do setor não repete a fala)
-//   · só fala quem já se juntou a Kael (allyJoined) e só com a opção
-//     'Falas durante o jogo' ligada (Settings.v.gameSubs)
+//   · só fala quem já está com Kael (allyJoined: liberado no elenco e encontrado
+//     na história) e só com a opção 'Falas durante o jogo' ligada (Settings.v.gameSubs)
 //   · espera a legenda atual terminar: nunca interrompe NEXUS, o setor ou um NPC
-//   · descarta a fala se o setor mudar ou se não surgir uma brecha a tempo
-// Não usa Math.random: não altera nada da simulação do jogo.
+//   · descarta a fala se o setor mudar, se Kael cair ou se não surgir uma brecha a tempo
+// Não usa Math.random nem mexe na simulação: a jogabilidade do Kael não muda.
 // ---------------------------------------------------------------------------
 const RADIO = {
   gap: 0.8,        // silêncio mínimo depois da legenda anterior (s)
@@ -34,7 +34,7 @@ const AllyRadio = {
   // Um evento do jogo: escolhe a fala do primeiro aliado presente e a agenda
   // kind: 'room' (key = setor) | 'boss' | 'memory' (key = índice do fragmento)
   event(kind, key = '', delay = 1) {
-    if (!Settings.v.gameSubs || typeof ALLY_RADIO === 'undefined') return false;
+    if (!Settings.v.gameSubs) return false;
     const id = `${kind}:${key}`;
     if (this.said.has(id)) return false;
     const pool = kind === 'boss' ? ALLY_RADIO.boss : (ALLY_RADIO[kind] || {})[key];
@@ -47,7 +47,7 @@ const AllyRadio = {
     return true;
   },
 
-  // Chamado a cada quadro de jogo (pausa e telas de história congelam o rádio)
+  // Chamado a cada quadro de jogo (pausa, árvore e telas de história congelam o rádio)
   update(dt) {
     this.since += dt;
     const p = this.pending, hud = game.hud;

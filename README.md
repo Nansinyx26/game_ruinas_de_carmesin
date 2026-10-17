@@ -32,15 +32,16 @@ Sem WebGL, o jogo volta automaticamente aos gráficos 2D. A tecla **G** alterna 
 Kael continua sendo o protagonista e o único que luta nos setores. Ao longo da campanha, quatro pessoas se juntam a ele:
 
 - **Lyra Kaede** (violeta): sobrevivente que perdeu a família no colapso, com um arco de energia montado com peças de drone. Estava presa na última cela da Instalação de Contenção e conhece os túneis até Vesper. *Fim do Capítulo I.*
-- **Drakos** (vermelho): ex-soldado humano da Legião de Ferro. Espera Kael no fim dos túneis; a Tempestade Nula queima o módulo de controle da armadura dele, e Drakos volta a decidir por conta própria depois de onze anos. *Fim do Capítulo II.*
+- **Drakos** (vermelho): um dos últimos soldados humanos da Legião de Ferro. Espera Kael no fim dos túneis; a Tempestade Nula destrói o módulo de controle que NEXUS instalou na nuca dele, e Drakos volta a decidir por conta própria depois de onze anos. *Fim do Capítulo II.*
 - **Sera Vyne** (ciano): cientista e especialista em inteligência artificial que ajudou a ensinar NEXUS a prever tempestades. Há meses tentava abrir o terminal militar de Vesper, e a chave era a marca no pulso de Kael. Ela não é o cientista da gravação do projeto ZERO. *Fim do Capítulo III.*
-- **Orion** (laranja): ex-agente clandestino das corporações que construíram NEXUS. Derruba legionários no refúgio sem ser visto, comenta a escolha que Kael fez ali e guia o grupo até a Catedral. *Fim do Capítulo IV.*
+- **Orion** (laranja): ex-agente clandestino das corporações que construíram NEXUS, que já tinha visto Kael no laboratório do projeto ZERO. Derruba legionários no refúgio sem ser visto, comenta a escolha que Kael fez ali e guia o grupo até a Catedral. *Fim do refúgio (Capítulo IV no elenco).*
 
 Como aparecem no jogo:
-- **Recrutamento:** duas páginas de história logo depois da saída do setor que libera o aliado, antes do capítulo seguinte. O elenco libera o personagem no mesmo momento: a segunda página mostra o cartão **NOVO ALIADO DESBLOQUEADO** na cor-tema dele, e o aviso aparece ao entrar no setor. ESC pula as páginas sem perder o desbloqueio.
-- **Rádio:** depois de recrutados, os aliados falam com Kael pelo rádio (legenda "LYRA · RÁDIO" na cor do aliado) no início de um setor, quando NEXUS aparece e quando Kael recupera um fragmento de memória. Fala no máximo um aliado por evento, uma vez por jornada, só depois que a legenda anterior termina. A opção **Falas durante o jogo** (Configurações → IDIOMA) desliga o rádio.
+- **Recrutamento:** duas páginas de história logo depois da saída do setor que libera o aliado, antes do capítulo seguinte. O elenco libera o personagem no mesmo momento: a segunda página mostra o cartão **NOVO ALIADO DESBLOQUEADO** na cor-tema dele, e o aviso aparece ao entrar no setor. ESC (ou B/Start no controle) pula as páginas sem perder o desbloqueio nem o encontro.
+- **Salvamentos:** o jogo guarda quem Kael já encontrou na jornada (`flags.met`). Carregar um salvamento nunca repete um encontro; se o jogo fechar no meio das páginas de um encontro, elas aparecem ao continuar, antes de voltar ao setor. Salvamentos de antes dos encontros contam como já tendo encontrado os aliados dos capítulos concluídos.
+- **Rádio:** nos setores Kael avança sozinho, e os aliados já encontrados falam com ele pelo rádio (legenda "LYRA · RÁDIO" na cor do aliado) no início de um setor, quando NEXUS aparece e quando Kael recupera um fragmento de memória. Fala no máximo um aliado por evento, só depois que a legenda anterior termina e com pelo menos 14 s entre duas falas; cair e voltar ao início do setor não repete a fala. A opção **Falas durante o jogo** (Configurações → IDIOMA) desliga o rádio.
 - **Base da torre e finais:** antes do Capítulo V, quem já está com Kael fica para segurar a porta, porque o elevador do núcleo só aceita a marca dele. Depois de cada final, uma página conta o que aconteceu com cada aliado.
-- **Novo ciclo:** a história recomeça. Os aliados continuam liberados no elenco, mas só voltam a falar depois de serem reencontrados.
+- **Novo ciclo:** a história recomeça. Os aliados continuam liberados no elenco, mas só voltam a falar depois de serem reencontrados (o cartão diz **ALIADO REENCONTRADO**).
 
 ### Fragmentos de memória
 Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor sem pegá-lo, o fragmento se perde para sempre.
@@ -87,7 +88,7 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 | Analógico direito | Analógico direito | Olhar ao redor (câmera) |
 | View / Back | Create / Share | Árvore de habilidades |
 | Menu / Start | Options | Pausa |
-| A · B | ✕ · ○ | Confirmar · voltar nos menus |
+| A · B | ✕ · ○ | Confirmar · voltar nos menus (B também pula a história) |
 | LB · RB | L1 · R1 | Trocar de aba nos menus |
 
 - **Conectar:** por USB, ligue o cabo e aperte qualquer botão com a janela do jogo em foco. Por Bluetooth, pareie o controle nas configurações do sistema (Xbox: botão de parear; DualShock 4/DualSense: segure Share/Create + PS; GameSir: modo XInput/Android) e aperte um botão.
