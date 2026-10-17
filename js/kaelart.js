@@ -5,7 +5,8 @@
 // estado do jogador (parado nas 4 vistas, caminhada, corrida, golpes, dano, morte,
 // Eclipse) e desenha com o pé no ponto do mundo. As partes luminosas (lâmina,
 // rastros, marca Ø) vêm da metade de baixo do atlas e são somadas à cena depois
-// da escuridão. VÍDEO → "Visual do Kael" troca entre esta arte e o modelo 3D.
+// da escuridão. VÍDEO → "Visual do Kael" troca entre estes sprites e o modelo 3D
+// texturizado (padrão); sem WebGL (ou com o 3D desligado na tecla G) os sprites são usados.
 // ---------------------------------------------------------------------------
 const KAEL_ART_H = 64;            // altura do corpo em unidades do mundo (a mesma do modelo 3D)
 const KAEL_WALK_FPS = 9, KAEL_RUN_FPS = 12;
@@ -36,8 +37,8 @@ const KaelArt = {
     g.fillStyle = color; g.fillRect(0, 0, c.width, c.height);
     return c;
   },
-  // A arte está em uso? (carregada e escolhida nas configurações)
-  active() { return this.ok && Settings.v.kaelStyle !== '3d'; },
+  // Os sprites estão em uso? (escolhidos nas configurações, ou sem 3D disponível/ligado)
+  active() { return this.ok && (Settings.v.kaelLook === 'art' || !R3D.active); },
   get scale() { return KAEL_ART_H / KAEL_SPRITES.refH; },
 
   // Quadro do estado atual: animação, índice e se espelha (a arte olha para a direita)

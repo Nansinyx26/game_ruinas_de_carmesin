@@ -11,7 +11,7 @@ const SETTINGS_DEFAULT = {
   // Jogo
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
-  display: 'window', renderScale: 100, kaelStyle: 'art', gfx3d: true, quality: 2, fpsLimit: 0, postfx: 2, brightness: 0,
+  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, fpsLimit: 0, postfx: 2, brightness: 0,
   // Áudio
   master: 80, sfx: 100, ambient: 100, sound: true,
   // Controles (gamepad)
@@ -39,7 +39,7 @@ const SETTINGS_TABS = [
   { id: 'video', name: 'VÍDEO', icon: 'monitor', opts: [
     { key: 'display', label: 'Modo de exibição', type: 'choice', values: ['window', 'full'], names: ['Janela', 'Tela cheia'] },
     { key: 'renderScale', label: 'Resolução interna', type: 'choice', values: [50, 75, 100], names: ['50%', '75%', '100% (nativa)'], hint: 'Valores menores deixam o jogo mais leve em aparelhos fracos.' },
-    { key: 'kaelStyle', label: 'Visual do Kael', type: 'choice', values: ['art', '3d'], names: ['Arte oficial', 'Modelo 3D'], hint: 'Arte oficial: o Kael das fichas de personagem, desenhado quadro a quadro.' },
+    { key: 'kaelLook', label: 'Visual do Kael', type: 'choice', values: ['3d', 'art'], names: ['3D com a arte oficial', 'Sprites 2D da arte'], hint: '3D: modelo com a textura das vistas oficiais. Sprites: os quadros da folha de personagem.' },
     { key: 'gfx3d', label: 'Inimigos e NPCs em 3D', type: 'bool', hint: 'Modelos 3D (WebGL) ou desenho 2D. Tecla G alterna durante o jogo.' },
     { key: 'quality', label: 'Qualidade dos efeitos', type: 'choice', values: [0, 1, 2], names: ['Baixa', 'Média', 'Alta'], hint: 'Quantidade de partículas, faíscas e fumaça.' },
     { key: 'fpsLimit', label: 'Limite de FPS', type: 'choice', values: [0, 60, 30], names: ['Sem limite', '60', '30'] },

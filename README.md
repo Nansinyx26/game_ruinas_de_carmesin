@@ -96,7 +96,7 @@ Próximas fases: tela de elenco com os 5 cartões e menu de desenvolvimento → 
 
 - **Capa** → **Tela inicial** (JOGAR, CONFIGURAÇÕES, CRÉDITOS, SAIR) → **Menu principal** (CONTINUAR, NOVO JOGO, CARREGAR, CONFIGURAÇÕES, SAIR) com o painel **Última missão**.
 - **5 espaços de salvamento** independentes, cada um com miniatura da tela, setor, data, nível e tempo de jogo. NOVO JOGO usa o primeiro espaço livre (ou pede um para substituir); em CARREGAR, um espaço vazio começa um jogo novo ali. O salvamento é automático (níveis, habilidades, troca de setor, pausa, saída). Saves da versão anterior viram o espaço 1.
-- **Seleção de personagem:** Kael (modelo 3D) e três personagens ainda bloqueados.
+- **Seleção de personagem:** Kael (arte oficial) e três personagens ainda bloqueados.
 - **Pausa:** RETOMAR, HABILIDADES, CONFIGURAÇÕES, REINICIAR SETOR, SAIR PARA O MENU, SAIR DO JOGO, com técnicas e evoluções conhecidas.
 - **SAIR** fecha a janela quando o jogo roda como aplicativo; no navegador (que não deixa uma página fechar a própria aba) aparece uma tela de despedida.
 
@@ -105,7 +105,7 @@ Configurações (salvas no navegador e aplicadas com **APLICAR**; **PADRÃO** re
 | Aba | Opções |
 |---|---|
 | JOGO | Dificuldade (Narrativa / Normal / Difícil: vida e dano dos inimigos), tremor de tela, números de dano, velocidade do texto |
-| VÍDEO | Janela / tela cheia, resolução interna (50–100%), visual do Kael (arte oficial ou modelo 3D), inimigos e NPCs em 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
+| VÍDEO | Janela / tela cheia, resolução interna (50–100%), visual do Kael (3D com a arte oficial ou sprites 2D), inimigos e NPCs em 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
 | ÁUDIO | Som liga/desliga, volume geral, efeitos sonoros, ambiente |
 | CONTROLES | Sensibilidade do analógico, zona morta, inverter eixo Y da câmera, vibração + diagnóstico e comandos |
 | IDIOMA | Português (Brasil), tamanho das legendas, falas durante o jogo |
@@ -183,6 +183,7 @@ js/
   abilities.js      ABILITIES: efeitos das habilidades ativas
   player.js         Player (Kael): movimento, golpes, esquiva, habilidades, Eclipse, desenho 2D
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)
+                    — opção "Sprites 2D" e o modo sem WebGL
   enemies.js        ENEMY_TYPES, Enemy, Crawler, Legionary, Shooter, Hunter, AIDirector
   boss.js           HazardSystem e Boss (NEXUS)
   projectiles.js    ProjectileSystem
@@ -197,6 +198,7 @@ js/
   assets/capa.js    arte da capa embutida (data URI gerado de assets/images/capa.jpg)
   assets/kael_sprites.js  sprites do Kael recortados da folha oficial (atlas embutido)
   assets/kael_arte.js     ilustração de corpo inteiro e rosto do Kael (seleção de personagem)
+  assets/kael3d.js        Kael 3D: malha esculpida das 4 vistas da ficha + textura assada
   menus.js          Menus: capa, tela inicial, menu principal, carregar, personagem,
                     configurações, créditos, pausa, confirmações e avisos
   game.js           Game: loop, estados, eventos de combate, XP, salvamento, renderização
@@ -206,6 +208,8 @@ assets/images/capa.jpg   arte da capa original (fonte do js/assets/capa.js)
 tools/gerar_capa.py      gera js/assets/capa.js a partir da imagem
 tools/gerar_sprites_kael.py  recorta a folha de sprites e a ficha do Kael (assets/images/kael_*.jpg)
                              e gera js/assets/kael_sprites.js e js/assets/kael_arte.js
+tools/gerar_kael3d.py    esculpe o Kael 3D a partir das 4 vistas da ficha e assa a textura
+                         (gera js/assets/kael3d.js; usa tools/kael_rig.js para ler o esqueleto)
 ```
 
 ### Ordem de inicialização
@@ -241,6 +245,7 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Novo modelo 3D | crie `js/models/<chave>.js` com `MODELS3D.<chave> = { build, pose, opts, glows }` e inclua o `<script>` no `index.html` |
 | Estilos da página | `css/main.css` |
 | Trocar a capa | substitua `assets/images/capa.jpg` e gere `js/assets/capa.js` de novo (abaixo) |
+| Kael 3D | `python3 tools/gerar_kael3d.py` (requer node, numpy, scipy, opencv-python-headless, scikit-image, fast-simplification, xatlas e Pillow) gera `js/assets/kael3d.js`; o modelo `MODELS3D.kaelTex` (`js/models/kael_tex3d.js`) usa as poses e animações do `MODELS3D.kael` |
 | Sprites do Kael | ajuste as caixas de cada quadro em `ANIMS` no `tools/gerar_sprites_kael.py` e rode `python3 tools/gerar_sprites_kael.py` (requer Pillow, numpy e scipy); a escolha do quadro por estado fica em `KaelArt.pick()` (`js/kaelart.js`) |
 
 Para gerar o `js/assets/capa.js` a partir da imagem: `python3 tools/gerar_capa.py` (requer Pillow). A imagem fica embutida no JavaScript para o jogo funcionar abrindo o `index.html` direto do disco sem bloquear as miniaturas dos salvamentos.
@@ -249,7 +254,7 @@ Para manter o projeto organizado, coloque código novo no arquivo da responsabil
 
 ### Dependências
 
-Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, modelos 3D e sons são gerados por código. As imagens são a arte da capa (`js/assets/capa.js`) e a arte oficial do Kael (`js/assets/kael_sprites.js` e `js/assets/kael_arte.js`), todas embutidas no JavaScript. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
+Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, modelos 3D e sons são gerados por código. As imagens são a arte da capa (`js/assets/capa.js`) e a arte oficial do Kael (`js/assets/kael_sprites.js`, `js/assets/kael_arte.js` e a malha/textura 3D em `js/assets/kael3d.js`), todas embutidas no JavaScript. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
 
 ### Versão de arquivo único
 

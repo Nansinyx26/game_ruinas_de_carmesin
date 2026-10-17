@@ -229,6 +229,51 @@ void main() {
   gl_FragColor = vec4(lit, 1.0);
 }`;
 
+// Variante com textura (modelo com model.tex): nos vértices pintados, vCol = (u, v, sombra ≥ 0, emissão);
+// nos vértices de cor (espada, marca), vCol = (r, g, −1 − b, emissão). A arte já vem com luz e sombra
+// pintadas: a luz da cena só modula, e as partes azuis saturadas da arte brilham na passada emissiva.
+const R3D_FS_TEX = `
+precision mediump float;
+varying vec3 vNor; varying vec4 vCol;
+uniform sampler2D uTex;
+uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
+uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
+void main() {
+  vec3 V = vec3(0.57735);
+  vec3 n = normalize(vNor);
+  if (dot(n, V) < 0.0) n = -n;
+  float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
+  bool painted = vCol.z > -0.5;
+  vec3 col; float e;
+  if (painted) {
+    col = texture2D(uTex, vCol.xy).rgb;
+    float b = col.b - max(col.r, col.g);
+    e = smoothstep(0.08, 0.26, b) * smoothstep(0.28, 0.55, col.b) * vCol.w * 1.8;
+  } else {
+    col = vec3(vCol.x, vCol.y, -vCol.z - 1.0); e = vCol.w;
+  }
+  if (uHolo > 0.5) {
+    if (uPass < 0.5) discard;
+    gl_FragColor = vec4(col * (0.25 + 0.9 * fres + e) * uEmi, 1.0);
+    return;
+  }
+  if (uGhost.a > 0.5) {
+    if (uPass < 0.5) { gl_FragColor = vec4(uGhost.rgb * (0.35 + 0.9 * fres), 1.0); } else { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }
+    return;
+  }
+  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi, 1.0); return; }
+  float key = max(dot(n, uKeyDir), 0.0);
+  float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
+  float rim = max(dot(n, uRimDir), 0.0);
+  float up = n.z * 0.5 + 0.5;
+  vec3 light = uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2);
+  vec3 lit = painted ? col * (0.55 + 0.75 * light) + uRimCol * (rim * 0.16 + fres * 0.1)
+                     : col * light + uRimCol * (rim * 0.55 + fres * 0.35);
+  lit += col * e * uEmi;
+  lit = mix(lit, vec3(1.0), uFlash);
+  gl_FragColor = vec4(lit, 1.0);
+}`;
+
 const R3D = {
   ok: false, enabled: true, W: 2048, H: 2048,
   canvas: null, gl: null, prog: null, buf: null, data: new Float32Array(1 << 18),
@@ -247,17 +292,28 @@ const R3D = {
         if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
         return s;
       };
-      const p = gl.createProgram();
-      gl.attachShader(p, sh(gl.VERTEX_SHADER, R3D_VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, R3D_FS));
-      gl.linkProgram(p);
-      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-      this.canvas = c; this.gl = gl; this.prog = p;
+      const link = (fs) => {
+        const p = gl.createProgram();
+        gl.attachShader(p, sh(gl.VERTEX_SHADER, R3D_VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+        const loc = {};
+        for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex']) loc[u] = gl.getUniformLocation(p, u);
+        return { p, loc };
+      };
+      const P0 = link(R3D_FS);
+      this.canvas = c; this.gl = gl; this.prog = P0.p; this.loc = P0.loc;
+      this.progs = [P0];
+      // Programa com textura: se falhar, os modelos texturizados não são desenhados (o resto segue igual)
+      try { this.progs.push(link(R3D_FS_TEX)); } catch (e) { console.warn('Textura 3D indisponível:', e); }
       this.buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
       gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW);
-      this.loc = {};
-      for (const a of ['aPos', 'aNor', 'aCol']) this.loc[a] = gl.getAttribLocation(p, a);
-      for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo']) this.loc[u] = gl.getUniformLocation(p, u);
+      // Textura provisória (1×1 escura) enquanto a imagem de um modelo carrega
+      this.blankTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, this.blankTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([16, 16, 22]));
       // Direções de luz no mundo: chave vindo de cima/esquerda da câmera, contraluz atrás à direita
       const V = [0.57735, 0.57735, 0.57735], left = [-0.7071, 0.7071, 0], up = [-0.4082, -0.4082, 0.8165];
       const comb = (a, b, c, ka, kb, kc) => { const v = [a[0] * ka + b[0] * kb + c[0] * kc, a[1] * ka + b[1] * kb + c[1] * kc, a[2] * ka + b[2] * kb + c[2] * kc]; const l = Math.hypot(v[0], v[1], v[2]); return v.map((q) => q / l); };
@@ -354,14 +410,10 @@ const R3D = {
     }
     this.scale = s;
     // 3) Desenho: passada de cor (metade de cima) e emissiva (metade de baixo)
-    const gl = this.gl, L = this.loc;
+    const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
     if (this.data.byteLength > this.bufBytes || !this.bufBytes) { gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW); this.bufBytes = this.data.byteLength; }
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data.subarray(0, vo));
-    gl.useProgram(this.prog);
-    gl.enableVertexAttribArray(L.aPos); gl.vertexAttribPointer(L.aPos, 3, gl.FLOAT, false, 40, 0);
-    gl.enableVertexAttribArray(L.aNor); gl.vertexAttribPointer(L.aNor, 3, gl.FLOAT, false, 40, 12);
-    gl.enableVertexAttribArray(L.aCol); gl.vertexAttribPointer(L.aCol, 4, gl.FLOAT, false, 40, 24);
     gl.disable(gl.SCISSOR_TEST);
     gl.viewport(0, 0, this.W, this.H);
     gl.clearColor(0, 0, 0, 0); gl.clearDepth(1);
@@ -370,14 +422,30 @@ const R3D = {
     gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
     gl.enable(gl.SCISSOR_TEST);
     const lt = this.light;
-    gl.uniform3fv(L.uKeyDir, this.keyDir); gl.uniform3fv(L.uRimDir, this.rimDir);
-    gl.uniform3fv(L.uAmb, lt.amb); gl.uniform3fv(L.uKeyCol, lt.key);
-    gl.uniform1f(L.uDepth, 1 / 1200);
-    for (let pass = 0; pass < 2; pass++) {
+    // Ativa um dos programas (0 = cores por vértice, 1 = textura) com os atributos e a luz do quadro
+    const use = (k, pass) => {
+      const P = this.progs[k], L = P.loc;
+      gl.useProgram(P.p);
+      gl.enableVertexAttribArray(L.aPos); gl.vertexAttribPointer(L.aPos, 3, gl.FLOAT, false, 40, 0);
+      gl.enableVertexAttribArray(L.aNor); gl.vertexAttribPointer(L.aNor, 3, gl.FLOAT, false, 40, 12);
+      gl.enableVertexAttribArray(L.aCol); gl.vertexAttribPointer(L.aCol, 4, gl.FLOAT, false, 40, 24);
+      gl.uniform3fv(L.uKeyDir, this.keyDir); gl.uniform3fv(L.uRimDir, this.rimDir);
+      gl.uniform3fv(L.uAmb, lt.amb); gl.uniform3fv(L.uKeyCol, lt.key);
+      gl.uniform1f(L.uDepth, 1 / 1200);
       gl.uniform1f(L.uPass, pass);
+      if (L.uTex) gl.uniform1i(L.uTex, 0);
+      return L;
+    };
+    for (let pass = 0; pass < 2; pass++) {
+      let cur = -1, L = null;
       for (let i = 0; i < n; i++) {
         const it = this.items[i];
         if (!it.ok) continue;
+        const tex = it.model.tex;
+        if (tex && this.progs.length < 2) continue;   // sem o programa de textura, o modelo não aparece
+        const want = tex ? 1 : 0;
+        if (want !== cur) { cur = want; L = use(want, pass); }
+        if (tex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.texOf(tex)); }
         const o = it.o;
         const vy = this.H - (it.cy + (pass ? this.H / 2 : 0)) - it.ch;
         gl.viewport(it.cx, vy, it.cw, it.ch);
@@ -396,6 +464,26 @@ const R3D = {
       gl.enable(gl.SCISSOR_TEST);
     }
     gl.disable(gl.SCISSOR_TEST);
+  },
+
+  // Textura WebGL de um modelo ({ src } com data URI); a provisória vale até a imagem carregar
+  texOf(tex) {
+    if (tex.gl) return tex.gl;
+    if (!tex.img) { tex.img = new Image(); tex.img.src = tex.src; }
+    if (!tex.img.complete || !tex.img.naturalWidth) return this.blankTex;
+    const gl = this.gl, t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, tex.img);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // Lados potência de 2: mipmaps (o Kael pequeno na tela não cintila)
+    const im = tex.img, pot = !(im.naturalWidth & (im.naturalWidth - 1)) && !(im.naturalHeight & (im.naturalHeight - 1));
+    if (pot) gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, pot ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    tex.gl = t;
+    return t;
   },
 
   // Desenha a passada de cor do sprite com os pés em (sx, sy) (coordenadas do mundo isométrico)

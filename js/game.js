@@ -1032,7 +1032,8 @@ class Game {
     const th = this.room.theme, lc = th.lamp.split(',').map((v) => v / 255);
     R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
     const p = this.player, art = KaelArt.active();
-    const mk = p.def.model || 'kael';   // sem modelo próprio: o do Kael
+    // Modelo do personagem (sem modelo próprio: o do Kael); o Kael usa a versão com a arte oficial
+    const mk0 = p.def.model || 'kael', mk = mk0 === 'kael' && MODELS3D.kaelTex ? 'kaelTex' : mk0;
     p.spr = art ? null : this.queue3(mk, p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
     let n = art ? 99 : 0;   // com a arte oficial, os fantasmas da esquiva também são sprites
     for (let i = 0; i < p.ghosts.length; i++) {
@@ -1043,7 +1044,7 @@ class Game {
       const gp = this.ghostProxy(i, p, g);
       const o = g._o3 || (g._o3 = {});
       o.yaw = g.f; o.ghost = [0.25, 0.55, 1.0]; o.flash = 0; o.emi = undefined; o.holo = false; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
-      g.spr = this.queue3(mk, gp, o);
+      g.spr = this.queue3(mk0, gp, o);   // fantasmas: o modelo leve (só a silhueta aparece)
     }
     for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
     for (const n of this.npcs) n.spr = this.queue3(n.key, n, this.opts3(n, 0));
