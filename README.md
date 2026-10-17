@@ -16,17 +16,31 @@ Sem WebGL, o jogo volta automaticamente aos gráficos 2D. A tecla **G** alterna 
 
 | Capítulo | Setor | O que acontece |
 |---|---|---|
-| I · O Homem de Preto | Instalação de Contenção | “Unidade ZERO despertada.” Kael foge entre luzes de emergência |
-| II · A Espada que Devora a Tempestade | Túneis de Serviço | A espada reage às memórias de Kael |
-| III · O Segredo da Unidade ZERO | Avenidas de Vesper | Uma cidade morta e a gravação do projeto ZERO |
-| IV · A Cidade dos Esquecidos | Refúgio dos Desconectados | As três facções e uma escolha |
+| I · O Homem de Preto | Instalação de Contenção | “Unidade ZERO despertada.” Kael foge entre luzes de emergência e encontra **Lyra Kaede** na última cela |
+| II · A Espada que Devora a Tempestade | Túneis de Serviço | A espada reage às memórias de Kael. No fim dos túneis, **Drakos** se liberta da Legião |
+| III · O Segredo da Unidade ZERO | Avenidas de Vesper | Uma cidade morta. **Sera Vyne** abre, com a marca de Kael, a gravação do projeto ZERO |
+| IV · A Cidade dos Esquecidos | Refúgio dos Desconectados | As três facções e uma escolha. **Orion** sai das sombras |
 | IV · Os Fiéis da Máquina | Catedral do Eclipse | O Culto que venera NEXUS |
-| V · A Voz Dentro da Máquina / VI · O Último Eclipse | Topo da Torre Central | O confronto com **NEXUS** |
+| V · A Voz Dentro da Máquina / VI · O Último Eclipse | Topo da Torre Central | Os aliados seguram a base da torre e Kael sobe sozinho para enfrentar **NEXUS** |
 
 ### Facções
 - **Os Desconectados**: humanos que vivem fora da rede de NEXUS.
 - **A Legião de Ferro**: soldados artificiais que reconhecem Kael como ameaça prioritária.
 - **O Culto do Eclipse**: humanos que veneram NEXUS como uma divindade.
+
+### Os aliados
+Kael continua sendo o protagonista e o único que luta nos setores. Ao longo da campanha, quatro pessoas se juntam a ele:
+
+- **Lyra Kaede** (violeta): sobrevivente que perdeu a família no colapso, com um arco de energia montado com peças de drone. Estava presa na última cela da Instalação de Contenção e conhece os túneis até Vesper. *Fim do Capítulo I.*
+- **Drakos** (vermelho): ex-soldado humano da Legião de Ferro. Espera Kael no fim dos túneis; a Tempestade Nula queima o módulo de controle da armadura dele, e Drakos volta a decidir por conta própria depois de onze anos. *Fim do Capítulo II.*
+- **Sera Vyne** (ciano): cientista e especialista em inteligência artificial que ajudou a ensinar NEXUS a prever tempestades. Há meses tentava abrir o terminal militar de Vesper, e a chave era a marca no pulso de Kael. Ela não é o cientista da gravação do projeto ZERO. *Fim do Capítulo III.*
+- **Orion** (laranja): ex-agente clandestino das corporações que construíram NEXUS. Derruba legionários no refúgio sem ser visto, comenta a escolha que Kael fez ali e guia o grupo até a Catedral. *Fim do Capítulo IV.*
+
+Como aparecem no jogo:
+- **Recrutamento:** duas páginas de história logo depois da saída do setor que libera o aliado, antes do capítulo seguinte. O elenco libera o personagem no mesmo momento: a segunda página mostra o cartão **NOVO ALIADO DESBLOQUEADO** na cor-tema dele, e o aviso aparece ao entrar no setor. ESC pula as páginas sem perder o desbloqueio.
+- **Rádio:** depois de recrutados, os aliados falam com Kael pelo rádio (legenda "LYRA · RÁDIO" na cor do aliado) no início de um setor, quando NEXUS aparece e quando Kael recupera um fragmento de memória. Fala no máximo um aliado por evento, uma vez por jornada, só depois que a legenda anterior termina. A opção **Falas durante o jogo** (Configurações → IDIOMA) desliga o rádio.
+- **Base da torre e finais:** antes do Capítulo V, quem já está com Kael fica para segurar a porta, porque o elevador do núcleo só aceita a marca dele. Depois de cada final, uma página conta o que aconteceu com cada aliado.
+- **Novo ciclo:** a história recomeça. Os aliados continuam liberados no elenco, mas só voltam a falar depois de serem reencontrados.
 
 ### Fragmentos de memória
 Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor sem pegá-lo, o fragmento se perde para sempre.
@@ -35,6 +49,8 @@ Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor 
 - **Final I: O Rei do Vazio.** Kael absorve o núcleo e assume o controle das máquinas.
 - **Final II: O Último Humano.** Kael destrói o núcleo e apaga a rede.
 - **Final III: Eclipse Zero.** Kael separa NEXUS de seus protocolos. *Exige as 5 memórias recuperadas.*
+
+Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois da rede* (II) e *O mundo que escolhe* (III, antes da transmissão).
 
 ## Controles
 
@@ -83,7 +99,7 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 
 ## Elenco de personagens (em desenvolvimento)
 
-Kael Veyron é o personagem inicial. Lyra Kaede, Drakos, Sera Vyne e Orion já existem nos dados e são liberados pela campanha (Capítulos I, II, III e IV concluídos), mas ainda aparecem como **EM BREVE**: ficam salvos como desbloqueados e passam a ser escolhíveis quando forem implementados. O desbloqueio mostra um aviso "NOVO ALIADO DESBLOQUEADO". Cada personagem tem 4 habilidades, 4 armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
+Kael Veyron é o personagem inicial. Lyra Kaede, Drakos, Sera Vyne e Orion já existem nos dados e são liberados pela campanha (Capítulos I, II, III e IV concluídos), mas ainda aparecem como **EM BREVE**: ficam salvos como desbloqueados e passam a ser escolhíveis quando forem implementados. O desbloqueio mostra um aviso "NOVO ALIADO DESBLOQUEADO" e vem junto com as páginas de recrutamento da história (veja **Os aliados**). Cada personagem tem 4 habilidades, 4 armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
 
 - **Dados** (`js/data/`): `characters.js` (fichas: atributos, cor-tema, lore, habilidades, armaduras, armas, condição de desbloqueio e `devStatus`: `ready` | `partial` | `coming_soon`), `abilities.js`, `armors.js`, `weapons.js` e `strings.js` (textos da interface, prontos para tradução).
 - **`RosterManager`** (`js/roster.js`): personagens desbloqueados, personagem ativo e armadura de cada um; `isUnlocked`, `unlock`, `setActive`, `equipArmor`, `checkUnlocks` e os eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`. O jogo chama `checkUnlocks` ao concluir um setor, ao derrotar NEXUS e ao registrar escolhas da história.
@@ -192,8 +208,10 @@ js/
   ui.js             wrapText, glowText, drawIcon (ícones procedurais)
   hud.js            HUD
   screens.js        Screens: árvore de habilidades, evoluções, derrota e finais
-  story.js          MEMORIES, STORY, ENDINGS, CHAPTERS (textos da história)
-  storyscreen.js    Backdrop (cenários pintados) e StoryScreen
+  story.js          MEMORIES, STORY, ENDINGS, CHAPTERS (textos da história) e os aliados:
+                    RECRUITS, towerVigil, ALLY_EPILOGUE, ALLY_RADIO
+  storyscreen.js    Backdrop (cenários pintados, silhuetas dos aliados) e StoryScreen
+  radio.js          AllyRadio: falas dos aliados pelo rádio durante o jogo
   assets/capa.js    arte da capa embutida (data URI gerado de assets/images/capa.jpg)
   assets/kael_sprites.js  sprites do Kael recortados da folha oficial (atlas embutido)
   assets/kael_arte.js     ilustração de corpo inteiro e rosto do Kael (seleção de personagem)
@@ -236,6 +254,7 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Nova opção de configuração | `SETTINGS_DEFAULT` e `SETTINGS_TABS` em `js/settings.js` (+ o efeito em `Settings.apply()` ou onde a opção é lida) |
 | Telas de evolução, árvore e finais | `js/screens.js` (desenho) e `js/game.js` (estado e entrada) |
 | Textos da história | `js/story.js` |
+| Recrutamento, epílogo e falas de rádio dos aliados | `RECRUITS`, `ALLY_EPILOGUE` e `ALLY_RADIO` em `js/story.js` (cenários em `Backdrop` de `js/storyscreen.js`; regras do rádio em `js/radio.js`) |
 | Novos sons | `AudioSys.play()` em `js/audio.js` |
 | Teclas e botões | `KEYMAP` e `PADMAP` em `js/controls.js` |
 | Novo modelo 3D | crie `js/models/<chave>.js` com `MODELS3D.<chave> = { build, pose, opts, glows }` e inclua o `<script>` no `index.html` |

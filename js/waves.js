@@ -15,6 +15,7 @@ class WaveManager {
     this.timer = 1.8;
     game.hud.message(this.def.name.toUpperCase(), this.def.sub, 2.4);
     if (this.def.say) game.hud.say(this.def.say[0], this.def.say[1], 4.2, 1.4);
+    if (!this.def.boss) AllyRadio.event('room', index, 2.5);   // um aliado responde pelo rádio (js/radio.js)
   }
 
   get totalWaves() { return this.def.boss ? 1 : this.def.waves.length; }
@@ -53,6 +54,7 @@ class WaveManager {
     this.state = 'boss';
     game.hud.message(boss.name, 'A VOZ DENTRO DA MÁQUINA', 2.8, false, true);
     game.camera.shake(0.4);
+    AllyRadio.event('boss', '', 4.5);   // depois da primeira fala de NEXUS
   }
 
   aliveCount() {

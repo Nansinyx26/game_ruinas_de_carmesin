@@ -142,6 +142,13 @@ const Backdrop = {
     ctx.restore();
   },
 
+  // Contraluz suave atrás das silhuetas (separa as figuras do fundo escuro)
+  backlight(ctx, rgb, x, y, r, a) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    GlowCache.draw(ctx, rgb, x, y, r, a);
+    ctx.restore();
+  },
+
   // Silhueta de Kael de costas (casaco esvoaçando) com a espada acesa
   kael(ctx, x, y, s, t, swordRGB = '80,160,255') {
     ctx.save();
@@ -197,8 +204,140 @@ const Backdrop = {
     ctx.restore();
   },
 
-  // Corredor em perspectiva (instalação e refúgio)
-  corridor(ctx, t, rgb, warm) {
+  // Silhuetas dos aliados, no mesmo estilo da do Kael, com a luz na cor-tema de cada um
+  // pose: 'stand' | 'aim' (Lyra mirando) | 'kneel' (Drakos derrotado) | 'scan' (drone de Sera)
+  // dir: 1 = virado para a direita, -1 = para a esquerda. focus: ponto de tela que o
+  // drone de Sera rodeia (senão fica sobre o ombro). Devolve pontos de interesse em
+  // coordenadas de tela ({ drone } para Sera).
+  ally(ctx, id, x, y, s, t, pose = 'stand', dir = 1, focus = null) {
+    const d = CHARACTERS_BY_ID[id];
+    const rgb = hexToRgb(d ? d.color : '#ffffff');
+    const out = {};
+    const sway = Math.sin(t * 1.4 + x * 0.01) * 3;
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(s * dir, s);
+    ctx.fillStyle = '#020306'; ctx.strokeStyle = '#020306';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const poly = (pts) => { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let k = 2; k < pts.length; k += 2) ctx.lineTo(pts[k], pts[k + 1]); ctx.closePath(); ctx.fill(); };
+    const limb = (w, ...pts) => { ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let k = 2; k < pts.length; k += 2) ctx.lineTo(pts[k], pts[k + 1]); ctx.stroke(); };
+    const light = (fn) => { ctx.save(); ctx.globalCompositeOperation = 'lighter'; fn(); ctx.restore(); };
+    switch (id) {
+      case 'lyra': {
+        poly([-8, -42, -11, -1, -4, 0, -1, -27, 3, 0, 10, -1, 8, -42]);                 // pernas
+        poly([-11, -75, 11, -75, 9, -42, -9, -42]);                                     // tronco
+        ctx.beginPath(); ctx.moveTo(-10, -76); ctx.quadraticCurveTo(-21 + sway, -60, -19 + sway * 1.4, -40); ctx.lineTo(-8, -47); ctx.closePath(); ctx.fill();   // capa curta
+        ctx.beginPath(); ctx.ellipse(0, -85, 8.5, 10, 0, 0, TAU); ctx.fill();           // capuz
+        ctx.beginPath(); ctx.moveTo(-6, -93); ctx.quadraticCurveTo(-16, -86, -15 + sway * 0.3, -72); ctx.lineTo(-5, -78); ctx.closePath(); ctx.fill();
+        if (pose === 'aim') {
+          // Braço do arco esticado, a mão da corda junto ao rosto
+          limb(5, 6, -72, 30, -70); limb(4.5, -6, -72, -2, -78, 3, -77);
+          ctx.lineWidth = 3.2; ctx.beginPath(); ctx.moveTo(26, -102); ctx.quadraticCurveTo(46, -70, 26, -38); ctx.stroke();
+          light(() => {
+            ctx.strokeStyle = `rgba(${rgb},0.85)`; ctx.lineWidth = 1.1;
+            ctx.beginPath(); ctx.moveTo(26, -102); ctx.lineTo(3, -77); ctx.lineTo(26, -38); ctx.stroke();
+            ctx.strokeStyle = 'rgba(235,215,255,0.95)'; ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.moveTo(3, -77); ctx.lineTo(52, -71); ctx.stroke();
+            GlowCache.draw(ctx, rgb, 52, -71, 16, 0.85 + 0.15 * Math.sin(t * 7));
+            GlowCache.draw(ctx, rgb, 30, -70, 40, 0.35);
+          });
+        } else {
+          // Arco baixo, ao lado do corpo
+          limb(4.5, 8, -72, 13, -46); limb(4.5, -8, -72, -12, -48);
+          ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(10, -82); ctx.quadraticCurveTo(26, -46, 10, -10); ctx.stroke();
+          light(() => {
+            ctx.strokeStyle = `rgba(${rgb},0.8)`; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(10, -82); ctx.lineTo(10, -10); ctx.stroke();
+            GlowCache.draw(ctx, rgb, 15, -46, 30, 0.3);
+          });
+        }
+        light(() => { ctx.fillStyle = `rgba(${rgb},0.7)`; ctx.fillRect(-8, -44, 16, 1.5); });   // cinto
+        break;
+      }
+      case 'drakos': {
+        const flick = 0.55 + 0.45 * Math.max(0, Math.sin(t * 23) * Math.sin(t * 7.3));
+        if (pose === 'kneel') {
+          // De joelhos depois da luta: a lança no chão e o módulo da nuca soltando faíscas
+          ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(-58, -1); ctx.lineTo(70, -4); ctx.stroke();
+          light(() => { ctx.strokeStyle = `rgba(${rgb},0.35)`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(70, -4); ctx.lineTo(84, -4.5); ctx.stroke(); GlowCache.draw(ctx, rgb, 80, -4, 14, 0.25); });
+          limb(12, -8, -40, -14, -3, -36, 0);                                          // perna de trás (joelho no chão)
+          limb(12, 8, -40, 25, -36, 25, 0);                                            // perna da frente
+          poly([-20, -84, 21, -81, 17, -40, -16, -40]);                                // tronco curvado
+          ctx.beginPath(); ctx.ellipse(-21, -81, 12, 8, -0.2, 0, TAU); ctx.ellipse(23, -78, 12, 8, 0.25, 0, TAU); ctx.fill();
+          limb(9, 25, -76, 31, -52, 27, -38); limb(9, -24, -76, -27, -46);
+          poly([-2, -84, -2, -96, 3, -102, 14, -100, 17, -92, 14, -82]);               // capacete baixo
+          light(() => {
+            ctx.fillStyle = `rgba(${rgb},${(0.25 + 0.5 * flick).toFixed(3)})`; ctx.fillRect(5, -96, 10, 2);
+            const rnd = mulberry32(Math.floor(t * 12));
+            for (let k = 0; k < 3; k++) drawBolt(ctx, -4, -86, -4 + (rnd() - 0.5) * 34, -86 - rnd() * 26, rnd, 0.5, 0.9, rgb, 0.8, false);
+            GlowCache.draw(ctx, rgb, -4, -86, 16, 0.4 + 0.4 * flick);
+          });
+        } else {
+          poly([-17, -46, -20, 0, -6, 0, -3, -24, 3, -24, 6, 0, 20, 0, 17, -46]);      // pernas blindadas
+          poly([-21, -92, 21, -92, 18, -46, -18, -46]);                                // tronco largo
+          ctx.beginPath(); ctx.ellipse(-23, -89, 12, 8, -0.2, 0, TAU); ctx.ellipse(23, -89, 12, 8, 0.2, 0, TAU); ctx.fill();
+          limb(9, -27, -86, -29, -54); limb(9, 27, -86, 31, -58);
+          poly([-9, -92, -10, -104, -6, -110, 6, -110, 10, -104, 9, -92]);             // capacete
+          ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(33, -128); ctx.lineTo(33, 6); ctx.stroke();   // lança de plasma em pé
+          light(() => {
+            ctx.fillStyle = `rgba(${rgb},0.95)`; ctx.fillRect(-7, -104, 14, 2.5);
+            GlowCache.draw(ctx, rgb, 0, -103, 18, 0.7);
+            ctx.strokeStyle = `rgba(${rgb},0.95)`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(33, -144); ctx.lineTo(33, -126); ctx.stroke();
+            GlowCache.draw(ctx, rgb, 33, -136, 26, 0.6);
+          });
+        }
+        break;
+      }
+      case 'sera': {
+        poly([-10, -74, 10, -74, 13, -40, 16 + sway * 0.4, -12, -15 + sway * 0.4, -12, -12, -40]);   // jaleco longo
+        ctx.fillRect(-7, -14, 5, 14); ctx.fillRect(2, -14, 5, 14);
+        ctx.beginPath(); ctx.arc(0, -84, 8.5, 0, TAU); ctx.fill();
+        poly([-10, -82, -10, -92, -4, -97, 4, -97, 10, -92, 10, -76, 5, -79, -6, -79, -10, -76]);   // cabelo curto
+        limb(4.5, 6, -70, 24, -64); limb(4.5, -8, -70, -11, -46);
+        // Drone orbitando sobre o ombro (ou em volta do ponto 'focus')
+        const fx = focus ? (focus.x - x) / (s * dir) : -18, fy = focus ? (focus.y - y) / s : -108;
+        const orbit = focus ? 22 : 4;
+        const dx = fx + Math.cos(t * 1.3) * orbit, dy = fy + Math.sin(t * 2.1) * orbit * (focus ? 0.4 : 1);
+        ctx.beginPath(); ctx.arc(dx, dy, 5, 0, TAU); ctx.fill();
+        out.drone = { x: x + dx * s * dir, y: y + dy * s };
+        light(() => {
+          // Painel holográfico na mão
+          ctx.fillStyle = `rgba(${rgb},0.1)`; ctx.strokeStyle = `rgba(${rgb},0.85)`; ctx.lineWidth = 1.1;
+          ctx.beginPath(); ctx.moveTo(27, -84); ctx.lineTo(47, -88); ctx.lineTo(47, -62); ctx.lineTo(27, -58); ctx.closePath(); ctx.fill(); ctx.stroke();
+          for (let k = 1; k < 4; k++) { const f = k / 4; ctx.beginPath(); ctx.moveTo(30, lerp(-83, -59, f)); ctx.lineTo(44 - (k % 2) * 5, lerp(-87, -63, f)); ctx.stroke(); }
+          GlowCache.draw(ctx, rgb, 37, -73, 32, 0.35);
+          ctx.strokeStyle = `rgba(${rgb},0.9)`; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.ellipse(dx, dy, 9, 2.6, 0, 0, TAU); ctx.stroke();
+          ctx.fillStyle = `rgb(${rgb})`; ctx.beginPath(); ctx.arc(dx + 2, dy, 1.6, 0, TAU); ctx.fill();
+          GlowCache.draw(ctx, rgb, dx, dy, 18, 0.6);
+        });
+        break;
+      }
+      case 'orion': {
+        poly([-8, -40, -15, 0, -8, 0, -1, -24, 6, 0, 13, 0, 9, -40]);                 // base baixa
+        poly([-9, -76, 13, -74, 9, -40, -9, -40]);                                     // tronco inclinado
+        ctx.beginPath(); ctx.ellipse(3, -84, 8.5, 10, 0, 0, TAU); ctx.fill();           // capuz
+        ctx.beginPath(); ctx.moveTo(-4, -93); ctx.quadraticCurveTo(-12, -90, -13, -78); ctx.lineTo(-3, -80); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-6, -76); ctx.quadraticCurveTo(-22 + sway, -80, -36 + sway * 1.6, -70 + sway * 0.5);   // cachecol ao vento
+        ctx.lineTo(-33 + sway * 1.5, -65); ctx.quadraticCurveTo(-20 + sway * 0.6, -72, -5, -70); ctx.closePath(); ctx.fill();
+        limb(4.5, 8, -72, 18, -56); limb(4.5, -6, -72, -12, -54);
+        limb(2.5, 18, -56, 10, -33); limb(2.5, -12, -54, -22, -35);                   // lâminas em pegada invertida
+        light(() => {
+          ctx.strokeStyle = `rgba(${rgb},0.9)`; ctx.lineWidth = 1.1;
+          ctx.beginPath(); ctx.moveTo(19, -55); ctx.lineTo(11, -32); ctx.moveTo(-11, -53); ctx.lineTo(-21, -34); ctx.stroke();
+          GlowCache.draw(ctx, rgb, 11, -33, 12, 0.6); GlowCache.draw(ctx, rgb, -21, -35, 12, 0.6);
+          ctx.fillStyle = `rgba(${rgb},0.8)`; ctx.fillRect(4, -86, 7, 1.4);           // visor estreito
+        });
+        break;
+      }
+    }
+    ctx.restore();
+    return out;
+  },
+
+  // Corredor em perspectiva (instalação, túneis e refúgio)
+  // deco: 'monitors' (instalação), 'cells' (monitores + celas abertas), 'pipes' (túneis), 'fire' (refúgio)
+  corridor(ctx, t, rgb, warm, deco = warm ? 'fire' : 'monitors') {
     const W = VIEW_W, H = VIEW_H, vx = W * 0.56, vy = H * 0.46, d = 0.1;
     const bx0 = vx - W * d, bx1 = vx + W * d, by0 = vy - H * d * 0.9, by1 = vy + H * d * 0.9;
     const pulse = warm ? 0.85 + 0.15 * Math.sin(t * 9) * Math.sin(t * 3.1) : 0.6 + 0.4 * Math.max(0, Math.sin(t * 2.6));
@@ -229,7 +368,49 @@ const Backdrop = {
       const q = k / 7, x0 = lerp(0, bx0, q * q), x1 = lerp(W, bx1, q * q), y0 = lerp(0, by0, q * q), y1 = lerp(H, by1, q * q);
       ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
     }
-    if (!warm) {
+    if (deco === 'cells') {
+      // Celas na parede direita: aberturas escuras e as grades recolhidas ao lado
+      const wallX = (q) => lerp(W, bx1, q), wallB = (q) => lerp(H, by1, q), wallT = (q) => lerp(0, by0, q);
+      const doorTop = (q) => lerp(wallB(q), wallT(q), 0.7);
+      const doors = [[0.08, 0.24], [0.34, 0.48], [0.56, 0.66], [0.73, 0.8], [0.85, 0.89], [0.92, 0.95]];
+      doors.forEach(([q0, q1], k) => {
+        const x0 = wallX(q0), x1 = wallX(q1);
+        ctx.fillStyle = k === doors.length - 1 ? 'rgba(40,10,60,0.95)' : 'rgba(4,0,1,0.92)';
+        ctx.beginPath(); ctx.moveTo(x0, doorTop(q0)); ctx.lineTo(x1, doorTop(q1)); ctx.lineTo(x1, wallB(q1)); ctx.lineTo(x0, wallB(q0)); ctx.closePath(); ctx.fill();
+        // Grade deslizada para o lado (mais perto de quem olha)
+        const g0 = Math.max(0, q0 - (q1 - q0) * 0.55);
+        ctx.strokeStyle = shade(0.32 * pulse); ctx.lineWidth = Math.max(1, 3.2 * (1 - q0));
+        for (let b = 0; b <= 4; b++) {
+          const q = lerp(g0, q0, b / 4), x = wallX(q);
+          ctx.beginPath(); ctx.moveTo(x, doorTop(q)); ctx.lineTo(x, wallB(q)); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.moveTo(wallX(g0), doorTop(g0)); ctx.lineTo(x0, doorTop(q0)); ctx.stroke();
+      });
+      // A última cela ainda guarda a luz violeta do arco
+      const [q0, q1] = doors[doors.length - 1];
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.draw(ctx, '166,77,255', (wallX(q0) + wallX(q1)) / 2, (doorTop(q0) + wallB(q0)) / 2, 60, 0.5 + 0.15 * Math.sin(t * 2));
+      ctx.restore();
+    }
+    if (deco === 'pipes') {
+      // Canos e cabos ao longo das duas paredes do túnel de serviço
+      for (let k = 0; k < 3; k++) {
+        const f = 0.2 + k * 0.13, w = 7 - k * 1.5;
+        for (const [nx, fx] of [[0, bx0], [W, bx1]]) {
+          const ny = H * f, fy = lerp(by0, by1, f);
+          ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineWidth = w * 2;
+          ctx.beginPath(); ctx.moveTo(nx, ny); ctx.lineTo(fx, fy); ctx.stroke();
+          ctx.strokeStyle = shade(0.55 * pulse); ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(nx, ny - w * 0.6); ctx.lineTo(fx, fy - 0.5); ctx.stroke();
+        }
+      }
+      // Cabos azuis que levam energia para a torre
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = `rgba(60,200,255,${0.35 + 0.15 * Math.sin(t * 4)})`; ctx.lineWidth = 1.5;
+      for (const [nx, fx] of [[0, bx0], [W, bx1]]) { ctx.beginPath(); ctx.moveTo(nx, H * 0.86); ctx.lineTo(fx, lerp(by0, by1, 0.86)); ctx.stroke(); }
+      ctx.restore();
+    }
+    if (deco === 'monitors' || deco === 'cells') {
       // Monitores de tubo na parede esquerda
       for (let k = 0; k < 4; k++) {
         const q = 0.15 + k * 0.17, x = lerp(0, bx0, q) + 10, y = lerp(H * 0.3, by0 + 30, q), w = 60 * (1 - q), h = 46 * (1 - q);
@@ -237,7 +418,7 @@ const Backdrop = {
         ctx.fillRect(x, y, w, h);
         ctx.save(); ctx.globalCompositeOperation = 'lighter'; GlowCache.draw(ctx, '200,220,255', x + w / 2, y + h / 2, w, 0.25); ctx.restore();
       }
-    } else {
+    } else if (deco === 'fire') {
       // Fogueira e silhuetas sentadas
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       GlowCache.draw(ctx, '255,140,50', W * 0.5, H * 0.86, 260 * pulse, 0.55);
@@ -275,10 +456,105 @@ const Backdrop = {
     return true;
   },
 
-  // Desenha o cenário de uma página da história
-  draw(ctx, kind, t) {
+  // Terminal militar de Vesper sob uma lona, com cabos emendados (on: tela acesa)
+  terminalKiosk(ctx, x, y, s, t, on) {
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = '#03050a'; ctx.strokeStyle = '#03050a'; ctx.lineCap = 'round';
+    // Lona esticada entre duas varas
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-74, 0); ctx.lineTo(-70, -168); ctx.moveTo(84, 0); ctx.lineTo(80, -150); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-86, -166); ctx.quadraticCurveTo(0, -150 + Math.sin(t * 1.7) * 3, 92, -150); ctx.lineTo(88, -140); ctx.quadraticCurveTo(0, -138, -82, -156); ctx.closePath(); ctx.fill();
+    // Corpo do terminal
+    ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(-26, -132); ctx.lineTo(-20, -140); ctx.lineTo(26, -140); ctx.lineTo(26, 0); ctx.closePath(); ctx.fill();
+    // Cabos emendados até o chão
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(24, -40); ctx.bezierCurveTo(50, -30, 46, -4, 92, -2); ctx.moveTo(24, -24); ctx.bezierCurveTo(40, -10, 60, 0, 120, 0); ctx.stroke();
+    // Tela: apagada (só reflexo) ou acesa pela marca de Kael
+    const flick = 0.85 + 0.15 * Math.sin(t * 40);
+    ctx.fillStyle = on ? `rgba(120,255,220,${(0.55 * flick).toFixed(3)})` : 'rgba(30,70,70,0.35)';
+    ctx.fillRect(-20, -128, 40, 30);
+    if (on) {
+      ctx.fillStyle = 'rgba(2,20,18,0.8)';
+      for (let k = 0; k < 4; k++) ctx.fillRect(-16, -124 + k * 6, 14 + ((k * 13) % 18), 2);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.draw(ctx, '120,255,220', 0, -113, 46, 0.45 * flick);
+      ctx.restore();
+    }
+    ctx.restore();
+  },
+
+  // Desenha o cenário de uma página da história ('pg': a página, para os cenários dos aliados)
+  draw(ctx, kind, t, pg = null) {
     const W = VIEW_W, H = VIEW_H;
+    const recruited = !!(pg && pg.ally);   // página do cartão do aliado: a cena muda de pose
     switch (kind) {
+      // ---- Recrutamento dos aliados (js/story.js, RECRUITS) ----
+      case 'cells':   // Lyra na última cela da instalação
+        this.corridor(ctx, t, '255,40,50', false, 'cells');
+        this.backlight(ctx, '255,40,50', W * 0.78, H * 0.86, 280, 0.32);
+        this.ally(ctx, 'lyra', W * 0.69, H * 0.955, 1.55, t, recruited ? 'stand' : 'aim', 1);
+        this.kael(ctx, W * 0.87, H * 0.97, 1.6, t);
+        break;
+      case 'tunnel':  // Drakos de joelhos no fim dos túneis; Lyra cobre Kael
+        this.corridor(ctx, t, '255,170,70', false, 'pipes');
+        this.backlight(ctx, '255,170,70', W * 0.72, H * 0.86, 320, 0.3);
+        this.ally(ctx, 'lyra', W * 0.56, H * 0.955, 1.35, t, recruited ? 'stand' : 'aim', 1);
+        this.ally(ctx, 'drakos', W * 0.72, H * 0.975, 1.5, t, recruited ? 'stand' : 'kneel', 1);
+        this.kael(ctx, W * 0.88, H * 0.97, 1.6, t);
+        break;
+      case 'vesper': {   // Sera no terminal militar de Vesper
+        const sky = this.layer('bg-city', W, H, (g, w, h) => this.paintSky(g, w, h, 'city'));
+        ctx.drawImage(sky, 0, 0, W, H);
+        this.drawRain(ctx, t, 0.8);
+        this.terminalKiosk(ctx, W * 0.6, H * 0.98, 1.3, t, recruited);
+        this.backlight(ctx, '60,120,255', W * 0.78, H * 0.86, 280, 0.25);
+        // Primeira página: Sera de frente para o terminal, o drone rodeando a tela;
+        // depois ela se vira para Kael e o drone lê a marca no pulso dele
+        const fig = recruited
+          ? this.ally(ctx, 'sera', W * 0.72, H * 0.97, 1.6, t, 'scan', 1)
+          : this.ally(ctx, 'sera', W * 0.72, H * 0.97, 1.6, t, 'stand', -1, { x: W * 0.6, y: H * 0.98 - 147 });
+        const kx = W * 0.89, ky = H * 0.97, ks = 1.7;
+        this.kael(ctx, kx, ky, ks, t);
+        if (recruited && fig.drone) {
+          // O drone ilumina a marca no pulso de Kael
+          const mx = kx - 16 * ks, my = ky - 40 * ks, a = 0.22 + 0.08 * Math.sin(t * 9);
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          const gr = ctx.createLinearGradient(fig.drone.x, fig.drone.y, mx, my);
+          gr.addColorStop(0, `rgba(25,230,210,${a + 0.2})`); gr.addColorStop(1, `rgba(25,230,210,${a * 0.4})`);
+          ctx.fillStyle = gr;
+          ctx.beginPath(); ctx.moveTo(fig.drone.x, fig.drone.y); ctx.lineTo(mx - 6, my - 26); ctx.lineTo(mx + 6, my + 26); ctx.closePath(); ctx.fill();
+          GlowCache.draw(ctx, '25,230,210', mx, my, 26, 0.6);
+          ctx.restore();
+        }
+        break;
+      }
+      case 'shadows':   // Orion na borda da luz da fogueira do refúgio
+        this.corridor(ctx, t, '255,150,60', true);
+        this.kael(ctx, W * 0.8, H * 0.97, 1.6, t);
+        this.ally(ctx, 'orion', W * 0.935, H * 0.965, 1.5, t, 'stand', -1);
+        break;
+      case 'vigil': {   // Base da torre: quem chegou até aqui (pg.cast) e Kael no centro
+        const sky = this.layer('bg-tower', W, H, (g, w, h) => this.paintSky(g, w, h, 'tower'));
+        ctx.drawImage(sky, 0, 0, W, H);
+        const tx = W * 0.6;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.draw(ctx, '90,220,255', tx, H * 0.35, H * 0.7, 0.28);
+        ctx.restore();
+        this.tower(ctx, tx, H * 1.02, H * 0.86, 1.7, '90,220,255', t, ctx);
+        const fog = ctx.createLinearGradient(0, H * 0.78, 0, H);
+        fog.addColorStop(0, 'rgba(2,6,12,0)'); fog.addColorStop(1, 'rgba(2,6,12,0.85)');
+        ctx.fillStyle = fog; ctx.fillRect(0, H * 0.78, W, H * 0.22);
+        const slots = { sera: [0.625, 1.35, 1], lyra: [0.7, 1.35, 1], drakos: [0.875, 1.4, -1], orion: [0.945, 1.35, -1] };
+        this.backlight(ctx, '90,170,255', W * 0.79, H * 0.86, 340, 0.3);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.drawFlat(ctx, '60,140,255', W * 0.79, H * 0.98, 300, 0.3);
+        ctx.restore();
+        for (const id of (pg && pg.cast) || []) { const sl = slots[id]; if (sl) this.ally(ctx, id, W * sl[0], H * 0.975, sl[1], t, 'stand', sl[2]); }
+        this.kael(ctx, W * 0.79, H * 0.98, 1.5, t);
+        this.drawRain(ctx, t, 0.5);
+        break;
+      }
       case 'city': case 'tower': case 'void': {
         const sky = this.layer('bg-' + (kind === 'city' ? 'city' : 'tower'), W, H, (g, w, h) => this.paintSky(g, w, h, kind === 'city' ? 'city' : 'tower'));
         ctx.drawImage(sky, 0, 0, W, H);
@@ -488,6 +764,9 @@ function drawBigSword(ctx, x, y, L, t, active = true) {
   ctx.restore();
 }
 
+// Cartão do aliado nas páginas de recrutamento (tamanho e distância da borda direita)
+const ALLY_CARD = { w: 336, h: 80, right: 36 };
+
 // Reprodução das páginas: texto digitado, avanço, pulo e escolhas
 class StoryScreen {
   constructor() { this.pages = []; this.i = 0; this.t = 0; this.sel = 0; this.lock = 0; this.layout = null; this.onDone = null; this.finished = true; }
@@ -517,7 +796,7 @@ class StoryScreen {
     game.audio.play('uiSelect');
     const ins = [];
     if (c.pick) ins.push({ bg: pg.bg, kicker: 'ESCOLHA', title: c.label.toUpperCase(), lines: [c.pick(game)] });
-    if (c.ending) { game.ending = c; ins.push(...ENDINGS[c.ending], ENDINGS.coda); }
+    if (c.ending) { game.ending = c; ins.push(...endingPages(c.ending, game), ENDINGS.coda); }   // com o epílogo dos aliados
     this.pages.splice(this.i + 1, 0, ...ins);
     this.next();
   }
@@ -564,6 +843,33 @@ class StoryScreen {
     }
   }
 
+  // Cartão do aliado recrutado (canto superior direito): o desbloqueio no elenco
+  // acontece junto com esta página (Game.goToNextRoom → checkRosterUnlocks)
+  drawAllyCard(ctx, d, rgb, rt) {
+    const k = clamp((this.t - 0.35) / 0.45, 0, 1), e = 1 - (1 - k) * (1 - k);
+    if (k <= 0) return;
+    const w = ALLY_CARD.w, h = ALLY_CARD.h, x = VIEW_W - w - ALLY_CARD.right + (1 - e) * 40, y = VIEW_H * 0.09;
+    ctx.save();
+    ctx.globalAlpha = e;
+    ctx.fillStyle = 'rgba(3,6,14,0.88)';
+    techPanelPath(ctx, x, y, w, h, 12); ctx.fill();
+    ctx.shadowColor = `rgba(${rgb},0.85)`; ctx.shadowBlur = 12 + 6 * Math.sin(rt * 3);
+    ctx.strokeStyle = `rgba(${rgb},0.9)`; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = d.color; ctx.fillRect(x + 10, y + 14, 3, h - 28);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
+    ctx.fillStyle = d.color;
+    ctx.fillText(t('newAlly'), x + 24, y + 18);
+    ctx.font = `bold 24px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
+    glowText(ctx, d.name.toUpperCase(), x + 24, y + 43, '#ffffff', `rgba(${rgb},0.9)`, 12);
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+    ctx.fillStyle = '#aeb9cc';
+    ctx.fillText(`${d.title.toUpperCase()} · ${d.devStatus === 'coming_soon' ? t('comingSoon') : t('available')}`, x + 24, y + 65);
+    ctx.letterSpacing = '0px';
+    ctx.restore();
+  }
+
   // Quebra as linhas da página em blocos posicionados (calculado uma vez por página)
   buildLayout(ctx, pg) {
     const bw = Math.min(900, VIEW_W - 160), x0 = (VIEW_W - bw) / 2;
@@ -597,9 +903,12 @@ class StoryScreen {
   draw(ctx, rt) {
     const pg = this.page;
     if (!pg) return;
-    Backdrop.draw(ctx, pg.bg, rt);
+    Backdrop.draw(ctx, pg.bg, rt, pg);
     if (!this.layout || this.layout.vw !== VIEW_W) this.layout = this.buildLayout(ctx, pg);
     const L = this.layout;
+    // Página de um aliado: título, linha e cartão na cor-tema dele
+    const ally = pg.ally ? CHARACTERS_BY_ID[pg.ally] : null;
+    const tint = ally ? hexToRgb(ally.color) : null;
     ctx.save();
     // Véu escuro para leitura
     if (!pg.quote) {
@@ -614,17 +923,19 @@ class StoryScreen {
       ctx.textAlign = 'left';
       ctx.font = `bold 14px ${FONT_TITLE}`;
       ctx.letterSpacing = '6px';
-      ctx.fillStyle = PAL.accent;
+      ctx.fillStyle = tint ? `rgb(${tint})` : PAL.accent;
       ctx.fillText(pg.kicker || '', L.x0, VIEW_H * 0.15);
       ctx.font = `bold 40px ${FONT_TITLE}`;
       ctx.letterSpacing = '4px';
       const tw = ctx.measureText(pg.title || '').width;
-      if (tw > VIEW_W - L.x0 - 40) ctx.font = `bold ${Math.floor(40 * (VIEW_W - L.x0 - 40) / tw)}px ${FONT_TITLE}`;
-      glowText(ctx, pg.title || '', L.x0, VIEW_H * 0.22, '#eef5ff', 'rgba(40,120,255,0.9)', 20);
+      const titleMax = (ally ? VIEW_W - ALLY_CARD.w - ALLY_CARD.right - 28 : VIEW_W - 40) - L.x0;   // não invade o cartão do aliado
+      if (tw > titleMax) ctx.font = `bold ${Math.floor(40 * titleMax / tw)}px ${FONT_TITLE}`;
+      glowText(ctx, pg.title || '', L.x0, VIEW_H * 0.22, '#eef5ff', tint ? `rgba(${tint},0.9)` : 'rgba(40,120,255,0.9)', 20);
       ctx.letterSpacing = '0px';
-      ctx.strokeStyle = 'rgba(61,139,255,0.6)'; ctx.lineWidth = 1.5;
+      ctx.strokeStyle = tint ? `rgba(${tint},0.6)` : 'rgba(61,139,255,0.6)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(L.x0, VIEW_H * 0.27); ctx.lineTo(L.x0 + Math.min(L.bw, 420) * intro, VIEW_H * 0.27); ctx.stroke();
       ctx.globalAlpha = 1;
+      if (ally) this.drawAllyCard(ctx, ally, tint, rt);
     }
     // Texto digitado
     let budget = Math.floor(this.t * 60 * Settings.textRate());
