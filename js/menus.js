@@ -1340,7 +1340,12 @@ class Menus {
     ctx.save();
     ctx.globalAlpha = clamp(k, 0, 1);
     ctx.font = `bold 13px ${FONT_UI}`;
-    const w = ctx.measureText(n.text).width + 56, x = VIEW_W / 2 - w / 2, y = 14 - (1 - clamp(k, 0, 1)) * 20;
+    // Durante a ação, o aviso fica no espaço livre entre os painéis do HUD (retrato e radar);
+    // na luta contra NEXUS, logo abaixo da barra do chefe
+    const play = game.state === 'playing', top = play && game.boss ? 96 : 14;
+    const w = ctx.measureText(n.text).width + 56, y = top - (1 - clamp(k, 0, 1)) * 20;
+    const S = play ? game.hud.freeSpan(top, top + 34) : null;
+    const x = S ? clamp(VIEW_W / 2, S.min + w / 2, S.max - w / 2) - w / 2 : VIEW_W / 2 - w / 2;
     ctx.fillStyle = 'rgba(3,7,16,0.9)';
     techPanelPath(ctx, x, y, w, 34, 8); ctx.fill();
     ctx.strokeStyle = rgba(n.rgb, 0.8); ctx.lineWidth = 1; ctx.stroke();
