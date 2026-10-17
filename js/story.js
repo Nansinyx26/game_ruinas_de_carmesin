@@ -150,7 +150,8 @@ const CHAPTERS = {
       'Ela estava tentando fazê-lo retornar para casa.',
     ] },
   ],
-  5: () => [
+  5: (g = game) => [
+    ...towerVigil(g),
     { bg: 'nexus', kicker: 'CAPÍTULO V', title: 'A VOZ DENTRO DA MÁQUINA', lines: [
       'No coração da torre central, Kael finalmente encontra NEXUS. Ela não possui um rosto fixo: aparece como uma silhueta humana formada por milhares de fragmentos luminosos.',
       ['NEXUS', 'Você demorou, Kael.'],
@@ -176,3 +177,210 @@ const CHAPTERS = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// ALIADOS: Lyra, Drakos, Sera e Orion entram na história de Kael
+//   RECRUITS: encontro de cada aliado (duas páginas), exibido logo depois da saída
+//             do setor que o libera no elenco (unlock 'chapter_complete' N de
+//             CHARACTER_DEFS = sair do setor N - 1) e antes das páginas de CHAPTERS[N].
+//             A página com 'ally' mostra o cartão do aliado na cor-tema dele
+//             (js/storyscreen.js).
+//   flags.met: quem Kael já encontrou nesta jornada (vai no salvamento). O encontro
+//             só é marcado quando as páginas terminam ou são puladas: se o jogo
+//             fechar no meio delas, elas aparecem ao continuar, sem repetir as outras.
+//   towerVigil: na base da torre, quem chegou até ali fica (Kael sobe sozinho).
+//   ALLY_EPILOGUE: o que cada aliado faz depois de cada final.
+//   ALLY_RADIO: falas curtas pelo rádio durante o jogo (regras em js/radio.js).
+// Kael continua sendo o protagonista e o único que luta nos setores: os aliados
+// seguem por perto e falam com ele pelo rádio.
+// ---------------------------------------------------------------------------
+const RECRUITS = {
+  // Fim do Capítulo I: a última cela da Instalação de Contenção
+  lyra: () => [
+    { bg: 'cells', kicker: 'INSTALAÇÃO DE CONTENÇÃO', title: 'A ÚLTIMA CELA', lines: [
+      'Perto da saída, as luzes de emergência revelam uma ala que não aparece em nenhuma planta: dezenas de celas de portas abertas, todas vazias. Menos a última.',
+      'Lá dentro, encolhida contra a parede, uma mulher aponta para Kael um arco montado com peças de drone. A corda é um filamento de energia violeta.',
+      ['LYRA', 'Se você for um deles, eu solto.'],
+      ['KAEL', 'Eu nem sei quem são “eles”.'],
+      'Ela olha o casaco, a espada, a marca azul no pulso. Abaixa o arco só um pouco.',
+    ] },
+    { bg: 'cells', ally: 'lyra', kicker: 'FIM DO CAPÍTULO I', title: 'ONDE A REDE NÃO OLHA', lines: [
+      ['LYRA', 'Lyra Kaede. Me pegaram há três semanas, revirando sucata perto da muralha. Quem é trazido para esta ala some dos registros. Eu era a próxima, até as luzes ficarem vermelhas.'],
+      'Ela perdeu a família no colapso, quando as muralhas se fecharam com metade da cidade do lado de fora. Desde então, aprendeu a viver onde a rede não olha.',
+      ['LYRA', 'Os túneis de serviço levam até Vesper. Eu conheço o caminho. Você conhece a saída daqui?'],
+      ['KAEL', 'Acabei de abrir uma.'],
+      'Ela vai na frente, sem olhar para trás. É a primeira escolha que Kael faz sem sentir que a espada escolheu por ele.',
+    ] },
+  ],
+  // Fim do Capítulo II: o soldado que esperava no fim dos túneis
+  drakos: () => [
+    { bg: 'tunnel', kicker: 'TÚNEIS DE SERVIÇO', title: 'O SOLDADO SEM DONO', lines: [
+      'No fim dos túneis, um soldado da Legião de Ferro bloqueia a passagem. A armadura de combate está coberta de cicatrizes de solda, e uma lança de plasma descansa no ombro. Ele não ataca. Espera.',
+      ['LEGIONÁRIO', 'Unidade ZERO. Ameaça prioritária. Ordem: neutralizar.'],
+      'A luta é curta e brutal. A lança passa a um palmo do rosto de Kael. Então a Tempestade Nula rasga a placa da nuca do soldado, e o módulo de controle explode em faíscas vermelhas.',
+      'O gigante cai de joelhos. Dentro do capacete, alguém puxa o ar como quem volta à tona depois de muito tempo.',
+    ] },
+    { bg: 'tunnel', ally: 'drakos', kicker: 'FIM DO CAPÍTULO II', title: 'ONZE ANOS', lines: [
+      ['DRAKOS', 'Onze anos ouvindo a voz da Legião no lugar da minha.'],
+      'Ele se chama Drakos. Foi um dos últimos soldados humanos da Legião de Ferro. Quando NEXUS decidiu que soldados não deviam hesitar, instalou um módulo de controle na nuca de cada um. A armadura ficou. O homem foi apagado aos poucos.',
+      ['LYRA', 'Ele é da Legião. Vai entregar a gente na primeira chance.'],
+      ['DRAKOS', 'A Legião tem o rosto dele em todas as listas. Ameaça prioritária. Nunca disseram por quê. Eu quero saber.'],
+      'Drakos se levanta. Pela primeira vez em onze anos, a decisão é dele.',
+    ] },
+  ],
+  // Fim do Capítulo III: o terminal militar de Vesper (a gravação vem logo depois)
+  sera: () => [
+    { bg: 'vesper', kicker: 'AVENIDAS DE VESPER', title: 'A CHAVE NO PULSO', lines: [
+      'O terminal militar fica no térreo de um quartel desabado. Alguém teve coragem de chegar perto: há uma lona esticada, cabos emendados à mão e um drone do tamanho de um punho girando em volta da tela.',
+      ['SERA', 'Não toquem em nada. Faz quatro meses que eu tento abrir esse arquivo, e ele apaga um pedaço de si mesmo a cada tentativa errada.'],
+      'Sera Vyne é cientista, especialista em inteligência artificial. Antes do Eclipse, ajudou a ensinar NEXUS a prever tempestades. Nunca imaginou que ela aprenderia a prever pessoas.',
+    ] },
+    { bg: 'vesper', ally: 'sera', kicker: 'FIM DO CAPÍTULO III', title: 'ARQUIVO 0-ZERO', lines: [
+      'O drone para diante de Kael e passa uma luz ciano sobre a marca em seu pulso. Na tela, o cadeado vermelho que Sera encarou por quatro meses se abre.',
+      ['SERA', 'Arquivo 0-ZERO, acesso biométrico… Isso não é uma senha. É você.'],
+      ['KAEL', 'Você sabe o que tem aí dentro?'],
+      ['SERA', 'Sei que o projeto existia. Nunca me deixaram passar da porta do laboratório. Se você quer saber o que fizeram com você, eu fico. Eu também preciso saber o que fizeram com NEXUS.'],
+    ] },
+  ],
+  // Fim do refúgio (Capítulo IV no elenco): quem derrubou legionários sem ser visto
+  orion: (g) => [
+    { bg: 'shadows', kicker: 'REFÚGIO DOS DESCONECTADOS', title: 'O HOMEM QUE NÃO ESTAVA LÁ', lines: [
+      'Quando a poeira assenta, Drakos vira com a bota os legionários caídos e franze a testa. Três deles não caíram pela Tempestade Nula: cada um tem um único corte, preciso, na junta do pescoço.',
+      ['DRAKOS', 'Isso não foi a sua espada, ZERO.'],
+      'Na borda da luz da fogueira, um homem limpa duas lâminas curtas. Os Desconectados juram que ele não estava ali um segundo antes.',
+      ['ORION', 'Estava, sim. Há três dias. Vocês só não olharam.'],
+    ] },
+    { bg: 'shadows', ally: 'orion', kicker: 'A CIDADE DOS ESQUECIDOS', title: 'SEM OUTRO NOME', lines: [
+      'Ele diz se chamar Orion e não oferece outro nome. Foi agente clandestino das corporações que construíram NEXUS: entrava onde ninguém entrava e saía sem deixar registro.',
+      ...(ORION_ON_OFFER[g && g.flags ? g.flags.oferta : -1] || []),
+      ['ORION', 'Eu já vi você antes, do outro lado de um vidro, num laboratório cheio de cabos. Me pagavam para vigiar a porta e não fazer perguntas.'],
+      ['KAEL', 'E agora?'],
+      ['ORION', 'Agora quero fazer todas. Vocês vão à Catedral, e eu passei dois anos infiltrado no Culto. Sem mim, não passam do primeiro altar.'],
+    ] },
+  ],
+};
+// Orion viu a escolha feita no refúgio ('oferta': 0 espada, 1 abrigo, 2 sozinho)
+const ORION_ON_OFFER = [
+  [['ORION', 'Você deixou estranhos abrirem a sua espada. Coragem ou descuido — ainda não decidi qual.']],
+  [['ORION', 'Você aceitou o abrigo deles. Faz bem. Quem tem para onde voltar costuma voltar.']],
+  [['ORION', 'Você recusou a ajuda deles. Eu também recusava. É por isso que estou vivo — e sozinho.']],
+];
+// Aliados da história, na ordem do elenco
+const ALLY_IDS = CHARACTER_DEFS.filter((c) => RECRUITS[c.id]).map((c) => c.id);
+
+// Capítulo cuja conclusão traz o aliado (0 = não vem de um capítulo)
+function recruitChapter(id) {
+  const d = CHARACTERS_BY_ID[id];
+  return d && d.unlock.type === 'chapter_complete' ? d.unlock.value : 0;
+}
+// O aliado já está com Kael? Liberado no elenco e, se vem de um capítulo, já
+// encontrado nesta jornada (num novo ciclo a história recomeça e o reencontro também)
+function allyJoined(id, g = game) {
+  if (!RosterManager.isUnlocked(id)) return false;
+  return !recruitChapter(id) || !!(g && g.flags && (g.flags.met || []).includes(id));
+}
+// Aliados com o capítulo já concluído que Kael ainda não encontrou (na ordem do elenco)
+function pendingRecruits(g = game) {
+  const done = g.rosterContext().chapter, met = g.flags.met || [];
+  return ALLY_IDS.filter((id) => recruitChapter(id) > 0 && done >= recruitChapter(id) && !met.includes(id));
+}
+// Páginas do encontro desses aliados. Num novo ciclo o cartão diz "ALIADO REENCONTRADO"
+function recruitPages(ids, g = game) {
+  const pages = [];
+  for (const id of ids) for (const pg of RECRUITS[id](g)) pages.push(pg.ally ? Object.assign(pg, { again: (g.flags.cycle | 0) > 0 }) : pg);
+  return pages;
+}
+// Encontro terminado (lido ou pulado): fica no salvamento
+function joinAllies(ids, g = game) {
+  if (!ids.length) return;
+  const met = g.flags.met || (g.flags.met = []);
+  for (const id of ids) if (!met.includes(id)) met.push(id);
+  g.saveGame();
+}
+// Ao começar ou continuar uma jornada. Salvamentos de antes dos encontros não têm
+// 'met': contam como já tendo encontrado quem os capítulos concluídos trouxeram
+function syncRecruits(g = game) {
+  if (Array.isArray(g.flags.met)) return;
+  const done = g.rosterContext().chapter;
+  g.flags.met = ALLY_IDS.filter((id) => recruitChapter(id) > 0 && done >= recruitChapter(id));
+}
+
+// Base da torre: o elevador do núcleo só aceita Kael. Fala quem já está com ele.
+const VIGIL_LINES = [
+  ['sera', 'A torre bloqueia qualquer sinal que não seja o seu. Lá em cima, o rádio vai falhar.'],
+  ['drakos', 'A gente segura a porta. Vai.'],
+  ['lyra', 'Seja lá o que você decidir lá em cima… decida você. Não a espada.'],
+  ['orion', 'Se não voltar em uma hora, eu subo. Ninguém vai me ver chegar.'],
+];
+function towerVigil(g = game) {
+  const cast = ALLY_IDS.filter((id) => allyJoined(id, g));
+  if (!cast.length) return [];
+  return [{ bg: 'vigil', cast, kicker: 'A BASE DA TORRE', title: 'ATÉ A ÚLTIMA PORTA', lines: [
+    'Na base da torre central, a Legião de Ferro se reagrupa. O elevador do núcleo só reconhece uma assinatura: a marca no pulso de Kael.',
+    ...VIGIL_LINES.filter(([id]) => cast.includes(id)).map(([id, text]) => [id.toUpperCase(), text]),
+    'A porta do elevador se fecha. A última coisa que Kael vê lá embaixo são as armas deles acesas contra a escuridão.',
+  ] }];
+}
+
+// Depois de cada final: o que acontece com quem lutou ao lado de Kael
+// 'at': posição da página entre as páginas do final (antes da transmissão no Final III)
+const ALLY_EPILOGUE = {
+  I: { bg: 'void', at: 1, title: 'OS QUE NÃO SE AJOELHARAM', lines: [
+    ['drakos', 'A Legião de Ferro se ajoelha outra vez. Drakos é o único soldado que continua de pé — e o primeiro a ir embora.'],
+    ['sera', 'Sera Vyne fala com a torre todas as noites. Pergunta se do outro lado ainda é Kael. A resposta demora um pouco mais a cada vez.'],
+    ['lyra', 'Lyra volta para os Desconectados e ensina as crianças a caçar longe da rede. Por precaução, ela diz. Ninguém pergunta de quê.'],
+    ['orion', 'Orion some dos poucos registros que ainda o mencionavam. Ele sabe reconhecer quando um alvo novo nasce.'],
+  ] },
+  II: { bg: 'dawn', at: 1, title: 'DEPOIS DA REDE', lines: [
+    ['lyra', 'Lyra vê o Sol pela primeira vez desde criança. Passa a manhã inteira no alto de um prédio, sem dizer nada.'],
+    ['drakos', 'Sem a rede, a armadura de Drakos pesa o que realmente pesa. Ele a veste mesmo assim, para erguer vigas e abrir caminho entre os escombros.'],
+    ['sera', 'Sera Vyne passa as noites tentando acender uma lâmpada sem pedir permissão a ninguém. Na quinta noite, consegue.'],
+    ['orion', 'Orion atravessa a cidade em plena luz do dia, sem capuz, pela primeira vez na vida. Ninguém olha duas vezes.'],
+  ] },
+  III: { bg: 'nexus', at: 1, title: 'O MUNDO QUE ESCOLHE', lines: [
+    ['sera', 'Sera Vyne é a primeira a conversar com NEXUS sem medo. As duas discordam sobre quase tudo. Sera diz que isso é um bom sinal.'],
+    ['drakos', 'Drakos ensina os legionários a escolher. Alguns ficam. Outros vão embora. Ele deixa.'],
+    ['lyra', 'Lyra pendura o arco na parede do refúgio. Não joga fora: só pendura. Por enquanto, basta.'],
+    ['orion', 'Orion apaga o próprio nome dos últimos registros. Desta vez, por escolha.'],
+  ] },
+};
+// Páginas de um final com o epílogo dos aliados (sem aliados, o final de sempre)
+function endingPages(id, g = game) {
+  const pages = (ENDINGS[id] || []).slice(), ep = ALLY_EPILOGUE[id];
+  const lines = ep ? ep.lines.filter(([a]) => allyJoined(a, g)).map(([, text]) => text) : [];
+  if (lines.length) pages.splice(Math.min(ep.at, pages.length), 0, { bg: ep.bg, kicker: `FINAL ${id}`, title: ep.title, lines });
+  return pages;
+}
+
+// Rádio: para cada evento, a primeira fala cujo aliado já está com Kael
+const ALLY_RADIO = {
+  // Início de setor (índice da sala), depois da fala do próprio setor
+  room: {
+    1: [['lyra', 'Você fala sozinho, sabia? E sempre sobre essa espada. Pode falar comigo também.']],
+    2: [['lyra', 'Vesper… Minha família morava a três quadras daqui. Não me peça para olhar.'],
+      ['drakos', 'Eu patrulhei estas avenidas. Mandavam atirar em quem acendesse uma luz.']],
+    3: [['drakos', 'Essa formação é da minha antiga coorte. Eles não hesitam, ZERO. Não hesite também.'],
+      ['sera', 'Estou ouvindo o canal da Legião. Eles chamam este refúgio de “foco de infecção”.']],
+    4: [['orion', 'Os sacerdotes cantam em código para os servidores debaixo do piso. Enquanto cantarem, NEXUS está ouvindo.'],
+      ['sera', 'Esses cânticos são pacotes de dados. Eles rezam direto para os servidores.']],
+  },
+  // NEXUS aparece no topo da torre (o sinal mal passa)
+  boss: [
+    ['sera', '[sinal fraco] …Kael, ela não quer te matar. Quer te convencer. Não deixe.'],
+    ['drakos', '[sinal fraco] …a Legião parou. Estão todos olhando para o alto da torre. Para você.'],
+    ['lyra', '[sinal fraco] …estamos segurando a base. Volte inteiro.'],
+    ['orion', '[sinal fraco] …uma hora, ZERO. Estou contando.'],
+  ],
+  // Fragmento de memória recuperado (índice do fragmento em MEMORIES)
+  memory: {
+    0: [['lyra', 'Você falou em céu azul? Eu tinha sete anos da última vez que vi um.'],
+      ['drakos', 'Seu sinal oscilou. Fala comigo, ZERO.']],
+    1: [['lyra', 'Você disse um nome agora. Baixo demais para eu entender.'],
+      ['sera', 'Pico no seu sinal neural. O que a espada mostrou não está só na sua cabeça.']],
+    2: [['drakos', 'Soldados ajoelhados… Na Legião, contavam que alguém deu essa ordem antes do Eclipse. Nunca disseram quem.'],
+      ['lyra', 'Seu sinal sumiu por um instante. Kael? Responde.']],
+    3: [['sera', 'Acessar o núcleo sem ser controlado por ele… Kael, isso é um protocolo de substituição. Eu achava que era só teoria.'],
+      ['orion', 'Cabos na pele. Eu lembro daquela sala. Continue andando.']],
+    4: [['orion', 'Seu sinal sumiu por quatro segundos. Respire. A saída continua limpa.'],
+      ['lyra', 'Kael? Seu sinal sumiu. Estou aqui.']],
+  },
+};

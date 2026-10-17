@@ -15,6 +15,7 @@ const UI_TEXT = {
     active: 'ATIVO',
     newAlly: 'NOVO ALIADO DESBLOQUEADO',
     newAllySoon: 'NOVO ALIADO DESBLOQUEADO · EM BREVE',
+    allyRejoined: 'ALIADO REENCONTRADO',   // novo ciclo: a história recomeça com o aliado já liberado
     newArmor: 'NOVA ARMADURA DESBLOQUEADA',
     abilities: 'HABILIDADES',
     armors: 'ARMADURAS',

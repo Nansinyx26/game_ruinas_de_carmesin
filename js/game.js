@@ -180,7 +180,9 @@ class Game {
       if (this.state === 'playing') this.hud.message(R3D.enabled ? 'GRÁFICOS 3D' : 'GRÁFICOS 2D', '', 1.2, true);
     }
     if (inp.pressed.debug) this.debug = !this.debug;
-    if (this.fade !== this.fadeTarget) {
+    // fadeTo com a tela já escura também chama o retorno (ex.: sem evoluções para escolher
+    // num novo ciclo, a troca de setor pedia outro escurecimento e a tela ficava preta)
+    if (this.fade !== this.fadeTarget || this.fadeCb) {
       this.fade = approach(this.fade, this.fadeTarget, dt * 3.2);
       if (this.fade === this.fadeTarget && this.fadeCb) { const cb = this.fadeCb; this.fadeCb = null; cb(); }
     }
@@ -223,9 +225,11 @@ class Game {
     this.flags = {};
     if (save) this.applySave(save);
     RosterManager.load(save ? save.roster : null);   // jogo novo ou save v1: só Kael
+    AllyRadio.reset();
     this.thumb = (save && save.thumb) || null; this.thumbT = this.realTime - 3;
     this.lookOff.x = this.lookOff.y = 0;
     this.checkpoint = save ? clamp(save.room | 0, 0, ROOM_DEFS.length - 1) : 0;
+    syncRecruits(this);   // aliados já encontrados nesta jornada (js/story.js)
     this.counter = new ComboCounter();
     this.player = new Player(0, 0);
     this.player.recalc(true);
@@ -295,6 +299,7 @@ class Game {
     if (this.talkTarget && inp.pressed.interact && !this.fadeCb) { this.talkTarget.talk(); inp.pressed.light = false; }
     if (!this.fadeCb) p.captureInput(inp);
     this.hud.update(dt);
+    AllyRadio.update(dt);
     // Hit stop: congela a simulação por alguns milissegundos a cada impacto
     if (this.hitStop > 0) { this.hitStop -= dt; return; }
     if (this.slowTimer > 0) { this.slowTimer -= dt; if (this.slowTimer <= 0) this.timeScale = 1; }
@@ -469,6 +474,7 @@ class Game {
     (this.flags.memRooms || (this.flags.memRooms = [])).push(this.waves.roomIndex);
     this.gainXP(XP_SRC.memory, x, y);
     this.hud.memory(MEMORIES[Math.min(idx, MEMORIES.length - 1)], idx + 1);
+    AllyRadio.event('memory', Math.min(idx, MEMORIES.length - 1), 5);   // depois que a lembrança some da tela
     this.audio.play('memory');
     this.flashScreen('200,225,255', 0.5);
     this.glitch(0.3);
@@ -594,8 +600,10 @@ class Game {
     this.checkRosterUnlocks();
     this.saveGame();
     const enter = () => { this.state = 'playing'; this.loadRoom(next); this.fadeTarget = 0; };
-    const chapter = CHAPTERS[next];
-    if (chapter) this.fadeTo(() => this.playStory(chapter(), () => this.fadeTo(enter)));
+    // Encontro do aliado que este capítulo traz (js/story.js) e, depois, o capítulo seguinte
+    const recruits = pendingRecruits(this);
+    const pages = [...recruitPages(recruits, this), ...(CHAPTERS[next] ? CHAPTERS[next](this) : [])];
+    if (pages.length) this.fadeTo(() => this.playStory(pages, () => { joinAllies(recruits, this); this.fadeTo(enter); }));
     else this.fadeTo(enter);
   }
 
@@ -825,6 +833,9 @@ class Game {
     this.slot = slot;
     this.startRun(s || null);
     if (s) this.hud.toast(`Sinal restaurado · nível ${this.progress.level}`, '185,168,255');
+    // Encontro com um aliado interrompido (o jogo fechou durante as páginas): termina antes de seguir
+    const late = pendingRecruits(this);
+    if (late.length) this.playStory(recruitPages(late, this), () => { joinAllies(late, this); this.fadeTo(() => { this.state = 'playing'; this.fadeTarget = 0; }); });
   }
 
   // Derrota: Kael desperta no último ponto seguro, mantendo a evolução
