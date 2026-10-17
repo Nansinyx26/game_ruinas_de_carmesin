@@ -17,6 +17,11 @@ const SPEAKERS = {
   'SISTEMA': { color: '#ff5c7a', glow: 'rgba(255,46,85,0.8)' },
   '???': { color: '#a8d8ff', glow: 'rgba(60,140,255,0.9)', whisper: true },
   'KAEL': { color: '#dfe6f2', glow: 'rgba(60,140,255,0.6)' },
+  // Aliados, na cor-tema de cada um (pelo rádio: "LYRA · RÁDIO", ver js/radio.js)
+  'LYRA': { color: '#A64DFF', glow: 'rgba(166,77,255,0.8)' },
+  'DRAKOS': { color: '#FF2E3D', glow: 'rgba(255,46,61,0.8)' },
+  'SERA': { color: '#19E6D2', glow: 'rgba(25,230,210,0.8)' },
+  'ORION': { color: '#FF8A1F', glow: 'rgba(255,138,31,0.8)' },
 };
 
 class HUD {
