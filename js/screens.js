@@ -1,0 +1,608 @@
+'use strict';
+// ECLIPSE ZERO · Telas do jogo: árvore de habilidades, evoluções, derrota e final
+// ---------------------------------------------------------------------------
+// TELAS: árvore de habilidades, evoluções, derrota e final (menus e pausa: js/menus.js)
+// ---------------------------------------------------------------------------
+// Retratos das abas de personagem da árvore de habilidades: altura da cabeça na
+// silhueta de js/storyscreen.js (Backdrop.kael / Backdrop.ally) e escala relativa
+const SKILL_PORTRAIT = { kael: { head: 88, s: 1 }, lyra: { head: 85, s: 1 }, drakos: { head: 101, s: 0.85 }, sera: { head: 85, s: 1 }, orion: { head: 84, s: 1 } };
+class Screens {
+  overlay(ctx, a = 0.72) {
+    ctx.fillStyle = `rgba(1,3,8,${a})`;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  }
+
+  // Partículas de energia flutuando (título e telas finais)
+  drawEmbers(ctx, t) { Backdrop.drawMotes(ctx, t); }
+
+  // --------------------------------------------------- árvore de habilidades
+  // Topo: abas dos personagens (retratos) · título, nível e pontos · abas das árvores ·
+  // grafo da árvore à esquerda e painel da habilidade à direita
+  skillLayout() {
+    const ui = game.skillUI, W = Math.min(1180, VIEW_W - 40), x0 = (VIEW_W - W) / 2;
+    const close = { x: x0 + W - 36, y: 13, w: 36, h: 36 };
+    // Abas dos personagens, com as teclas de troca nas pontas
+    const ids = skillCharacters(), kw = 30;
+    const cx0 = x0 + kw, cx1 = close.x - 12 - kw, cw = (cx1 - cx0) / Math.max(1, ids.length);
+    const chars = ids.map((id, i) => ({ id, x: cx0 + i * cw + 4, y: 8, w: cw - 8, h: 46 }));
+    const keys = { prev: { x: x0 + kw / 2 - 2, y: 31 }, next: { x: cx1 + kw / 2 + 2, y: 31 } };
+    // Abas das árvores do personagem mostrado
+    const nt = Math.max(1, skillTreesOf(ui.char).length), tabs = [], tw = W / nt;
+    for (let i = 0; i < nt; i++) tabs.push({ x: x0 + i * tw + 4, y: 92, w: tw - 8, h: 44 });
+    const gy = 146, gh = 512, gw = Math.round(W * 0.56), gx = x0;
+    const ix = x0 + gw + 14, iw = W - gw - 14;
+    const nodes = {};
+    for (const s of game.treeNodes(ui.tree)) nodes[s.id] = { x: gx + gw * (0.2 + 0.3 * s.col), y: gy + 54 + s.row * 100, r: 28 };
+    const btn = { x: ix + 18, y: gy + gh - 134, w: iw - 36, h: 42 };
+    const slots = [];
+    for (let k = 0; k < 4; k++) slots.push({ x: ix + 18 + k * 56, y: gy + gh - 64, w: 48, h: 48 });
+    return { W, x0, chars, keys, tabs, gx, gy, gw, gh, ix, iw, nodes, btn, slots, close };
+  }
+
+  skillShape(ctx, kind, x, y, r) {
+    ctx.beginPath();
+    if (kind === 'passiva') { ctx.arc(x, y, r, 0, TAU); return; }
+    if (kind === 'tecnica') {
+      const q = r * 1.15;
+      ctx.moveTo(x, y - q); ctx.lineTo(x + q, y); ctx.lineTo(x, y + q); ctx.lineTo(x - q, y); ctx.closePath();
+      return;
+    }
+    const n = kind === 'suprema' ? 8 : 6, rr = r * (kind === 'suprema' ? 1.18 : 1.06), off = Math.PI / n;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + off;
+      if (i) ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); else ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+  }
+
+  // Retrato redondo: rosto da ficha (Kael) ou a silhueta do personagem na cor-tema
+  skillPortrait(ctx, id, x, y, r, rgb, t, dim) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
+    // Contraluz na cor-tema: a silhueta escura se destaca sobre ele
+    const g = ctx.createRadialGradient(x, y - r * 0.25, r * 0.05, x, y, r * 1.05);
+    g.addColorStop(0, rgba(rgb, 1)); g.addColorStop(0.55, rgba(rgb, 0.45)); g.addColorStop(1, 'rgba(4,7,15,1)');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.clip();
+    if (id === 'kael' && kaelPortraitReady('face')) {
+      const im = KAEL_PORTRAIT.face, k = im.naturalWidth / 268;
+      ctx.drawImage(im, 30 * k, 60 * k, 208 * k, 208 * k, x - r, y - r, 2 * r, 2 * r);
+    } else {
+      // Silhuetas de js/storyscreen.js: cabeça e ombros dentro do círculo
+      const P = SKILL_PORTRAIT[id] || SKILL_PORTRAIT.kael, s = (r / 30) * P.s;
+      const fy = y - r * 0.3 + P.head * s;
+      if (id === 'kael') Backdrop.kael(ctx, x, fy, s, t); else Backdrop.ally(ctx, id, x, fy, s, t);
+    }
+    if (dim) { ctx.fillStyle = 'rgba(2,4,9,0.38)'; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); }
+    ctx.restore();
+    ctx.strokeStyle = rgba(rgb, dim ? 0.4 : 0.9); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+    if (dim) drawIcon(ctx, 'lock', x + r * 0.72, y + r * 0.66, 13, 'rgba(205,214,228,0.95)');
+  }
+
+  // Tecla ou botão do controle (dica de atalho)
+  skillKey(ctx, x, y, label) {
+    ctx.save();
+    ctx.font = `bold 11px ${FONT_TITLE}`;
+    const w = Math.max(20, ctx.measureText(label).width + 10), h = 20;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x - w / 2, y - h / 2, w, h, 4); else ctx.rect(x - w / 2, y - h / 2, w, h);
+    ctx.fillStyle = 'rgba(16,24,40,0.95)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(160,190,230,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#e6eefa'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y + 1);
+    ctx.restore();
+  }
+
+  drawSkills(ctx, t) {
+    const ui = game.skillUI, L = this.skillLayout();
+    const trees = skillTreesOf(ui.char), tree = trees[ui.tree] || trees[0];
+    const pr = PartyProgress.of(ui.char), acc = skillTreeAccess(ui.char);
+    this.overlay(ctx, 0.88);
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    this.drawSkillChars(ctx, L, t);
+    this.drawSkillHeader(ctx, L, t, pr, acc);
+    // Fechar
+    const c = L.close;
+    ctx.strokeStyle = 'rgba(214,225,240,0.6)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(c.x + 11, c.y + 11); ctx.lineTo(c.x + c.w - 11, c.y + c.h - 11); ctx.moveTo(c.x + c.w - 11, c.y + 11); ctx.lineTo(c.x + 11, c.y + c.h - 11); ctx.stroke();
+    this.drawSkillTabs(ctx, L, t, trees, pr, acc.editable);
+    this.drawSkillGraph(ctx, L, t, tree, pr, acc.editable);
+    this.drawSkillInfo(ctx, L, t, tree, pr, acc);
+    // Mensagem e ajuda
+    ctx.textAlign = 'center';
+    if (ui.msgT > 0 && ui.msg) {
+      ctx.globalAlpha = clamp(ui.msgT * 2, 0, 1);
+      ctx.font = `bold 15px ${FONT_UI}`;
+      glowText(ctx, ui.msg, VIEW_W / 2, VIEW_H - 46, rgba(ui.msgRgb || '255,255,255', 1), rgba(ui.msgRgb || '255,255,255', 0.6), 10);
+      ctx.globalAlpha = 1;
+    }
+    const P = game.input.padLabels;
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,210,225,0.6)';
+    ctx.fillText(game.input.lastDevice === 'pad'
+      ? `D-pad navegar · ${P.lb} / ${P.rb} trocar árvore · ${P.lt} / ${P.rt} trocar personagem · ${P.a} desbloquear · ${P.lb} + ${P.x} ${P.y} ${P.b} ${P.a} atalho · ${P.b} voltar`
+      : 'Setas navegar · Q / E trocar árvore · Z / C trocar personagem · J / Enter desbloquear · 1–4 atalho · Tab / Esc voltar · mouse', VIEW_W / 2, VIEW_H - 20);
+    ctx.restore();
+  }
+
+  // Abas dos personagens: retrato, nome e situação (ativo, em breve, bloqueado)
+  drawSkillChars(ctx, L, t) {
+    const ui = game.skillUI, inp = game.input;
+    for (const r of L.chars) {
+      const d = CHARACTERS_BY_ID[r.id], rgb = hexToRgb(d.color), sel = r.id === ui.char;
+      const acc = skillTreeAccess(r.id), locked = acc.state === 'locked';
+      if (sel) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; GlowCache.draw(ctx, rgb, r.x + r.w / 2, r.y + r.h / 2, r.w * 0.42, 0.16); ctx.restore(); }
+      ctx.fillStyle = sel ? rgba(rgb, 0.2) : 'rgba(5,10,20,0.85)';
+      techPanelPath(ctx, r.x, r.y, r.w, r.h, 9); ctx.fill();
+      ctx.strokeStyle = rgba(rgb, sel ? 0.95 : locked ? 0.28 : 0.5); ctx.lineWidth = sel ? 2 : 1; ctx.stroke();
+      const pr = 17, px = r.x + 9 + pr, py = r.y + r.h / 2;
+      this.skillPortrait(ctx, r.id, px, py, pr, rgb, t, locked);
+      const tx = px + pr + 10;
+      ctx.textAlign = 'left';
+      ctx.font = `bold 14px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      ctx.fillStyle = sel ? '#ffffff' : locked ? 'rgba(170,180,198,0.78)' : rgba(rgb, 0.95);
+      ctx.fillText(charFirstName(r.id).toUpperCase(), tx, py - 8);
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '1px';
+      ctx.fillStyle = acc.state === 'active' ? '#7dffb0' : acc.state === 'soon' ? 'rgba(255,212,122,0.9)'
+        : acc.state === 'inactive' ? rgba(rgb, 0.9) : 'rgba(165,175,192,0.78)';
+      ctx.fillText(acc.badge, tx, py + 9);
+      ctx.letterSpacing = '0px';
+      // Pontos para gastar: só em quem pode aprender
+      if (acc.editable && PartyProgress.of(r.id).sp > 0) {
+        ctx.fillStyle = '#ffd47a';
+        ctx.beginPath(); ctx.arc(r.x + r.w - 12, r.y + 11, 4 + Math.sin(t * 6), 0, TAU); ctx.fill();
+      }
+    }
+    const pad = inp.lastDevice === 'pad', P = inp.padLabels;
+    this.skillKey(ctx, L.keys.prev.x, L.keys.prev.y, pad ? P.lt : 'Z');
+    this.skillKey(ctx, L.keys.next.x, L.keys.next.y, pad ? P.rt : 'C');
+  }
+
+  // Título, nível e experiência (ou o papel do personagem) e pontos (ou "SÓ CONSULTA")
+  drawSkillHeader(ctx, L, time, pr, acc) {
+    const ui = game.skillUI, d = CHARACTERS_BY_ID[ui.char], crgb = hexToRgb(d.color), y = 74, right = L.x0 + L.W;
+    ctx.textAlign = 'left';
+    ctx.font = `bold 20px ${FONT_TITLE}`; ctx.letterSpacing = '4px';
+    const title = `EVOLUÇÃO DE ${charFirstName(ui.char).toUpperCase()}`;
+    glowText(ctx, title, L.x0, y, '#eef5ff', rgba(crgb, 0.8), 14);
+    let x = L.x0 + ctx.measureText(title).width + 22, limit;
+    ctx.letterSpacing = '0px';
+    if (acc.editable) {
+      ctx.textAlign = 'center'; ctx.font = `30px ${FONT_NUM}`;
+      glowText(ctx, String(pr.sp), right - 14, y + 1, pr.sp > 0 ? '#ffe7a8' : '#7d8799', pr.sp > 0 ? 'rgba(255,180,60,0.9)' : 'rgba(0,0,0,0)', 14);
+      ctx.textAlign = 'right'; ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(255,220,150,0.85)';
+      ctx.fillText('PONTOS DE HABILIDADE', right - 34, y);
+      limit = right - 34 - ctx.measureText('PONTOS DE HABILIDADE').width - 20;
+      ctx.letterSpacing = '0px';
+    } else {
+      // Selo discreto: árvores só para consulta
+      ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      const txt = t('skillsReadOnly'), w = ctx.measureText(txt).width + 38, h = 24, bx = right - w;
+      ctx.fillStyle = 'rgba(8,12,22,0.9)'; techPanelPath(ctx, bx, y - h / 2, w, h, 6); ctx.fill();
+      ctx.strokeStyle = rgba(crgb, 0.4); ctx.lineWidth = 1; ctx.stroke();
+      drawIcon(ctx, 'lock', bx + 15, y, 13, 'rgba(200,210,225,0.85)');
+      ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(200,210,225,0.85)';
+      ctx.fillText(txt, bx + 27, y + 1);
+      ctx.letterSpacing = '0px';
+      limit = bx - 20;
+    }
+    ctx.textAlign = 'left';
+    if (acc.editable) {
+      ctx.font = `bold 13px ${FONT_TITLE}`; ctx.fillStyle = '#c8b8ff';
+      const lvT = `NÍVEL ${pr.level}`;
+      ctx.fillText(lvT, x, y);
+      x += ctx.measureText(lvT).width + 10;
+      ctx.font = `12px ${FONT_UI}`;
+      const xpT = pr.level >= PROG.maxLevel ? 'NÍVEL MÁXIMO' : `${pr.xp} / ${pr.xpNext} XP`;
+      const bw = clamp(limit - x - 12 - ctx.measureText(xpT).width, 60, 240);
+      const xpk = pr.level >= PROG.maxLevel ? 1 : pr.xp / pr.xpNext;
+      ctx.fillStyle = 'rgba(3,6,14,0.9)'; ctx.fillRect(x, y - 5, bw, 9);
+      ctx.fillStyle = '#9b7dff'; ctx.fillRect(x, y - 5, bw * xpk, 9);
+      ctx.strokeStyle = 'rgba(185,168,255,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(x - 0.5, y - 5.5, bw + 1, 10);
+      ctx.fillStyle = 'rgba(214,225,240,0.75)';
+      ctx.fillText(xpT, x + bw + 12, y);
+    } else {
+      // Quem o personagem é no grupo (ainda sem nível próprio)
+      ctx.font = `italic 13px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,225,240,0.72)';
+      let role = d.role;
+      while (role.length > 8 && ctx.measureText(role).width > limit - x) role = role.slice(0, -2).trimEnd() + '…';
+      if (limit - x > 60) ctx.fillText(role, x, y);
+    }
+  }
+
+  // Abas das árvores do personagem mostrado
+  drawSkillTabs(ctx, L, t, trees, pr, edit) {
+    const ui = game.skillUI;
+    ctx.textAlign = 'center';
+    trees.forEach((tr, i) => {
+      const r = L.tabs[i], sel = i === ui.tree;
+      const nodes = skillNodesOf(tr.id), learned = nodes.filter((s) => pr.lv(s.id) > 0).length;
+      const avail = edit && nodes.some((s) => !pr.blocker(s.id));
+      ctx.fillStyle = sel ? rgba(tr.rgb, 0.2) : 'rgba(5,10,20,0.85)';
+      techPanelPath(ctx, r.x, r.y, r.w, r.h, 10); ctx.fill();
+      ctx.strokeStyle = rgba(tr.rgb, sel ? 0.95 : 0.35); ctx.lineWidth = sel ? 2 : 1; ctx.stroke();
+      ctx.font = `bold ${r.w < 200 ? 12 : 14}px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      ctx.fillStyle = sel ? '#ffffff' : rgba(tr.rgb, 0.85);
+      ctx.fillText(tr.name, r.x + r.w / 2, r.y + 16);
+      ctx.letterSpacing = '0px';
+      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,210,225,0.7)';
+      ctx.fillText(`${tr.sub} · ${learned}/${nodes.length}`, r.x + r.w / 2, r.y + 32);
+      if (avail) {
+        ctx.fillStyle = '#ffd47a';
+        ctx.beginPath(); ctx.arc(r.x + r.w - 12, r.y + 12, 4 + Math.sin(t * 6), 0, TAU); ctx.fill();
+      }
+    });
+  }
+
+  // Grafo da árvore: linhas dos requisitos e os nós (só consulta = nós em pré-visualização)
+  drawSkillGraph(ctx, L, t, tree, pr, edit) {
+    const ui = game.skillUI, trgb = tree.rgb;
+    ctx.fillStyle = 'rgba(3,7,16,0.7)';
+    techPanelPath(ctx, L.gx, L.gy, L.gw, L.gh, 14); ctx.fill();
+    ctx.strokeStyle = rgba(trgb, 0.3); ctx.lineWidth = 1; ctx.stroke();
+    const list = skillNodesOf(tree.id);
+    for (const s of list) {
+      const n = L.nodes[s.id];
+      for (const [rid, rl] of s.req) {
+        const m = L.nodes[rid];
+        if (!m) continue;
+        const ok = pr.lv(rid) >= rl;
+        ctx.strokeStyle = ok ? rgba(trgb, 0.85) : edit ? 'rgba(110,120,140,0.35)' : rgba(trgb, 0.32);
+        ctx.lineWidth = ok ? 3 : 2;
+        ctx.setLineDash(ok ? [] : [6, 6]);
+        ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(n.x, n.y); ctx.stroke();
+        if (ok) {
+          const k = (t * 0.8 + s.row * 0.2) % 1;
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          GlowCache.draw(ctx, trgb, lerp(m.x, n.x, k), lerp(m.y, n.y, k), 10, 0.8);
+          ctx.restore();
+        }
+      }
+    }
+    ctx.setLineDash([]);
+    for (const s of list) {
+      const n = L.nodes[s.id], lv = pr.lv(s.id), sel = s.id === ui.sel;
+      const can = edit && !pr.blocker(s.id);
+      const state = !edit && lv === 0 ? 'preview' : lv >= s.max ? 'max' : lv > 0 ? 'learned' : pr.reqMet(s.id) ? 'open' : 'locked';
+      if (sel || can) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.draw(ctx, can ? '255,200,90' : trgb, n.x, n.y, n.r * 2.4, sel ? 0.5 : 0.25 + 0.15 * Math.sin(t * 5));
+        ctx.restore();
+      }
+      this.skillShape(ctx, s.kind, n.x, n.y, n.r);
+      if (state === 'locked') ctx.fillStyle = '#070b14';
+      else {
+        const g = ctx.createRadialGradient(n.x, n.y - n.r * 0.4, 2, n.x, n.y, n.r * 1.2);
+        g.addColorStop(0, rgba(trgb, lv > 0 ? 0.55 : state === 'preview' ? 0.16 : 0.18)); g.addColorStop(1, lv > 0 ? 'rgba(6,12,26,0.95)' : 'rgba(5,9,18,0.95)');
+        ctx.fillStyle = g;
+      }
+      ctx.fill();
+      ctx.lineWidth = state === 'max' ? 3 : 2;
+      ctx.strokeStyle = state === 'locked' ? 'rgba(110,120,140,0.4)' : can ? `rgba(255,212,122,${0.6 + 0.4 * Math.sin(t * 6)})`
+        : state === 'max' ? '#ffffff' : state === 'preview' ? rgba(trgb, 0.55) : rgba(trgb, lv > 0 ? 0.95 : 0.5);
+      ctx.stroke();
+      if (lv >= 2) { this.skillShape(ctx, s.kind, n.x, n.y, n.r + 5); ctx.lineWidth = 1; ctx.strokeStyle = rgba(trgb, 0.6); ctx.stroke(); }
+      drawSkillIcon(ctx, s.icon, n.x, n.y, n.r * 1.15, state === 'locked' ? 'rgba(120,130,150,0.45)' : lv > 0 ? '#f2f7ff' : state === 'preview' ? rgba(trgb, 0.85) : rgba(trgb, 0.8));
+      if (state === 'locked') drawIcon(ctx, 'lock', n.x + n.r * 0.72, n.y + n.r * 0.72, 16, 'rgba(170,180,200,0.8)');
+      if (can) {
+        ctx.fillStyle = '#ffd47a';
+        ctx.beginPath(); ctx.arc(n.x + n.r * 0.8, n.y - n.r * 0.8, 8, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#1a1200'; ctx.font = `bold 13px ${FONT_UI}`; ctx.textAlign = 'center';
+        ctx.fillText('+', n.x + n.r * 0.8, n.y - n.r * 0.8 + 1);
+      }
+      if (sel) {
+        ctx.save();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]); ctx.lineDashOffset = -t * 20;
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 11, 0, TAU); ctx.stroke();
+        ctx.restore();
+      }
+      // Níveis (pontos) e nome
+      for (let k = 0; k < s.max; k++) {
+        ctx.fillStyle = k < lv ? rgba(trgb, 1) : 'rgba(255,255,255,0.14)';
+        ctx.fillRect(n.x - (s.max * 9) / 2 + k * 9 + 1, n.y + n.r + 6, 7, 3);
+      }
+      ctx.textAlign = 'center';
+      ctx.font = `${sel ? 'bold ' : ''}11px ${FONT_UI}`;
+      ctx.fillStyle = state === 'locked' ? 'rgba(150,160,180,0.6)' : state === 'preview' ? '#c9d1de' : '#dfe6f2';
+      ctx.fillText(s.name, n.x, n.y + n.r + 19);
+      if (state === 'locked' && pr.level < s.lvl) {
+        ctx.font = `bold 10px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,140,150,0.8)';
+        ctx.fillText(`NÍVEL ${s.lvl}`, n.x, n.y + n.r + 32);
+      }
+    }
+    // Confirmação visual do desbloqueio
+    if (ui.fx && L.nodes[ui.fx.id]) {
+      const n = L.nodes[ui.fx.id], k = ui.fx.t / 0.9;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.draw(ctx, '255,230,160', n.x, n.y, n.r * (2 + k * 3), (1 - k) * 0.9);
+      ctx.strokeStyle = rgba('255,240,200', 1 - k); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + k * 70, 0, TAU); ctx.stroke();
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * TAU + k, r = n.r + k * 90;
+        GlowCache.draw(ctx, trgb, n.x + Math.cos(a) * r, n.y + Math.sin(a) * r, 8, 1 - k);
+      }
+      ctx.restore();
+    }
+  }
+
+  // Painel da habilidade escolhida: efeito, requisitos, botão de aprender (ou o aviso de
+  // consulta) e os atalhos das ativas
+  drawSkillInfo(ctx, L, time, tree, pr, acc) {
+    const ui = game.skillUI, edit = acc.editable, trgb = tree.rgb;
+    const s = skillDef(ui.sel), lv = pr.lv(s.id), x = L.ix, w = L.iw, preview = !edit && lv === 0;
+    ctx.fillStyle = 'rgba(3,7,16,0.85)';
+    techPanelPath(ctx, x, L.gy, w, L.gh, 14); ctx.fill();
+    ctx.strokeStyle = rgba(trgb, 0.45); ctx.lineWidth = 1; ctx.stroke();
+    const KIND = { passiva: 'PASSIVA', tecnica: 'TÉCNICA DE COMBO', ativa: 'HABILIDADE ATIVA', suprema: 'HABILIDADE SUPREMA' };
+    ctx.textAlign = 'left';
+    let y = L.gy + 26;
+    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(trgb, 0.95);
+    ctx.fillText(`${KIND[s.kind]} · ${tree.name}`, x + 18, y);
+    ctx.letterSpacing = '0px';
+    y += 30;
+    ctx.font = `bold 24px ${FONT_TITLE}`;
+    glowText(ctx, s.name, x + 18, y, '#ffffff', rgba(trgb, 0.8), 10);
+    y += 28;
+    for (let k = 0; k < s.max; k++) {
+      ctx.fillStyle = k < lv ? rgba(trgb, 1) : 'rgba(255,255,255,0.15)';
+      ctx.fillRect(x + 18 + k * 22, y - 4, 18, 7);
+    }
+    ctx.font = `bold 12px ${FONT_UI}`; ctx.fillStyle = '#c9d3e2';
+    ctx.fillText(preview ? `${s.max} ${s.max > 1 ? 'NÍVEIS' : 'NÍVEL'}` : lv >= s.max ? `NÍVEL ${lv} / ${s.max} · MÁXIMO` : `NÍVEL ${lv} / ${s.max}`, x + 26 + s.max * 22, y);
+    // Uma das 4 habilidades da ficha do personagem
+    if (skillSheetAbility(s.id)) {
+      ctx.textAlign = 'right'; ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '1.5px'; ctx.fillStyle = rgba(trgb, 0.95);
+      ctx.fillText(`★ ${t('skillsMain')}`, x + w - 18, y);
+      ctx.letterSpacing = '0px'; ctx.textAlign = 'left';
+    }
+    y += 24;
+    if (s.kind === 'ativa' || s.kind === 'suprema') {
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#8fc4ff';
+      ctx.fillText(s.kind === 'suprema' ? `Custo: ${s.energy} de energia · tecla I` : `Custo: ${s.energy} de energia · Recarga: ${skillNum(s.cd)}s`, x + 18, y);
+      y += 22;
+    }
+    // Aviso de consulta (no lugar do botão): calcula a altura antes para encaixar o resto
+    const b = L.btn, name = charFirstName(game.skillUI.char);
+    let note = null, top = b.y;
+    if (!edit) {
+      const tw = b.w - 52;
+      ctx.font = `bold 14px ${FONT_UI}`; const tl = wrapText(ctx, acc.title, tw);
+      ctx.font = `12px ${FONT_UI}`; const dl = acc.detail ? wrapText(ctx, acc.detail, tw) : [];
+      const h = Math.max(b.h, 16 + tl.length * 18 + dl.length * 16);
+      note = { tl, dl, y: b.y + b.h - h, h };
+      top = note.y;
+    }
+    // Requisitos (nível do personagem e habilidades anteriores)
+    const reqs = [[`Nível de ${name} ${s.lvl}`, pr.level >= s.lvl]];
+    for (const [rid, rl] of s.req) reqs.push([`${skillDef(rid).name}${rl > 1 ? ` (nível ${rl})` : ''}`, pr.lv(rid) >= rl]);
+    const reqY = top - 22 - reqs.length * 19;
+    // Efeitos: encolhe a letra (e, na consulta, tira o nível máximo) se não couber
+    let paras = [];
+    if (preview) {
+      paras.push(['EFEITO', s.desc(1), '#e6edf8']);
+      if (s.max > 1) paras.push([`NO NÍVEL ${s.max}`, s.desc(s.max), '#bfe0ff']);
+    } else {
+      if (lv > 0) paras.push(['EFEITO ATUAL', s.desc(lv), '#e6edf8']);
+      if (lv < s.max) paras.push([lv > 0 ? 'PRÓXIMO NÍVEL' : 'EFEITO', s.desc(lv + 1), lv > 0 ? '#bfe0ff' : '#e6edf8']);
+    }
+    let fs = 14, lines = [];
+    const measure = () => {
+      ctx.font = `${fs}px ${FONT_UI}`;
+      lines = paras.map((p) => wrapText(ctx, p[1], w - 36));
+      return lines.reduce((sum, ls) => sum + 26 + ls.length * (fs + 5), 0);
+    };
+    while (y + measure() > reqY - 8 && (fs > 12 || (preview && paras.length > 1))) {
+      if (fs > 12) fs--; else paras.pop();
+    }
+    paras.forEach((p, i) => {
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(168,216,255,0.7)';
+      ctx.fillText(p[0], x + 18, y); ctx.letterSpacing = '0px';
+      y += 18;
+      ctx.font = `${fs}px ${FONT_UI}`; ctx.fillStyle = p[2];
+      for (const ln of lines[i]) { ctx.fillText(ln, x + 18, y); y += fs + 5; }
+      y += 8;
+    });
+    let ry = Math.max(y + 4, reqY);
+    ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(168,216,255,0.7)';
+    ctx.fillText('REQUISITOS', x + 18, ry - 2); ctx.letterSpacing = '0px';
+    ry += 17;
+    ctx.font = `13px ${FONT_UI}`;
+    for (const [txt, ok] of reqs) {
+      ctx.fillStyle = preview ? 'rgba(200,210,225,0.8)' : ok ? '#7dffb0' : '#ff7d8f';
+      ctx.fillText(`${preview ? '•' : ok ? '✓' : '✗'}  ${txt}`, x + 18, ry); ry += 19;
+    }
+    if (edit) {
+      // Botão de desbloqueio / aprimoramento
+      const why = pr.blocker(s.id);
+      ctx.fillStyle = why ? 'rgba(30,34,44,0.9)' : `rgba(255,190,80,${0.2 + 0.08 * Math.sin(time * 5)})`;
+      techPanelPath(ctx, b.x, b.y, b.w, b.h, 10); ctx.fill();
+      ctx.strokeStyle = why ? 'rgba(120,130,150,0.5)' : '#ffd47a'; ctx.lineWidth = why ? 1 : 2; ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.font = `bold 14px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      ctx.fillStyle = why ? 'rgba(180,190,205,0.75)' : '#fff3d6';
+      const btxt = why ? why.toUpperCase() : lv > 0 ? `[J] APRIMORAR → NÍVEL ${lv + 1} · 1 PONTO` : '[J] DESBLOQUEAR · 1 PONTO';
+      ctx.fillText(btxt, b.x + b.w / 2, b.y + b.h / 2 + 1);
+      ctx.letterSpacing = '0px';
+    } else {
+      // Aviso discreto: quando o personagem fica disponível (ou que ainda está em desenvolvimento)
+      ctx.fillStyle = 'rgba(10,14,24,0.92)';
+      techPanelPath(ctx, b.x, note.y, b.w, note.h, 10); ctx.fill();
+      ctx.strokeStyle = rgba(trgb, 0.35); ctx.lineWidth = 1; ctx.stroke();
+      drawIcon(ctx, acc.state === 'soon' ? 'sync' : 'lock', b.x + 22, note.y + note.h / 2, 18, rgba(trgb, 0.85));
+      ctx.textAlign = 'left';
+      let ny = note.y + note.h / 2 - ((note.tl.length * 18 + note.dl.length * 16) / 2) + 9;
+      ctx.font = `bold 14px ${FONT_UI}`; ctx.fillStyle = '#e6edf8';
+      for (const ln of note.tl) { ctx.fillText(ln, b.x + 42, ny); ny += 18; }
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(190,200,215,0.78)';
+      for (const ln of note.dl) { ctx.fillText(ln, b.x + 42, ny - 1); ny += 16; }
+    }
+    // Atalhos (habilidades ativas de quem aprende) ou como a habilidade é usada
+    ctx.textAlign = 'left';
+    if (edit && s.kind === 'ativa') {
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(168,216,255,0.7)';
+      ctx.fillText(lv > 0 ? 'ATALHO · tecle 1–4 ou clique' : 'ATALHO (após desbloquear)', x + 18, L.slots[0].y - 10);
+      ctx.letterSpacing = '0px';
+      L.slots.forEach((r, k) => {
+        const id = pr.slots[k], mine = id === s.id;
+        ctx.fillStyle = mine ? rgba(trgb, 0.3) : 'rgba(5,10,20,0.9)';
+        techPanelPath(ctx, r.x, r.y, r.w, r.h, 7); ctx.fill();
+        ctx.strokeStyle = mine ? '#ffffff' : 'rgba(120,130,150,0.45)'; ctx.lineWidth = mine ? 2 : 1; ctx.stroke();
+        if (id) drawSkillIcon(ctx, skillDef(id).icon, r.x + r.w / 2, r.y + r.h / 2, 26, mine ? '#ffffff' : 'rgba(170,185,205,0.7)');
+        ctx.font = `bold 11px ${FONT_TITLE}`; ctx.fillStyle = '#dfe6f2';
+        ctx.fillText(String(k + 1), r.x + 4, r.y + r.h - 8);
+      });
+    } else {
+      const combo = (SKILL_SETS[ui.char] || {}).combo || '';
+      ctx.font = `italic 12px ${FONT_UI}`; ctx.fillStyle = 'rgba(190,200,215,0.7)';
+      ctx.fillText(s.kind === 'suprema' ? 'Usada com a tecla I quando a energia chega a 100.'
+        : s.kind === 'tecnica' ? `Técnicas entram nos combos ${combo} automaticamente.`
+          : s.kind === 'ativa' ? 'Ativas vão para os atalhos 1–4.' : 'Passivas funcionam automaticamente.', x + 18, L.slots[0].y + 20);
+    }
+  }
+
+  // Retângulos dos cartões de evolução (também usados para o mouse)
+  cardRects() {
+    const n = game.upgradeChoices.length;
+    const w = Math.min(260, (VIEW_W - 120) / 3 - 20), h = 330, gap = 28;
+    const total = n * w + (n - 1) * gap, x0 = (VIEW_W - total) / 2, y = VIEW_H * 0.24;
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ x: x0 + i * (w + gap), y, w, h });
+    return out;
+  }
+
+  drawUpgrade(ctx, t) {
+    this.overlay(ctx, 0.82);
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = PAL.accent;
+    ctx.letterSpacing = '4px';
+    ctx.fillText(`${ROOM_DEFS[game.waves.roomIndex].name.toUpperCase()} · LIBERADO`, VIEW_W / 2, VIEW_H * 0.09);
+    ctx.font = `bold 38px ${FONT_TITLE}`;
+    glowText(ctx, 'ESCOLHA UMA EVOLUÇÃO', VIEW_W / 2, VIEW_H * 0.155, '#eef5ff', 'rgba(40,120,255,0.85)', 18);
+    ctx.letterSpacing = '0px';
+    if (game.lostMemory) {
+      ctx.font = `italic 14px ${FONT_UI}`; ctx.fillStyle = '#ff5c7a';
+      ctx.fillText('Um fragmento de memória ficou para trás. Ele se perdeu para sempre.', VIEW_W / 2, VIEW_H * 0.205);
+    }
+    const rects = this.cardRects();
+    game.upgradeChoices.forEach((u, i) => {
+      const r = rects[i], sel = i === game.upgradeSel;
+      const lift = sel ? -10 - Math.sin(t * 4) * 2 : 0;
+      const lvl = game.upgrades.level(u.id);
+      ctx.save();
+      ctx.translate(0, lift);
+      const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
+      g.addColorStop(0, sel ? '#0e2246' : '#0a1426'); g.addColorStop(1, '#03060d');
+      ctx.fillStyle = g;
+      techPanelPath(ctx, r.x, r.y, r.w, r.h, 16); ctx.fill();
+      ctx.lineWidth = sel ? 2.5 : 1.2;
+      ctx.strokeStyle = sel ? PAL.accentHi : u.combo ? 'rgba(127,192,255,0.7)' : 'rgba(61,139,255,0.55)';
+      if (sel) { ctx.shadowColor = 'rgba(60,140,255,0.9)'; ctx.shadowBlur = 20; }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      // Ícone com brilho
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.draw(ctx, u.combo ? '120,200,255' : '50,120,255', r.x + r.w / 2, r.y + 70, 60, sel ? 0.55 : 0.3);
+      ctx.restore();
+      drawIcon(ctx, u.icon, r.x + r.w / 2, r.y + 70, 54, u.combo ? '#d6ecff' : '#7fc0ff');
+      ctx.font = `bold 11px ${FONT_UI}`; ctx.fillStyle = u.combo ? PAL.accentHi : PAL.accent;
+      ctx.letterSpacing = '2px';
+      ctx.fillText(u.combo ? 'NOVA TÉCNICA' : 'EVOLUÇÃO', r.x + r.w / 2, r.y + 124);
+      ctx.letterSpacing = '0px';
+      ctx.font = `bold 19px ${FONT_TITLE}`; ctx.fillStyle = '#eef5ff';
+      wrapText(ctx, u.name, r.w - 30).forEach((ln, k) => ctx.fillText(ln, r.x + r.w / 2, r.y + 150 + k * 22));
+      ctx.font = `14px ${FONT_UI}`; ctx.fillStyle = '#b8c5d8';
+      wrapText(ctx, u.desc, r.w - 36).forEach((ln, k) => ctx.fillText(ln, r.x + r.w / 2, r.y + 205 + k * 19));
+      // Níveis
+      if (u.max > 1) {
+        for (let k = 0; k < u.max; k++) {
+          ctx.fillStyle = k < lvl ? PAL.accent : k === lvl ? PAL.accentHi : 'rgba(255,255,255,0.15)';
+          ctx.beginPath(); ctx.arc(r.x + r.w / 2 + (k - (u.max - 1) / 2) * 16, r.y + r.h - 34, 5, 0, TAU); ctx.fill();
+        }
+      }
+      ctx.font = `bold 13px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,225,240,0.55)';
+      ctx.fillText(`[${i + 1}]`, r.x + r.w / 2, r.y + r.h - 14);
+      ctx.restore();
+    });
+    // Rodapé: células, rerolagem e reparo
+    const fy = VIEW_H * 0.84;
+    ctx.font = `bold 16px ${FONT_UI}`;
+    ctx.fillStyle = '#cfe6ff';
+    ctx.fillText(`Células de energia: ${game.stats.soulsBank}`, VIEW_W / 2, fy);
+    ctx.font = `14px ${FONT_UI}`;
+    const canR = game.stats.soulsBank >= game.rerollCost, canH = game.stats.soulsBank >= game.healCost && game.player.hp < game.player.maxHp;
+    ctx.fillStyle = canR ? '#c9d3e2' : 'rgba(201,211,226,0.35)';
+    ctx.fillText(`[R / X] Recalcular opções — ${game.rerollCost} células`, VIEW_W / 2 - 210, fy + 30);
+    ctx.fillStyle = canH ? '#c9d3e2' : 'rgba(201,211,226,0.35)';
+    ctx.fillText(`[C / Y] Reparar 40% da vida — ${game.healCost} células`, VIEW_W / 2 + 210, fy + 30);
+    ctx.fillStyle = 'rgba(214,225,240,0.6)'; ctx.font = `13px ${FONT_UI}`;
+    ctx.fillText('← → escolher   ·   J / Enter confirmar   ·   1 2 3 ou clique', VIEW_W / 2, fy + 60);
+    ctx.restore();
+  }
+
+  drawEnd(ctx, victory, t) {
+    this.overlay(ctx, victory ? 0.74 : 0.8);
+    this.drawEmbers(ctx, t);
+    const s = game.stats, end = game.ending;
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (victory) {
+      ctx.font = `bold 15px ${FONT_TITLE}`; ctx.fillStyle = PAL.accent;
+      ctx.letterSpacing = '6px';
+      ctx.fillText(end ? `FINAL ${end.ending}` : 'FIM', VIEW_W / 2, VIEW_H * 0.08);
+      ctx.font = `bold 62px ${FONT_TITLE}`;
+      ctx.letterSpacing = '8px';
+      glowText(ctx, end ? end.title : 'VITÓRIA', VIEW_W / 2, VIEW_H * 0.155, '#eef5ff', 'rgba(40,120,255,0.95)', 30);
+    } else {
+      ctx.font = `bold 70px ${FONT_TITLE}`;
+      ctx.letterSpacing = '8px';
+      glowText(ctx, 'SINAL PERDIDO', VIEW_W / 2, VIEW_H * 0.15, '#ff2e55', 'rgba(255,30,70,0.9)', 30);
+    }
+    ctx.letterSpacing = '0px';
+    ctx.font = `italic 18px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,225,240,0.82)';
+    ctx.fillText(victory ? 'Kael Veyron escolheu quem desejava ser. O último eclipse chegou ao fim.'
+      : `${ROOM_DEFS[game.waves.roomIndex].name}: a Tempestade Nula se apaga. NEXUS recolhe o que resta de você.`, VIEW_W / 2, VIEW_H * 0.245);
+    const rows = [
+      ['Tempo', formatTime(s.time)],
+      ['Inimigos destruídos', s.kills],
+      ['Maior combo', `${game.counter.best} hits`],
+      ['Pontuação', Math.round(s.score).toLocaleString('pt-BR')],
+      ['Células coletadas', s.soulsTotal],
+      ['Memórias recuperadas', `${s.memories} / ${MEMORIES.length}`],
+      ['Dano causado', Math.round(s.dmgDealt).toLocaleString('pt-BR')],
+      ['Dano recebido', Math.round(s.dmgTaken)],
+      ['Setores liberados', `${s.roomsCleared} / 6`],
+    ];
+    const pw = 460, px = VIEW_W / 2 - pw / 2, py = VIEW_H * 0.3;
+    ctx.fillStyle = 'rgba(2,6,14,0.8)';
+    techPanelPath(ctx, px, py, pw, rows.length * 30 + 24, 14); ctx.fill();
+    ctx.strokeStyle = 'rgba(61,139,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.font = `16px ${FONT_UI}`;
+    rows.forEach(([k, v], i) => {
+      const y = py + 27 + i * 30;
+      ctx.textAlign = 'left'; ctx.fillStyle = '#b8c5d8'; ctx.fillText(k, px + 28, y);
+      ctx.textAlign = 'right'; ctx.fillStyle = PAL.accentHi; ctx.fillText(String(v), px + pw - 28, y);
+    });
+    ctx.textAlign = 'center';
+    if (victory) {
+      ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = PAL.accent;
+      ctx.letterSpacing = '3px';
+      ctx.fillText('CLASSIFICAÇÃO', px + pw + 100, py + 30);
+      ctx.letterSpacing = '0px';
+      ctx.font = `bold 96px ${FONT_TITLE}`;
+      glowText(ctx, game.rank, px + pw + 100, py + 110, game.rank === 'S' ? '#ffffff' : PAL.accentHi, 'rgba(40,120,255,0.95)', 24);
+    }
+    if (game.newRecord) {
+      ctx.font = `bold 20px ${FONT_TITLE}`;
+      glowText(ctx, 'NOVO RECORDE!', VIEW_W / 2, py + rows.length * 30 + 52, PAL.accentHi, 'rgba(60,140,255,0.9)', 14);
+    }
+    ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 4);
+    ctx.font = `bold 19px ${FONT_TITLE}`;
+    ctx.letterSpacing = '2px';
+    glowText(ctx, victory ? 'ENTER — novo ciclo (mantém a evolução)      T / ESC — menu' : 'ENTER — reconectar no último ponto seguro      T / ESC — menu',
+      VIEW_W / 2, VIEW_H * 0.93, '#eef5ff', 'rgba(40,120,255,0.8)', 10);
+    ctx.restore();
+  }
+}
+

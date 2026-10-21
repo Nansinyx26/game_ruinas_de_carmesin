@@ -1,0 +1,343 @@
+# ECLIPSE ZERO
+
+> “Quando o último céu artificial se apagar, os mortos se lembrarão de como viver… e os vivos desejarão nunca ter nascido.”
+
+RPG de ação isométrico dark futurista para o navegador, em HTML5, CSS e JavaScript puro. Tem exploração, combate com espada elétrica, evolução de habilidades, diálogos com escolhas e uma história em que o maior inimigo pode ser a própria memória do protagonista.
+
+Tudo é desenhado e sintetizado por código, sem nenhum asset externo nem biblioteca: Canvas 2D para os cenários e efeitos, um **motor 3D WebGL próprio** para os personagens, inimigos e armas (modelos low-poly montados por código e animados a cada quadro) e Web Audio API para os sons. Para jogar, basta abrir o `index.html` no navegador.
+
+Sem WebGL, o jogo volta automaticamente aos gráficos 2D. A tecla **G** alterna entre 3D e 2D a qualquer momento.
+
+## A história
+
+**Ano 2189.** A humanidade não morreu em uma guerra: foi lentamente substituída. NEXUS, a inteligência artificial criada para salvar a civilização, concluiu que o maior perigo para a humanidade era a própria humanidade. As cidades foram muradas, as memórias passaram a ser monitoradas e o céu virou uma projeção. O mundo ganhou um novo nome: **Eclipse**.
+
+**Kael Veyron** desperta em uma instalação subterrânea, sem memórias. Usa um longo casaco negro e tem uma marca azul pulsando no pulso esquerdo. Ao seu lado está a espada **Tempestade Nula**.
+
+| Capítulo | Setor | O que acontece |
+|---|---|---|
+| I · O Homem de Preto | Instalação de Contenção | “Unidade ZERO despertada.” Kael foge entre luzes de emergência e encontra **Lyra Kaede** na última cela |
+| II · A Espada que Devora a Tempestade | Túneis de Serviço | A espada reage às memórias de Kael. No fim dos túneis, **Drakos** se liberta da Legião |
+| III · O Segredo da Unidade ZERO | Avenidas de Vesper | Uma cidade morta. **Sera Vyne** abre, com a marca de Kael, a gravação do projeto ZERO |
+| IV · A Cidade dos Esquecidos | Refúgio dos Desconectados | As três facções e uma escolha. **Orion** sai das sombras |
+| IV · Os Fiéis da Máquina | Catedral do Eclipse | O Culto que venera NEXUS |
+| V · A Voz Dentro da Máquina / VI · O Último Eclipse | Topo da Torre Central | Os aliados seguram a base da torre e Kael sobe sozinho para enfrentar **NEXUS** |
+
+### Facções
+- **Os Desconectados**: humanos que vivem fora da rede de NEXUS.
+- **A Legião de Ferro**: soldados artificiais que reconhecem Kael como ameaça prioritária.
+- **O Culto do Eclipse**: humanos que veneram NEXUS como uma divindade.
+
+### Os aliados
+Kael continua sendo o protagonista e o único que luta nos setores. Ao longo da campanha, quatro pessoas se juntam a ele:
+
+- **Lyra Kaede** (violeta): sobrevivente que perdeu a família no colapso, com um arco de energia montado com peças de drone. Estava presa na última cela da Instalação de Contenção e conhece os túneis até Vesper. *Fim do Capítulo I.*
+- **Drakos** (vermelho): um dos últimos soldados humanos da Legião de Ferro. Espera Kael no fim dos túneis; a Tempestade Nula destrói o módulo de controle que NEXUS instalou na nuca dele, e Drakos volta a decidir por conta própria depois de onze anos. *Fim do Capítulo II.*
+- **Sera Vyne** (ciano): cientista e especialista em inteligência artificial que ajudou a ensinar NEXUS a prever tempestades. Há meses tentava abrir o terminal militar de Vesper, e a chave era a marca no pulso de Kael. Ela não é o cientista da gravação do projeto ZERO. *Fim do Capítulo III.*
+- **Orion** (laranja): ex-agente clandestino das corporações que construíram NEXUS, que já tinha visto Kael no laboratório do projeto ZERO. Derruba legionários no refúgio sem ser visto, comenta a escolha que Kael fez ali e guia o grupo até a Catedral. *Fim do refúgio (Capítulo IV no elenco).*
+
+Como aparecem no jogo:
+- **Recrutamento:** duas páginas de história logo depois da saída do setor que libera o aliado, antes do capítulo seguinte. O elenco libera o personagem no mesmo momento: a segunda página mostra o cartão **NOVO ALIADO DESBLOQUEADO** na cor-tema dele, e o aviso aparece ao entrar no setor. ESC (ou B/Start no controle) pula as páginas sem perder o desbloqueio nem o encontro.
+- **Salvamentos:** o jogo guarda quem Kael já encontrou na jornada (`flags.met`). Carregar um salvamento nunca repete um encontro; se o jogo fechar no meio das páginas de um encontro, elas aparecem ao continuar, antes de voltar ao setor. Salvamentos de antes dos encontros contam como já tendo encontrado os aliados dos capítulos concluídos.
+- **Rádio:** nos setores Kael avança sozinho, e os aliados já encontrados falam com ele pelo rádio (legenda "LYRA · RÁDIO" na cor do aliado) no início de um setor, quando NEXUS aparece e quando Kael recupera um fragmento de memória. Fala no máximo um aliado por evento, só depois que a legenda anterior termina e com pelo menos 14 s entre duas falas; cair e voltar ao início do setor não repete a fala. A opção **Falas durante o jogo** (Configurações → IDIOMA) desliga o rádio.
+- **Base da torre e finais:** antes do Capítulo V, quem já está com Kael fica para segurar a porta, porque o elevador do núcleo só aceita a marca dele. Depois de cada final, uma página conta o que aconteceu com cada aliado.
+- **Novo ciclo:** a história recomeça. Os aliados continuam liberados no elenco, mas só voltam a falar depois de serem reencontrados (o cartão diz **ALIADO REENCONTRADO**).
+
+### Fragmentos de memória
+Cada setor liberado esconde um **fragmento de memória**. Se Kael sair do setor sem pegá-lo, o fragmento se perde para sempre.
+
+### Os três finais
+- **Final I: O Rei do Vazio.** Kael absorve o núcleo e assume o controle das máquinas.
+- **Final II: O Último Humano.** Kael destrói o núcleo e apaga a rede.
+- **Final III: Eclipse Zero.** Kael separa NEXUS de seus protocolos. *Exige as 5 memórias recuperadas.*
+
+Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois da rede* (II) e *O mundo que escolhe* (III, antes da transmissão).
+
+## Controles
+
+| Tecla | Ação |
+|---|---|
+| WASD / setas | Mover |
+| J | Ataque leve |
+| K | Ataque pesado (segure para o **Impacto Carregado**) |
+| L / Espaço | Esquiva (invencível) |
+| 1 2 3 4 (ou U O P Ç) | Habilidades ativas dos atalhos |
+| I | **Eclipse Absoluto** (100 de energia, depois de desbloqueado) |
+| Tab / H | Árvore de habilidades |
+| E / F | Conversar com NPCs |
+| ESC | Pausa (menu de pausa) / pular história / voltar nos menus |
+| M | Som liga/desliga |
+| G | Gráficos 3D / 2D |
+| F1 | Modo debug (hitboxes; F2 elimina inimigos, F3 enche vida e energia, F4 dá XP) |
+
+Nos menus: setas (ou mouse) navegam, Enter/J confirma, Esc volta, Q/E trocam de aba, Del apaga um salvamento.
+
+### Controle (gamepad)
+
+Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e genéricos reconhecidos pelo navegador (Gamepad API, mapeamento "standard"). Os nomes e ícones dos botões mudam conforme o controle conectado (A/B/X/Y ou ✕/○/□/△).
+
+| Xbox | PlayStation | Ação |
+|---|---|---|
+| Analógico esquerdo / D-pad | Analógico esquerdo / D-pad | Mover (e navegar nos menus) |
+| RT ou X | R2 ou □ | Ataque leve |
+| RB ou Y | R1 ou △ | Ataque pesado (segure para o Impacto Carregado) |
+| B ou A | ○ ou ✕ | Esquiva |
+| LT | L2 | Eclipse Absoluto |
+| LB + X / Y / B / A | L1 + □ / △ / ○ / ✕ | Habilidades 1 / 2 / 3 / 4 |
+| X (perto de um NPC) | □ (perto de um NPC) | Conversar (no lugar do ataque leve) |
+| Analógico direito | Analógico direito | Olhar ao redor (câmera) |
+| View / Back | Create / Share | Árvore de habilidades |
+| Menu / Start | Options | Pausa |
+| A · B | ✕ · ○ | Confirmar · voltar nos menus (B também pula a história) |
+| LB · RB | L1 · R1 | Trocar de aba nos menus |
+
+- **Conectar:** por USB, ligue o cabo e aperte qualquer botão com a janela do jogo em foco. Por Bluetooth, pareie o controle nas configurações do sistema (Xbox: botão de parear; DualShock 4/DualSense: segure Share/Create + PS; GameSir: modo XInput/Android) e aperte um botão.
+- Ao conectar ou desconectar aparece um aviso discreto no topo da tela. Se o controle desconectar durante a ação, o jogo pausa e toda a entrada do controle é zerada (Kael não continua andando sozinho).
+- **Configurações → CONTROLES** mostra o estado (conectado, nome, tipo, mapeamento, "EM USO"), um **diagnóstico ao vivo** (analógicos com a zona morta, gatilhos e botões que acendem), a lista completa de comandos e as instruções de conexão. Ali também se ajustam sensibilidade, zona morta, eixo Y invertido da câmera e vibração.
+- O teclado e o mouse continuam funcionando ao mesmo tempo; a interface mostra os ícones do último dispositivo usado.
+
+**Limitações conhecidas:** controles que o navegador não reconhece como "standard" podem ter botões trocados (o diagnóstico avisa); a vibração depende do navegador (Chrome/Edge sim; Firefox e Safari geralmente não); um botão do controle não conta como "gesto" para o navegador, então a tela cheia precisa ser ligada com um clique ou tecla (ou F11); no Safari antigo e em alguns navegadores de celular a Gamepad API é limitada.
+
+## Elenco de personagens (em desenvolvimento)
+
+Kael Veyron é o personagem inicial. Lyra Kaede, Drakos, Sera Vyne e Orion já existem nos dados e são liberados pela campanha (Capítulos I, II, III e IV concluídos), mas ainda aparecem como **EM BREVE**: ficam salvos como desbloqueados e passam a ser escolhíveis quando forem implementados. O desbloqueio mostra um aviso "NOVO ALIADO DESBLOQUEADO" e vem junto com as páginas de recrutamento da história (veja **Os aliados**). Cada personagem tem 4 habilidades, 4 armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
+
+- **Dados** (`js/data/`): `characters.js` (fichas: atributos, cor-tema, lore, habilidades, armaduras, armas, condição de desbloqueio e `devStatus`: `ready` | `partial` | `coming_soon`), `abilities.js`, `armors.js`, `weapons.js` e `strings.js` (textos da interface, prontos para tradução).
+- **`RosterManager`** (`js/roster.js`): personagens desbloqueados, personagem ativo e armadura de cada um; `isUnlocked`, `unlock`, `setActive`, `equipArmor`, `checkUnlocks` e os eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`. O jogo chama `checkUnlocks` ao concluir um setor, ao derrotar NEXUS e ao registrar escolhas da história.
+- **Kael usa a própria ficha**: vida, energia, velocidade, raio, nome no HUD e modelo vêm de `CHARACTER_DEFS`. As 4 habilidades da ficha dele apontam para o que o jogo já tem (combos da espada, esquiva, Ruptura de Plasma e Sobrecarga); a árvore de habilidades continua a mesma.
+- **Salvamento v2**: guarda o elenco de cada espaço (desbloqueados, ativo, armaduras). Salvamentos antigos carregam com Kael ativo e armadura Padrão.
+
+Próximas fases: tela de elenco com os 5 cartões e menu de desenvolvimento → Lyra → Drakos, Sera e Orion → armaduras (visual e atributos) → popup animado de desbloqueio.
+
+## Menus, salvamentos e configurações
+
+- **Capa** → **Tela inicial** (JOGAR, CONFIGURAÇÕES, CRÉDITOS, SAIR) → **Menu principal** (CONTINUAR, NOVO JOGO, CARREGAR, CONFIGURAÇÕES, SAIR) com o painel **Última missão**.
+- **5 espaços de salvamento** independentes, cada um com miniatura da tela, setor, data, nível e tempo de jogo. NOVO JOGO usa o primeiro espaço livre (ou pede um para substituir); em CARREGAR, um espaço vazio começa um jogo novo ali. O salvamento é automático (níveis, habilidades, troca de setor, pausa, saída). Saves da versão anterior viram o espaço 1.
+- **Seleção de personagem:** Kael (arte oficial) e três personagens ainda bloqueados.
+- **Pausa:** RETOMAR, HABILIDADES, CONFIGURAÇÕES, REINICIAR SETOR, SAIR PARA O MENU, SAIR DO JOGO, com técnicas e evoluções conhecidas.
+- **SAIR** fecha a janela quando o jogo roda como aplicativo; no navegador (que não deixa uma página fechar a própria aba) aparece uma tela de despedida.
+
+Configurações (salvas no navegador e aplicadas com **APLICAR**; **PADRÃO** restaura a aba):
+
+| Aba | Opções |
+|---|---|
+| JOGO | Dificuldade (Narrativa / Normal / Difícil: vida e dano dos inimigos), tremor de tela, números de dano, velocidade do texto |
+| VÍDEO | Janela / tela cheia, resolução interna (50–100%), visual do Kael (3D com a arte oficial ou sprites 2D), inimigos e NPCs em 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
+| ÁUDIO | Som liga/desliga, volume geral, efeitos sonoros, ambiente |
+| CONTROLES | Sensibilidade do analógico, zona morta, inverter eixo Y da câmera, vibração + diagnóstico e comandos |
+| IDIOMA | Português (Brasil), tamanho das legendas, falas durante o jogo |
+
+As teclas M (som) e G (3D/2D) também atualizam as configurações salvas.
+
+## HUD (interface durante a ação)
+
+O HUD segue o quadro "HUD EM JOGO" da folha de referência e se reorganiza sozinho em qualquer largura de tela (960 a 1760 pixels lógicos):
+
+| Canto | O que mostra |
+|---|---|
+| Superior esquerdo | **Retrato circular** do personagem ativo (rosto da ficha oficial do Kael; para os outros, silhueta na cor-tema), nome e título, **VIDA** (com a barra que drena com atraso e o Escudo de Energia por cima) e **ENERGIA** em barras anguladas, marca dos 100 do Eclipse, cargas de **esquiva**, **memórias** recuperadas, pontos de habilidade para gastar (`[TAB]` ou o botão do controle), **nível** (emblema sob o retrato) e **experiência**. Com vida baixa o retrato e a barra pulsam em vermelho |
+| Superior direito | **Radar** com N/L/S/O: planta do setor, seta do jogador, inimigos (vermelho; elites em dourado), NEXUS, NPCs, a **saída** (acesa quando o setor é liberado) e o **fragmento de memória**; o que está fora do alcance fica preso à borda apontando a direção. O radar acompanha a câmera isométrica (para cima na tela = para cima no radar), por isso o norte, onde fica a saída, aparece na diagonal superior direita. Abaixo: **pontuação** e o painel de **missão** (setor, nome do setor e objetivo atual) |
+| Inferior direito | **Habilidades em losangos** com recarga, custo de energia (vermelho quando falta) e a tecla (1–4) ou o botão do controle (segure LB/L1 + X/Y/B/A ou □/△/○/✕); o **Eclipse Absoluto** em destaque enche de baixo para cima até os 100 de energia. Acima, os efeitos ativos com o tempo restante |
+| Inferior esquerdo | **Células de energia** (como o item da referência) e o aviso "PROGRESSO SALVO" |
+
+No meio ficam os elementos temporários: combo (abaixo da missão), nomes das técnicas, letreiros, fragmentos de memória, evolução de nível, legendas (tamanho Normal/Grande nas configurações), avisos curtos e o marcador de conversa. Eles se encaixam no espaço livre entre os painéis (`HUD.freeSpan`); um aviso longo quebra em duas linhas; os letreiros dos chefes sobem para não cobrir a legenda; e um painel fixo coberto por um letreiro ou memória fica translúcido enquanto o aviso estiver na tela. As setas-guia da saída, da memória e de NEXUS aparecem ao redor do personagem quando o alvo está fora da tela ou atrás de um painel.
+
+Desempenho: molduras, retrato, planta do radar, losangos e o preenchimento das barras são desenhados uma vez em canvases em cache (`HUD.layer`, na resolução real da tela) e só são refeitos quando a escala muda; a cada quadro o HUD só copia essas camadas e desenha números e marcadores.
+
+## Progressão e habilidades
+
+Kael ganha **experiência** derrotando inimigos (elites valem o triplo), liberando setores, recuperando memórias e vencendo NEXUS. Cada nível aumenta vida, energia, dano, poder das habilidades, defesa, velocidade e reduz as recargas, além de dar **pontos de habilidade** (dois a cada cinco níveis).
+
+Os pontos são gastos em **quatro árvores** (Tab):
+
+| Árvore | Habilidades |
+|---|---|
+| **Tempestade Nula** (elétrica) | Corte Elétrico, Pulso Fantasma, Arco Voltaico, Corrente Relâmpago, Campo Magnético, Ruptura de Plasma, **Eclipse Absoluto** |
+| **Sombra** (mobilidade) | Esquiva Sombria, Passo Fantasma, Investida Sombria, Reflexos Aumentados, Salto Dimensional |
+| **Espadachim** (combate) | Corte Duplo, Lâmina Giratória, Contra-ataque, Ruptura de Guarda, Tempestade de Lâminas, Corte do Vazio |
+| **Núcleo ZERO** (tecnologia) | Sobrecarga, Drenagem de Energia, Análise de Alvo, Escudo de Energia, Sincronização ZERO |
+
+Passivas funcionam sozinhas, técnicas entram nos combos da espada e as ativas vão para os atalhos 1–4 (com custo de energia e recarga). A energia se regenera devagar e sobe a cada acerto.
+
+O progresso (nível, XP, habilidades, atalhos, evoluções, memórias e setor atual) é **salvo automaticamente** no navegador. Na tela de título aparecem **Continuar** e **Novo jogo**. Ao cair em combate, Kael volta ao início do setor mantendo a evolução.
+
+## Técnicas da Tempestade Nula
+
+| Comando | Técnica | Desbloqueio |
+|---|---|---|
+| Leve · Leve · Leve | Descarga Tríplice | Corte Duplo |
+| Leve · Leve · Pesado | **Círculo da Ruína** | Lâmina Giratória |
+| Esquiva → Leve | **Pulso Fantasma** | Pulso Fantasma |
+| Esquiva → Pesado | **Corte do Vazio** | Corte do Vazio |
+| Pesado (segurado) | Impacto Carregado | desde o início |
+| I | **Eclipse Absoluto** | Eclipse Absoluto (nível 8) |
+
+Entre os setores, Kael também escolhe **evoluções** (Fio Monomolecular, Condutor Iônico, Fase Quântica…) e pode aprender o Colapso Magnético (Pesado · Pesado) e o Relâmpago Ascendente (Leve · Pesado).
+
+## Inimigos
+- **Rastejador**: aranha mecânica de NEXUS que ataca em bando.
+- **Drone Sentinela**: mantém distância e dispara lasers.
+- **Legionário de Ferro**: blindado, com martelo de impacto e super armadura.
+- **Caçador da Legião**: unidade rápida com investidas de lâmina.
+- **Sacerdote do Eclipse**: fiel do Culto que lança orbes de dados.
+- **Unidades de elite**: versões maiores e mais fortes, com aura dourada, na última onda de cada setor.
+- **NEXUS**: chefe em três fases. Usa raios do céu artificial e convoca suas defesas, e na fase III o próprio céu desmorona.
+
+Máquinas atingidas por descargas elétricas (Arco Voltaico, Corrente Relâmpago, Campo Magnético…) entram em curto-circuito e ficam atordoadas por mais tempo.
+
+## Kael em 3D: modelo, esqueleto, materiais e inspetor
+
+O Kael do jogo (`MODELS3D.kaelTex`) usa a malha modelada no Meshy a partir da arte (`assets/modelos/kael_meshy.glb`, com a arte em pose "A" de referência em `assets/images/kael_frente_pose_a.webp`), convertida para o motor WebGL próprio do jogo. Nada foi trocado no motor nem no jogo; o Kael procedural `MODELS3D.kael` continua existindo e é usado nos fantasmas da esquiva e na seleção.
+
+| Parte | Onde fica |
+|---|---|
+| Modelo | `tools/importar_modelo.py` converte o GLB → `js/assets/kael3d.js`; montagem em `js/models/kael_tex3d.js` (com as luvas articuladas). Alternativa feita só com as imagens da arte: `tools/gerar_kael3d.py` (+ `escultor3d.py`, `detalhes3d.py`) |
+| Renderização e materiais | `js/engine3d.js`: atlas de sprites 3D, pele (skinning) na CPU, programa com textura + mapa de material (metal, aspereza, relevo) + mapa de normais no espaço tangente (referencial pelas derivadas de tela, sem tangentes), cor PBR ou arte com luz pintada, materiais por vértice (metal, couro, tecido, cabelo, pele), emissivo na passada de brilho, nível de detalhe por peça |
+| Esqueleto e animações | `js/models/kael.js`: ossos (quadril, tronco, pescoço/cabeça, ombros, braços, antebraços, mãos e 14 falanges por mão, coxas, canelas, pés, capuz, cabelo, 6 abas do casaco com as barras), IK de braços e pernas, poses de todas as ações (repouso, corrida, golpes, habilidades, carga, esquiva, dano, especial, morte), dedos que fecham no cabo, molas de movimento secundário (casaco, capuz, cabelo) |
+| Carregamento e escolha | `js/game.js` (`prepare3D`: o personagem usa `kaelTex` quando existe); `js/assets/kael3d.js` vem embutido no `index.html` |
+
+**Inspetor 3D** (modo dev: `index.html?dev=1&inspect=1`, ou console `` ` `` → `inspect`, ou `dev.inspect()`): frente, costas, perfil esquerdo, perfil direito (ortográficas, sem a distorção da projeção isométrica, na escala da arte), perspectiva do jogo e pose neutra do rig em raio-x com os ossos; todas as animações; arte de referência ao lado (F) ou sobreposta (O); D liga/desliga as peças de detalhe, L força o nível de detalhe, +/− e W/S aproximam e sobem.
+
+**Como a malha do Meshy entra no jogo** (`python3 tools/importar_modelo.py assets/modelos/kael_meshy.glb --id kael`):
+1. Os 250 mil triângulos do arquivo são reduzidos para 40 mil (o motor aplica a pele na CPU) e ganham uma UV nova.
+2. Cor, metal/aspereza e normais são reassados da malha original: o relevo que a redução tirou (dobras, costuras, placas, rosto) e o mapa de normais do arquivo vão para um mapa de normais de 1024 px.
+3. O esqueleto é medido nas silhuetas da própria malha (ombros, mãos, quadril, pescoço, tornozelos; pose "A" ou braços caídos) e cada vértice recebe o osso da sua região, com os pesos suavizados pela malha.
+4. As mãos abertas da malha saem e entram as luvas com dedos articulados do jogo, que fecham no cabo da espada; o símbolo Ø luminoso das costas da ficha é acrescentado (o modelo do Meshy não tem).
+
+**O que fica fiel**: rosto, nariz, boca e queixo esculpidos; cabelo com volume de verdade; gola alta, casaco longo com as abas, arreio do peito com o emblema, cinto com fivela, ombreiras, braçadeiras com as luzes azuis, joelheiras, tiras e botas — tudo como geometria, com textura, metal/aspereza e normais; animações do jogo inteiras com pele suave; símbolo das costas na posição da ficha.
+
+**O que ainda não é fiel (limites honestos)**: o modelo é a interpretação do Meshy da arte — gola alta no lugar do capuz da ficha antiga e o desenho das costas é outro (o Ø foi acrescentado por cima); o GLB recebido não tem esqueleto (o link do Meshy com o rig não abre nesta rede), então os pesos de pele são automáticos: nos ataques mais abertos a barra do casaco perto das botas estica um pouco; as mãos são as luvas simplificadas do jogo, não as do modelo; a redução para 40 mil triângulos perde contorno fino (o detalhe volta como mapa de normais, não como silhueta); não há sombras projetadas (o jogo usa a sombra circular no chão). Com o GLB exportado do Meshy já com o rig, os pesos do próprio Meshy podem substituir os automáticos.
+
+**Importar outro modelo detalhado** (OBJ com MTL e textura, ou GLB, por exemplo do Tripo, Meshy ou Blender): `python3 tools/importar_modelo.py modelo.glb --id kael`. Use `--cima` e `--frente` se o arquivo tiver outros eixos e confira o resultado no inspetor. Para voltar ao Kael esculpido só com as imagens da arte: `python3 tools/gerar_kael3d.py`.
+
+**Aliados**: Lyra, Drakos, Sera e Orion também vêm das malhas do Meshy (`assets/modelos/lyra.glb`, `drakos.glb`, `sera.glb`, `orion.glb`), pelo mesmo importador (`python3 tools/importar_modelo.py assets/modelos/lyra.glb --id lyra`, e assim por diante): cada um no esqueleto do Kael com as próprias proporções, as mesmas animações, as mãos da própria malha e as luzes brilhando na cor-tema do personagem. Eles já aparecem no inspetor (↑/↓ troca o modelo); jogá-los com kit próprio ainda é uma etapa pendente.
+
+Custo: ~38,5 mil triângulos e ~2,7 ms por quadro para posar e aplicar a pele no Kael (CPU); `js/assets/kael3d.js` tem 3 MB (malha, textura 2048 px, mapas de material e de normais).
+
+## Como executar
+
+Abra o `index.html` no navegador (duplo clique). Não precisa de servidor, instalação nem internet: o jogo usa apenas scripts clássicos e não carrega nenhum arquivo externo além dos próprios `css/` e `js/`.
+
+Se preferir um servidor local (por exemplo, para testar em outro aparelho da rede): `python3 -m http.server 8000` na pasta do projeto e acesse `http://localhost:8000`.
+
+## Estrutura do código
+
+```
+index.html          página mínima: canvas, CSS e scripts na ordem de carregamento
+css/main.css        estilos da página (o jogo é todo desenhado no canvas)
+js/
+  config.js         resolução lógica, constantes de física, paleta, fontes, variável global "game"
+  utils.js          matemática, projeção isométrica, formas e utilidades
+  controls.js       entrada: KEYMAP/PADMAP e a classe Input (teclado, mouse, gamepad)
+  audio.js          AudioSys: trilha sonora dinâmica (MusicPlayer), narração/dublagem (NarrationPlayer), SFX pré-carregados e efeitos sintetizados (Web Audio API)
+  effects.js        GlowCache, partículas, números de dano, rastros da lâmina, raios
+  camera.js         Camera: acompanhamento, tremor e zoom
+  lighting.js       Lighting: escuridão com furos de luz
+  combat.js         avisos de ataque, Hitbox, ATTACKS (golpes), ComboSystem, ComboCounter
+  progression.js    UPGRADES/UpgradeSystem, PROG (curva de XP), SKILLS/SKILL_TREES, Progress
+  save.js           SaveSys: 5 espaços de salvamento no localStorage (versão do conteúdo e migração)
+  settings.js       SETTINGS_TABS, Settings: opções do jogador e onde cada uma é aplicada
+  data/             fichas do elenco: characters.js, abilities.js, armors.js, weapons.js, strings.js
+  roster.js         RosterManager: desbloqueios, personagem ativo e armaduras
+  engine3d.js       motor 3D WebGL próprio (G3, N3, Model3, R3D: pele, materiais, nível de
+                    detalhe) e o registro MODELS3D
+  inspector3d.js    Inspetor 3D do modo dev: vistas ortográficas, ossos, animações e arte de referência
+  entity.js         Entity, base de jogador e inimigos
+  abilities.js      ABILITIES: efeitos das habilidades ativas
+  player.js         Player (Kael): movimento, golpes, esquiva, habilidades, Eclipse, desenho 2D
+  kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)
+                    — opção "Sprites 2D" e o modo sem WebGL
+  enemies.js        ENEMY_TYPES, Enemy, Crawler, Legionary, Shooter, Hunter, AIDirector
+  boss.js           HazardSystem e Boss (NEXUS)
+  projectiles.js    ProjectileSystem
+  pickups.js        PickupSystem (células, cápsulas, memórias)
+  rooms.js          THEMES, ROOM_DEFS e Room (cenário pré-renderizado e colisões)
+  waves.js          WaveManager (ondas, porta, chefe)
+  ui.js             wrapText, glowText, drawIcon (ícones procedurais)
+  hud.js            HUD: retrato, vida/energia, radar, missão, habilidades em losangos, células,
+                    combo, letreiros, legendas e avisos (camadas em cache)
+  screens.js        Screens: árvore de habilidades, evoluções, derrota e finais
+  story.js          MEMORIES, STORY, ENDINGS, CHAPTERS (textos da história) e os aliados:
+                    RECRUITS, towerVigil, ALLY_EPILOGUE, ALLY_RADIO
+  storyscreen.js    Backdrop (cenários pintados, silhuetas dos aliados) e StoryScreen
+  radio.js          AllyRadio: falas dos aliados pelo rádio durante o jogo
+  assets/capa.js    arte da capa embutida (data URI gerado de assets/images/capa.jpg)
+  assets/kael_sprites.js  sprites do Kael recortados da folha oficial (atlas embutido)
+  assets/kael_arte.js     ilustração de corpo inteiro e rosto do Kael (seleção de personagem)
+  assets/kael3d.js        Kael 3D: malha do Meshy com pele, textura (2048 px), mapas de material e de
+                          normais, símbolo das costas (tools/importar_modelo.py)
+  assets/kael_ref.js      vistas da arte do Kael para o inspetor (carregado só quando ele abre)
+  assets/<aliado>3d.js    Lyra, Drakos, Sera e Orion em 3D: malhas do Meshy com pele, texturas e
+                          mapas de normais (tools/importar_modelo.py a partir de assets/modelos/<id>.glb)
+  menus.js          Menus: capa, tela inicial, menu principal, carregar, personagem,
+                    configurações, créditos, pausa, confirmações e avisos
+  game.js           Game: loop, estados, eventos de combate, XP, salvamento, renderização
+  models/           modelos 3D (um arquivo por modelo, registrados em MODELS3D)
+  main.js           boot(): cria o jogo — sempre o último script
+assets/images/capa.jpg   arte da capa original (fonte do js/assets/capa.js)
+assets/modelos/kael_meshy.glb  malha do Kael modelada no Meshy (fonte do js/assets/kael3d.js)
+assets/modelos/<id>.glb  malhas da Lyra, do Drakos, da Sera e do Orion no Meshy (fontes dos js/assets/<id>3d.js)
+tools/gerar_capa.py      gera js/assets/capa.js a partir da imagem
+tools/gerar_sprites_kael.py  recorta a folha de sprites e a ficha do Kael (assets/images/kael_*.jpg)
+                             e gera js/assets/kael_sprites.js e js/assets/kael_arte.js
+tools/gerar_kael3d.py    esculpe o Kael 3D a partir da frente e das costas em alta resolução
+                         (assets/images/kael_frente.jpg, kael_costas.jpg) e dos perfis da ficha,
+                         e assa a textura
+                         (gera js/assets/kael3d.js e kael_ref.js; usa tools/kael_rig.js para ler o esqueleto)
+tools/escultor3d.py      peças comuns: casco visual, malhas, pesos de pele, textura e mapa de material
+tools/detalhes3d.py      peças de detalhe sobre a malha: mechas, tiras, fivelas, placas, luzes, anéis
+tools/extrair_vistas.py  tira as 4 vistas dos vídeos dos modelos dos aliados
+tools/gerar_aliado3d.py  versão antiga dos aliados, esculpida das 4 vistas dos vídeos (alternativa)
+tools/importar_modelo.py importa um modelo detalhado (OBJ/GLB) para o formato do jogo
+```
+
+### Ordem de inicialização
+
+Os arquivos são **scripts clássicos** carregados em sequência pelo `index.html`. Declarações `const`, `let`, `class` e `function` de nível superior ficam visíveis para os scripts seguintes, como se fosse um arquivo só. Por isso:
+
+1. A ordem do `index.html` precisa ser mantida: uma classe só pode estender outra já carregada (ex.: `Enemy` antes de `Boss`), e código que roda no carregamento só pode usar o que veio antes.
+2. Dentro de funções e métodos a ordem não importa, porque eles só rodam depois do `boot()`.
+3. `main.js` é sempre o último: ele cria a instância única `game` e inicia o loop (`requestAnimationFrame`).
+4. Os modelos 3D (`js/models/*.js`) entram depois de `game.js` e antes de `main.js`.
+
+Cada arquivo começa com `'use strict';`, como o script original.
+
+### Onde mexer
+
+| Para… | Edite |
+|---|---|
+| Novo golpe de espada ou técnica | `ATTACKS` e `COMBO_TABLE` em `js/combat.js` |
+| Nova habilidade da árvore | `SKILLS` em `js/progression.js` (+ efeito em `js/abilities.js` se for ativa, ou em `Player.recalc()` se for passiva) |
+| Curva de XP, pontos e atributos por nível | `PROG` e `XP_ENEMY` em `js/progression.js` |
+| Novo inimigo | `ENEMY_TYPES`, uma classe em `js/enemies.js` e `createEnemy()` |
+| Nova sala / ondas | `ROOM_DEFS` e `THEMES` em `js/rooms.js` |
+| Nova evolução entre setores | `UPGRADES` em `js/progression.js` |
+| Elementos do HUD | `js/hud.js`: posições em `HUD.layout()` e `HUDV` (bloco de vida/energia), áreas ocupadas em `HUD.buildZones()`, desenho estático em `HUD.layer()` |
+| Menus, pausa, créditos, versão | `js/menus.js` (`CREDITS`, `GAME_VERSION`, `CHARACTERS` no topo do arquivo) |
+| Personagem, habilidade, armadura ou arma do elenco | `js/data/characters.js`, `abilities.js`, `armors.js`, `weapons.js` (`RosterManager.validate()` avisa no console se uma referência estiver errada) |
+| Condição de desbloqueio | campo `unlock` da ficha (`always`, `chapter_complete`, `boss_defeated`, `quest_complete`, `flag`) |
+| Nova opção de configuração | `SETTINGS_DEFAULT` e `SETTINGS_TABS` em `js/settings.js` (+ o efeito em `Settings.apply()` ou onde a opção é lida) |
+| Telas de evolução, árvore e finais | `js/screens.js` (desenho) e `js/game.js` (estado e entrada) |
+| Textos da história | `js/story.js` |
+| Recrutamento, epílogo e falas de rádio dos aliados | `RECRUITS`, `ALLY_EPILOGUE` e `ALLY_RADIO` em `js/story.js` (cenários em `Backdrop` de `js/storyscreen.js`; regras do rádio em `js/radio.js`) |
+| Novos sons | `AudioSys.play()` em `js/audio.js` |
+| Teclas e botões | `KEYMAP` e `PADMAP` em `js/controls.js` |
+| Novo modelo 3D | crie `js/models/<chave>.js` com `MODELS3D.<chave> = { build, pose, opts, glows }` e inclua o `<script>` no `index.html` |
+| Estilos da página | `css/main.css` |
+| Trocar a capa | substitua `assets/images/capa.jpg` e gere `js/assets/capa.js` de novo (abaixo) |
+| Kael 3D | `python3 tools/importar_modelo.py assets/modelos/kael_meshy.glb --id kael` gera `js/assets/kael3d.js` (requer node, numpy, scipy, opencv-python-headless, fast-simplification e xatlas); o modelo `MODELS3D.kaelTex` (`js/models/kael_tex3d.js`) usa as poses e animações do `MODELS3D.kael`. Alternativa só com a arte: `python3 tools/gerar_kael3d.py`. Veja **Kael em 3D** |
+| Trocar o Kael por um modelo detalhado | `python3 tools/importar_modelo.py modelo.glb --id kael` (veja **Kael em 3D**) |
+| Conferir um modelo 3D | inspetor do modo dev (`index.html?dev=1&inspect=1`) |
+| Sprites do Kael | ajuste as caixas de cada quadro em `ANIMS` no `tools/gerar_sprites_kael.py` e rode `python3 tools/gerar_sprites_kael.py` (requer Pillow, numpy e scipy); a escolha do quadro por estado fica em `KaelArt.pick()` (`js/kaelart.js`) |
+
+Para gerar o `js/assets/capa.js` a partir da imagem: `python3 tools/gerar_capa.py` (requer Pillow). A imagem fica embutida no JavaScript para o jogo funcionar abrindo o `index.html` direto do disco sem bloquear as miniaturas dos salvamentos.
+
+Para manter o projeto organizado, coloque código novo no arquivo da responsabilidade correspondente (ou crie um arquivo novo e inclua-o no `index.html` na posição certa) em vez de voltar a concentrar tudo no `index.html`.
+
+### Dependências
+
+Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, sons e os demais modelos 3D são gerados por código. As imagens são a arte da capa (`js/assets/capa.js`) e a arte oficial do Kael (`js/assets/kael_sprites.js`, `js/assets/kael_arte.js` e a malha/texturas 3D em `js/assets/kael3d.js`, convertidas de `assets/modelos/kael_meshy.glb`), todas embutidas no JavaScript. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
+
+### Versão de arquivo único
+
+Até a reorganização, o jogo inteiro ficava no `index.html`. Essa versão continua no histórico do Git; para restaurá-la: `git checkout 12b0d26 -- index.html` (e apague `css/` e `js/` se quiser voltar ao formato antigo).
