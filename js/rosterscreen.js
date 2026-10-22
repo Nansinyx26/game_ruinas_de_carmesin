@@ -343,30 +343,30 @@ function drawWeaponIcon(ctx, kind, x, y, s, rgb, on, now) {
 // ---------------------------------------------------------------------------
 // Imagens de corpo inteiro para a lateral esquerda da seleção
 const CHAR_PORTRAIT_PATHS = {
-  kael:   'assets/Selecionar_Personagem/Kael Corpo Inteiro.png',
-  lyra:   'assets/Selecionar_Personagem/Lyra Corpo Inteiro.png',
-  drakos: 'assets/Selecionar_Personagem/Drako Corpo Inteiro.png',
-  sera:   'assets/Selecionar_Personagem/Sera Corpo Inteiro.png',
-  orion:  'assets/Selecionar_Personagem/Orion Corpo Inteiro.png',
+  kael:   'assets/selecionar_personagem/kael_full.png',
+  lyra:   'assets/selecionar_personagem/lyra_full.png',
+  drakos: 'assets/selecionar_personagem/drakos_full.png',
+  sera:   'assets/selecionar_personagem/sera_full.png',
+  orion:  'assets/selecionar_personagem/orion_full.png',
 };
 // Bases/pedestais holograficos (plataforma sob o personagem)
 const CHAR_BASE_PATHS = {
-  kael:   'assets/Selecionar_Personagem/Kael Base.png',
-  lyra:   'assets/Selecionar_Personagem/Lyra Base.png',
-  drakos: 'assets/Selecionar_Personagem/Drako Base.png',
-  sera:   'assets/Selecionar_Personagem/Sera Base.png',
-  orion:  'assets/Selecionar_Personagem/Orion Base.png',
+  kael:   'assets/selecionar_personagem/kael_base.png',
+  lyra:   'assets/selecionar_personagem/lyra_base.png',
+  drakos: 'assets/selecionar_personagem/drakos_base.png',
+  sera:   'assets/selecionar_personagem/sera_base.png',
+  orion:  'assets/selecionar_personagem/orion_base.png',
 };
 // Rostos para os cartões dos personagens (aba inferior)
 const CHAR_FACE_PATHS = {
-  kael:   'assets/Selecionar_Personagem/rosto kael.jpeg',
-  lyra:   'assets/Selecionar_Personagem/rosto lyra.jpeg',
-  drakos: 'assets/Selecionar_Personagem/rosto drako.jpeg',
-  sera:   'assets/Selecionar_Personagem/rosto sera.jpeg',
-  orion:  'assets/Selecionar_Personagem/rosto orion.jpeg',
+  kael:   'assets/selecionar_personagem/rosto_kael.jpeg',
+  lyra:   'assets/selecionar_personagem/rosto_lyra.jpeg',
+  drakos: 'assets/selecionar_personagem/rosto_drakos.jpeg',
+  sera:   'assets/selecionar_personagem/rosto_sera.jpeg',
+  orion:  'assets/selecionar_personagem/rosto_orion.jpeg',
 };
 // Imagem de fundo do elenco (tela de seleção de personagem)
-const ROSTER_BG_PATH = 'assets/Selecionar_Personagem/Esquadrão Neon em Meio à Névoa.png';
+const ROSTER_BG_PATH = 'assets/selecionar_personagem/esquadrao_neon.png';
 
 const RosterArt = {
   pool: new Map(),

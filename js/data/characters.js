@@ -34,7 +34,7 @@ const CHARACTER_DEFS = [
     abilities: ['lyra_tiro', 'lyra_armadilha', 'lyra_flecha', 'lyra_foco'],
     armors: ['lyra_padrao', 'lyra_leve', 'lyra_camuflagem', 'lyra_assalto'],
     weapons: ['arco_foton'],
-    unlock: { type: 'chapter_complete', value: 1 }, devStatus: 'coming_soon', model: null, art: null,
+    unlock: { type: 'chapter_complete', value: 1 }, devStatus: 'ready', model: 'lyra', art: null,
   },
   {
     id: 'drakos', name: 'Drakos', title: 'Tanque', color: '#FF2E3D',
@@ -45,7 +45,7 @@ const CHARACTER_DEFS = [
     abilities: ['drakos_golpe', 'drakos_escudo', 'drakos_investida', 'drakos_zona'],
     armors: ['drakos_padrao', 'drakos_pesada', 'drakos_fogo', 'drakos_cerimonial'],
     weapons: ['lanca_plasma', 'canhao_pulso'],
-    unlock: { type: 'chapter_complete', value: 2 }, devStatus: 'coming_soon', model: null, art: null,
+    unlock: { type: 'chapter_complete', value: 2 }, devStatus: 'ready', model: 'drakos', art: null,
   },
   {
     id: 'sera', name: 'Sera Vyne', title: 'Suporte / Controle', color: '#19E6D2',
@@ -56,7 +56,7 @@ const CHARACTER_DEFS = [
     abilities: ['sera_drone', 'sera_campo', 'sera_hack', 'sera_cura'],
     armors: ['sera_padrao', 'sera_cientifica', 'sera_operacional', 'sera_elite'],
     weapons: ['orbe_controle', 'drone_s01'],
-    unlock: { type: 'chapter_complete', value: 3 }, devStatus: 'coming_soon', model: null, art: null,
+    unlock: { type: 'chapter_complete', value: 3 }, devStatus: 'ready', model: 'sera', art: null,
   },
   {
     id: 'orion', name: 'Orion', title: 'Assassino', color: '#FF8A1F',

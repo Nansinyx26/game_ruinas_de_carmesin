@@ -29,6 +29,14 @@ class ProjectileSystem {
       case 'data': return '110,255,230';
       case 'crescent': return '140,210,255';
       case 'volt': return '150,210,255';
+      case 'arrow':
+      case 'pierce_arrow':
+      case 'arrow_burst': return '180,90,255';
+      case 'charged_arrow': return '220,140,255';
+      case 'explosive_arrow': return '255,110,255';
+      case 'tech_orb': return '25,230,210';
+      case 'drone_laser': return '40,255,225';
+      case 'phantom_blade': return '255,140,30';
       default: return '110,170,255';
     }
   }
@@ -64,10 +72,18 @@ class ProjectileSystem {
     for (let i = this.count - 1; i >= 0; i--) {
       const p = this.items[i];
       p.life -= dt;
-      if (p.life <= 0) { this.kill(i, p.hostile); continue; }
+      if (p.life <= 0) {
+        if (p.kind === 'explosive_arrow') this.detonateExplosive(p);
+        this.kill(i, p.hostile);
+        continue;
+      }
       p.x += p.vx * dt; p.y += p.vy * dt;
       if (p.kind === 'data' && Math.random() < 0.35) game.particles.emit(P.WISP, p.x, p.y, p.z, -p.vx * 0.1, -p.vy * 0.1, 10, 0.3, 1.6, '110,255,230', 0, 1);
-      if (game.room.blocksPoint(p.x, p.y, p.r * 0.4)) { this.kill(i, true); continue; }
+      if (game.room.blocksPoint(p.x, p.y, p.r * 0.4)) {
+        if (p.kind === 'explosive_arrow') this.detonateExplosive(p);
+        this.kill(i, true);
+        continue;
+      }
       if (p.hostile) {
         const rr = p.r + pl.radius;
         if (pl.state !== 'dead' && dist2(p.x, p.y, pl.x, pl.y) < rr * rr) {
@@ -87,12 +103,35 @@ class ProjectileSystem {
             const dmg = Math.max(1, Math.round(p.dmg * (e.vulnerable || 1) * pl.targetMult(e) * rand(0.9, 1.1)));
             const volt = p.kind === 'volt';
             if (volt) game.arcs.crackle(e.x, e.y, Math.min(e.height * 0.5, 40) + e.z, 2, e.radius * 1.5, '160,215,255', 0.12);
+            if (p.kind === 'explosive_arrow') {
+              this.detonateExplosive(p);
+              this.kill(i, true);
+              continue outer;
+            }
             if (e.takeHit({ dmg, kx, ky, kb: volt ? 160 : 220, launch: 0, stun: volt ? 0.45 : 0.3, heavy: false, crit: false, shock: volt })) {
               game.onEnemyHit(e, dmg, false, PROJ_HIT_DEF, kx, ky);
             }
             if (!p.pierce) { this.kill(i, true); continue outer; }
           }
         }
+      }
+    }
+  }
+
+  detonateExplosive(p) {
+    const R = 115, pl = game.player;
+    game.particles.ring(p.x, p.y, R, '200,90,255', 0.45, 8);
+    game.particles.flash(p.x, p.y, p.z || 20, R * 1.2, '230,140,255', 0.2);
+    game.arcs.crackle(p.x, p.y, 25, 4, R, '220,150,255', 0.2);
+    game.audio.play('zap');
+    game.audio.play('thunder', 0.3);
+    game.camera.shake(0.25);
+    for (const e of game.enemies) {
+      if (!e.canBeHit() || dist2(p.x, p.y, e.x, e.y) > R * R) continue;
+      const dx = e.x - p.x, dy = e.y - p.y, l = Math.hypot(dx, dy) || 1;
+      const dmg = Math.max(1, Math.round(p.dmg * (e.vulnerable || 1) * (pl ? pl.targetMult(e) : 1)));
+      if (e.takeHit({ dmg, kx: dx / l, ky: dy / l, kb: 280, launch: 0, stun: 0.5, heavy: true, crit: false, shock: true })) {
+        game.onEnemyHit(e, dmg, false, PROJ_HIT_DEF, dx / l, dy / l);
       }
     }
   }
@@ -198,6 +237,59 @@ class ProjectileSystem {
           }
           ctx.restore();
           GlowCache.draw(ctx, isC ? '90,160,255' : '60,120,255', sx, sy, R * 2.2, 0.5 * fade);
+          break;
+        }
+        case 'arrow':
+        case 'pierce_arrow':
+        case 'arrow_burst':
+        case 'charged_arrow':
+        case 'explosive_arrow': {
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const l = Math.hypot(sv.x, sv.y) || 1, ux = sv.x / l, uy = sv.y / l;
+          const isCh = p.kind === 'charged_arrow';
+          const isEx = p.kind === 'explosive_arrow';
+          const len = isCh ? 34 : isEx ? 28 : 22;
+          const rgb = isCh ? '220,140,255' : isEx ? '255,100,255' : '180,90,255';
+          ctx.globalAlpha = fade;
+          ctx.strokeStyle = `rgba(${rgb},0.45)`; ctx.lineWidth = isCh ? 6 : 4; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(sx - ux * len, sy - uy * len); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = isCh ? 2.5 : 1.8;
+          ctx.beginPath(); ctx.moveTo(sx - ux * (len * 0.8), sy - uy * (len * 0.8)); ctx.lineTo(sx, sy); ctx.stroke();
+          GlowCache.draw(ctx, rgb, sx, sy, p.r * (isCh ? 3.5 : 2.6), 0.75 * fade);
+          break;
+        }
+        case 'tech_orb': {
+          GlowCache.draw(ctx, '25,230,210', sx, sy, p.r * 3.2, 0.85 * fade);
+          GlowCache.draw(ctx, '200,255,250', sx, sy, p.r * 1.4, fade);
+          ctx.save();
+          ctx.translate(sx, sy); ctx.rotate(p.life * 10);
+          ctx.strokeStyle = 'rgba(120,255,240,0.9)'; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(0, 0, p.r * 1.1, 0, TAU); ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case 'drone_laser': {
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const l = Math.hypot(sv.x, sv.y) || 1, ux = sv.x / l, uy = sv.y / l;
+          ctx.globalAlpha = fade;
+          ctx.strokeStyle = 'rgba(40,255,225,0.6)'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(sx - ux * 20, sy - uy * 20); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.moveTo(sx - ux * 16, sy - uy * 16); ctx.lineTo(sx, sy); ctx.stroke();
+          GlowCache.draw(ctx, '40,255,225', sx, sy, p.r * 2.5, 0.7 * fade);
+          break;
+        }
+        case 'phantom_blade': {
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          ctx.save();
+          ctx.translate(sx, sy); ctx.rotate(p.life * 18);
+          GlowCache.draw(ctx, '255,140,30', 0, 0, p.r * 3.2, 0.75 * fade);
+          ctx.fillStyle = 'rgba(255,160,45,0.85)';
+          ctx.beginPath();
+          ctx.moveTo(-p.r * 1.5, 0); ctx.lineTo(0, -p.r * 0.6); ctx.lineTo(p.r * 1.5, 0); ctx.lineTo(0, p.r * 0.6);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.restore();
           break;
         }
       }

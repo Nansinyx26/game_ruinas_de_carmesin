@@ -723,6 +723,8 @@ class ThirdPersonMode {
     const camBackX = -Math.cos(this.cam.yaw) * Math.cos(this.cam.pitch);
     const camBackY = -Math.sin(this.cam.yaw) * Math.cos(this.cam.pitch);
     const camBackZ = Math.sin(this.cam.pitch);
+    const camRightX = -Math.sin(this.cam.yaw);
+    const camRightY = Math.cos(this.cam.yaw);
 
     const targetLookX = p.x + camRightX * this.cam.shoulderOffset;
     const targetLookY = p.y + camRightY * this.cam.shoulderOffset;
@@ -1114,6 +1116,15 @@ class ThirdPersonMode {
     const a20 = m[8], a21 = m[9], a22 = m[10], a23 = m[11];
     m[4] = a10 * c + a20 * s; m[5] = a11 * c + a21 * s; m[6] = a12 * c + a22 * s; m[7] = a13 * c + a23 * s;
     m[8] = a20 * c - a10 * s; m[9] = a21 * c - a11 * s; m[10] = a22 * c - a12 * s; m[11] = a23 * c - a13 * s;
+    return m;
+  }
+
+  mat4RotateY(m, rad) {
+    const s = Math.sin(rad), c = Math.cos(rad);
+    const a00 = m[0], a01 = m[1], a02 = m[2], a03 = m[3];
+    const a20 = m[8], a21 = m[9], a22 = m[10], a23 = m[11];
+    m[0] = a00 * c - a20 * s; m[1] = a01 * c - a21 * s; m[2] = a02 * c - a22 * s; m[3] = a03 * c - a23 * s;
+    m[8] = a00 * s + a20 * c; m[9] = a01 * s + a21 * c; m[10] = a02 * s + a22 * c; m[11] = a03 * s + a23 * c;
     return m;
   }
 

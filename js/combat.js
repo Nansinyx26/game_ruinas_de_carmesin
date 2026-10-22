@@ -235,6 +235,200 @@ const ATTACKS = {
     hitstop: 0.07, shake: 0.22, heavy: true, lunge: 260, swing: [0, 0], blade: 98, thrust: true, ability: true,
     rgb: '170,120,255', core: '240,230,255', sound: 'thrust', fury: 0, arcs: 0.5,
   },
+
+  // ==================== LYRA KAEDE (Arco de Fóton) ====================
+  lyra_light1: {
+    name: null, windup: 0.05, active: 0.06, recovery: 0.18, chainFrac: 0.15,
+    shape: { type: 'arc', range: 70, arc: 0.8 }, dmg: 14, kb: 140, launch: 0, stun: 0.25,
+    hitstop: 0.03, shake: 0.1, lunge: 30, swing: [-0.6, 0.4], blade: 60, projectile: 'arrow',
+    rgb: '166,77,255', core: '235,210,255', sound: 'thrust', fury: 5, light: true,
+  },
+  lyra_light2: {
+    name: null, windup: 0.05, active: 0.07, recovery: 0.2, chainFrac: 0.15,
+    shape: { type: 'arc', range: 75, arc: 0.8 }, dmg: 16, kb: 160, launch: 0, stun: 0.25,
+    hitstop: 0.03, shake: 0.12, lunge: 30, swing: [0.5, -0.5], blade: 62, projectile: 'arrow_burst',
+    rgb: '180,95,255', core: '240,220,255', sound: 'thrust', fury: 5, light: true,
+  },
+  lyra_light3: {
+    name: 'DISPARO FOCADO', windup: 0.08, active: 0.09, recovery: 0.28, chainFrac: 0.4,
+    shape: { type: 'arc', range: 85, arc: 0.9 }, dmg: 28, kb: 360, launch: 0, stun: 0.5,
+    hitstop: 0.07, shake: 0.25, heavy: true, lunge: 50, swing: [-0.8, 0.6], blade: 70, projectile: 'pierce_arrow',
+    rgb: '190,110,255', core: '245,230,255', sound: 'swingHeavy', fury: 8, zoom: 0.02, light: true,
+  },
+  lyra_heavy: {
+    name: 'TIRO PRECISO', windup: 0.18, active: 0.08, recovery: 0.32, chainFrac: 0.35,
+    shape: { type: 'arc', range: 90, arc: 0.7 }, dmg: 35, kb: 320, launch: 0, stun: 0.5,
+    hitstop: 0.08, shake: 0.25, heavy: true, heavyType: true, lunge: 20, swing: [-0.5, 0.5], blade: 65,
+    rgb: '200,120,255', core: '250,235,255', sound: 'thrust', fury: 8, chargeable: true, zoom: 0.02,
+  },
+  lyra_charged: {
+    name: 'TIRO DE PRECISÃO MÁXIMO', windup: 0.04, active: 0.1, recovery: 0.4, chainFrac: 0.5,
+    shape: { type: 'capsule', length: 160, width: 36 }, dmg: 65, kb: 520, launch: 240, stun: 0.85,
+    hitstop: 0.12, shake: 0.45, heavy: true, heavyType: true, lunge: 80, swing: [-0.3, 0.3], blade: 80,
+    projectile: 'charged_arrow', rgb: '220,150,255', core: '255,250,255', sound: 'swingHeavy', fury: 12, zoom: 0.05,
+  },
+  lyra_backstep: {
+    name: 'SALTO RECUADO', windup: 0.02, active: 0.1, recovery: 0.22, chainFrac: 0.3,
+    shape: { type: 'arc', range: 80, arc: 0.9 }, dmg: 24, kb: 220, launch: 0, stun: 0.4,
+    hitstop: 0.05, shake: 0.15, lunge: -180, swing: [-0.7, 0.7], blade: 65, projectile: 'arrow_burst',
+    rgb: '180,100,255', core: '240,225,255', sound: 'thrust', fury: 6,
+  },
+  lyra_pierce: {
+    name: 'FLECHA PERFURANTE', windup: 0.06, active: 0.1, recovery: 0.3, chainFrac: 0.4,
+    shape: { type: 'capsule', length: 180, width: 40 }, dmg: 48, kb: 380, launch: 0, stun: 0.6,
+    hitstop: 0.08, shake: 0.3, heavy: true, lunge: 40, swing: [-0.4, 0.4], blade: 75,
+    projectile: 'pierce_arrow', rgb: '210,130,255', core: '250,240,255', sound: 'swingHeavy', fury: 8, zoom: 0.03,
+  },
+
+  // ==================== DRAKOS (Machado e Martelo de Plasma) ====================
+  drakos_light1: {
+    name: null, windup: 0.1, active: 0.11, recovery: 0.24, chainFrac: 0.2,
+    shape: { type: 'arc', range: 94, arc: 1.25 }, dmg: 20, kb: 260, launch: 0, stun: 0.4,
+    hitstop: 0.06, shake: 0.18, lunge: 140, swing: [-1.4, 1.2], blade: 84,
+    rgb: '255,46,61', core: '255,210,215', sound: 'swingHeavy', fury: 5, heavy: true, light: true,
+  },
+  drakos_light2: {
+    name: null, windup: 0.09, active: 0.11, recovery: 0.26, chainFrac: 0.2,
+    shape: { type: 'arc', range: 96, arc: 1.25 }, dmg: 24, kb: 290, launch: 0, stun: 0.45,
+    hitstop: 0.065, shake: 0.2, lunge: 150, swing: [1.3, -1.2], blade: 86,
+    rgb: '255,55,70', core: '255,215,220', sound: 'swingHeavy', fury: 5, heavy: true, light: true,
+  },
+  drakos_light3: {
+    name: 'IMPACTO CONCUSSIVO', windup: 0.14, active: 0.12, recovery: 0.36, chainFrac: 0.45,
+    shape: { type: 'circle', radius: 110, offset: 40 }, dmg: 42, kb: 480, launch: 220, stun: 0.75,
+    hitstop: 0.11, shake: 0.45, heavy: true, radialKb: true, lunge: 180, swing: [-2.2, 0.8], blade: 92,
+    rgb: '255,30,45', core: '255,200,205', sound: 'stomp', fury: 8, zoom: 0.04,
+  },
+  drakos_heavy: {
+    name: 'GOLPE PESADO', windup: 0.26, active: 0.12, recovery: 0.4, chainFrac: 0.4,
+    shape: { type: 'arc', range: 108, arc: 1.1 }, dmg: 55, kb: 500, launch: 280, stun: 0.85, breaksShield: true,
+    hitstop: 0.12, shake: 0.5, heavy: true, heavyType: true, lunge: 160, swing: [-2.4, 1.0], blade: 94,
+    rgb: '255,40,55', core: '255,210,215', sound: 'swingHeavy', fury: 9, chargeable: true, zoom: 0.04,
+  },
+  drakos_charged: {
+    name: 'COLAPSO TITÂNICO', windup: 0.06, active: 0.14, recovery: 0.46, chainFrac: 0.55,
+    shape: { type: 'circle', radius: 135, offset: 48 }, dmg: 78, kb: 650, launch: 450, stun: 1.0, breaksShield: true,
+    hitstop: 0.15, shake: 0.7, heavy: true, heavyType: true, radialKb: true, lunge: 220, swing: [-2.6, 1.2], blade: 100,
+    rgb: '255,60,70', core: '255,230,230', sound: 'stomp', fury: 14, zoom: 0.06,
+  },
+  drakos_sweep: {
+    name: 'VARREDURA DA LEGIÃO', windup: 0.1, active: 0.38, recovery: 0.3, chainFrac: 0.45,
+    shape: { type: 'circle', radius: 114, offset: 0 }, dmg: 36, kb: 360, launch: 0, stun: 0.6,
+    hitstop: 0.05, shake: 0.22, multiHit: 2, rehit: 0.15, radialKb: true, lunge: 80,
+    swing: [0, TAU * 1.3], blade: 92, rgb: '255,80,90', core: '255,220,225', sound: 'swingHeavy', fury: 7,
+  },
+  drakos_quake: {
+    name: 'TERREMOTO DE IMPACTO', windup: 0.2, active: 0.12, recovery: 0.42, chainFrac: 0.5,
+    shape: { type: 'capsule', length: 170, width: 70 }, dmg: 58, kb: 520, launch: 320, stun: 0.9,
+    hitstop: 0.12, shake: 0.6, heavy: true, heavyType: true, lunge: 100, swing: [-2.2, 0.4], blade: 92,
+    rgb: '255,40,55', core: '255,200,205', sound: 'stomp', fury: 10, zoom: 0.05,
+  },
+  drakos_charge: {
+    name: 'INVESTIDA DA LEGIÃO', windup: 0.04, active: 0.28, recovery: 0.25, chainFrac: 0.3,
+    shape: { type: 'capsule', length: 120, width: 44 }, dmg: 40, kb: 440, launch: 240, stun: 0.8,
+    hitstop: 0.08, shake: 0.35, heavy: true, lunge: 980, swing: [0, 0], blade: 90, thrust: true,
+    rgb: '255,50,65', core: '255,220,225', sound: 'thrust', fury: 6, zoom: 0.03,
+  },
+  drakos_slam: {
+    name: 'ZONA DE IMPACTO', windup: 0.3, active: 0.12, recovery: 0.48, chainFrac: 0.4,
+    shape: { type: 'circle', radius: 240, offset: 0 }, dmg: 140, kb: 580, launch: 420, stun: 1.2,
+    hitstop: 0.16, shake: 0.8, heavy: true, radialKb: true, lunge: 0, swing: [-2.5, 0.5], blade: 105,
+    rgb: '255,40,50', core: '255,240,240', sound: 'stomp', fury: 0, zoom: 0.07, arcs: 1,
+  },
+
+  // ==================== SERA VYNE (Tecnomante / Bastão Neural) ====================
+  sera_light1: {
+    name: null, windup: 0.05, active: 0.06, recovery: 0.18, chainFrac: 0.15,
+    shape: { type: 'arc', range: 75, arc: 0.8 }, dmg: 13, kb: 130, launch: 0, stun: 0.25,
+    hitstop: 0.03, shake: 0.08, lunge: 25, swing: [-0.6, 0.4], blade: 64, projectile: 'tech_orb',
+    rgb: '25,230,210', core: '220,255,250', sound: 'thrust', fury: 5, light: true,
+  },
+  sera_light2: {
+    name: null, windup: 0.05, active: 0.07, recovery: 0.2, chainFrac: 0.15,
+    shape: { type: 'arc', range: 78, arc: 0.8 }, dmg: 15, kb: 150, launch: 0, stun: 0.25,
+    hitstop: 0.03, shake: 0.1, lunge: 25, swing: [0.5, -0.5], blade: 66, projectile: 'tech_orb',
+    rgb: '35,240,220', core: '225,255,252', sound: 'thrust', fury: 5, light: true,
+  },
+  sera_light3: {
+    name: 'DESCARGA DE RESSONÂNCIA', windup: 0.08, active: 0.1, recovery: 0.28, chainFrac: 0.4,
+    shape: { type: 'circle', radius: 100, offset: 40 }, dmg: 32, kb: 340, launch: 0, stun: 0.5,
+    hitstop: 0.06, shake: 0.22, heavy: true, radialKb: true, lunge: 40, swing: [-0.8, 0.8], blade: 72,
+    rgb: '40,250,225', core: '235,255,255', sound: 'zap', fury: 8, zoom: 0.02,
+  },
+  sera_heavy: {
+    name: 'PULSO CIBERNÉTICO', windup: 0.2, active: 0.1, recovery: 0.32, chainFrac: 0.35,
+    shape: { type: 'capsule', length: 150, width: 34 }, dmg: 36, kb: 300, launch: 0, stun: 0.55,
+    hitstop: 0.07, shake: 0.24, heavy: true, heavyType: true, lunge: 30, swing: [0, 0], blade: 70, thrust: true,
+    rgb: '30,235,215', core: '230,255,250', sound: 'thrust', fury: 8, chargeable: true, zoom: 0.02,
+  },
+  sera_charged: {
+    name: 'PULSO CIBERNÉTICO MÁXIMO', windup: 0.05, active: 0.12, recovery: 0.42, chainFrac: 0.5,
+    shape: { type: 'capsule', length: 190, width: 48 }, dmg: 68, kb: 460, launch: 220, stun: 0.85,
+    hitstop: 0.11, shake: 0.42, heavy: true, heavyType: true, lunge: 60, swing: [0, 0], blade: 80, thrust: true,
+    rgb: '50,255,230', core: '240,255,255', sound: 'thunder', fury: 12, zoom: 0.04, arcs: 0.8,
+  },
+  sera_lift: {
+    name: 'CAMPO DE LEVITAÇÃO', windup: 0.08, active: 0.1, recovery: 0.3, chainFrac: 0.35,
+    shape: { type: 'circle', radius: 95, offset: 35 }, dmg: 26, kb: 80, launch: 520, stun: 0.8,
+    hitstop: 0.07, shake: 0.2, heavy: true, lunge: 30, swing: [1.2, -1.2], blade: 70,
+    rgb: '60,240,225', core: '235,255,255', sound: 'swing', fury: 7,
+  },
+  sera_burst: {
+    name: 'TECHNO NOVA', windup: 0.08, active: 0.1, recovery: 0.32, chainFrac: 0.4,
+    shape: { type: 'circle', radius: 105, offset: 0 }, dmg: 38, kb: 380, launch: 0, stun: 0.6,
+    hitstop: 0.07, shake: 0.28, heavy: true, radialKb: true, lunge: 0, swing: [-2.0, 0.4], blade: 75,
+    rgb: '25,235,215', core: '230,255,250', sound: 'zap', fury: 8, zoom: 0.03,
+  },
+
+  // ==================== ORION (Lâminas Duplas / Assassino) ====================
+  orion_light1: {
+    name: null, windup: 0.04, active: 0.06, recovery: 0.15, chainFrac: 0.1,
+    shape: { type: 'arc', range: 80, arc: 1.1 }, dmg: 11, kb: 130, launch: 0, stun: 0.2,
+    hitstop: 0.025, shake: 0.08, lunge: 160, swing: [-1.2, 1.0], blade: 70,
+    rgb: '255,138,31', core: '255,230,200', sound: 'thrust', fury: 4, light: true,
+  },
+  orion_light2: {
+    name: null, windup: 0.04, active: 0.07, recovery: 0.16, chainFrac: 0.1,
+    shape: { type: 'arc', range: 82, arc: 1.15 }, dmg: 10, kb: 140, launch: 0, stun: 0.2,
+    hitstop: 0.025, shake: 0.09, multiHit: 2, rehit: 0.035, lunge: 170, swing: [1.1, -1.1], blade: 72,
+    rgb: '255,145,40', core: '255,235,205', sound: 'swing', fury: 5, light: true,
+  },
+  orion_light3: {
+    name: 'DANÇA DAS LÂMINAS', windup: 0.06, active: 0.1, recovery: 0.24, chainFrac: 0.35,
+    shape: { type: 'circle', radius: 98, offset: 0 }, dmg: 14, kb: 280, launch: 0, stun: 0.45,
+    hitstop: 0.05, shake: 0.2, multiHit: 3, rehit: 0.03, radialKb: true, lunge: 190, swing: [0, TAU * 1.2], blade: 78,
+    rgb: '255,155,50', core: '255,240,210', sound: 'swingHeavy', fury: 7, zoom: 0.02,
+  },
+  orion_heavy: {
+    name: 'EMBOSCADA SOMBRIA', windup: 0.14, active: 0.09, recovery: 0.28, chainFrac: 0.3,
+    shape: { type: 'capsule', length: 115, width: 28 }, dmg: 38, kb: 320, launch: 0, stun: 0.5,
+    hitstop: 0.065, shake: 0.24, heavy: true, heavyType: true, lunge: 360, swing: [0, 0], blade: 82, thrust: true,
+    rgb: '255,130,25', core: '255,225,195', sound: 'thrust', fury: 7, chargeable: true, zoom: 0.02,
+  },
+  orion_charged: {
+    name: 'EXECUÇÃO FANTASMA', windup: 0.04, active: 0.11, recovery: 0.35, chainFrac: 0.45,
+    shape: { type: 'capsule', length: 140, width: 34 }, dmg: 68, kb: 440, launch: 0, stun: 0.75,
+    hitstop: 0.1, shake: 0.4, heavy: true, heavyType: true, lunge: 520, swing: [0, 0], blade: 90, thrust: true,
+    rgb: '255,160,55', core: '255,245,220', sound: 'swingHeavy', fury: 11, zoom: 0.04,
+  },
+  orion_lunge: {
+    name: 'PASSO FANTASMA', windup: 0.02, active: 0.1, recovery: 0.22, chainFrac: 0.25,
+    shape: { type: 'capsule', length: 120, width: 26 }, dmg: 28, kb: 260, launch: 0, stun: 0.4,
+    hitstop: 0.05, shake: 0.18, lunge: 420, swing: [0, 0], blade: 80, thrust: true,
+    rgb: '255,140,35', core: '255,230,200', sound: 'thrust', fury: 5,
+  },
+  orion_flurry: {
+    name: 'CICLONE DE SOMBRAS', windup: 0.06, active: 0.32, recovery: 0.24, chainFrac: 0.35,
+    shape: { type: 'circle', radius: 104, offset: 0 }, dmg: 16, kb: 220, launch: 0, stun: 0.35,
+    hitstop: 0.03, shake: 0.15, multiHit: 4, rehit: 0.07, radialKb: true, lunge: 140,
+    swing: [0, TAU * 1.5], blade: 80, rgb: '255,150,45', core: '255,235,210', sound: 'swing', fury: 7,
+  },
+  orion_upper: {
+    name: 'CORTE ASCENDENTE', windup: 0.05, active: 0.08, recovery: 0.24, chainFrac: 0.3,
+    shape: { type: 'arc', range: 84, arc: 1.1 }, dmg: 22, kb: 80, launch: 580, stun: 0.75,
+    hitstop: 0.06, shake: 0.2, heavy: true, lunge: 180, swing: [1.3, -1.3], blade: 76,
+    rgb: '255,135,30', core: '255,225,195', sound: 'swing', fury: 6,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -244,6 +438,14 @@ const COMBO_TABLE = { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 
 const COMBO_REQUIRES = { uppercut: 'uppercut', slam: 'slam' }; // técnicas das evoluções
 // Técnicas liberadas pela árvore de habilidades
 const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio' };
+
+const CHARACTER_COMBOS = {
+  kael: { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 'heavy', LH: 'uppercut', HH: 'slam' },
+  lyra: { L: 'lyra_light1', LL: 'lyra_light2', LLL: 'lyra_light3', LLH: 'lyra_pierce', H: 'lyra_heavy', LH: 'lyra_pierce', HH: 'lyra_heavy' },
+  drakos: { L: 'drakos_light1', LL: 'drakos_light2', LLL: 'drakos_light3', LLH: 'drakos_sweep', H: 'drakos_heavy', LH: 'drakos_sweep', HH: 'drakos_quake' },
+  sera: { L: 'sera_light1', LL: 'sera_light2', LLL: 'sera_light3', LLH: 'sera_burst', H: 'sera_heavy', LH: 'sera_lift', HH: 'sera_burst' },
+  orion: { L: 'orion_light1', LL: 'orion_light2', LLL: 'orion_light3', LLH: 'orion_flurry', H: 'orion_heavy', LH: 'orion_upper', HH: 'orion_flurry' },
+};
 
 class ComboSystem {
   constructor() {
@@ -265,6 +467,8 @@ class ComboSystem {
     return ok ? b : null;
   }
   isUnlocked(id) {
+    const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
+    if (charId !== 'kael') return true;
     const req = COMBO_REQUIRES[id];
     if (req && !this.unlocked.has(req)) return false;
     const sk = COMBO_SKILLS[id];
@@ -273,17 +477,33 @@ class ComboSystem {
 
   // Decide qual golpe executar para o input, considerando a cadeia em andamento
   resolve(type) {
+    const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
+    const table = CHARACTER_COMBOS[charId] || COMBO_TABLE;
     if (this.dashWindow > 0) {
       this.dashWindow = 0;
-      if (type === 'L' && this.isUnlocked('thrust')) { this.seq = 'D'; return 'thrust'; }
-      if (type === 'H' && this.isUnlocked('wave')) { this.seq = 'D'; return 'wave'; }
+      if (charId === 'lyra') {
+        if (type === 'L') { this.seq = 'D'; return 'lyra_backstep'; }
+        if (type === 'H') { this.seq = 'D'; return 'lyra_pierce'; }
+      } else if (charId === 'orion') {
+        if (type === 'L') { this.seq = 'D'; return 'orion_lunge'; }
+        if (type === 'H') { this.seq = 'D'; return 'orion_heavy'; }
+      } else if (charId === 'drakos') {
+        if (type === 'L') { this.seq = 'D'; return 'drakos_sweep'; }
+        if (type === 'H') { this.seq = 'D'; return 'drakos_quake'; }
+      } else if (charId === 'sera') {
+        if (type === 'L') { this.seq = 'D'; return 'sera_burst'; }
+        if (type === 'H') { this.seq = 'D'; return 'sera_lift'; }
+      } else {
+        if (type === 'L' && this.isUnlocked('thrust')) { this.seq = 'D'; return 'thrust'; }
+        if (type === 'H' && this.isUnlocked('wave')) { this.seq = 'D'; return 'wave'; }
+      }
     }
     const s = this.seq + type;
-    const id = COMBO_TABLE[s];
+    const id = table[s];
     if (id && this.isUnlocked(id)) { this.seq = s; return id; }
     // Sem correspondência: recomeça a cadeia a partir deste input
     this.seq = type;
-    return COMBO_TABLE[type];
+    return table[type] || COMBO_TABLE[type];
   }
 
   onAttackEnd() { this.grace = 0.4; }
@@ -344,4 +564,80 @@ class ComboCounter {
     if (this.dropped) { this.dropped.t -= dt * 0.8; if (this.dropped.t <= 0) this.dropped = null; }
   }
 }
+
+// ---------------------------------------------------------------------------
+// SISTEMA DE ARMADILHAS (Lyra Kaede - Armadilha de Plasma)
+// ---------------------------------------------------------------------------
+class TrapSystem {
+  constructor() {
+    this.items = [];
+  }
+  spawn(x, y, r = 75, dmg = 80, owner = 'lyra') {
+    if (this.items.length >= 4) this.items.shift();
+    this.items.push({
+      x, y, r, dmg, armTime: 0.45, life: 30, owner, t: 0
+    });
+  }
+  update(dt) {
+    for (let i = this.items.length - 1; i >= 0; i--) {
+      const tr = this.items[i];
+      tr.life -= dt;
+      tr.t += dt;
+      if (tr.life <= 0) { this.items.splice(i, 1); continue; }
+      if (tr.armTime > 0) { tr.armTime -= dt; continue; }
+      if (!game || !game.enemies) continue;
+      for (const e of game.enemies) {
+        if (!e.canBeHit()) continue;
+        const rr = tr.r + e.radius;
+        if (dist2(tr.x, tr.y, e.x, e.y) < rr * rr) {
+          this.detonate(tr);
+          this.items.splice(i, 1);
+          break;
+        }
+      }
+    }
+  }
+  detonate(tr) {
+    const R = tr.r * 1.35;
+    const pl = game.player;
+    game.particles.ring(tr.x, tr.y, R, '180,80,255', 0.45, 10);
+    game.particles.flash(tr.x, tr.y, 20, R * 1.25, '220,130,255', 0.22);
+    game.arcs.crackle(tr.x, tr.y, 25, 5, R, '230,160,255', 0.25);
+    game.audio.play('zap');
+    game.audio.play('stomp');
+    game.camera.shake(0.28);
+    for (const e of game.enemies) {
+      if (!e.canBeHit() || dist2(tr.x, tr.y, e.x, e.y) > R * R) continue;
+      const dx = e.x - tr.x, dy = e.y - tr.y, l = Math.hypot(dx, dy) || 1;
+      const dmg = Math.max(1, Math.round(tr.dmg * (pl ? pl.stats.power : 1) * (e.vulnerable || 1)));
+      if (e.takeHit({ dmg, kx: dx / l, ky: dy / l, kb: 260, launch: 0, stun: 0.65, heavy: true, crit: true, shock: true })) {
+        game.onEnemyHit(e, dmg, true, PROJ_HIT_DEF, dx / l, dy / l);
+      }
+      e.slow = Math.max(e.slow || 0, 3.0);
+    }
+  }
+  draw(ctx) {
+    for (const tr of this.items) {
+      const sx = isoX(tr.x, tr.y), sy = isoY(tr.x, tr.y);
+      const armed = tr.armTime <= 0;
+      const pulse = Math.sin(tr.t * (armed ? 9 : 3)) * 0.15 + 0.85;
+      ctx.save();
+      GlowCache.draw(ctx, armed ? '170,70,255' : '120,60,180', sx, sy, 24 * pulse, armed ? 0.75 : 0.4);
+      ctx.strokeStyle = armed ? 'rgba(210,130,255,0.9)' : 'rgba(160,100,220,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 14 * pulse, 0, TAU);
+      ctx.stroke();
+      ctx.beginPath();
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * TAU + tr.t * 2;
+        ctx.moveTo(sx + Math.cos(a) * 6, sy + Math.sin(a) * 6);
+        ctx.lineTo(sx + Math.cos(a) * 16 * pulse, sy + Math.sin(a) * 16 * pulse);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
 

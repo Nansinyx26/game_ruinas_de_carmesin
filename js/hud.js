@@ -531,15 +531,22 @@ class HUD {
     this.blitPart(ctx, full
       ? this.layer('energia-cheia', ew, V.enH, (g, w, h) => this.paintBarFill(g, w, h, V.enTip, 'slant', '#1a4fae', '#d6ecff'))
       : this.layer('energia', ew, V.enH, (g, w, h) => this.paintBarFill(g, w, h, V.enTip, 'slant', '#0c2a66', '#3d8bff')), ex, V.enY, ek);
-    if (pr.lv('eclipse_absoluto') && p.maxEnergy > SPECIAL_COST) {
+    const isKael = !p.def || p.def.id === 'kael';
+    const ultLearned = isKael ? pr.lv('eclipse_absoluto') : true;
+    if (ultLearned && p.maxEnergy > SPECIAL_COST) {
       ctx.fillStyle = 'rgba(230,240,255,0.85)'; ctx.fillRect(ex + ew * (SPECIAL_COST / p.maxEnergy) - 1, V.enY - 3, 2, V.enH + 6);
     }
     const tx = V.x + V.enW + 8 + sh;
     ctx.font = `bold 12px ${FONT_TITLE}`;
     if (full) {
       const key = pad ? inp.padLabels.lt : 'I';
+      const ultName = isKael ? 'ECLIPSE' :
+                      p.def.id === 'lyra' ? 'FOCO' :
+                      p.def.id === 'drakos' ? 'IMPACTO' :
+                      p.def.id === 'sera' ? 'CURA' :
+                      p.def.id === 'orion' ? 'SOMBRA' : 'ECLIPSE';
       ctx.fillStyle = PAL.accentHi;
-      ctx.fillText(Math.floor(this.time * 3) % 2 ? `[${key}] ECLIPSE` : 'PRONTO', tx, V.enY + V.enH / 2 + 0.5);
+      ctx.fillText(Math.floor(this.time * 3) % 2 ? `[${key}] ${ultName}` : 'PRONTO', tx, V.enY + V.enH / 2 + 0.5);
     } else {
       const n = String(Math.floor(p.fury));
       ctx.fillStyle = PAL.accent; ctx.fillText(n, tx, V.enY + V.enH / 2 + 0.5);
@@ -851,7 +858,10 @@ class HUD {
     if (on) { g.shadowColor = rgba(rgb, 0.9); g.shadowBlur = 9; }
     diamondPath(g, c, c, d); g.strokeStyle = rgba(rgb, on ? 0.95 : 0.4); g.lineWidth = 1.6; g.stroke();
     g.shadowBlur = 0;
-    if (icon) drawIcon(g, icon, c, c, d * 1.1, on ? rgba(rgb, 1) : 'rgba(140,150,170,0.6)');
+    if (icon) {
+      const drawFn = typeof drawRosterAbilityIcon === 'function' ? drawRosterAbilityIcon : (typeof drawSkillIcon === 'function' ? drawSkillIcon : drawIcon);
+      drawFn(g, icon, c, c, d * 1.1, on ? rgba(rgb, 1) : 'rgba(140,150,170,0.6)');
+    }
   }
   // Tecla sob um losango (no controle, o botão desenhado como na tela de controles)
   keyCap(ctx, cx, y, key, hot) {
@@ -885,16 +895,22 @@ class HUD {
       this.keyCap(ctx, lx, A.y - 6, 'lb', hot);
     }
     const keys = ['x', 'y', 'b', 'a'];
-    for (let k = 0; k < 4; k++) this.abilitySlot(ctx, A.x0 + k * A.gap, A.y, A.d, game.progress.slots[k], pad ? keys[k] : String(k + 1), k, p, hot);
+    for (let k = 0; k < 4; k++) {
+      const info = p.abilityInfo(k);
+      const slotId = info ? info.id : game.progress.slots[k];
+      this.abilitySlot(ctx, A.x0 + k * A.gap, A.y, A.d, slotId, pad ? keys[k] : String(k + 1), k, p, hot);
+    }
     this.eclipseSlot(ctx, A.eX, A.eY, A.D, pad ? 'lt' : 'I', p, A.y + A.d + 4);
     ctx.restore();
   }
 
   abilitySlot(ctx, cx, cy, d, id, key, k, p, hot) {
-    const S = id ? SKILLS[id] : null;
-    const tree = S ? SKILL_TREES.find((q) => q.id === S.tree) : null;
-    const rgb = tree ? tree.rgb : '120,130,150';
-    const cd = S ? (p.cds[id] || 0) : 0, total = S ? Math.max(0.01, S.cd * p.stats.cdr) : 1;
+    const info = p.abilityInfo(k);
+    id = id || (info ? info.id : null);
+    const S = info ? (info.S || (id ? (SKILLS[id] || (typeof skillDef === 'function' ? skillDef(id) : null) || ABILITY_DEFS[id]) : null)) : (id ? (SKILLS[id] || (typeof skillDef === 'function' ? skillDef(id) : null) || ABILITY_DEFS[id]) : null);
+    const tree = (S && S.tree) ? SKILL_TREES.find((q) => q.id === S.tree) : null;
+    const rgb = tree ? tree.rgb : (p.def && p.def.color ? p.def.color : '120,130,150');
+    const cd = S ? (p.cds[id] || 0) : 0, total = S ? Math.max(0.01, (S.cd !== undefined && S.cd !== null ? S.cd : (S.cooldown || 5)) * p.stats.cdr) : 1;
     const cost = S ? p.abilityCost(id) : 0, noE = !!S && p.fury < cost;
     const x = cx + (this.abDeny[k] > 0 ? Math.sin(this.abDeny[k] * 70) * 3 : 0);
     const state = !S ? 'empty' : cd > 0 || noE ? 'off' : 'on', fs = 2 * d + 24;
@@ -953,11 +969,18 @@ class HUD {
     }
   }
   eclipseSlot(ctx, cx, cy, D, key, p, capY) {
-    const learned = game.progress.lv('eclipse_absoluto') > 0;
+    const isKael = !p.def || p.def.id === 'kael';
+    const learned = isKael ? (game.progress.lv('eclipse_absoluto') > 0) : true;
     const k = clamp(p.fury / SPECIAL_COST, 0, 1), ready = learned && k >= 1;
     const x = cx + (this.furyDeny > 0 ? Math.sin(this.furyDeny * 80) * 3 : 0);
     const S = 2 * D + 30, lay = (mode) => this.layer(`eclipse-${mode}-${D}`, S, S, (g) => this.paintEclipse(g, S, D, mode));
-    if (ready) this.glowAt(ctx, '80,150,255', x, cy, D * (2 + 0.25 * Math.sin(this.time * 8)), 0.75);
+    const ultIcon = isKael ? 'eclipse' :
+                    p.def.id === 'lyra' ? 'focus' :
+                    p.def.id === 'drakos' ? 'quake' :
+                    p.def.id === 'sera' ? 'heal' :
+                    p.def.id === 'orion' ? 'shadowStrike' : 'eclipse';
+    const ultColor = isKael ? '80,150,255' : (p.def.color || '80,150,255');
+    if (ready) this.glowAt(ctx, ultColor, x, cy, D * (2 + 0.25 * Math.sin(this.time * 8)), 0.75);
     this.blit(ctx, lay(learned ? 'base' : 'bloqueado'), x - S / 2, cy - S / 2);
     if (learned) {
       // Carga: o losango enche de baixo para cima até os 100 de energia
@@ -978,7 +1001,8 @@ class HUD {
         ctx.strokeStyle = `rgba(190,225,255,${(0.9 * (1 - t)).toFixed(3)})`; ctx.lineWidth = 2;
         diamondPath(ctx, x, cy, D + 4 + t * 26); ctx.stroke();
       }
-      drawIcon(ctx, 'eclipse', x, cy, D * 0.95, ready ? '#f2f8ff' : 'rgba(170,200,240,0.8)');
+      const drawFn = typeof drawRosterAbilityIcon === 'function' ? drawRosterAbilityIcon : (typeof drawSkillIcon === 'function' ? drawSkillIcon : drawIcon);
+      drawFn(ctx, ultIcon, x, cy, D * 0.95, ready ? '#f2f8ff' : 'rgba(170,200,240,0.8)');
     } else {
       drawIcon(ctx, 'lock', x, cy - 5, D * 0.5, 'rgba(150,160,180,0.65)');
       ctx.font = `bold 9px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

@@ -35,6 +35,7 @@ class Game {
     this.arcs = new ArcSystem();
     this.lighting = new Lighting();
     this.projectiles = new ProjectileSystem();
+    this.traps = new TrapSystem();
     this.pickups = new PickupSystem();
     this.hazards = new HazardSystem();
     this.director = new AIDirector();
@@ -349,6 +350,7 @@ class Game {
     this.separate();
     this.director.update();
     this.projectiles.update(sdt);
+    if (this.traps) this.traps.update(sdt);
     this.hazards.update(sdt);
     this.pickups.update(sdt);
     this.particles.update(sdt);
@@ -1301,6 +1303,7 @@ class Game {
       if (e.state === 'spawn') this.drawSpawnSigil(ctx, e);
     }
     this.hazards.draw(ctx, t);
+    if (this.traps) this.traps.draw(ctx);
     this.pickups.draw(ctx, this.realTime);
     this.projectiles.draw(ctx);
     this.particles.drawEmissive(ctx);

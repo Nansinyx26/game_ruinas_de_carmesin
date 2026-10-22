@@ -252,16 +252,19 @@ class Player extends Entity {
 
   // Assistência de mira: corrige levemente a direção para o inimigo mais próximo no cone
   aimAssist(dir, def) {
+    const isRanged = this.def.id === 'lyra' || this.def.id === 'sera';
     const s = def.shape;
-    const range = (s.range || s.length || s.radius || 90) * 1.7;
+    const baseRange = (s.range || s.length || s.radius || 90);
+    const range = isRanged ? Math.max(380, baseRange * 2.5) : baseRange * 1.7;
+    const maxAngle = isRanged ? 1.25 : 0.85;
     let best = null, bestScore = Infinity;
     for (const e of game.enemies) {
       if (!e.canBeHit()) continue;
       const dx = e.x - this.x, dy = e.y - this.y, d = Math.hypot(dx, dy);
       if (d > range + e.radius) continue;
       const ad = Math.abs(angleDiff(dir, Math.atan2(dy, dx)));
-      if (ad > 0.85) continue;
-      const score = ad * 120 + d;
+      if (ad > maxAngle) continue;
+      const score = ad * (isRanged ? 180 : 120) + d;
       if (score < bestScore) { bestScore = score; best = e; }
     }
     return best ? Math.atan2(best.y - this.y, best.x - this.x) : dir;
@@ -331,6 +334,12 @@ class Player extends Entity {
       a.trail = game.trails.create(d.rgb, d.core, d.thrust ? 0.1 : 0.14);
       this.squash = d.heavy ? 0.14 : 0.07;
       if (d.projectile === 'volt') this.fireVolt(a.dir);
+      else if (d.projectile === 'arrow') this.fireArrow(a.dir, d.dmg, false);
+      else if (d.projectile === 'arrow_burst') this.fireArrowBurst(a.dir, d.dmg);
+      else if (d.projectile === 'pierce_arrow') this.fireArrow(a.dir, d.dmg, true);
+      else if (d.projectile === 'charged_arrow') this.fireArrow(a.dir, d.dmg, true, true);
+      else if (d.projectile === 'tech_orb') this.fireTechOrb(a.dir, d.dmg);
+      else if (d.projectile === 'blade' || d.projectile === 'phantom_blade') this.firePhantomBlade(a.dir, d.dmg);
       else if (d.projectile) this.fireCrescent(a.dir);
       if (d.slamRing) this.slamEffects(a.dir);
       if (d.plasma) this.plasmaEffects();
@@ -407,6 +416,35 @@ class Player extends Entity {
     if (this.counterT > 0 && S.counter > 0) {
       crit = true; dmg *= 1 + S.counter; this.counterT = 0;
       game.texts.spawn(e.x, e.y, (e.height || 40) + 26, 'CONTRA-ATAQUE', '#e3d6ff', 15, 0.8);
+    }
+    // Orion: bônus por atacar pelas costas (backstab) e emboscada furtiva
+    if (this.def.id === 'orion') {
+      const eFacing = e.facing !== undefined ? e.facing : Math.atan2(this.y - e.y, this.x - e.x);
+      const hitAngle = Math.atan2(e.y - this.y, e.x - this.x);
+      const angleDiffBack = Math.abs(angleDiff(eFacing, hitAngle));
+      if (angleDiffBack < 1.15) {
+        crit = true; dmg *= 1.6;
+        game.texts.spawn(e.x, e.y, (e.height || 40) + 32, 'GOLPE PELAS COSTAS', '#ff9f38', 15, 0.85);
+        game.audio.play('thrust');
+      }
+      if (this.buffs.stealth > 0) {
+        this.buffs.stealth = 0;
+        crit = true; dmg *= 1.8;
+        game.texts.spawn(e.x, e.y, (e.height || 40) + 48, 'EMBOSCADA', '#ffb852', 18, 1.0);
+        game.audio.play('swingHeavy');
+      }
+    }
+    // Lyra: Foco de Batalha garante acertos críticos
+    if (this.buffs.lyraFocus > 0) {
+      crit = true; dmg *= 1.35;
+    }
+    // Drakos: Quebra de escudos e super armadura
+    if (d.breaksShield && (e.superArmor || e.shieldHp > 0)) {
+      e.superArmor = 0;
+      if (e.shieldHp) e.shieldHp = 0;
+      dmg *= 1.4;
+      game.texts.spawn(e.x, e.y, (e.height || 40) + 32, 'ESCUDO DESTRUÍDO', '#ff5252', 16, 0.9);
+      game.audio.play('stomp');
     }
     if (crit) { dmg *= 2; if (S.critHeal > 0) this.heal(S.critHeal, false); }
     // Corte Elétrico: golpes leves soltam arcos mais vezes, e o arco reforça o golpe
@@ -521,7 +559,11 @@ class Player extends Entity {
     if (!input.held.heavy) {
       const level = clamp(this.chargeTime / 0.95, 0, 1);
       this.combo.seq = '';
-      this.startAttack('charged', null, level);
+      const chargedId = this.def.id === 'lyra' ? 'lyra_charged' :
+                        this.def.id === 'drakos' ? 'drakos_charged' :
+                        this.def.id === 'sera' ? 'sera_charged' :
+                        this.def.id === 'orion' ? 'orion_charged' : 'charged';
+      this.startAttack(chargedId, null, level);
     }
   }
 
@@ -566,8 +608,11 @@ class Player extends Entity {
     this.invuln = Math.max(this.invuln, 1.25);
     this.vx = this.vy = 0;
     if (this.attack && this.attack.trail) this.attack.trail.release();
-    this.combo.reset();
-    game.hud.comboName('ECLIPSE ABSOLUTO', true);
+    const ultName = this.def.id === 'lyra' ? 'FOCO DE BATALHA' :
+                    this.def.id === 'drakos' ? 'ZONA DE IMPACTO' :
+                    this.def.id === 'sera' ? 'CURA DE EMERGÊNCIA' :
+                    this.def.id === 'orion' ? 'DANÇA DAS SOMBRAS' : 'ECLIPSE ABSOLUTO';
+    game.hud.comboName(ultName, true);
     game.audio.play('specialCharge');
     game.camera.zoomPunch(0.05);
   }
@@ -592,6 +637,15 @@ class Player extends Entity {
   // (raios em todos os inimigos próximos, lâminas radiais e limpeza de projéteis)
   // — mas desperta algo adormecido dentro de Kael
   fireSpecial() {
+    if (this.def.id === 'lyra') this.fireLyraUltimate();
+    else if (this.def.id === 'drakos') this.fireDrakosUltimate();
+    else if (this.def.id === 'sera') this.fireSeraUltimate();
+    else if (this.def.id === 'orion') this.fireOrionUltimate();
+    else this.fireKaelUltimate();
+  }
+
+  // Especial Kael: "Eclipse Absoluto"
+  fireKaelUltimate() {
     const lv = Math.max(1, game.progress.lv('eclipse_absoluto'));
     const R = 270 + 30 * (lv - 1), base = (85 + 35 * (lv - 1)) * this.stats.power * (this.buffs.overload > 0 ? this.overloadMult : 1);
     for (const e of game.enemies) {
@@ -640,6 +694,92 @@ class Player extends Entity {
     if (lv >= 3) this.heal(Math.round(this.maxHp * 0.25));
   }
 
+  // Especial Lyra: "Foco de Batalha"
+  fireLyraUltimate() {
+    this.buffs.lyraFocus = 4.5;
+    game.slowMo(0.35, 4.0);
+    const R = 300;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * TAU;
+      game.projectiles.spawn({
+        x: this.x + Math.cos(a) * 20, y: this.y + Math.sin(a) * 20, z: 26,
+        vx: Math.cos(a) * 920, vy: Math.sin(a) * 920, r: 14,
+        dmg: Math.round(55 * this.stats.dmgMult), hostile: false, kind: 'charged_arrow', life: 0.8, pierce: true,
+      });
+    }
+    const P_ = game.particles;
+    P_.ring(this.x, this.y, R, '166,77,255', 0.6, 16);
+    P_.flash(this.x, this.y, 30, R, '210,140,255', 0.35);
+    P_.sparks(this.x, this.y, 25, 0, 24, '190,110,255', 500, Math.PI);
+    game.camera.shake(0.5);
+    game.flashScreen('190,100,255', 0.4);
+    game.audio.play('special');
+    game.audio.play('thunder', 0.6);
+  }
+
+  // Especial Drakos: "Zona de Impacto"
+  fireDrakosUltimate() {
+    const R = 240, base = 140 * this.stats.power;
+    for (const e of game.enemies) {
+      if (!e.canBeHit()) continue;
+      const dx = e.x - this.x, dy = e.y - this.y, d = Math.hypot(dx, dy);
+      if (d > R + e.radius) continue;
+      const l = d || 1, kx = dx / l, ky = dy / l;
+      const dmg = Math.max(1, Math.round(base * (1 - 0.3 * Math.min(1, d / R)) * (e.vulnerable || 1)));
+      if (e.superArmor) e.superArmor = 0;
+      if (e.takeHit({ dmg, kx, ky, kb: 560, launch: 420, stun: 1.2, heavy: true, crit: true })) {
+        game.onEnemyHit(e, dmg, true, SPECIAL_DEF, kx, ky);
+      }
+    }
+    game.projectiles.clearInRadius(this.x, this.y, R);
+    const P_ = game.particles;
+    P_.ring(this.x, this.y, R, '255,46,61', 0.65, 16);
+    P_.ring(this.x, this.y, R * 0.6, '255,140,80', 0.45, 10);
+    P_.flash(this.x, this.y, 20, R * 1.2, '255,80,60', 0.4);
+    P_.debris(this.x, this.y, 28);
+    P_.dust(this.x, this.y, 28, 20, 320);
+    game.camera.shake(0.9);
+    game.camera.zoomPunch(0.08);
+    game.flashScreen('255,80,60', 0.45);
+    game.audio.play('stomp');
+    game.audio.play('thunder', 0.8);
+    game.room.addScorch(this.x, this.y, R * 0.7);
+  }
+
+  // Especial Sera: "Cura de Emergência"
+  fireSeraUltimate() {
+    this.heal(Math.round(this.maxHp * 0.5), true);
+    this.shieldHp = Math.max(this.shieldHp, Math.round(60 * this.stats.power));
+    this.buffs.shield = 8;
+    const R = 240, base = 75 * this.stats.power;
+    for (const e of game.enemies) {
+      if (!e.canBeHit()) continue;
+      const dx = e.x - this.x, dy = e.y - this.y, d = Math.hypot(dx, dy);
+      if (d > R + e.radius) continue;
+      const l = d || 1, kx = dx / l, ky = dy / l;
+      const isMech = e.type === 'drone' || e.type === 'legionario' || e.type === 'rastejador' || e.isBoss;
+      const stunDur = isMech ? 3.5 : 1.5;
+      const dmg = Math.max(1, Math.round(base * (e.vulnerable || 1)));
+      if (e.takeHit({ dmg, kx, ky, kb: 300, launch: 0, stun: stunDur, heavy: false, crit: false, shock: true })) {
+        game.onEnemyHit(e, dmg, false, SPECIAL_DEF, kx, ky);
+      }
+    }
+    game.projectiles.clearInRadius(this.x, this.y, R);
+    const P_ = game.particles;
+    P_.ring(this.x, this.y, R, '25,230,210', 0.6, 14);
+    P_.ring(this.x, this.y, R * 0.6, '180,255,240', 0.45, 8);
+    P_.flash(this.x, this.y, 25, R, '40,255,220', 0.35);
+    game.camera.shake(0.35);
+    game.flashScreen('40,255,220', 0.35);
+    game.audio.play('memory');
+    game.audio.play('chargeTier', 2);
+  }
+
+  // Especial Orion: "Dança das Sombras"
+  fireOrionUltimate() {
+    this.castOrionShadowDance(2, null);
+  }
+
   addFury(n) { this.gainEnergy(n * this.stats.furyMult); }
   gainEnergy(n) {
     if (this.state === 'special') return;
@@ -671,6 +811,24 @@ class Player extends Entity {
   takeDamage(dmg, sx, sy, kb = 260) {
     if (this.state === 'dead' || this.invuln > 0 || game.state !== 'playing') return false;
     dmg = Math.max(1, Math.round(dmg * Settings.diff.dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1)));
+    // Drakos: Escudo de Energia frontal bloqueia ataques frontais
+    if (this.buffs.drakosShield > 0) {
+      const hitAng = Math.atan2(sy - this.y, sx - this.x);
+      const ad = Math.abs(angleDiff(this.facing, hitAng));
+      if (ad < 1.6) {
+        game.particles.sparks(this.x, this.y, 35, this.facing + Math.PI, 10, '255,80,60', 320, 1.2);
+        game.particles.flash(this.x, this.y, 30, 60, '255,100,80', 0.15);
+        game.audio.play('deflect');
+        game.texts.spawn(this.x, this.y, 60, 'BLOQUEIO', '#ff7070', 16, 0.7);
+        this.invuln = Math.max(this.invuln, 0.35);
+        return true;
+      }
+    }
+    // Orion: quebra de furtividade ao receber dano
+    if (this.buffs.stealth > 0) {
+      this.buffs.stealth = 0;
+      game.texts.spawn(this.x, this.y, 50, 'FURTIVIDADE QUEBRADA', '#ff9f38', 14, 0.7);
+    }
     // Escudo de Energia: absorve o dano antes da vida
     if (this.shieldHp > 0) {
       const ab = Math.min(this.shieldHp, dmg);
@@ -765,9 +923,16 @@ class Player extends Entity {
   }
 
   canDash() { return this.dashStock >= 1 && this.dashGap <= 0; }
-  canEclipse() { return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST; }
+  canEclipse() {
+    if (this.def.id === 'kael') return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST;
+    return this.fury >= SPECIAL_COST;
+  }
   denyEclipse() {
-    if (!game.progress.lv('eclipse_absoluto')) game.hud.toast(`Eclipse Absoluto bloqueado · Árvore Elétrica (nível ${SKILLS.eclipse_absoluto.lvl})`, '255,92,122');
+    const ultName = this.def.id === 'lyra' ? 'Foco de Batalha' :
+                    this.def.id === 'drakos' ? 'Zona de Impacto' :
+                    this.def.id === 'sera' ? 'Cura de Emergência' :
+                    this.def.id === 'orion' ? 'Dança das Sombras' : 'Eclipse Absoluto';
+    game.hud.toast(`${ultName} bloqueado · Energia insuficiente (100)`, '255,92,122');
     game.hud.furyDenied();
     game.audio.play('uiDeny');
   }
@@ -787,8 +952,13 @@ class Player extends Entity {
       if (b[k] <= 0) this.onBuffEnd(k);
     }
     if (b.field > 0) this.updateField(dt);
+    if (b.supportDrone > 0) this.updateSupportDrone(dt);
+    if (b.forceField > 0) this.updateForceField(dt);
     if (b.overload > 0 && Math.random() < dt * 12) {
       game.particles.sparks(this.x, this.y, rand(14, 50), rand(0, TAU), 1, '120,190,255', 160, Math.PI);
+    }
+    if (b.lyraFocus > 0 && Math.random() < dt * 12) {
+      game.particles.sparks(this.x, this.y, rand(10, 40), rand(0, TAU), 1, '180,90,255', 180, Math.PI);
     }
   }
 
@@ -822,10 +992,23 @@ class Player extends Entity {
 
   // Atalho k (0–3): dados da habilidade atribuída
   abilityInfo(k) {
-    const id = game.progress.slots[k];
-    return id ? { id, lv: game.progress.lv(id), S: SKILLS[id], A: ABILITIES[id] } : null;
+    const pr = (typeof PartyProgress !== 'undefined' && PartyProgress.of(this.def.id)) || game.progress;
+    let id = pr.slots ? pr.slots[k] : null;
+    if (!id && this.def.abilities && this.def.abilities[k]) {
+      id = this.def.abilities[k];
+    }
+    if (!id) return null;
+    const S = (typeof skillDef === 'function' ? skillDef(id) : null) || (typeof SKILLS !== 'undefined' ? SKILLS[id] : null) || (typeof ABILITY_DEFS !== 'undefined' ? ABILITY_DEFS[id] : null);
+    const A = typeof ABILITIES !== 'undefined' ? ABILITIES[id] : null;
+    const lv = (pr && typeof pr.lv === 'function') ? (pr.lv(id) || 1) : 1;
+    return { id, lv, S, A };
   }
-  abilityCost(id) { return Math.round(SKILLS[id].energy * (this.buffs.sync > 0 ? 0.5 : 1)); }
+  abilityCost(id) {
+    const S = (typeof skillDef === 'function' ? skillDef(id) : null) || (typeof SKILLS !== 'undefined' ? SKILLS[id] : null) || (typeof ABILITY_DEFS !== 'undefined' ? ABILITY_DEFS[id] : null);
+    if (!S) return 0;
+    const cost = S.energy !== undefined && S.energy !== null ? S.energy : (S.cost !== undefined && S.cost !== null ? S.cost : 0);
+    return Math.round(cost * (this.buffs.sync > 0 ? 0.5 : 1));
+  }
   abilityReady(k) {
     const inf = this.abilityInfo(k);
     return !!(inf && inf.lv && inf.A && !(this.cds[inf.id] > 0) && this.fury >= this.abilityCost(inf.id));
@@ -845,9 +1028,11 @@ class Player extends Entity {
     if (this.fury < cost) { game.hud.abilityDenied(k); game.hud.furyDenied(); game.audio.play('uiDeny'); return false; }
     if (!inf.A.cast(this, inf.lv, wd)) return false;
     this.fury -= cost;
-    this.cds[inf.id] = inf.S.cd * this.stats.cdr;
+    const cd = (inf.S && inf.S.cd !== undefined && inf.S.cd !== null) ? inf.S.cd : (inf.A.cooldown || 5);
+    this.cds[inf.id] = cd * this.stats.cdr;
     game.hud.abilityUsed(k);
-    if (inf.A.type === 'buff') { game.hud.comboName(inf.S.name.toUpperCase()); game.audio.play('comboName'); }
+    const name = (inf.S && inf.S.name) ? inf.S.name : (inf.A && inf.A.name ? inf.A.name : inf.id);
+    if (inf.A.type === 'buff') { game.hud.comboName(name.toUpperCase()); game.audio.play('comboName'); }
     return inf.A.type === 'attack';
   }
 
@@ -1007,6 +1192,166 @@ class Player extends Entity {
     game.room.addScorch(this.x, this.y, R * 0.6);
   }
 
+  // Lyra Kaede: disparos do Arco de Fóton
+  fireArrow(dir, dmg, pierce = false, isCharged = false) {
+    const isFocus = this.buffs.lyraFocus > 0;
+    const spd = isCharged ? 1150 : 960;
+    const d = Math.round(dmg * this.stats.dmgMult * (isCharged ? 1.6 : 1) * (isFocus ? 1.35 : 1));
+    const k = isCharged ? 'charged_arrow' : (pierce ? 'pierce_arrow' : 'arrow');
+    game.projectiles.spawn({
+      x: this.x + Math.cos(dir) * 26, y: this.y + Math.sin(dir) * 26, z: 24,
+      vx: Math.cos(dir) * spd, vy: Math.sin(dir) * spd, r: isCharged ? 18 : 12,
+      dmg: d, hostile: false, kind: k, life: 0.85, pierce: !!pierce, crit: isFocus,
+    });
+    game.audio.play(isCharged ? 'specialCharge' : 'swing');
+    if (isCharged) game.camera.shake(0.12);
+  }
+
+  fireArrowBurst(dir, dmg) {
+    const isFocus = this.buffs.lyraFocus > 0;
+    const spread = 0.18;
+    for (let i = -1; i <= 1; i++) {
+      const a = dir + i * spread;
+      const d = Math.round(dmg * this.stats.dmgMult * (isFocus ? 1.35 : 1));
+      game.projectiles.spawn({
+        x: this.x + Math.cos(a) * 24, y: this.y + Math.sin(a) * 24, z: 24,
+        vx: Math.cos(a) * 980, vy: Math.sin(a) * 980, r: 12,
+        dmg: d, hostile: false, kind: 'arrow', life: 0.75, pierce: false, crit: isFocus,
+      });
+    }
+    game.audio.play('swing');
+  }
+
+  fireExplosiveArrow(dir, dmg) {
+    const isFocus = this.buffs.lyraFocus > 0;
+    const d = Math.round(dmg * this.stats.dmgMult * (isFocus ? 1.4 : 1));
+    game.projectiles.spawn({
+      x: this.x + Math.cos(dir) * 28, y: this.y + Math.sin(dir) * 28, z: 24,
+      vx: Math.cos(dir) * 920, vy: Math.sin(dir) * 920, r: 16,
+      dmg: d, hostile: false, kind: 'explosive_arrow', life: 0.9, pierce: false, crit: isFocus,
+    });
+    game.audio.play('specialCharge');
+  }
+
+  // Sera Vyne: Disparo tecnomante de orbe de plasma
+  fireTechOrb(dir, dmg) {
+    const d = Math.round(dmg * this.stats.dmgMult);
+    game.projectiles.spawn({
+      x: this.x + Math.cos(dir) * 26, y: this.y + Math.sin(dir) * 26, z: 24,
+      vx: Math.cos(dir) * 760, vy: Math.sin(dir) * 760, r: 18,
+      dmg: d, hostile: false, kind: 'tech_orb', life: 0.8, pierce: false,
+    });
+    game.audio.play('zap');
+  }
+
+  // Orion: Lâmina Fantasma perfurante
+  firePhantomBlade(dir, dmg) {
+    const isStealth = this.buffs.stealth > 0;
+    const d = Math.round(dmg * this.stats.dmgMult * (isStealth ? 1.8 : 1));
+    game.projectiles.spawn({
+      x: this.x + Math.cos(dir) * 26, y: this.y + Math.sin(dir) * 26, z: 24,
+      vx: Math.cos(dir) * 920, vy: Math.sin(dir) * 920, r: 16,
+      dmg: d, hostile: false, kind: 'phantom_blade', life: 0.75, pierce: true,
+    });
+    game.audio.play('thrust');
+  }
+
+  // Sera Vyne: Hack de Sistema (Pulso EMP)
+  castSeraHack(lv, wd) {
+    const R = 230 + 30 * lv, base = (35 + 15 * lv) * this.stats.power;
+    game.particles.ring(this.x, this.y, R, '30,230,210', 0.45, 12);
+    game.particles.ring(this.x, this.y, R * 0.6, '180,255,240', 0.3, 6);
+    game.particles.flash(this.x, this.y, 25, R * 0.9, '40,255,220', 0.2);
+    game.projectiles.clearInRadius(this.x, this.y, R);
+    for (const e of game.enemies) {
+      if (!e.canBeHit()) continue;
+      const dx = e.x - this.x, dy = e.y - this.y, rr = R + e.radius;
+      if (dx * dx + dy * dy > rr * rr) continue;
+      const l = Math.hypot(dx, dy) || 1;
+      const isMech = e.type === 'drone' || e.type === 'legionario' || e.type === 'rastejador' || e.isBoss;
+      const stunTime = isMech ? 3.5 : 1.6;
+      const dmg = Math.max(1, Math.round(base * (isMech ? 1.6 : 1.0) * (e.vulnerable || 1)));
+      game.arcs.spawn(this.x, this.y, 35, e.x, e.y, Math.min(e.height * 0.5, 40) + e.z, { w: 2.2, life: 0.22, rgb: '40,255,220' });
+      if (e.takeHit({ dmg, kx: dx / l, ky: dy / l, kb: 160, launch: 0, stun: stunTime, heavy: false, crit: false, shock: true })) {
+        game.onEnemyHit(e, dmg, false, ABILITY_DEF, dx / l, dy / l);
+      }
+    }
+    game.audio.play('zap');
+    game.audio.play('thunder', 0.35);
+    game.camera.shake(0.25);
+    game.flashScreen('40,255,220', 0.15);
+    return true;
+  }
+
+  // Orion: Dança das Sombras (Omnislash de 6 ataques)
+  castOrionShadowDance(lv, wd) {
+    const hits = 6;
+    let targets = game.enemies.filter(e => e.canBeHit() && dist(this.x, this.y, e.x, e.y) < 380);
+    if (!targets.length) targets = game.enemies.filter(e => e.canBeHit());
+    const base = (45 + 15 * lv) * this.stats.power;
+    const startX = this.x, startY = this.y;
+
+    for (let i = 0; i < hits; i++) {
+      const target = targets.length ? targets[i % targets.length] : null;
+      const tx = target ? target.x + rand(-20, 20) : startX + Math.cos((i / hits) * TAU) * 120;
+      const ty = target ? target.y + rand(-20, 20) : startY + Math.sin((i / hits) * TAU) * 120;
+      setTimeout(() => {
+        if (game.state !== 'playing') return;
+        const x0 = this.x, y0 = this.y;
+        this.x = tx; this.y = ty;
+        game.room.collide(this, true);
+        this.trailGhosts(x0, y0, this.x, this.y, Math.atan2(this.y - y0, this.x - x0));
+        game.arcs.spawn(x0, y0, 25, this.x, this.y, 25, { w: 2.5, life: 0.2, rgb: '255,160,50' });
+        game.particles.sparks(this.x, this.y, 25, rand(0, TAU), 12, '255,150,40', 400, Math.PI);
+        game.particles.flash(this.x, this.y, 25, 70, '255,180,60', 0.15);
+        if (target && target.canBeHit()) {
+          const dmg = Math.max(1, Math.round(base * rand(0.95, 1.15)));
+          target.takeHit({ dmg, kx: 0, ky: 0, kb: 120, launch: 40, stun: 0.4, heavy: true, crit: true });
+          game.onEnemyHit(target, dmg, true, SPECIAL_DEF, 0, 0);
+        }
+        game.audio.play('thrust');
+        game.audio.play('swingHeavy');
+        game.camera.shake(0.2);
+      }, i * 90);
+    }
+    this.invuln = Math.max(this.invuln, 0.7);
+    return true;
+  }
+
+  // Sera Vyne: Drone de Suporte S-01
+  updateSupportDrone(dt) {
+    this._droneAng = (this._droneAng || 0) + dt * 3.2;
+    this._droneShotT = (this._droneShotT || 0) - dt;
+    if (this._droneShotT <= 0) {
+      this._droneShotT = 0.75;
+      const target = this.findTarget(this.facing, 300, Math.PI);
+      if (target) {
+        const rad = 42;
+        const dx = this.x + Math.cos(this._droneAng) * rad;
+        const dy = this.y + Math.sin(this._droneAng) * rad;
+        const a = Math.atan2(target.y - dy, target.x - dx);
+        game.projectiles.spawn({
+          x: dx, y: dy, z: 38,
+          vx: Math.cos(a) * 880, vy: Math.sin(a) * 880, r: 12,
+          dmg: Math.round(20 * this.stats.power), hostile: false, kind: 'drone_laser', life: 0.6, pierce: false,
+        });
+        game.arcs.spawn(dx, dy, 38, target.x, target.y, Math.min(target.height * 0.5, 30) + target.z, { w: 1.5, life: 0.1, rgb: '40,255,220' });
+        game.audio.play('zap', 0.5);
+      }
+    }
+  }
+
+  // Sera Vyne: Campo de Força de absorção e bloqueio de projéteis
+  updateForceField(dt) {
+    const R = 130;
+    game.projectiles.clearInRadius(this.x, this.y, R);
+    if (Math.random() < dt * 8) {
+      const q = rand(0, TAU);
+      game.arcs.spawn(this.x + Math.cos(q) * R, this.y + Math.sin(q) * R, 10,
+        this.x + Math.cos(q + 0.6) * R, this.y + Math.sin(q + 0.6) * R, 10, { w: 1.4, life: 0.12, rgb: '40,255,220' });
+    }
+  }
+
   // Bônus contra o alvo: Sobrecarga, Análise (elites/chefes), Ruptura de Guarda (blindados)
   targetMult(e) {
     const S = this.stats;
@@ -1023,7 +1368,7 @@ class Player extends Entity {
     const aDef = (aid && typeof ARMOR_DEFS !== 'undefined') ? ARMOR_DEFS[aid] : null;
     const armorTint = aDef && aDef.visual && aDef.visual.tint;
 
-    if (!(b.field > 0 || b.shield > 0 || b.overload > 0 || b.sync > 0 || armorTint)) return;
+    if (!(b.field > 0 || b.shield > 0 || b.overload > 0 || b.sync > 0 || b.forceField > 0 || b.drakosShield > 0 || b.lyraFocus > 0 || b.stealth > 0 || b.supportDrone > 0 || armorTint)) return;
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -1060,6 +1405,56 @@ class Player extends Entity {
         game.arcs.spawn(this.x + Math.cos(q) * FIELD_R, this.y + Math.sin(q) * FIELD_R, 6,
           this.x + Math.cos(q2) * FIELD_R, this.y + Math.sin(q2) * FIELD_R, 6, { w: 1.3, life: 0.1, rgb: '150,205,255' });
       }
+    }
+    // Sera: Domo do Campo de Força
+    if (b.forceField > 0) {
+      const a = Math.min(1, b.forceField * 2);
+      const R = 130;
+      GlowCache.drawFlat(ctx, '30,230,210', sx, sy, R * 1.5, 0.22 * a);
+      ctx.strokeStyle = rgba('50,255,230', 0.7 * a); ctx.lineWidth = 2.4;
+      isoCirclePath(ctx, this.x, this.y, R); ctx.stroke();
+      ctx.setLineDash([14, 10]); ctx.lineDashOffset = t * 60;
+      ctx.strokeStyle = rgba('180,255,245', 0.5 * a);
+      isoCirclePath(ctx, this.x, this.y, R * 0.85); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Sera: Drone de Suporte S-01 orbitando
+    if (b.supportDrone > 0) {
+      const rad = 42, dang = this._droneAng || 0;
+      const dpx = this.x + Math.cos(dang) * rad, dpy = this.y + Math.sin(dang) * rad;
+      const dsx = isoX(dpx, dpy), dsy = isoY(dpx, dpy) - 34;
+      GlowCache.draw(ctx, '40,255,220', dsx, dsy, 26, 0.6);
+      ctx.fillStyle = '#40ffdc';
+      ctx.beginPath(); ctx.arc(dsx, dsy, 4.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#e8fffa';
+      ctx.beginPath(); ctx.arc(dsx, dsy, 2, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(64,255,220,0.5)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(dsx, dsy); ctx.lineTo(dsx - Math.cos(dang) * 8, dsy - Math.sin(dang) * 4); ctx.stroke();
+    }
+    // Drakos: Escudo Frontal de Energia
+    if (b.drakosShield > 0) {
+      const a = Math.min(1, b.drakosShield * 2);
+      const f = this.facing, R = 38;
+      GlowCache.draw(ctx, '255,80,60', sx, sy - 28, 55, 0.3 * a);
+      ctx.strokeStyle = rgba('255,100,70', 0.85 * a); ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = -3; i <= 3; i++) {
+        const q = f + (i / 3) * 0.75;
+        const px = sx + Math.cos(q) * R, py = sy - 28 + Math.sin(q) * R * 0.65;
+        if (i === -3) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    // Lyra: Foco de Batalha (aura de precisão roxa)
+    if (b.lyraFocus > 0) {
+      const a = Math.min(1, b.lyraFocus * 2);
+      GlowCache.drawFlat(ctx, '180,90,255', sx, sy, 55, 0.35 * a);
+      ctx.strokeStyle = rgba('210,140,255', 0.6 * a); ctx.lineWidth = 1.5;
+      isoCirclePath(ctx, this.x, this.y, 28 + Math.sin(t * 8) * 3); ctx.stroke();
+    }
+    // Orion: Furtividade Sombria
+    if (b.stealth > 0) {
+      GlowCache.drawFlat(ctx, '140,60,220', sx, sy, 38, 0.25 + 0.1 * Math.sin(t * 5));
     }
     if (b.shield > 0 && this.shieldHp > 0) {
       const a = 0.4 + 0.15 * Math.sin(t * 6), cy = sy - this.z - 34, R = 34;
@@ -1136,7 +1531,8 @@ class Player extends Entity {
     if (this.blinking()) ctx.globalAlpha = 0.55;
     R3D.blit(ctx, this.spr, sx, sy);
     ctx.restore();
-    game.glows3D(ctx, 'kael', this, this.spr, sx, sy);
+    const mk0 = this.def ? (this.def.model || this.def.id || 'kael') : 'kael';
+    game.glows3D(ctx, mk0, this, this.spr, sx, sy);
   }
   // Partes luminosas do modelo (desenhadas depois da escuridão)
   drawEmissive(ctx) {
