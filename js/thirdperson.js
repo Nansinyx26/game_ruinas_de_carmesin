@@ -13,7 +13,7 @@ class ThirdPersonMode {
     this.glCanvas = document.createElement('canvas');
     this.glCanvas.width = VIEW_W;
     this.glCanvas.height = VIEW_H;
-    this.gl = this.glCanvas.getContext('webgl', { antialias: true, alpha: false, depth: true });
+    this.gl = this.glCanvas.getContext('webgl', { antialias: true, alpha: false, depth: true, powerPreference: 'high-performance' });
     
     this.initialized = false;
     this.charId = 'kael'; // 'kael' ou 'orion'

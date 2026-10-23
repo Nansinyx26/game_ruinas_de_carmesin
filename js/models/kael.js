@@ -493,6 +493,20 @@ function buildTempestadeNula(g, k, part, lod) {
         const fid = Math.sin(t * 3.8);
         P.hr += fid * 0.06 * b;
         P.hL[2] += Math.sin(t * 4.2) * 1.5 * b;
+      } else if (variant === 'idle_tired') {
+        // cansado (depois de correr ou lutar muito): respiração funda e rápida, tronco curvado,
+        // joelhos dobrados, a mão livre apoiada na coxa e a espada mais baixa
+        const pant = Math.sin(t * 3.6);
+        P.hz += (-1.5 + pant * 0.45) * b; P.tp += (0.2 + pant * 0.05) * b; P.hp += (0.16 - pant * 0.04) * b;
+        P.hL[0] += 3.0 * b; P.hL[1] += 2.4 * b; P.hL[2] += (-4.8 + pant * 0.5) * b;
+        P.hR[2] += (-1.6 + pant * 0.4) * b;
+      } else if (variant === 'idle_victory') {
+        // setor liberado: ergue a espada um instante, peito aberto e o olhar para cima
+        const up = Math.min(1, num(e.victoryT, 0) > 2.6 ? (3.2 - num(e.victoryT)) / 0.6 : 1);
+        const k = b * Math.max(0, up);
+        P.tp -= 0.08 * k; P.hp -= 0.16 * k; P.hz += 0.6 * k;
+        set3(P.hR, mix(P.hR[0], 4.5, k), mix(P.hR[1], 6.8, k), mix(P.hR[2], 44, k));
+        set3(P.bd, mix(P.bd[0], 0.15, k), mix(P.bd[1], 0.12, k), mix(P.bd[2], 1, k));
       }
     }
     return P;
@@ -502,7 +516,13 @@ function buildTempestadeNula(g, k, part, lod) {
     rest(P, e);
     const t = num(e.animTime);
     const k = cl((num(e.moveSpeed) - 20) / 200, 0, 1.15);
-    const ph = t * 13, s = Math.sin(ph), c = Math.cos(ph);
+    // Cadência: caminhada (analógico pela metade, toque) a passos mais lentos, corrida a 13 rad/s;
+    // a fase acumula na entidade para a troca de ritmo não pular o passo
+    const rate = 7 + 6 * Math.min(1, k * 1.4);
+    if (e._gt === undefined || t < e._gt || t - e._gt > 0.5) e._gp = t * rate;
+    else e._gp += (t - e._gt) * rate;
+    e._gt = t;
+    const ph = e._gp, s = Math.sin(ph), c = Math.cos(ph);
     P.bz = Math.abs(c) * 1.8 * k;
     P.hz = HZR - 1.2 * k;
     P.tp = mix(P.tp, 0.3, k); P.ty = mix(P.ty, -s * 0.16, k); P.hy = s * 0.14 * k;

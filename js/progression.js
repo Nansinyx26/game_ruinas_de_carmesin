@@ -153,6 +153,23 @@ const SKILLS = {
     desc: (l) => `Escudo que absorve ${40 + 25 * l} de dano por 8s.` },
   sincronizacao: { tree: 'nucleo', name: 'Sincronização ZERO', kind: 'ativa', icon: 'sync', max: 2, lvl: 9, col: 1, row: 3, req: [['analise', 1], ['escudo_energia', 1]], energy: 40, cd: 40,
     desc: (l) => `Por ${6 + 2 * l}s, recargas 2,5× mais rápidas e habilidades custam metade da energia.` },
+  // ----- Linha 5 (nós novos de cada árvore; efeitos em js/heroes/passivas.js)
+  condutor_vivo: { tree: 'eletrica', name: 'Condutor Vivo', kind: 'passiva', icon: 'chain', max: 3, lvl: 10, col: 0, row: 4, req: [['ruptura_plasma', 1]],
+    desc: (l) => `O corpo de Kael conduz a tempestade: +${6 * l}% de chance de raio em cadeia nos golpes e +${5 * l}% de chance de arco nos leves.` },
+  sobretensao: { tree: 'eletrica', name: 'Sobretensão', kind: 'passiva', icon: 'bolt', max: 3, lvl: 12, col: 2, row: 4, req: [['ruptura_plasma', 1]],
+    desc: (l) => `+${7 * l}% de poder: as habilidades da Tempestade Nula causam mais dano.` },
+  fio_perfeito: { tree: 'espadachim', name: 'Fio Perfeito', kind: 'passiva', icon: 'break', max: 3, lvl: 10, col: 0, row: 4, req: [['corte_vazio', 1]],
+    desc: (l) => `Golpes pesados causam +${8 * l}% de dano e rompem a guarda ${10 * l}% melhor.` },
+  danca_tempestade: { tree: 'espadachim', name: 'Dança da Tempestade', kind: 'passiva', icon: 'blades', max: 3, lvl: 12, col: 2, row: 4, req: [['corte_vazio', 1]],
+    desc: (l) => `Golpes leves causam +${6 * l}% de dano.` },
+  sombra_persistente: { tree: 'sombra', name: 'Sombra Persistente', kind: 'passiva', icon: 'shadow', max: 3, lvl: 10, col: 0, row: 4, req: [['salto_dimensional', 1]],
+    desc: (l) => `Esquiva recarrega ${8 * l}% mais rápido e fica ${skillNum(0.03 * l)}s a mais invencível.` },
+  eco_sombrio: { tree: 'sombra', name: 'Eco Sombrio', kind: 'passiva', icon: 'reflex', max: 3, lvl: 12, col: 2, row: 4, req: [['salto_dimensional', 1]],
+    desc: (l) => `Esquivas perfeitas rendem +${20 * l}% de bônus e devolvem ${4 * l} de energia.` },
+  blindagem_adaptativa: { tree: 'nucleo', name: 'Blindagem Adaptativa', kind: 'passiva', icon: 'shield', max: 3, lvl: 10, col: 0, row: 4, req: [['sincronizacao', 1]],
+    desc: (l) => `+${10 * l} de vida máxima e ${4 * l}% menos dano recebido.` },
+  nucleo_estavel: { tree: 'nucleo', name: 'Núcleo Estável', kind: 'passiva', icon: 'orb', max: 3, lvl: 12, col: 2, row: 4, req: [['sincronizacao', 1]],
+    desc: (l) => `A energia se regenera ${20 * l}% mais rápido e a energia máxima sobe ${5 * l}.` },
 };
 for (const id in SKILLS) SKILLS[id].id = id;
 const SKILL_ACTIVE = (id) => SKILLS[id] && (SKILLS[id].kind === 'ativa');

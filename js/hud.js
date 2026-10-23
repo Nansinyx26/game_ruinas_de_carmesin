@@ -983,7 +983,7 @@ class HUD {
   }
   eclipseSlot(ctx, cx, cy, D, key, p, capY) {
     const U = heroUltInfo(p), learned = U.learned;   // suprema do personagem ativo (Kael: Eclipse Absoluto)
-    const k = clamp(p.fury / SPECIAL_COST, 0, 1), ready = learned && k >= 1;
+    const k = clamp(p.fury / p.ultCost(), 0, 1), ready = learned && k >= 1;
     const x = cx + (this.furyDeny > 0 ? Math.sin(this.furyDeny * 80) * 3 : 0);
     const pal = U.rgb ? ultPalette(U.rgb) : null;
     const S = 2 * D + 30, lay = (mode) => this.layer(`eclipse-${mode}-${D}${pal ? '-' + U.rgb : ''}`, S, S, (g) => this.paintEclipse(g, S, D, mode, pal));

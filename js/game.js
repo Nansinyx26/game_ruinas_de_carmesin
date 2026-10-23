@@ -46,6 +46,8 @@ class Game {
     this.menu = new Menus();
     this.story = new StoryScreen();
     this.upgrades = new UpgradeSystem();
+    TouchControls.init(this.canvas, this.input);   // controles de toque (js/touch.js)
+    LoyaltyQuests.init();   // missões de lealdade dos aliados (js/quests.js)
     this.thirdPerson = (typeof ThirdPersonMode !== 'undefined') ? new ThirdPersonMode(this) : null;
     this.progress = new Progress();
     this.flags = {};
@@ -103,7 +105,7 @@ class Game {
   // Ajusta a resolução interna à janela (nítido em telas de alta densidade)
   resize() {
     // Resolução interna: densidade da tela × escala escolhida nas configurações
-    const dpr = Math.min(window.devicePixelRatio || 1, 2) * (this.renderScale || 1);
+    const dpr = Math.min(window.devicePixelRatio || 1, (this.renderScale || 1) > 1 ? 3 : 2) * (this.renderScale || 1);
     const cw = Math.max(320, window.innerWidth), ch = Math.max(240, window.innerHeight);
     VIEW_W = Math.round(clamp((VIEW_H * cw) / ch, 960, 1760));
     this.canvas.width = Math.floor(cw * dpr);
@@ -474,6 +476,8 @@ class Game {
     if (!e.isBoss && (e.elite || Math.random() < e.T.orb + p.stats.orbChance)) this.pickups.drop('health', e.x, e.y, 12);
     this.gainXP(this.xpFor(e), e.x, e.y);
     if (p.kit) p.kit.onKill(p, e);
+    LoyaltyQuests.onKill(e);   // missões de lealdade (js/quests.js)
+    HeroPassives.kill(p, e);   // passivas das árvores (js/heroes/passivas.js)
     if (e.elite) this.hud.toast('Unidade de elite destruída', '255,200,90');
     // Efeitos de morte: máquinas explodem em faíscas e peças; humanos sangram
     if (e.T.mech) {
@@ -1093,7 +1097,7 @@ class Game {
     } else if (this.player && this.room) {
       this.renderWorld(ctx);
       this.renderScreenFx(ctx);
-      if (this.state === 'playing') this.hud.draw(ctx);
+      if (this.state === 'playing') { this.hud.draw(ctx); TouchControls.draw(ctx); }   // botões de toque (celular)
       if (this.state === 'paused') this.menu.draw(ctx, this.realTime);
       else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);

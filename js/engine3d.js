@@ -371,7 +371,7 @@ const R3D = {
     try {
       const c = document.createElement('canvas');
       c.width = this.W; c.height = this.H;
-      const gl = c.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: false });
+      const gl = c.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
       if (!gl) return false;
       const sh = (type, src) => {
         const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);

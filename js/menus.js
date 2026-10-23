@@ -908,6 +908,7 @@ class Menus {
       ['credits', 'CRÉDITOS', 'star'],
       ['quit', 'SAIR', 'power']
     ];
+    if (game.installPrompt) items.splice(items.length - 1, 0, ['install', 'INSTALAR APP', 'play']);   // PWA (js/main.js)
     return { artW, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x, y: y0 + i * (h + gap), w, h })) };
   }
   updStart(inp) {
@@ -918,8 +919,17 @@ class Menus {
       else if (id === 'thirdperson') game.startThirdPerson();
       else if (id === 'settings') this.open('settings');
       else if (id === 'credits') this.open('credits');
+      else if (id === 'install') this.installApp();
       else this.askQuit();
     });
+  }
+  // Instala o jogo como app (atalho na área de trabalho / tela inicial, tela cheia, sem a barra do navegador)
+  installApp() {
+    const ev = game.installPrompt;
+    if (!ev) return;
+    game.installPrompt = null;
+    ev.prompt();
+    ev.userChoice.then((r) => { if (r && r.outcome === 'accepted') game.hud.toast('ECLIPSE ZERO instalado', '120,200,255'); }).catch(() => {});
   }
   drawStart(ctx, t) {
     const L = this.layStart();

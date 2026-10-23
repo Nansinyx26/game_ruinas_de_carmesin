@@ -47,8 +47,8 @@ const ROSTER_SKILL_TREES = [
   { id: 'lyra_caca', owner: 'lyra', name: 'CAÇADORA', sub: 'Árvore de Armadilhas', tint: { h: -24, s: -0.15 } },
   { id: 'lyra_instavel', owner: 'lyra', name: 'FÓTON INSTÁVEL', sub: 'Árvore Explosiva', tint: { h: 42 } },
   { id: 'lyra_sobrevivente', owner: 'lyra', name: 'SOBREVIVENTE', sub: 'Árvore de Mobilidade', tint: { s: -0.45, l: 0.1 } },
-  // ----- DRAKOS: a lança de plasma, a armadura da Legião e a vontade que voltou a ser dele
-  { id: 'drakos_lanca', owner: 'drakos', name: 'LANÇA DE PLASMA', sub: 'Árvore de Força', tint: {} },
+  // ----- DRAKOS: o machado e o martelo, a armadura da Legião e a vontade que voltou a ser dele
+  { id: 'drakos_lanca', owner: 'drakos', name: 'MACHADO E MARTELO', sub: 'Árvore de Força', tint: {} },
   { id: 'drakos_bastiao', owner: 'drakos', name: 'BASTIÃO', sub: 'Árvore de Defesa', tint: { s: -0.5, l: 0.06 } },
   { id: 'drakos_frente', owner: 'drakos', name: 'LINHA DE FRENTE', sub: 'Árvore de Investida', tint: { h: 22 } },
   { id: 'drakos_vontade', owner: 'drakos', name: 'VONTADE PRÓPRIA', sub: 'Árvore de Fúria', tint: { h: -24, l: 0.06 } },
@@ -127,17 +127,17 @@ const ROSTER_SKILLS = {
     desc: (l) => `Lyra conhece os túneis de cor: +${l} ${l > 1 ? 'cargas' : 'carga'} de esquiva e esquivas ${20 * l}% mais longas.` },
 
   // ===================================================================== DRAKOS
-  // ----- Lança de Plasma (força): o Golpe Pesado da ficha
+  // ----- Machado e Martelo (força): o Golpe Pesado da ficha
   drakos_golpe_pesado: { tree: 'drakos_lanca', name: 'Golpe Pesado', kind: 'tecnica', icon: 'hammer', ability: 'drakos_golpe', max: 3, lvl: 1, col: 1, row: 0, req: [],
-    desc: (l) => `Pesado: golpe lento da lança de plasma (${40 + 15 * l} de dano) que quebra escudos e a super armadura${l >= 3 ? ' e derruba quem atinge' : ''}.` },
+    desc: (l) => `Pesado: golpe lento do martelo (${40 + 15 * l} de dano) que quebra escudos e a super armadura${l >= 3 ? ' e derruba quem atinge' : ''}.` },
   drakos_peso: { tree: 'drakos_lanca', name: 'Peso da Armadura', kind: 'passiva', icon: 'weight', max: 3, lvl: 2, col: 0, row: 1, req: [['drakos_golpe_pesado', 1]],
     desc: (l) => `Golpes pesados causam +${10 * l}% de dano e empurram os inimigos ${20 * l}% mais longe.` },
   drakos_varredura: { tree: 'drakos_lanca', name: 'Varredura', kind: 'tecnica', icon: 'spin', max: 2, lvl: 3, col: 2, row: 1, req: [['drakos_golpe_pesado', 1]],
-    desc: (l) => `Leve, Leve, Pesado: a lança gira num arco largo à frente (${30 + 12 * l} de dano)${l >= 2 ? ' e derruba quem estiver perto' : ''}.` },
+    desc: (l) => `Leve, Leve, Pesado: o machado gira num arco largo à frente (${30 + 12 * l} de dano)${l >= 2 ? ' e derruba quem estiver perto' : ''}.` },
   drakos_ruptura: { tree: 'drakos_lanca', name: 'Golpe de Ruptura', kind: 'passiva', icon: 'break', max: 2, lvl: 4, col: 0, row: 2, req: [['drakos_peso', 1]],
     desc: (l) => `+${25 * l}% de dano contra blindados, escudos e chefes.` },
   drakos_terremoto: { tree: 'drakos_lanca', name: 'Terremoto', kind: 'ativa', icon: 'shockwave', max: 3, lvl: 5, col: 2, row: 2, req: [['drakos_varredura', 1]], energy: 30, cd: 10,
-    desc: (l) => `Crava a lança no chão: uma onda de choque em cone (${50 + 20 * l} de dano) deixa os inimigos lentos por 2s.` },
+    desc: (l) => `Crava o martelo no chão: uma onda de choque em cone (${50 + 20 * l} de dano) deixa os inimigos lentos por 2s.` },
   drakos_onze_anos: { tree: 'drakos_lanca', name: 'Onze Anos de Guerra', kind: 'passiva', icon: 'medal', max: 2, lvl: 7, col: 1, row: 3, req: [['drakos_ruptura', 1], ['drakos_terremoto', 1]],
     desc: (l) => `Onze anos na Legião ensinam a lutar cercado: +${4 * l}% de dano para cada inimigo a até 200 de distância (até +${20 * l}%).` },
 
@@ -155,17 +155,17 @@ const ROSTER_SKILLS = {
   drakos_ultimo: { tree: 'drakos_bastiao', name: 'Último de Pé', kind: 'passiva', icon: 'banner', max: 1, lvl: 8, col: 1, row: 3, req: [['drakos_muralha', 1], ['drakos_refletor', 1]],
     desc: () => 'Uma vez por setor, um golpe fatal deixa Drakos com 1 de vida e invencível por 2s.' },
 
-  // ----- Linha de Frente (investida): a Investida da ficha e o canhão de pulso
+  // ----- Linha de Frente (investida): a Investida da ficha e a onda do martelo
   drakos_investida: { tree: 'drakos_frente', name: 'Investida', kind: 'ativa', icon: 'charge', ability: 'drakos_investida', max: 3, lvl: 2, col: 1, row: 0, req: [], energy: 20, cd: 7,
     desc: (l) => `Carga em linha reta de ${260 + 60 * l} de distância (${25 + 15 * l} de dano) que derruba os inimigos no caminho.` },
   drakos_ombro: { tree: 'drakos_frente', name: 'Ombro Blindado', kind: 'passiva', icon: 'hex', max: 2, lvl: 3, col: 0, row: 1, req: [['drakos_investida', 1]],
     desc: (l) => `Durante a Investida, Drakos não pode ser interrompido e recebe ${25 * l}% menos dano.` },
   drakos_atropelo: { tree: 'drakos_frente', name: 'Atropelo', kind: 'passiva', icon: 'lunge', max: 3, lvl: 3, col: 2, row: 1, req: [['drakos_investida', 1]],
     desc: (l) => `Inimigos derrubados ficam no chão ${skillNum(0.4 * l)}s a mais e recebem +${10 * l}% de dano enquanto se levantam.` },
-  drakos_canhao: { tree: 'drakos_frente', name: 'Canhão de Pulso', kind: 'ativa', icon: 'cannon', max: 3, lvl: 5, col: 0, row: 2, req: [['drakos_ombro', 1]], energy: 28, cd: 9,
-    desc: (l) => `Dispara o canhão de pulso: um tiro pesado em linha (${45 + 20 * l} de dano) que empurra tudo o que atinge.` },
-  drakos_arremesso: { tree: 'drakos_frente', name: 'Arremesso da Lança', kind: 'tecnica', icon: 'spear', max: 2, lvl: 6, col: 2, row: 2, req: [['drakos_atropelo', 1]],
-    desc: (l) => `Esquiva → Pesado: arremessa a lança de plasma (${50 + 20 * l} de dano), que volta à mão de Drakos${l >= 2 ? ' atravessando os inimigos de novo' : ''}.` },
+  drakos_canhao: { tree: 'drakos_frente', name: 'Onda do Martelo', kind: 'ativa', icon: 'cannon', max: 3, lvl: 5, col: 0, row: 2, req: [['drakos_ombro', 1]], energy: 28, cd: 9,
+    desc: (l) => `Bate o martelo no chão e solta uma onda de choque em linha (${45 + 20 * l} de dano) que empurra tudo o que atinge.` },
+  drakos_arremesso: { tree: 'drakos_frente', name: 'Arremesso do Machado', kind: 'tecnica', icon: 'spear', max: 2, lvl: 6, col: 2, row: 2, req: [['drakos_atropelo', 1]],
+    desc: (l) => `Esquiva → Pesado: arremessa o machado (${50 + 20 * l} de dano), que volta à mão de Drakos${l >= 2 ? ' atravessando os inimigos de novo' : ''}.` },
   drakos_sem_freio: { tree: 'drakos_frente', name: 'Sem Freio', kind: 'passiva', icon: 'sync', max: 2, lvl: 7, col: 1, row: 3, req: [['drakos_canhao', 1], ['drakos_arremesso', 1]],
     desc: (l) => `Derrubar 3 ou mais inimigos de uma vez recarrega a Investida${l >= 2 ? ' e devolve 15 de energia' : ''}.` },
 
@@ -179,7 +179,7 @@ const ROSTER_SKILLS = {
   drakos_aco: { tree: 'drakos_vontade', name: 'Aço e Vontade', kind: 'passiva', icon: 'flame', max: 2, lvl: 6, col: 1, row: 2, req: [['drakos_folego', 1], ['drakos_grito', 1]],
     desc: (l) => `Abaixo de 50% de vida: +${15 * l}% de dano e ${10 * l}% menos dano recebido.` },
   drakos_zona_impacto: { tree: 'drakos_vontade', name: 'Zona de Impacto', kind: 'suprema', icon: 'quake', ability: 'drakos_zona', max: 3, lvl: 8, col: 1, row: 3, req: [['drakos_aco', 1]], energy: 100, cd: 0,
-    desc: (l) => `Tecla I (100 de energia): salta e cai com a lança (raio ${240 + 30 * (l - 1)}, ${140 + 40 * (l - 1)} de dano), arremessando os inimigos${l >= 3 ? ' e deixando o chão em chamas por 3s' : ''}.` },
+    desc: (l) => `Tecla I (100 de energia): salta e cai com o martelo (raio ${240 + 30 * (l - 1)}, ${140 + 40 * (l - 1)} de dano), arremessando os inimigos${l >= 3 ? ' e deixando o chão em chamas por 3s' : ''}.` },
 
   // ======================================================================= SERA
   // ----- Drone S-01 (drones): o Drone de Suporte da ficha
@@ -288,6 +288,71 @@ const ROSTER_SKILLS = {
     desc: (l) => `Orion conhece os ritos do Culto do Eclipse: +${15 * l}% de dano contra sacerdotes, e os orbes de dados ficam ${20 * l}% mais lentos perto dele.` },
   orion_furia_sombria: { tree: 'orion_infiltrado', name: 'Fúria Sombria', kind: 'suprema', icon: 'shadowStrike', ability: 'orion_furia', max: 3, lvl: 8, col: 1, row: 3, req: [['orion_culto', 1]], energy: 100, cd: 0,
     desc: (l) => `Tecla I (100 de energia): ${5 + l} teleportes seguidos, cada um atacando um inimigo diferente (${40 + 20 * l} de dano)${l >= 3 ? '; os abates devolvem 15 de energia' : ''}.` },
+  // ----- Linha 5 de cada árvore (nós novos; efeitos em js/heroes/passivas.js)
+  lyra_vento_cruzado: { tree: 'lyra_foton', name: 'Vento Cruzado', kind: 'passiva', icon: 'aim', max: 3, lvl: 10, col: 0, row: 4, req: [['lyra_folego', 1]],
+    desc: (l) => `Disparos contra alvos a mais de 260 de distância causam +${10 * l}% de dano.` },
+  lyra_mira_firme: { tree: 'lyra_foton', name: 'Mira Firme', kind: 'passiva', icon: 'scan', max: 3, lvl: 12, col: 2, row: 4, req: [['lyra_folego', 1]],
+    desc: (l) => `+${4 * l}% de chance de crítico e carga ${8 * l}% mais rápida.` },
+  lyra_sucata_viva: { tree: 'lyra_caca', name: 'Sucata Viva', kind: 'passiva', icon: 'chain', max: 3, lvl: 10, col: 0, row: 4, req: [['lyra_campo_minado', 1]],
+    desc: (l) => `Cada máquina destruída devolve ${3 * l} de energia.` },
+  lyra_cacadora_paciente: { tree: 'lyra_caca', name: 'Caçadora Paciente', kind: 'passiva', icon: 'eye', max: 3, lvl: 12, col: 2, row: 4, req: [['lyra_campo_minado', 1]],
+    desc: (l) => `+${10 * l}% de dano contra inimigos atordoados ou lentos.` },
+  lyra_po_de_estrela: { tree: 'lyra_instavel', name: 'Pó de Estrela', kind: 'passiva', icon: 'spark', max: 3, lvl: 10, col: 0, row: 4, req: [['lyra_chuva_fotons', 1]],
+    desc: (l) => `+${6 * l}% de poder: as habilidades de fóton causam mais dano.` },
+  lyra_reator_instavel: { tree: 'lyra_instavel', name: 'Reator Instável', kind: 'passiva', icon: 'flame', max: 3, lvl: 12, col: 2, row: 4, req: [['lyra_chuva_fotons', 1]],
+    desc: (l) => `Recargas das habilidades ${5 * l}% mais rápidas.` },
+  lyra_pele_curtida: { tree: 'lyra_sobrevivente', name: 'Pele Curtida', kind: 'passiva', icon: 'heart', max: 3, lvl: 10, col: 0, row: 4, req: [['lyra_atalhos', 1]],
+    desc: (l) => `+${12 * l} de vida máxima e curas ${10 * l}% mais fortes.` },
+  lyra_segundo_folego: { tree: 'lyra_sobrevivente', name: 'Segundo Fôlego', kind: 'passiva', icon: 'wing', max: 3, lvl: 12, col: 2, row: 4, req: [['lyra_atalhos', 1]],
+    desc: (l) => `Uma vez por setor, um golpe fatal deixa Lyra com ${15 * l}% da vida.` },
+  drakos_machado_largo: { tree: 'drakos_lanca', name: 'Machado Largo', kind: 'passiva', icon: 'blades', max: 3, lvl: 10, col: 0, row: 4, req: [['drakos_onze_anos', 1]],
+    desc: (l) => `+${5 * l}% de dano para cada outro inimigo a até 140 (até +${15 * l}%): o machado pega mais de um.` },
+  drakos_martelo_sismico: { tree: 'drakos_lanca', name: 'Martelo Sísmico', kind: 'passiva', icon: 'burst', max: 3, lvl: 12, col: 2, row: 4, req: [['drakos_onze_anos', 1]],
+    desc: (l) => `Golpes pesados do martelo causam +${8 * l}% de dano e carregam ${10 * l}% mais rápido.` },
+  drakos_baluarte: { tree: 'drakos_bastiao', name: 'Baluarte', kind: 'passiva', icon: 'shield', max: 3, lvl: 10, col: 0, row: 4, req: [['drakos_ultimo', 1]],
+    desc: (l) => `Recebe ${3 * l}% menos dano para cada inimigo a até 220 (até ${15 * l}%).` },
+  drakos_forja_interior: { tree: 'drakos_bastiao', name: 'Forja Interior', kind: 'passiva', icon: 'flame', max: 3, lvl: 12, col: 2, row: 4, req: [['drakos_ultimo', 1]],
+    desc: (l) => `+${20 * l} de vida máxima e energia ${10 * l}% mais rápida.` },
+  drakos_ariete: { tree: 'drakos_frente', name: 'Aríete', kind: 'passiva', icon: 'lunge', max: 3, lvl: 10, col: 0, row: 4, req: [['drakos_sem_freio', 1]],
+    desc: (l) => `Esquiva ${8 * l}% mais longa e guarda inimiga rompida ${10 * l}% melhor.` },
+  drakos_marcha_ferro: { tree: 'drakos_frente', name: 'Marcha de Ferro', kind: 'passiva', icon: 'fang', max: 3, lvl: 12, col: 2, row: 4, req: [['drakos_sem_freio', 1]],
+    desc: (l) => `Derrubar um legionário ou uma elite devolve ${6 * l} de energia.` },
+  drakos_cicatrizes: { tree: 'drakos_vontade', name: 'Cicatrizes', kind: 'passiva', icon: 'heart', max: 3, lvl: 10, col: 0, row: 4, req: [['drakos_zona_impacto', 1]],
+    desc: (l) => `Recupera ${2 * l}% do dano causado como vida.` },
+  drakos_juramento: { tree: 'drakos_vontade', name: 'Juramento', kind: 'passiva', icon: 'soul', max: 3, lvl: 12, col: 2, row: 4, req: [['drakos_zona_impacto', 1]],
+    desc: (l) => `+${12 * l}% de dano contra elites e chefes.` },
+  sera_rede_neural: { tree: 'sera_drones', name: 'Rede Neural', kind: 'passiva', icon: 'sync', max: 3, lvl: 10, col: 0, row: 4, req: [['sera_sentinela', 1]],
+    desc: (l) => `+${7 * l}% de poder: drones, torretas e orbes causam mais dano.` },
+  sera_drone_blindado: { tree: 'sera_drones', name: 'Drone Blindado', kind: 'passiva', icon: 'shield', max: 3, lvl: 12, col: 2, row: 4, req: [['sera_sentinela', 1]],
+    desc: (l) => `Com o Drone de Suporte ativo, Sera recebe ${8 * l}% menos dano.` },
+  sera_campo_residual: { tree: 'sera_campos', name: 'Campo Residual', kind: 'passiva', icon: 'field', max: 3, lvl: 10, col: 0, row: 4, req: [['sera_matriz', 1]],
+    desc: (l) => `+${3 * l}% de resistência e recargas ${4 * l}% mais rápidas.` },
+  sera_ressonancia: { tree: 'sera_campos', name: 'Ressonância', kind: 'passiva', icon: 'spark', max: 3, lvl: 12, col: 2, row: 4, req: [['sera_matriz', 1]],
+    desc: (l) => `+${12 * l}% de dano contra inimigos atordoados.` },
+  sera_firewall: { tree: 'sera_intrusao', name: 'Firewall', kind: 'passiva', icon: 'hex', max: 3, lvl: 10, col: 0, row: 4, req: [['sera_arquivo_zero', 1]],
+    desc: (l) => `Recebe ${5 * l}% menos dano de tudo.` },
+  sera_eco_digital: { tree: 'sera_intrusao', name: 'Eco Digital', kind: 'passiva', icon: 'scan', max: 3, lvl: 12, col: 2, row: 4, req: [['sera_arquivo_zero', 1]],
+    desc: (l) => `Cada máquina destruída restaura ${3 * l} de vida.` },
+  sera_celulas_tronco: { tree: 'sera_nano', name: 'Células-Tronco', kind: 'passiva', icon: 'heart', max: 3, lvl: 10, col: 0, row: 4, req: [['sera_cura_emergencia', 1]],
+    desc: (l) => `+${12 * l} de vida máxima e curas ${10 * l}% mais fortes.` },
+  sera_otimizacao: { tree: 'sera_nano', name: 'Otimização', kind: 'passiva', icon: 'orb', max: 3, lvl: 12, col: 2, row: 4, req: [['sera_cura_emergencia', 1]],
+    desc: (l) => `+${10 * l} de energia máxima e energia ${10 * l}% mais rápida.` },
+  orion_laminas_gemeas: { tree: 'orion_laminas', name: 'Lâminas Gêmeas', kind: 'passiva', icon: 'twin', max: 3, lvl: 10, col: 0, row: 4, req: [['orion_execucao', 1]],
+    desc: (l) => `Golpes leves das adagas causam +${6 * l}% de dano.` },
+  orion_veneno: { tree: 'orion_laminas', name: 'Lâmina Envenenada', kind: 'passiva', icon: 'fang', max: 3, lvl: 12, col: 2, row: 4, req: [['orion_execucao', 1]],
+    desc: (l) => `+${8 * l}% de dano contra inimigos sangrando (Corte Profundo).` },
+  orion_sombra_viva: { tree: 'orion_fantasma', name: 'Sombra Viva', kind: 'passiva', icon: 'shadow', max: 3, lvl: 10, col: 0, row: 4, req: [['orion_tres_dias', 1]],
+    desc: (l) => `Esquiva ${skillNum(0.04 * l)}s mais invencível e +${3 * l}% de velocidade.` },
+  orion_contrato: { tree: 'orion_fantasma', name: 'Contrato Cumprido', kind: 'passiva', icon: 'soul', max: 3, lvl: 12, col: 2, row: 4, req: [['orion_tres_dias', 1]],
+    desc: (l) => `Derrubar uma elite ou um chefe restaura ${10 * l} de vida.` },
+  orion_ponta_fina: { tree: 'orion_precisao', name: 'Ponta Fina', kind: 'passiva', icon: 'aim', max: 3, lvl: 10, col: 0, row: 4, req: [['orion_olho_vigia', 1]],
+    desc: (l) => `+${5 * l}% de chance de crítico.` },
+  orion_assinatura: { tree: 'orion_precisao', name: 'Assinatura', kind: 'passiva', icon: 'drain', max: 3, lvl: 12, col: 2, row: 4, req: [['orion_olho_vigia', 1]],
+    desc: (l) => `Cada crítico restaura ${l} de vida.` },
+  orion_agente_duplo: { tree: 'orion_infiltrado', name: 'Agente Duplo', kind: 'passiva', icon: 'counter', max: 3, lvl: 10, col: 0, row: 4, req: [['orion_furia_sombria', 1]],
+    desc: (l) => `Cercado por 3 ou mais inimigos (a até 160), recebe ${10 * l}% menos dano.` },
+  orion_ultima_porta: { tree: 'orion_infiltrado', name: 'A Última Porta', kind: 'passiva', icon: 'void', max: 3, lvl: 12, col: 2, row: 4, req: [['orion_furia_sombria', 1]],
+    desc: (l) => `+${12 * l}% de dano contra inimigos com mais de 80% da vida (o primeiro golpe).` },
 };
 const ROSTER_TREE_OWNER = {};
 for (const tr of ROSTER_SKILL_TREES) ROSTER_TREE_OWNER[tr.id] = tr.owner;
@@ -304,7 +369,7 @@ for (const tr of SKILL_TREES) if (!tr.owner) tr.owner = 'kael';
 const SKILL_SETS = {
   kael: { trees: SKILL_TREES, skills: SKILLS, progress: 'legacy', combo: 'da espada' },
 };
-const SKILL_COMBO_WEAPON = { lyra: 'do arco', drakos: 'da lança', sera: 'do orbe', orion: 'das lâminas' };
+const SKILL_COMBO_WEAPON = { lyra: 'do arco', drakos: 'do machado', sera: 'do orbe', orion: 'das lâminas' };
 for (const c of CHARACTER_DEFS) {
   if (SKILL_SETS[c.id]) continue;
   const trees = ROSTER_SKILL_TREES.filter((tr) => tr.owner === c.id);
@@ -374,7 +439,7 @@ function validateSkillTrees() {
   }
   for (const tr of ROSTER_SKILL_TREES) {
     const nodes = Object.values(ROSTER_SKILLS).filter((s) => s.tree === tr.id), cells = new Set();
-    if (nodes.length < 5 || nodes.length > 7) bad.push(`${tr.id}: ${nodes.length} nós (esperado 5 a 7)`);
+    if (nodes.length < 5 || nodes.length > 9) bad.push(`${tr.id}: ${nodes.length} nós (esperado 5 a 9: até 7 originais + os 2 da linha 5)`);
     for (const s of nodes) { const k = `${s.col},${s.row}`; if (cells.has(k)) bad.push(`${tr.id}: nós sobrepostos em ${k}`); cells.add(k); }
     if (SKILL_TREES.some((q) => q.id === tr.id)) bad.push(`${tr.id}: colide com uma árvore do Kael`);
   }

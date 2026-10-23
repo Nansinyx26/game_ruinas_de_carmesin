@@ -101,6 +101,7 @@ class WaveManager {
 
   roomCleared() {
     this.state = 'cleared';
+    if (game.player) game.player.victoryT = 3.2;   // comemoração no idle (js/player.js idleContext)
     game.room.door.opening = true;
     game.pickups.attractAll();
     game.stats.roomsCleared++;
@@ -116,6 +117,7 @@ class WaveManager {
     }
     game.audio.play('door');
     game.audio.play('roomClear');
+    LoyaltyQuests.spawn();   // aliados com missões de lealdade no Refúgio (js/quests.js)
     game.hud.message('SETOR LIBERADO', 'A comporta se abriu — siga para o norte', 2.6);
     game.gainXP(XP_SRC.roomClear(this.roomIndex));
     if (!this.def.boss) game.spawnMemory();

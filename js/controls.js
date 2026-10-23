@@ -58,6 +58,7 @@ class Input {
     this.padNow = new Array(24).fill(false);
     this.padPrev = new Array(24).fill(false);
     this.padAxes = { x: 0, y: 0 };
+    this.touchAxes = { x: 0, y: 0 };   // analógico de toque (js/touch.js)
     this.look = { x: 0, y: 0 };      // analógico direito (olhar ao redor)
     this.padConnected = false;
     this.pad = null;                 // { index, id, kind, mapping, buttons, axes } do controle em uso
@@ -198,6 +199,7 @@ class Input {
     let my = (this.held.down ? 1 : 0) - (this.held.up ? 1 : 0);
     if (mx || my) { const l = Math.hypot(mx, my); mx /= l; my /= l; }
     if (Math.hypot(this.padAxes.x, this.padAxes.y) > 0.01) { mx = this.padAxes.x; my = this.padAxes.y; }
+    if (Math.hypot(this.touchAxes.x, this.touchAxes.y) > 0.01) { mx = this.touchAxes.x; my = this.touchAxes.y; }
     this.move.x = mx; this.move.y = my;
     // Analógico também navega nos menus: um toque = um passo; segurado repete
     let dir = null;

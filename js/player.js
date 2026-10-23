@@ -127,6 +127,22 @@ class Player extends Entity {
     this.idleTimer = 3.0 + Math.random() * 2.0;
     this.idleBlend = 0.0;
     this.idleTime = 0.0;
+    // Contexto do idle (tem prioridade sobre o sorteio, ver idleContext): cansaço depois de
+    // correr ou lutar muito, comemoração ao liberar o setor e a variação anterior (sem repetir)
+    this.fatigue = 0; this.tired = false; this.victoryT = 0; this.lastIdle = null; this.idleForced = false;
+  }
+
+  // Variação imposta pela situação, em ordem de prioridade: vitória → alerta/guarda (inimigo a
+  // menos de 320, o alerta nos primeiros instantes parado) → cansaço; null = o sorteio do perfil
+  idleContext() {
+    if (this.victoryT > 0) return 'idle_victory';
+    if (game.combatActive && game.combatActive()) {
+      for (const e of game.enemies) {
+        if (e.alive && dist2(e.x, e.y, this.x, this.y) < 320 * 320) return this.idleTime < 1.2 ? 'idle_alert' : 'idle_combat_ready';
+      }
+    }
+    if (this.fatigue > 0.65) this.tired = true; else if (this.fatigue < 0.25) this.tired = false;
+    return this.tired ? 'idle_tired' : null;
   }
 
   // Escolhe próxima animação de idle baseada no perfil do personagem
@@ -139,6 +155,9 @@ class Player extends Entity {
       if (r < v.weight) { chosen = v; break; }
       r -= v.weight;
     }
+    // não repete a variação anterior (a respiração pode voltar: é o repouso)
+    if (chosen.id === this.lastIdle && chosen.id !== 'idle_breathing') chosen = prof.variants[0];
+    this.lastIdle = chosen.id;
     this.idleVariant = chosen.id;
     this.idleTimer = chosen.duration[0] + Math.random() * (chosen.duration[1] - chosen.duration[0]);
   }
@@ -160,6 +179,11 @@ class Player extends Entity {
 
   update(dt, input) {
     this.animTime += dt; this.stateTime += dt;
+    // Cansaço (idle_tired): sobe correndo, atacando e apanhando; descansa parado
+    HeroPassives.tick(this, dt);
+    const tiring = this.state === 'run' ? 0.045 : this.state === 'attack' || this.state === 'charge' ? 0.06 : this.state === 'idle' ? -0.1 : 0;
+    this.fatigue = clamp(this.fatigue + tiring * dt, 0, 1);
+    if (this.victoryT > 0) this.victoryT -= dt;
     if (this.invuln > 0) this.invuln -= dt;
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.flash > 0) this.flash -= dt;
@@ -199,7 +223,10 @@ class Player extends Entity {
           this.state = 'idle';
           this.idleTime += dt;
           this.idleTimer -= dt;
-          if (this.idleTimer <= 0) this.pickNextIdleVariant();
+          // a situação (vitória, inimigo perto, cansaço) vence o sorteio; quando passa, sorteia de novo
+          const forced = this.idleContext();
+          if (forced) { this.idleVariant = forced; this.idleForced = true; }
+          else if (this.idleTimer <= 0 || this.idleForced) { this.idleForced = false; this.pickNextIdleVariant(); }
           const targetBlend = this.idleVariant === 'idle_breathing' ? 0.0 : 1.0;
           this.idleBlend = approach(this.idleBlend, targetBlend, dt * 3.5);
         }
@@ -471,6 +498,7 @@ class Player extends Entity {
     const launch = d.launch * (a.id === 'charged' ? 0.6 + a.charge * 0.6 : 1);
     if (!e.takeHit({ dmg, kx, ky, kb, launch, stun: d.stun, heavy: !!d.heavy, crit, shock: !!d.shock, breakArmor: S.guardBreak >= 0.6, poise: 1 + S.guardBreak })) return;
     game.onEnemyHit(e, dmg, crit, d, kx, ky);
+    HeroPassives.hit(this, e, dmg);   // passivas que reagem ao golpe (Ritmo Letal, Execução…)
     // A Tempestade Nula descarrega eletricidade no alvo
     if (arc) {
       const reach = Math.min(d.blade * 0.6, dist(this.x, this.y, e.x, e.y));
@@ -613,7 +641,7 @@ class Player extends Entity {
 
   startSpecial() {
     if (this.kit) { this.kit.startUltimate(this); return; }   // suprema do personagem (tecla I)
-    this.fury = Math.max(0, this.fury - SPECIAL_COST);
+    this.fury = Math.max(0, this.fury - this.ultCost());
     this.state = 'special'; this.stateTime = 0;
     this.specialFired = false;
     this.invuln = Math.max(this.invuln, 1.25);
@@ -797,7 +825,8 @@ class Player extends Entity {
     if (this.state === 'special') return;
     const before = this.fury;
     this.fury = Math.min(this.maxEnergy, this.fury + n);
-    if (before < SPECIAL_COST && this.fury >= SPECIAL_COST && this.ultLevel() > 0) {
+    const cost = this.ultCost();
+    if (before < cost && this.fury >= cost && this.ultLevel() > 0) {
       game.hud.furyReady(); game.audio.play('chargeTier', 2);
     }
   }
@@ -851,7 +880,9 @@ class Player extends Entity {
       if (this.shieldHp <= 0) this.onBuffEnd('shield');
       if (dmg <= 0) { this.invuln = Math.max(this.invuln, 0.3); return true; }
     }
+    dmg = Math.max(1, Math.round(dmg * HeroPassives.taken(this)));   // passivas defensivas das árvores
     this.hp -= dmg;
+    if (this.hp <= 0 && HeroPassives.lethal(this)) this.hp = Math.max(1, this.hp);   // Último de Pé, Segundo Fôlego
     const dx = this.x - sx, dy = this.y - sy, l = Math.hypot(dx, dy) || 1;
     this.kbx += (dx / l) * kb; this.kby += (dy / l) * kb;
     this.flash = 0.12;
@@ -925,6 +956,7 @@ class Player extends Entity {
       if (ws.stun) S.guardBreak += ws.stun * 0.2;
       if (ws.chain) S.chain += ws.chain * 0.15;
     }
+    HeroPassives.apply(this, S, pr);   // efeitos das passivas das árvores (js/heroes/passivas.js)
     S.armor = Math.min(0.75, S.armor);
     const B = this.def.stats;
     this.maxHp = Math.round(B.hp + PL.hp * L + S.hpBonus);
@@ -940,13 +972,15 @@ class Player extends Entity {
   canEclipse() {
     if (this.kit) return this.kit.canUltimate(this);
     if (this.def.id === DEFAULT_CHARACTER) return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST;
-    return this.fury >= SPECIAL_COST;
+    return this.fury >= this.ultCost();
   }
+  // Energia da suprema: 100; quem tem energia máxima menor (o Drakos começa com 90) usa a barra cheia
+  ultCost() { return this.kit ? this.kit.ultCost() : Math.min(SPECIAL_COST, this.maxEnergy); }
   // Nível da suprema do personagem (Kael: Eclipse Absoluto; os aliados sem kit: sempre 1)
   ultLevel() { return this.kit ? this.kit.ultLevel(this) : this.def.id === DEFAULT_CHARACTER ? game.progress.lv('eclipse_absoluto') : 1; }
   denyEclipse() {
     if (this.kit) { this.kit.denyUltimate(this); return; }
-    if (this.def.id !== DEFAULT_CHARACTER) game.hud.toast(`${heroUltInfo(this).name} bloqueado · Energia insuficiente (${SPECIAL_COST})`, '255,92,122');
+    if (this.def.id !== DEFAULT_CHARACTER) game.hud.toast(`${heroUltInfo(this).name} bloqueado · Energia insuficiente (${this.ultCost()})`, '255,92,122');
     else if (!game.progress.lv('eclipse_absoluto')) game.hud.toast(`Eclipse Absoluto bloqueado · Árvore Elétrica (nível ${SKILLS.eclipse_absoluto.lvl})`, '255,92,122');
     game.hud.furyDenied();
     game.audio.play('uiDeny');
@@ -1023,7 +1057,7 @@ class Player extends Entity {
     const S = (typeof skillDef === 'function' ? skillDef(id) : null) || (typeof SKILLS !== 'undefined' ? SKILLS[id] : null) || (typeof ABILITY_DEFS !== 'undefined' ? ABILITY_DEFS[id] : null);
     if (!S) return 0;
     const cost = S.energy !== undefined && S.energy !== null ? S.energy : (S.cost !== undefined && S.cost !== null ? S.cost : 0);
-    return Math.round(cost * (this.buffs.sync > 0 ? 0.5 : 1));
+    return Math.round(cost * (this.buffs.sync > 0 ? 0.5 : 1) * (this.stats.costMult || 1));
   }
   abilityReady(k) {
     const inf = this.abilityInfo(k);
@@ -1374,7 +1408,7 @@ class Player extends Entity {
     let m = this.buffs.overload > 0 ? this.overloadMult : 1;
     if (e.elite || e.isBoss) m *= S.eliteMult;
     if (e.isBoss || e.type === 'legionario' || e.superArmor) m *= 1 + S.guardBreak;
-    return m;
+    return m * HeroPassives.dealt(this, e);   // passivas das árvores (js/heroes/passivas.js)
   }
 
   // Efeitos visíveis das habilidades ativas e da armadura equipada (camada emissiva, coordenadas de mundo)

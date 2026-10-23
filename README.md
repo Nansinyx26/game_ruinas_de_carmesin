@@ -109,6 +109,8 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **Árvore de habilidades** (Tab): Z/C trocam de personagem e **cada personagem do grupo gasta os próprios pontos**, mesmo fora de campo (valem quando ele entrar).
 - **Retratos**: a seleção usa as artes de `assets/selecionar_personagem/`; o HUD e a árvore usam os retratos de `js/assets/retratos.js` (gerado por `tools/gerar_retratos.py` a partir de `assets/images/retratos_elenco.webp`).
 - **Salvamento v2**: guarda o elenco de cada espaço (desbloqueados, ativo, armaduras) e o progresso de cada personagem (`party`).
+- **Missões de lealdade** (`js/quests.js`): depois que o Refúgio dos Desconectados é liberado, os aliados do grupo que não estão em campo aparecem lá em 3D; conversando com eles ([E]) cada um oferece uma missão — Lyra *Caçada Longe da Rede* (25 abates com ela), Drakos *Onze Anos* (6 legionários com ele), Sera *Silêncio na Rede* (15 máquinas com ela) e Orion *Ninguém Me Vê Chegar* (20 abates com ele). Conta em qualquer setor seguinte; ao completar, o aliado fala pelo rádio e libera a **armadura suprema** dele e a **arma especial** (lendárias). As falas novas são texto; a dublagem gravada toca quando a fala é a mesma da gravação. Estado em `flags.lealdade` do salvamento.
+- **Animação parada** (`js/player.js` + `js/models/kael.js`): além das variações sorteadas por personagem (respirar, olhar em volta, ajustar a arma, trocar o peso…), a situação tem prioridade: **vitória** (ergue a espada ao liberar o setor) → **alerta/guarda** (inimigo a menos de 320) → **cansado** (depois de correr ou lutar muito: respiração funda, tronco curvado, mão na coxa). A mesma variação não se repete em seguida, e a caminhada (analógico pela metade) tem passos mais lentos que a corrida.
 
 ## Menus, salvamentos e configurações
 
@@ -223,15 +225,23 @@ Para ver as **armas e armaduras em 3D** (os `.glb` de `assets/`) use um servidor
 
 No menu inicial, **MODO 3ª PESSOA (3D)** abre a arena de teste em terceira pessoa (`js/thirdperson.js`).
 
+### Celular, tablet e app instalado
+
+- **Controles de toque** (`js/touch.js`): aparecem no primeiro toque na tela (ou com `?touch=1` na URL). Analógico flutuante na metade esquerda, botões ATAQUE (toque = leve), PESADO (segure para carregar), ESQUIVA e E (interagir); os 4 atalhos e a suprema do HUD viram botões; PAUSA e TAB (talentos) abaixo da vida. Nos menus o toque funciona como clique. No primeiro toque o jogo pede tela cheia na horizontal.
+- **Instalar como app (PWA)**: servido por http(s), o jogo tem `manifest.webmanifest` e `sw.js`. No Chrome/Edge do computador ou do Android aparece **INSTALAR APP** no menu inicial (ou "Instalar" na barra do navegador / "Adicionar à tela inicial"); no iPhone, Compartilhar → Adicionar à Tela de Início. O app abre em tela cheia, sem a barra do navegador, e o que já foi jogado fica salvo para abrir sem internet (o service worker guarda cada arquivo na primeira vez que é usado). Para publicar: qualquer hospedagem estática (ex.: GitHub Pages) serve.
+- **Qualidade máxima**: Configurações → Vídeo → Resolução interna **150% (ultra)** desenha acima da resolução da tela (supersampling, para placas de vídeo fortes); o contexto WebGL pede a GPU de alto desempenho (`powerPreference: 'high-performance'`), o que em notebooks com duas placas escolhe a dedicada.
+
 ## Estrutura do código
 
 ```
 index.html          página mínima: canvas, CSS e scripts na ordem de carregamento
+manifest.webmanifest, sw.js   app instalável (PWA) e cache para abrir sem internet
 css/main.css        estilos da página (o jogo é todo desenhado no canvas)
 js/
   config.js         resolução lógica, constantes de física, paleta, fontes, variável global "game"
   utils.js          matemática, projeção isométrica, formas e utilidades
-  controls.js       entrada: KEYMAP/PADMAP e a classe Input (teclado, mouse, gamepad)
+  controls.js       entrada: KEYMAP/PADMAP e a classe Input (teclado, mouse, gamepad, analógico de toque)
+  touch.js          TouchControls: analógico e botões de toque (celular/tablet) ligados ao Input
   audio.js          AudioSys: trilha sonora dinâmica (MusicPlayer), narração/dublagem (NarrationPlayer), SFX pré-carregados e efeitos sintetizados (Web Audio API)
   effects.js        GlowCache, partículas, números de dano, rastros da lâmina, raios
   camera.js         Camera: acompanhamento, tremor e zoom
@@ -247,7 +257,13 @@ js/
   inspector3d.js    Inspetor 3D do modo dev: vistas ortográficas, ossos, animações e arte de referência
   entity.js         Entity, base de jogador e inimigos
   abilities.js      ABILITIES: efeitos das habilidades ativas
-  player.js         Player (Kael): movimento, golpes, esquiva, habilidades, Eclipse, desenho 2D
+  player.js         Player: movimento, golpes, esquiva, habilidades e supremas de todos os
+                    personagens, idle dinâmico (variações, cansaço, guarda, vitória), desenho 2D
+  heroes/           kit.js (estrutura dos kits de personagem, HERO_WEAPONS, HeroObjects) e
+                    lyra.js (o kit completo da Lyra)
+  quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
+  glbviewer.js      visualizador dos .glb de armas e armaduras (tela de seleção)
+  thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)
                     — opção "Sprites 2D" e o modo sem WebGL
   enemies.js        ENEMY_TYPES, Enemy, Crawler, Legionary, Shooter, Hunter, AIDirector

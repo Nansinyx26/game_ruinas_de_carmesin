@@ -283,19 +283,19 @@ const ATTACKS = {
   // ==================== DRAKOS (Machado e Martelo de Plasma) ====================
   drakos_light1: {
     name: null, windup: 0.1, active: 0.11, recovery: 0.24, chainFrac: 0.2,
-    shape: { type: 'arc', range: 94, arc: 1.25 }, dmg: 20, kb: 260, launch: 0, stun: 0.4,
+    shape: { type: 'arc', range: 94, arc: 1.25 }, dmg: 17, kb: 260, launch: 0, stun: 0.4,
     hitstop: 0.06, shake: 0.18, lunge: 140, swing: [-1.4, 1.2], blade: 84,
     rgb: '255,46,61', core: '255,210,215', sound: 'swingHeavy', fury: 5, heavy: true, light: true,
   },
   drakos_light2: {
     name: null, windup: 0.09, active: 0.11, recovery: 0.26, chainFrac: 0.2,
-    shape: { type: 'arc', range: 96, arc: 1.25 }, dmg: 24, kb: 290, launch: 0, stun: 0.45,
+    shape: { type: 'arc', range: 96, arc: 1.25 }, dmg: 20, kb: 290, launch: 0, stun: 0.45,
     hitstop: 0.065, shake: 0.2, lunge: 150, swing: [1.3, -1.2], blade: 86,
     rgb: '255,55,70', core: '255,215,220', sound: 'swingHeavy', fury: 5, heavy: true, light: true,
   },
   drakos_light3: {
     name: 'IMPACTO CONCUSSIVO', windup: 0.14, active: 0.12, recovery: 0.36, chainFrac: 0.45,
-    shape: { type: 'circle', radius: 110, offset: 40 }, dmg: 42, kb: 480, launch: 220, stun: 0.75,
+    shape: { type: 'circle', radius: 110, offset: 40 }, dmg: 36, kb: 480, launch: 220, stun: 0.75,
     hitstop: 0.11, shake: 0.45, heavy: true, radialKb: true, lunge: 180, swing: [-2.2, 0.8], blade: 92,
     rgb: '255,30,45', core: '255,200,205', sound: 'stomp', fury: 8, zoom: 0.04,
   },
@@ -339,19 +339,19 @@ const ATTACKS = {
   // ==================== SERA VYNE (Tecnomante / Bastão Neural) ====================
   sera_light1: {
     name: null, windup: 0.05, active: 0.06, recovery: 0.18, chainFrac: 0.15,
-    shape: { type: 'arc', range: 75, arc: 0.8 }, dmg: 13, kb: 130, launch: 0, stun: 0.25,
+    shape: { type: 'arc', range: 75, arc: 0.8 }, dmg: 9, kb: 130, launch: 0, stun: 0.25,
     hitstop: 0.03, shake: 0.08, lunge: 25, swing: [-0.6, 0.4], blade: 64, projectile: 'tech_orb',
-    rgb: '25,230,210', core: '220,255,250', sound: 'thrust', fury: 5, light: true,
+    rgb: '25,230,210', core: '220,255,250', sound: 'zap', fury: 5, light: true,
   },
   sera_light2: {
     name: null, windup: 0.05, active: 0.07, recovery: 0.2, chainFrac: 0.15,
-    shape: { type: 'arc', range: 78, arc: 0.8 }, dmg: 15, kb: 150, launch: 0, stun: 0.25,
+    shape: { type: 'arc', range: 78, arc: 0.8 }, dmg: 10, kb: 150, launch: 0, stun: 0.25,
     hitstop: 0.03, shake: 0.1, lunge: 25, swing: [0.5, -0.5], blade: 66, projectile: 'tech_orb',
-    rgb: '35,240,220', core: '225,255,252', sound: 'thrust', fury: 5, light: true,
+    rgb: '35,240,220', core: '225,255,252', sound: 'zap', fury: 5, light: true,
   },
   sera_light3: {
     name: 'DESCARGA DE RESSONÂNCIA', windup: 0.08, active: 0.1, recovery: 0.28, chainFrac: 0.4,
-    shape: { type: 'circle', radius: 100, offset: 40 }, dmg: 32, kb: 340, launch: 0, stun: 0.5,
+    shape: { type: 'circle', radius: 100, offset: 40 }, dmg: 24, kb: 340, launch: 0, stun: 0.5,
     hitstop: 0.06, shake: 0.22, heavy: true, radialKb: true, lunge: 40, swing: [-0.8, 0.8], blade: 72,
     rgb: '40,250,225', core: '235,255,255', sound: 'zap', fury: 8, zoom: 0.02,
   },
@@ -363,7 +363,7 @@ const ATTACKS = {
   },
   sera_charged: {
     name: 'PULSO CIBERNÉTICO MÁXIMO', windup: 0.05, active: 0.12, recovery: 0.42, chainFrac: 0.5,
-    shape: { type: 'capsule', length: 190, width: 48 }, dmg: 68, kb: 460, launch: 220, stun: 0.85,
+    shape: { type: 'capsule', length: 190, width: 48 }, dmg: 56, kb: 460, launch: 220, stun: 0.85,
     hitstop: 0.11, shake: 0.42, heavy: true, heavyType: true, lunge: 60, swing: [0, 0], blade: 80, thrust: true,
     rgb: '50,255,230', core: '240,255,255', sound: 'thunder', fury: 12, zoom: 0.04, arcs: 0.8,
   },

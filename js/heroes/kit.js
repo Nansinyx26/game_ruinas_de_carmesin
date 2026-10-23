@@ -34,8 +34,12 @@ const HERO_WEAPONS = (window.HERO_WEAPONS = window.HERO_WEAPONS || {});
 
 // Kit do personagem de uma ficha (null = Kael, que usa o código original do Player)
 function heroKitOf(def) { return (def && def.id !== DEFAULT_CHARACTER && HERO_KITS[def.id]) || null; }
-// Progresso do personagem do Player (o do Kael é o game.progress de sempre)
-function heroProgressOf(p) { return p && p.kit ? p.kit.progress(p) : game.progress; }
+// Progresso do personagem do Player: o do kit, o do aliado (PartyProgress, com nível e árvores
+// próprios, onde a experiência dele já entra) ou, para o Kael, o game.progress de sempre
+function heroProgressOf(p) {
+  if (p && p.kit) return p.kit.progress(p);
+  return (p && p.def && PartyProgress.of(p.def.id)) || game.progress;
+}
 // Árvore (cor e nome) de um nó de qualquer personagem
 function heroTreeOf(treeId) { return SKILL_TREES.find((q) => q.id === treeId) || ROSTER_SKILL_TREES.find((q) => q.id === treeId) || null; }
 // Suprema do personagem ativo para o HUD (o Kael: Eclipse Absoluto, com as cores de sempre)
