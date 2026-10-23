@@ -33,6 +33,7 @@ const EclipseTests = {
       this.persistencia();
       this.idle();
       this.trocaArma();
+      this.telaElenco();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -254,6 +255,29 @@ const EclipseTests = {
     this.passos(p, 1.2);
     this.igual('troca acontece quando o golpe termina', RosterManager.equippedWeapon('drakos'), 'canhao_pulso');
     this.igual('o martelo vai para a mão', WeaponRig.visualOf('drakos').main[0], 'drakos_martelo');
+  },
+
+  // Tela de elenco (Pausa → Personagens): equipar armadura e arma mostra o aviso sem erro
+  telaElenco() {
+    const rs = new RosterScreen(game.menu || {}), d = CHARACTERS_BY_ID.kael;
+    rs.charSel = CHARACTER_DEFS.indexOf(d); rs.mode = 'pause';
+    const salvar = game.saveGame; game.saveGame = () => {};
+    try {
+      rs.tab = ROSTER_TABS.findIndex((t) => t.id === 'armors');
+      const arm = rs.armorList().find((id) => RosterManager.isArmorUnlocked(id) && RosterManager.equippedArmor('kael') !== id);
+      rs.armorSel = rs.armorList().indexOf(arm);
+      let erro = null;
+      try { rs.act(); } catch (e) { erro = e.message; }
+      this.ok('elenco: equipar armadura sem erro', !erro, erro);
+      this.ok('elenco: aviso da armadura equipada', !!(rs.msg && rs.msg.text), JSON.stringify(rs.msg));
+      rs.msg = null; erro = null;
+      try { rs.act(); } catch (e) { erro = e.message; }
+      this.ok('elenco: recusa (já equipada) mostra aviso sem erro', !erro && !!(rs.msg && rs.msg.text), erro);
+      rs.tab = ROSTER_TABS.findIndex((t) => t.id === 'weapons'); rs.msg = null; erro = null;
+      rs.weaponSel = Math.max(0, rs.weaponList().indexOf(RosterManager.equippedWeapon('kael')));
+      try { rs.act(); } catch (e) { erro = e.message; }
+      this.ok('elenco: arma (já equipada) mostra aviso sem erro', !erro && !!(rs.msg && rs.msg.text), erro);
+    } finally { game.saveGame = salvar; }
   },
 
   // Resultado na tela (canto superior esquerdo), por cima do jogo

@@ -666,6 +666,8 @@ class RosterScreen {
   }
   get def() { return CHARACTER_DEFS[this.charSel] || CHARACTER_DEFS[0]; }
   get tabId() { return ROSTER_TABS[this.tab].id; }
+  // Aviso curto ao lado dos botões (drawStatus): recusa em vermelho; confirmações passam a cor
+  say(text, rgb = '255,120,140') { this.msg = { text, rgb, t: 3 }; }
   armorList() { return RosterManager.armorsFor(this.def.id); }
   weaponList() { return Object.keys(WEAPON_DEFS); }
   syncArmorSel() { this.armorSel = Math.max(0, this.armorList().indexOf(RosterManager.equippedArmor(this.def.id))); }

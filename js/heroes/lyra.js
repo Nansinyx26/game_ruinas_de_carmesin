@@ -591,9 +591,9 @@ const LYRA_KIT = registerHeroKit({
   },
 
   // ---------------------------------------------------- suprema (tecla I)
-  canUltimate(p) { return this.ultLevel(p) > 0 && p.fury >= this.ultCost() && !(p.hero.focus > 0); },
+  canUltimate(p) { return this.ultLevel(p) > 0 && p.fury >= p.ultCost() && !(p.hero.focus > 0); },
   startUltimate(p) {
-    p.fury = Math.max(0, p.fury - this.ultCost());
+    p.fury = Math.max(0, p.fury - p.ultCost());
     p.combo.reset();
     p.invuln = Math.max(p.invuln, 0.5);
     this.startAttack(p, 'foco', null, 0);

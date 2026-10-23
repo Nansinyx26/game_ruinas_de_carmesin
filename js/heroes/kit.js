@@ -124,7 +124,7 @@ const HERO_KIT_BASE = {
   timeStep(p, dt, sdt) { return sdt; },
   ultLevel(p) { return this.ult ? this.progress(p).lv(this.ult) : 0; },
   ultCost() { const s = skillDef(this.ult); return s ? s.energy : SPECIAL_COST; },
-  canUltimate(p) { return this.ultLevel(p) > 0 && p.fury >= this.ultCost(); },
+  canUltimate(p) { return this.ultLevel(p) > 0 && p.fury >= p.ultCost(); },   // p.ultCost: com o desconto do ramo Supremas
   denyUltimate(p) {
     const s = skillDef(this.ult), tr = s && heroTreeOf(s.tree);
     if (s && !this.ultLevel(p)) game.hud.toast(`${s.name} bloqueado · Árvore ${tr ? tr.name.charAt(0) + tr.name.slice(1).toLowerCase() : ''} (nível ${s.lvl})`, '255,92,122');
