@@ -352,7 +352,7 @@ class Player extends Entity {
 
   // Golpe do input: a retaliação depois de um bloqueio (ATTACKS.<id>_counter) vem antes do combo
   resolveInput(b) {
-    if (this.blockCounterT > 0 && b === 'L' && ATTACKS[this.def.id + '_counter']) {
+    if (this.blockCounterT > 0 && b === 'L' && ATTACKS[this.def.id + '_counter'] && this.combo.isUnlocked(this.def.id + '_counter')) {
       this.blockCounterT = 0; this.combo.seq = 'L';
       return this.def.id + '_counter';
     }
@@ -389,7 +389,7 @@ class Player extends Entity {
     this.facing = dir;
     if (this.attack && this.attack.trail) this.attack.trail.release();
     const a = this.attack || (this.attack = { hits: new Map(), counts: new Map() });
-    a.id = id; a.def = def; a.t = 0; a.dir = dir;
+    a.id = id; a.def = def; a.t = 0; a.dir = dir; a.serial = (a.serial || 0) + 1;
     a.hits.clear(); a.counts.clear();
     a.trail = null; a.started = false;
     a.charge = chargeLevel;
@@ -524,7 +524,11 @@ class Player extends Entity {
     if (a.id === 'spin') dmg *= S.spinMult;
     dmg *= this.targetMult(e);
     let crit = Math.random() < S.crit;
-    if (d.counter) crit = true;                  // retaliação depois do bloqueio
+    if (d.counter) {                               // retaliação depois do bloqueio (nível 2: +25%)
+      crit = true;
+      const pr = heroProgressOf(this);
+      if (pr && pr.lv(this.def.id + '_retaliacao') > 1) dmg *= 1.25;
+    }
     // Contra-ataque: o golpe logo após uma esquiva perfeita é crítico e mais forte
     if (this.counterT > 0 && S.counter > 0) {
       crit = true; dmg *= 1 + S.counter; this.counterT = 0;
@@ -1050,11 +1054,15 @@ class Player extends Entity {
   canDash() { return this.dashStock >= 1 && this.dashGap <= 0; }
   canEclipse() {
     if (this.kit) return this.kit.canUltimate(this);
-    if (this.def.id === DEFAULT_CHARACTER) return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST;
+    if (this.def.id === DEFAULT_CHARACTER) return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= this.ultCost();
     return this.fury >= this.ultCost();
   }
   // Energia da suprema: 100; quem tem energia máxima menor (o Drakos começa com 90) usa a barra cheia
-  ultCost() { return this.kit ? this.kit.ultCost() : Math.min(SPECIAL_COST, this.maxEnergy); }
+  // Ramo Supremas (Núcleo Supremo, Ascensão): stats.ultCostMult reduz o custo
+  ultCost() {
+    const base = this.kit ? this.kit.ultCost() : Math.min(SPECIAL_COST, this.maxEnergy), m = this.stats.ultCostMult || 1;
+    return m === 1 ? base : Math.round(base * m);
+  }
   // Nível da suprema do personagem (Kael: Eclipse Absoluto; os aliados sem kit: sempre 1)
   ultLevel() { return this.kit ? this.kit.ultLevel(this) : this.def.id === DEFAULT_CHARACTER ? game.progress.lv('eclipse_absoluto') : 1; }
   denyEclipse() {
@@ -1157,6 +1165,7 @@ class Player extends Entity {
     if (this.fury < cost) { game.hud.abilityDenied(k); game.hud.furyDenied(); game.audio.play('uiDeny'); return false; }
     if (!inf.A.cast(this, inf.lv, wd)) return false;
     this.fury -= cost;
+    this.convT = 2.5;               // Convergência (ramo Supremas): o próximo golpe é mais forte
     const cd = (inf.S && inf.S.cd !== undefined && inf.S.cd !== null) ? inf.S.cd : (inf.A.cooldown || 5);
     this.cds[inf.id] = cd * this.stats.cdr;
     game.hud.abilityUsed(k);

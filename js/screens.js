@@ -227,8 +227,10 @@ class Screens {
       ctx.fillStyle = sel ? '#ffffff' : rgba(tr.rgb, 0.85);
       ctx.fillText(tr.name, r.x + r.w / 2, r.y + 16);
       ctx.letterSpacing = '0px';
-      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,210,225,0.7)';
-      ctx.fillText(`${tr.sub} · ${learned}/${nodes.length}`, r.x + r.w / 2, r.y + 32);
+      // ramo da progressão (Ataque, Poderes, Defesa, Mobilidade, Supremas) e o progresso da árvore
+      ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '1px'; ctx.fillStyle = rgba(tr.rgb, sel ? 0.95 : 0.7);
+      ctx.fillText(`${(SKILL_BRANCHES[tr.branch] || tr.sub).split(' ')[0]} · ${learned}/${nodes.length}`, r.x + r.w / 2, r.y + 32);
+      ctx.letterSpacing = '0px';
       if (avail) {
         ctx.fillStyle = '#ffd47a';
         ctx.beginPath(); ctx.arc(r.x + r.w - 12, r.y + 12, 4 + Math.sin(t * 6), 0, TAU); ctx.fill();
@@ -339,7 +341,8 @@ class Screens {
     ctx.textAlign = 'left';
     let y = L.gy + 26;
     ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(trgb, 0.95);
-    ctx.fillText(`${KIND[s.kind]} · ${tree.name}`, x + 18, y);
+    const cost = s.cost || 1;
+    ctx.fillText(`${KIND[s.kind]} · ${SKILL_BRANCHES[tree.branch] || tree.name}${cost > 1 ? ` · ${cost} PONTOS POR NÍVEL` : ''}`, x + 18, y);
     ctx.letterSpacing = '0px';
     y += 30;
     ctx.font = `bold 24px ${FONT_TITLE}`;
@@ -422,7 +425,8 @@ class Screens {
       ctx.textAlign = 'center';
       ctx.font = `bold 14px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
       ctx.fillStyle = why ? 'rgba(180,190,205,0.75)' : '#fff3d6';
-      const btxt = why ? why.toUpperCase() : lv > 0 ? `[J] APRIMORAR → NÍVEL ${lv + 1} · 1 PONTO` : '[J] DESBLOQUEAR · 1 PONTO';
+      const pts = (s.cost || 1) > 1 ? `${s.cost} PONTOS` : '1 PONTO';
+      const btxt = why ? why.toUpperCase() : lv > 0 ? `[J] APRIMORAR → NÍVEL ${lv + 1} · ${pts}` : `[J] DESBLOQUEAR · ${pts}`;
       ctx.fillText(btxt, b.x + b.w / 2, b.y + b.h / 2 + 1);
       ctx.letterSpacing = '0px';
     } else {

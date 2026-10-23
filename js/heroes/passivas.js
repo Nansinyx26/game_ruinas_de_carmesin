@@ -126,6 +126,34 @@ const HERO_PASSIVES = {
 };
 
 // Liga as passivas aprendidas do personagem do Player (chamado no fim do recalc)
+// ======================= RAMO SUPREMAS (o mesmo para todos: <prefixo>_sup_*, js/data/skilltrees.js)
+for (const pre of ['kael', 'lyra', 'drakos', 'sera', 'orion']) {
+  HERO_PASSIVES[pre + '_sup_nucleo'] = { stats: (S, l) => { S.ultCostMult = (S.ultCostMult || 1) * (1 - 0.06 * l); } };
+  HERO_PASSIVES[pre + '_sup_amplificador'] = { stats: (S, l) => { S.power += 0.08 * l; } };
+  // golpes pesados e finalizações devolvem energia (uma vez por golpe)
+  HERO_PASSIVES[pre + '_sup_recarga'] = { hit: (p, e, l) => {
+    const a = p.attack;
+    if (a && a.def && (a.def.heavy || a.def.leap) && a._recarga !== a.serial) { a._recarga = a.serial; p.gainEnergy(2 * l); }
+  } };
+  // combinação: depois de uma habilidade (Player.castAbility marca convT), o próximo golpe é mais forte
+  HERO_PASSIVES[pre + '_sup_convergencia'] = {
+    tick: (p, dt) => { if (p.convT > 0) p.convT -= dt; },
+    dealt: (p, e, l) => (p.convT > 0 && !(p.attack && p.attack.def && p.attack.def.ability) ? 1 + 0.25 * l : 1),
+    hit: (p) => { if (p.convT > 0 && !(p.attack && p.attack.def && p.attack.def.ability)) { p.convT = 0; game.texts.spawn(p.x, p.y, 70, 'CONVERGÊNCIA', '#a8c8ff', 13, 0.7); } },
+  };
+  HERO_PASSIVES[pre + '_sup_folego'] = { lethal: (p) => {
+    p.hp = Math.max(1, Math.round(p.maxHp * 0.3)); p.fury = Math.max(p.fury, p.maxEnergy * 0.5); p.invuln = Math.max(p.invuln, 1);
+    game.hud.toast('ÚLTIMO FÔLEGO', '170,200,255'); return true;
+  } };
+  HERO_PASSIVES[pre + '_sup_ressonancia'] = { kill: (p, e, l) => {
+    if (p.state === 'special' || (p.buffs && p.buffs.lyraFocus > 0)) p.fury = Math.min(p.maxEnergy, p.fury + 8 * l);
+  } };
+  HERO_PASSIVES[pre + '_sup_ascensao'] = {
+    stats: (S) => { S.dmgMult += 0.1; S.ultCostMult = (S.ultCostMult || 1) * 0.9; },
+    taken: () => 0.9,
+  };
+}
+
 const HeroPassives = {
   // Monta a lista [efeito, nível] do personagem e aplica os atributos
   apply(p, S, pr) {

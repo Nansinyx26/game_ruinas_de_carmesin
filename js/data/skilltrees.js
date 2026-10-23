@@ -43,25 +43,29 @@ function skillTreeTint(hex, tint = {}) {
 
 const ROSTER_SKILL_TREES = [
   // ----- LYRA KAEDE: o arco de fóton, as armadilhas de quem caça longe da rede e a fuga
-  { id: 'lyra_foton', owner: 'lyra', name: 'ARCO DE FÓTON', sub: 'Árvore de Precisão', tint: {} },
-  { id: 'lyra_caca', owner: 'lyra', name: 'CAÇADORA', sub: 'Árvore de Armadilhas', tint: { h: -24, s: -0.15 } },
-  { id: 'lyra_instavel', owner: 'lyra', name: 'FÓTON INSTÁVEL', sub: 'Árvore Explosiva', tint: { h: 42 } },
-  { id: 'lyra_sobrevivente', owner: 'lyra', name: 'SOBREVIVENTE', sub: 'Árvore de Mobilidade', tint: { s: -0.45, l: 0.1 } },
+  { id: 'lyra_foton', owner: 'lyra', name: 'ARCO DE FÓTON', sub: 'Árvore de Precisão', tint: {}, branch: 'ataque' },
+  { id: 'lyra_caca', owner: 'lyra', name: 'CAÇADORA', sub: 'Árvore de Armadilhas', tint: { h: -24, s: -0.15 }, branch: 'defesa' },
+  { id: 'lyra_instavel', owner: 'lyra', name: 'FÓTON INSTÁVEL', sub: 'Árvore Explosiva', tint: { h: 42 }, branch: 'poderes' },
+  { id: 'lyra_sobrevivente', owner: 'lyra', name: 'SOBREVIVENTE', sub: 'Árvore de Mobilidade', tint: { s: -0.45, l: 0.1 }, branch: 'mobilidade' },
+  { id: 'lyra_supremas', owner: 'lyra', name: 'LUZ CAÇADORA', sub: 'Ramo Supremo', tint: { h: 15, l: 0.12 }, branch: 'supremas' },
   // ----- DRAKOS: o machado e o martelo, a armadura da Legião e a vontade que voltou a ser dele
-  { id: 'drakos_lanca', owner: 'drakos', name: 'MACHADO E MARTELO', sub: 'Árvore de Força', tint: {} },
-  { id: 'drakos_bastiao', owner: 'drakos', name: 'BASTIÃO', sub: 'Árvore de Defesa', tint: { s: -0.5, l: 0.06 } },
-  { id: 'drakos_frente', owner: 'drakos', name: 'LINHA DE FRENTE', sub: 'Árvore de Investida', tint: { h: 22 } },
-  { id: 'drakos_vontade', owner: 'drakos', name: 'VONTADE PRÓPRIA', sub: 'Árvore de Fúria', tint: { h: -24, l: 0.06 } },
+  { id: 'drakos_lanca', owner: 'drakos', name: 'MACHADO E MARTELO', sub: 'Árvore de Força', tint: {}, branch: 'ataque' },
+  { id: 'drakos_bastiao', owner: 'drakos', name: 'BASTIÃO', sub: 'Árvore de Defesa', tint: { s: -0.5, l: 0.06 }, branch: 'defesa' },
+  { id: 'drakos_frente', owner: 'drakos', name: 'LINHA DE FRENTE', sub: 'Árvore de Investida', tint: { h: 22 }, branch: 'mobilidade' },
+  { id: 'drakos_vontade', owner: 'drakos', name: 'VONTADE PRÓPRIA', sub: 'Árvore de Fúria', tint: { h: -24, l: 0.06 }, branch: 'poderes' },
+  { id: 'drakos_supremas', owner: 'drakos', name: 'TITÃ', sub: 'Ramo Supremo', tint: { h: 12, l: 0.12 }, branch: 'supremas' },
   // ----- SERA VYNE: o drone S-01, os campos de força, a invasão de sistemas e a nanomedicina
-  { id: 'sera_drones', owner: 'sera', name: 'DRONE S-01', sub: 'Árvore de Drones', tint: {} },
-  { id: 'sera_campos', owner: 'sera', name: 'CAMPO DE FORÇA', sub: 'Árvore de Proteção', tint: { h: 32 } },
-  { id: 'sera_intrusao', owner: 'sera', name: 'INTRUSÃO', sub: 'Árvore de Controle', tint: { h: -50 } },
-  { id: 'sera_nano', owner: 'sera', name: 'NANOMEDICINA', sub: 'Árvore de Suporte', tint: { s: -0.2, l: 0.16 } },
+  { id: 'sera_drones', owner: 'sera', name: 'DRONE S-01', sub: 'Árvore de Drones', tint: {}, branch: 'ataque' },
+  { id: 'sera_campos', owner: 'sera', name: 'CAMPO DE FORÇA', sub: 'Árvore de Proteção', tint: { h: 32 }, branch: 'defesa' },
+  { id: 'sera_intrusao', owner: 'sera', name: 'INTRUSÃO', sub: 'Árvore de Controle', tint: { h: -50 }, branch: 'poderes' },
+  { id: 'sera_nano', owner: 'sera', name: 'NANOMEDICINA', sub: 'Árvore de Suporte', tint: { s: -0.2, l: 0.16 }, branch: 'defesa' },
+  { id: 'sera_supremas', owner: 'sera', name: 'NÚCLEO VYNE', sub: 'Ramo Supremo', tint: { h: 20, l: 0.1 }, branch: 'supremas' },
   // ----- ORION: as lâminas duplas, a furtividade do agente, os arremessos e a infiltração
-  { id: 'orion_laminas', owner: 'orion', name: 'LÂMINAS DUPLAS', sub: 'Árvore de Combate', tint: {} },
-  { id: 'orion_fantasma', owner: 'orion', name: 'FANTASMA', sub: 'Árvore de Furtividade', tint: { s: -0.55, l: 0.1 } },
-  { id: 'orion_precisao', owner: 'orion', name: 'PRECISÃO', sub: 'Árvore de Arremesso', tint: { h: 18 } },
-  { id: 'orion_infiltrado', owner: 'orion', name: 'INFILTRADO', sub: 'Árvore de Mobilidade', tint: { h: -17 } },
+  { id: 'orion_laminas', owner: 'orion', name: 'LÂMINAS DUPLAS', sub: 'Árvore de Combate', tint: {}, branch: 'ataque' },
+  { id: 'orion_fantasma', owner: 'orion', name: 'FANTASMA', sub: 'Árvore de Furtividade', tint: { s: -0.55, l: 0.1 }, branch: 'defesa' },
+  { id: 'orion_precisao', owner: 'orion', name: 'PRECISÃO', sub: 'Árvore de Arremesso', tint: { h: 18 }, branch: 'poderes' },
+  { id: 'orion_infiltrado', owner: 'orion', name: 'INFILTRADO', sub: 'Árvore de Mobilidade', tint: { h: -17 }, branch: 'mobilidade' },
+  { id: 'orion_supremas', owner: 'orion', name: 'CORVO', sub: 'Ramo Supremo', tint: { h: 14, l: 0.12 }, branch: 'supremas' },
 ];
 for (const tr of ROSTER_SKILL_TREES) {
   const d = CHARACTERS_BY_ID[tr.owner];
@@ -305,6 +309,13 @@ const ROSTER_SKILLS = {
     desc: (l) => `+${12 * l} de vida máxima e curas ${10 * l}% mais fortes.` },
   lyra_segundo_folego: { tree: 'lyra_sobrevivente', name: 'Segundo Fôlego', kind: 'passiva', icon: 'wing', max: 3, lvl: 12, col: 2, row: 4, req: [['lyra_atalhos', 1]],
     desc: (l) => `Uma vez por setor, um golpe fatal deixa Lyra com ${15 * l}% da vida.` },
+  // Combos novos (js/combat.js: COMBO_SKILLS)
+  drakos_queda_tita: { tree: 'drakos_lanca', name: 'Queda do Titã', kind: 'tecnica', icon: 'quake', max: 1, lvl: 9, col: 1, row: 4, req: [['drakos_onze_anos', 1]],
+    desc: () => 'L → L → L → H: salto com a arma erguida e a queda sobre o chão (70 de dano em área, rompe escudos).' },
+  drakos_retaliacao: { tree: 'drakos_bastiao', name: 'Retaliação', kind: 'tecnica', icon: 'reflect', max: 2, lvl: 9, col: 1, row: 4, req: [['drakos_ultimo', 1]],
+    desc: (l) => `Depois de bloquear com o Escudo de Energia, L em até 1 s: golpe de retaliação crítico${l > 1 ? ' com +25% de dano' : ''}.` },
+  orion_salto_corvo: { tree: 'orion_laminas', name: 'Salto do Corvo', kind: 'tecnica', icon: 'shadowStrike', max: 1, lvl: 9, col: 1, row: 4, req: [['orion_execucao', 1]],
+    desc: () => 'L → L → L → H: salto mortal por cima do alvo e as duas lâminas na queda (dois acertos em área).' },
   drakos_machado_largo: { tree: 'drakos_lanca', name: 'Machado Largo', kind: 'passiva', icon: 'blades', max: 3, lvl: 10, col: 0, row: 4, req: [['drakos_onze_anos', 1]],
     desc: (l) => `+${5 * l}% de dano para cada outro inimigo a até 140 (até +${15 * l}%): o machado pega mais de um.` },
   drakos_martelo_sismico: { tree: 'drakos_lanca', name: 'Martelo Sísmico', kind: 'passiva', icon: 'burst', max: 3, lvl: 12, col: 2, row: 4, req: [['drakos_onze_anos', 1]],
@@ -354,6 +365,35 @@ const ROSTER_SKILLS = {
   orion_ultima_porta: { tree: 'orion_infiltrado', name: 'A Última Porta', kind: 'passiva', icon: 'void', max: 3, lvl: 12, col: 2, row: 4, req: [['orion_furia_sombria', 1]],
     desc: (l) => `+${12 * l}% de dano contra inimigos com mais de 80% da vida (o primeiro golpe).` },
 };
+// ---------------------------------------------------------------------------
+// RAMOS DA PROGRESSÃO: cada árvore pertence a um ramo; a tela mostra as árvores nessa ordem.
+// O 5º ramo (Supremas) é igual em estrutura para todos: custa mais pontos (cost) e pede nível
+// alto; os efeitos ficam em js/heroes/passivas.js (HERO_PASSIVES, ids <prefixo>_sup_*).
+// ---------------------------------------------------------------------------
+const SKILL_BRANCHES = { ataque: 'ATAQUE', poderes: 'PODERES', defesa: 'DEFESA E SOBREVIVÊNCIA', mobilidade: 'MOBILIDADE', supremas: 'SUPREMAS' };
+const SKILL_BRANCH_ORDER = ['ataque', 'poderes', 'defesa', 'mobilidade', 'supremas'];
+function supremeNodes(tree, pre) {
+  const id = (k) => `${pre}_sup_${k}`;
+  return {
+    [id('nucleo')]: { tree, name: 'Núcleo Supremo', kind: 'passiva', icon: 'overload', max: 3, lvl: 10, cost: 2, col: 1, row: 0, req: [],
+      desc: (l) => `A suprema custa ${6 * l}% menos energia.` },
+    [id('amplificador')]: { tree, name: 'Amplificador', kind: 'passiva', icon: 'burst', max: 3, lvl: 12, cost: 2, col: 0, row: 1, req: [[id('nucleo'), 1]],
+      desc: (l) => `+${8 * l}% de poder: habilidades e a suprema causam mais dano.` },
+    [id('recarga')]: { tree, name: 'Recarga de Combate', kind: 'passiva', icon: 'bolt', max: 3, lvl: 12, cost: 2, col: 2, row: 1, req: [[id('nucleo'), 1]],
+      desc: (l) => `Golpes pesados e finalizações que acertam devolvem ${2 * l} de energia.` },
+    [id('convergencia')]: { tree, name: 'Convergência', kind: 'passiva', icon: 'chain', max: 2, lvl: 15, cost: 2, col: 1, row: 2, req: [[id('amplificador'), 1], [id('recarga'), 1]],
+      desc: (l) => `Combinação: depois de usar uma habilidade, o próximo golpe em até 2,5 s causa +${25 * l}% de dano.` },
+    [id('folego')]: { tree, name: 'Último Fôlego', kind: 'passiva', icon: 'heart', max: 1, lvl: 18, cost: 3, col: 0, row: 3, req: [[id('convergencia'), 1]],
+      desc: () => 'Uma vez por setor, um golpe fatal deixa o herói com 30% da vida e metade da energia.' },
+    [id('ressonancia')]: { tree, name: 'Ressonância Suprema', kind: 'passiva', icon: 'soul', max: 2, lvl: 18, cost: 2, col: 2, row: 3, req: [[id('convergencia'), 1]],
+      desc: (l) => `Cada inimigo derrubado durante a suprema devolve ${8 * l} de energia.` },
+    [id('ascensao')]: { tree, name: 'Ascensão', kind: 'passiva', icon: 'eclipse', max: 1, lvl: 25, cost: 4, col: 1, row: 4, req: [[id('folego'), 1], [id('ressonancia'), 1]],
+      desc: () => '+10% de dano, 10% menos dano recebido e a suprema custa mais 10% menos.' },
+  };
+}
+for (const c of ['lyra', 'drakos', 'sera', 'orion']) Object.assign(ROSTER_SKILLS, supremeNodes(`${c}_supremas`, c));
+Object.assign(SKILLS, supremeNodes('kael_supremas', 'kael'));
+for (const id in SKILLS) SKILLS[id].id = SKILLS[id].id || id;
 const ROSTER_TREE_OWNER = {};
 for (const tr of ROSTER_SKILL_TREES) ROSTER_TREE_OWNER[tr.id] = tr.owner;
 for (const id in ROSTER_SKILLS) { const s = ROSTER_SKILLS[id]; s.id = id; s.owner = ROSTER_TREE_OWNER[s.tree]; }
@@ -366,13 +406,14 @@ for (const tr of SKILL_TREES) if (!tr.owner) tr.owner = 'kael';
 //   de sempre) · 'party' = CharacterProgress próprio (PartyProgress, js/progression.js)
 //   combo: complemento da dica das técnicas ("…entram nos combos <combo>…")
 // ---------------------------------------------------------------------------
+const byBranch = (trees) => trees.slice().sort((a, b) => SKILL_BRANCH_ORDER.indexOf(a.branch) - SKILL_BRANCH_ORDER.indexOf(b.branch));
 const SKILL_SETS = {
-  kael: { trees: SKILL_TREES, skills: SKILLS, progress: 'legacy', combo: 'da espada' },
+  kael: { trees: byBranch(SKILL_TREES), skills: SKILLS, progress: 'legacy', combo: 'da espada' },
 };
 const SKILL_COMBO_WEAPON = { lyra: 'do arco', drakos: 'do machado', sera: 'do orbe', orion: 'das lâminas' };
 for (const c of CHARACTER_DEFS) {
   if (SKILL_SETS[c.id]) continue;
-  const trees = ROSTER_SKILL_TREES.filter((tr) => tr.owner === c.id);
+  const trees = byBranch(ROSTER_SKILL_TREES.filter((tr) => tr.owner === c.id));
   if (!trees.length) continue;
   const skills = {};
   for (const id in ROSTER_SKILLS) if (ROSTER_SKILLS[id].owner === c.id) skills[id] = ROSTER_SKILLS[id];
@@ -439,14 +480,16 @@ function validateSkillTrees() {
   }
   for (const tr of ROSTER_SKILL_TREES) {
     const nodes = Object.values(ROSTER_SKILLS).filter((s) => s.tree === tr.id), cells = new Set();
-    if (nodes.length < 5 || nodes.length > 9) bad.push(`${tr.id}: ${nodes.length} nós (esperado 5 a 9: até 7 originais + os 2 da linha 5)`);
+    if (nodes.length < 5 || nodes.length > 9) bad.push(`${tr.id}: ${nodes.length} nós (esperado 5 a 9)`);
+    if (!SKILL_BRANCHES[tr.branch]) bad.push(`${tr.id}: ramo ${tr.branch}`);
     for (const s of nodes) { const k = `${s.col},${s.row}`; if (cells.has(k)) bad.push(`${tr.id}: nós sobrepostos em ${k}`); cells.add(k); }
     if (SKILL_TREES.some((q) => q.id === tr.id)) bad.push(`${tr.id}: colide com uma árvore do Kael`);
   }
   for (const c of CHARACTER_DEFS) {
     if (c.id === 'kael' || !SKILL_SETS[c.id]) continue;
     const nodes = Object.values(SKILL_SETS[c.id].skills), trees = SKILL_SETS[c.id].trees.length;
-    if (trees < 3 || trees > 4) bad.push(`${c.id}: ${trees} árvores (esperado 3 ou 4)`);
+    if (trees < 3 || trees > 5) bad.push(`${c.id}: ${trees} árvores (esperado 3 a 5)`);
+    if (!SKILL_SETS[c.id].trees.some((tr) => tr.branch === 'supremas')) bad.push(`${c.id}: sem o ramo Supremas`);
     for (const aid of c.abilities) {
       const n = nodes.find((s) => s.ability === aid);
       if (!n) bad.push(`${c.id}: a habilidade ${aid} da ficha não está nas árvores`);

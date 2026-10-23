@@ -482,6 +482,7 @@ const ATTACKS = {
 const COMBO_TABLE = { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 'heavy', LH: 'uppercut', HH: 'slam' };
 const COMBO_REQUIRES = { uppercut: 'uppercut', slam: 'slam' }; // técnicas das evoluções
 // Técnicas liberadas pela árvore de habilidades
+const ALLY_COMBO_SKILLS = { drakos_finisher: 'drakos_queda_tita', drakos_counter: 'drakos_retaliacao', orion_finisher: 'orion_salto_corvo' };
 const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio', finisher: 'sentenca_eclipse', reverse: 'reves_horizonte' };
 
 const CHARACTER_COMBOS = {
@@ -513,7 +514,11 @@ class ComboSystem {
   }
   isUnlocked(id) {
     const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
-    if (charId !== 'kael') return true;
+    if (charId !== 'kael') {
+      // combos novos dos aliados: liberados pelo nó da árvore (ALLY_COMBO_SKILLS)
+      const ak = ALLY_COMBO_SKILLS[id], pr = ak && typeof PartyProgress !== 'undefined' ? PartyProgress.of(charId) : null;
+      return !ak || !!(pr && pr.lv(ak) > 0);
+    }
     const req = COMBO_REQUIRES[id];
     if (req && !this.unlocked.has(req)) return false;
     const sk = COMBO_SKILLS[id];

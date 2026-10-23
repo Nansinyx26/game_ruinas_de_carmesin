@@ -92,11 +92,14 @@ const BASE_STATS = {
 // req: [[id, nível]] (todos exigidos)   lvl: nível de personagem exigido
 // energy/cd: custo e recarga das ativas   desc(l): efeito no nível l
 // ---------------------------------------------------------------------------
+// branch: ramo da progressão (SKILL_BRANCHES, js/data/skilltrees.js) — Ataque, Poderes, Defesa
+// e sobrevivência, Mobilidade e Supremas; a tela mostra as árvores nessa ordem
 const SKILL_TREES = [
-  { id: 'eletrica', name: 'TEMPESTADE NULA', sub: 'Árvore Elétrica', rgb: '80,160,255' },
-  { id: 'sombra', name: 'SOMBRA', sub: 'Árvore de Mobilidade', rgb: '170,120,255' },
-  { id: 'espadachim', name: 'ESPADACHIM', sub: 'Árvore de Combate', rgb: '220,228,240' },
-  { id: 'nucleo', name: 'NÚCLEO ZERO', sub: 'Árvore Tecnológica', rgb: '80,230,200' },
+  { id: 'eletrica', name: 'TEMPESTADE NULA', sub: 'Árvore Elétrica', rgb: '80,160,255', branch: 'poderes' },
+  { id: 'sombra', name: 'SOMBRA', sub: 'Árvore de Mobilidade', rgb: '170,120,255', branch: 'mobilidade' },
+  { id: 'espadachim', name: 'ESPADACHIM', sub: 'Árvore de Combate', rgb: '220,228,240', branch: 'ataque' },
+  { id: 'nucleo', name: 'NÚCLEO ZERO', sub: 'Árvore Tecnológica', rgb: '80,230,200', branch: 'defesa' },
+  { id: 'kael_supremas', name: 'ECLIPSE', sub: 'Ramo Supremo', rgb: '150,175,255', branch: 'supremas' },
 ];
 
 const SKILLS = {
@@ -139,6 +142,11 @@ const SKILLS = {
     desc: (l) => `+${30 * l}% de dano contra blindados e chefes; quebra a estabilidade ${l >= 2 ? 'e a super armadura ' : ''}com mais força.` },
   tempestade_laminas: { tree: 'espadachim', name: 'Tempestade de Lâminas', kind: 'ativa', icon: 'blades', max: 3, lvl: 6, col: 2, row: 2, req: [['contra_ataque', 1]], energy: 28, cd: 9,
     desc: (l) => `Sequência de ${5 + l} cortes rápidos em cone (${14 + 5 * l} de dano cada).` },
+  // Combos novos (js/combat.js: COMBO_SKILLS)
+  reves_horizonte: { tree: 'espadachim', name: 'Revés do Horizonte', kind: 'tecnica', icon: 'counter', max: 1, lvl: 7, col: 0, row: 3, req: [['ruptura_guarda', 1]],
+    desc: () => 'L → H → L: vira no meio do combo e corta o que estava às costas (com direção apertada, corta para onde apontar).' },
+  sentenca_eclipse: { tree: 'espadachim', name: 'Sentença do Eclipse', kind: 'tecnica', icon: 'eclipse', max: 1, lvl: 9, col: 1, row: 4, req: [['corte_vazio', 1]],
+    desc: () => 'L → L → L → H: finalização com salto e golpe por cima até o chão, com onda de choque (42 de dano em área).' },
   corte_vazio: { tree: 'espadachim', name: 'Corte do Vazio', kind: 'tecnica', icon: 'void', max: 3, lvl: 5, col: 1, row: 3, req: [['ruptura_guarda', 1]],
     desc: (l) => `Esquiva → Pesado: golpe concentrado que libera ${l >= 2 ? 'três ondas elétricas em leque' : 'uma onda elétrica em linha reta'}${l >= 3 ? ', maiores e mais fortes' : ''}.` },
 
@@ -189,7 +197,8 @@ class Progress {
     if (cur >= s.max) return 'Nível máximo';
     if (this.level < s.lvl) return `Requer nível ${s.lvl}`;
     for (const [rid, rl] of s.req) if (this.lv(rid) < rl) return `Requer ${SKILLS[rid].name}${rl > 1 ? ' ' + rl : ''}`;
-    if (this.sp < 1) return 'Sem pontos de habilidade';
+    const c = s.cost || 1;
+    if (this.sp < c) return c > 1 ? `Requer ${c} pontos de habilidade` : 'Sem pontos de habilidade';
     return null;
   }
   reqMet(id) {
@@ -201,7 +210,7 @@ class Progress {
   learn(id) {
     if (this.blocker(id)) return false;
     this.skills[id] = this.lv(id) + 1;
-    this.sp -= 1;
+    this.sp -= SKILLS[id].cost || 1;
     // Ativas recém-desbloqueadas ocupam o primeiro atalho livre
     if (SKILL_ACTIVE(id) && this.skills[id] === 1 && !this.slots.includes(id)) {
       const k = this.slots.indexOf(null);
@@ -252,7 +261,8 @@ class CharacterProgress {
     if (cur >= s.max) return 'Nível máximo';
     if (this.level < s.lvl) return `Requer nível ${s.lvl}`;
     for (const [rid, rl] of s.req) if (this.lv(rid) < rl) return `Requer ${D[rid].name}${rl > 1 ? ' ' + rl : ''}`;
-    if (this.sp < 1) return 'Sem pontos de habilidade';
+    const c = s.cost || 1;
+    if (this.sp < c) return c > 1 ? `Requer ${c} pontos de habilidade` : 'Sem pontos de habilidade';
     return null;
   }
   reqMet(id) {
@@ -264,7 +274,7 @@ class CharacterProgress {
   learn(id) {
     if (this.blocker(id)) return false;
     this.skills[id] = this.lv(id) + 1;
-    this.sp -= 1;
+    this.sp -= this.defs[id].cost || 1;
     // Ativas recém-desbloqueadas ocupam o primeiro atalho livre
     if (this.isActiveSkill(id) && this.skills[id] === 1 && !this.slots.includes(id)) {
       const k = this.slots.indexOf(null);
