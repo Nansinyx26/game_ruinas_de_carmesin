@@ -75,7 +75,7 @@ const GLBViewer = (() => {
       // Difusa principal
       float diff1 = max(dot(N, lightDir1), 0.0);
       float diff2 = max(dot(N, lightDir2), 0.0) * 0.4;
-      float ambient = 0.25;
+      float ambient = uUseTexture ? 0.4 : 0.25;
 
       // Especular neon
       vec3 halfDir = normalize(lightDir1 + viewDir);
@@ -90,7 +90,10 @@ const GLBViewer = (() => {
         if (texColor.a > 0.1) baseColor = texColor;
       }
 
-      vec3 lighting = (ambient + diff1 + diff2) * baseColor.rgb + (spec + fresnel) * uColor;
+      // com a textura, a borda neon é só um realce (as cores são as da própria armadura/arma)
+      vec3 rim = (spec + fresnel) * uColor;
+      if (uUseTexture) rim *= 0.35;
+      vec3 lighting = (ambient + diff1 + diff2) * baseColor.rgb + rim;
       gl_FragColor = vec4(lighting, baseColor.a);
     }
   `;
@@ -242,6 +245,21 @@ const GLBViewer = (() => {
       binBuffer = arrayBuffer.slice(binOffset + 8, binOffset + 8 + binLen);
     }
 
+    // Textura base de cor do material (imagem embutida no GLB): Blob por imagem, compartilhado
+    const imgBlobs = {};
+    function baseColorBlob(matIdx) {
+      const mat = matIdx !== undefined && gltf.materials ? gltf.materials[matIdx] : null;
+      const bt = mat && mat.pbrMetallicRoughness && mat.pbrMetallicRoughness.baseColorTexture;
+      const tex = bt && gltf.textures ? gltf.textures[bt.index] : null;
+      const im = tex && gltf.images ? gltf.images[tex.source] : null;
+      if (!im || im.bufferView === undefined || !binBuffer) return null;
+      if (!imgBlobs[tex.source]) {
+        const bv = gltf.bufferViews[im.bufferView];
+        imgBlobs[tex.source] = new Blob([new Uint8Array(binBuffer, bv.byteOffset || 0, bv.byteLength)], { type: im.mimeType || 'image/jpeg' });
+      }
+      return imgBlobs[tex.source];
+    }
+
     const primitives = [];
     let minBox = [Infinity, Infinity, Infinity];
     let maxBox = [-Infinity, -Infinity, -Infinity];
@@ -295,7 +313,8 @@ const GLBViewer = (() => {
             uvs: uvAcc ? uvAcc.data : null,
             indices: idxAcc ? idxAcc.data : null,
             vertexCount: posAcc.count,
-            indexCount: idxAcc ? idxAcc.count : 0
+            indexCount: idxAcc ? idxAcc.count : 0,
+            image: uvAcc ? baseColorBlob(prim.material) : null
           });
         }
       }
@@ -321,6 +340,7 @@ const GLBViewer = (() => {
   function createModelBuffers(parsed, targetGL) {
     const g = targetGL || gl;
     const gpuPrimitives = [];
+    const texOf = new Map();
     let totalVerts = 0;
     let totalTris = 0;
 
@@ -362,8 +382,14 @@ const GLBViewer = (() => {
       }
       totalVerts += p.vertexCount;
 
+      let tex = null;
+      if (p.image && uvBuf) {
+        tex = texOf.get(p.image);
+        if (!tex) { tex = loadTexture(g, p.image); texOf.set(p.image, tex); }
+      }
+
       gpuPrimitives.push({
-        posBuf, normBuf, uvBuf, idxBuf,
+        posBuf, normBuf, uvBuf, idxBuf, tex,
         indexCount: p.indexCount,
         vertexCount: p.vertexCount,
         indexType: p.indexType32 ? g.UNSIGNED_INT : g.UNSIGNED_SHORT
@@ -377,6 +403,50 @@ const GLBViewer = (() => {
       totalVerts,
       totalTris: Math.round(totalTris)
     };
+  }
+
+  // Textura WebGL de uma imagem do GLB: { t, ready }. A imagem decodifica em segundo plano
+  function loadTexture(g, blob) {
+    const tex = { t: g.createTexture(), ready: false };
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (g.isContextLost && g.isContextLost()) return;
+      g.bindTexture(g.TEXTURE_2D, tex.t);
+      g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, false);      // glTF: v = 0 no topo da imagem, como no WebGL sem inverter
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, img);
+      const pot = !(img.naturalWidth & (img.naturalWidth - 1)) && !(img.naturalHeight & (img.naturalHeight - 1));
+      if (pot) g.generateMipmap(g.TEXTURE_2D);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, pot ? g.LINEAR_MIPMAP_LINEAR : g.LINEAR);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, pot ? g.REPEAT : g.CLAMP_TO_EDGE);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, pot ? g.REPEAT : g.CLAMP_TO_EDGE);
+      tex.ready = true;
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); console.warn('Textura do GLB não decodificou'); };
+    img.src = url;
+    return tex;
+  }
+
+  // Coordenadas de textura e textura de uma primitiva (ou só a cor-tema, sem textura)
+  function bindTexture(g, info, p) {
+    const on = !!(p.tex && p.tex.ready && p.uvBuf && info.attribs.texCoord >= 0);
+    if (info.attribs.texCoord >= 0) {
+      if (on) {
+        g.bindBuffer(g.ARRAY_BUFFER, p.uvBuf);
+        g.vertexAttribPointer(info.attribs.texCoord, 2, g.FLOAT, false, 0, 0);
+        g.enableVertexAttribArray(info.attribs.texCoord);
+      } else {
+        g.disableVertexAttribArray(info.attribs.texCoord);
+      }
+    }
+    if (on) {
+      g.activeTexture(g.TEXTURE0);
+      g.bindTexture(g.TEXTURE_2D, p.tex.t);
+      g.uniform1i(info.uniforms.sampler, 0);
+    }
+    g.uniform1i(info.uniforms.useTexture, on ? 1 : 0);
   }
 
   // Cria o modal na interface
@@ -653,6 +723,7 @@ const GLBViewer = (() => {
       } else {
         gl.disableVertexAttribArray(programInfo.attribs.normal);
       }
+      bindTexture(gl, programInfo, p);
 
       const drawMode = wireframe ? gl.LINES : gl.TRIANGLES;
       if (p.idxBuf) {
@@ -712,14 +783,16 @@ const GLBViewer = (() => {
   let prevShaderProg = null;
   const previewModelCache = new Map();
   const previewLoading = new Set();
+  const previewFailed = new Set();   // .glb que o navegador não deixou ler (file://): não tenta a cada quadro
   const previewSmokeParticles = [];
+  const PREV_RES = 384;          // lado do quadro da prévia (a textura aparece nítida na caixa 360°)
 
   function initPreviewGL() {
     if (prevGL) return true;
     try {
       prevCanvas = document.createElement('canvas');
-      prevCanvas.width = 256;
-      prevCanvas.height = 256;
+      prevCanvas.width = PREV_RES;
+      prevCanvas.height = PREV_RES;
       prevGL = prevCanvas.getContext('webgl', { antialias: true, alpha: true, preserveDrawingBuffer: true });
       if (!prevGL) return false;
       prevGL.getExtension('OES_element_index_uint');   // índices de 32 bits dos .glb (ver initGL)
@@ -764,7 +837,9 @@ const GLBViewer = (() => {
   }
 
   function loadPreviewGLB(path) {
-    if (!path || previewModelCache.has(path) || previewLoading.has(path)) return;
+    if (!path || previewModelCache.has(path) || previewLoading.has(path) || previewFailed.has(path)) return;
+    // pelo file:// o navegador não deixa ler o .glb (fica o modelo do jogo, quando houver)
+    if (typeof location !== 'undefined' && location.protocol === 'file:') { previewFailed.add(path); return; }
     previewLoading.add(path);
     fetch(encodeURI(path))
       .then(res => {
@@ -782,13 +857,14 @@ const GLBViewer = (() => {
       .catch(err => {
         console.warn('Falha ao carregar preview GLB:', path, err);
         previewLoading.delete(path);
+        previewFailed.add(path);
       });
   }
 
   function renderPreview3D(gpuModel, yaw, pitch, colorRGB) {
     if (!initPreviewGL() || !gpuModel) return false;
     const g = prevGL;
-    g.viewport(0, 0, 256, 256);
+    g.viewport(0, 0, PREV_RES, PREV_RES);
     g.clearColor(0.0, 0.0, 0.0, 0.0);
     g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
 
@@ -841,6 +917,7 @@ const GLBViewer = (() => {
       } else {
         g.disableVertexAttribArray(prevProgramInfo.attribs.normal);
       }
+      bindTexture(g, prevProgramInfo, p);
 
       if (p.idxBuf) {
         g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, p.idxBuf);
@@ -1004,22 +1081,39 @@ const GLBViewer = (() => {
       }
       ctx.restore();
 
-      // Renderização 3D do modelo
+      // Renderização 3D do modelo: o .glb original com a textura dele. interactive.model3D(ctx, x,
+      // y, sz, yaw) desenha o modelo do jogo (o herói vestindo a armadura): no lugar do .glb quando
+      // interactive.prefer3D, ou enquanto ele carrega / quando o navegador não deixa lê-lo (file://)
       let rendered3D = false;
-      if (item.glb) {
+      const sz = Math.min(box.w - 14, box.h - 32);
+      const own = interactive && interactive.model3D;
+      if (own && interactive.prefer3D) rendered3D = own(ctx, cx, cyBase - 4, sz, yaw) === true;
+      if (!rendered3D && item.glb && !(own && interactive.prefer3D)) {
         const gpu = previewModelCache.get(item.glb);
         if (gpu) {
           renderPreview3D(gpu, yaw, pitch, colorRGB);
-          const sz = Math.min(box.w - 14, box.h - 32);
           ctx.drawImage(prevCanvas, cx - sz / 2, cyBase - sz * 0.88, sz, sz);
           rendered3D = true;
         } else {
           loadPreviewGLB(item.glb);
         }
       }
+      if (!rendered3D && own && !interactive.prefer3D) rendered3D = own(ctx, cx, cyBase - 4, sz, yaw) === true;
+      // carregando: só o aviso (a imagem 2D não aparece no lugar do modelo 3D)
+      const loading3D = !rendered3D && ((item.glb && previewLoading.has(item.glb)) || (interactive && interactive.loading3D));
+      if (loading3D) {
+        ctx.save();
+        ctx.font = `bold 10px ${typeof FONT_TITLE !== 'undefined' ? FONT_TITLE : 'sans-serif'}`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = `rgba(${rgbStr}, ${0.55 + 0.35 * Math.sin(now * 5)})`;
+        ctx.fillText('CARREGANDO MODELO 3D…', cx, cyBase - sz * 0.42);
+        ctx.strokeStyle = `rgba(${rgbStr}, 0.85)`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cyBase - sz * 0.42 - 26, 11, now * 5, now * 5 + 4.2); ctx.stroke();
+        ctx.restore();
+      }
 
-      // Fallback em 3D giratório via sprite com iluminação e perspectiva
-      if (!rendered3D) {
+      // Sem nenhum modelo 3D (item sem .glb, ou .glb ilegível sem modelo do jogo): a imagem girando
+      if (!rendered3D && !loading3D) {
         const img = item.png ? (typeof SpecialAssets !== 'undefined' ? SpecialAssets.getImg(item.png) : null) : null;
         if (img && img.complete && img.naturalWidth) {
           const is = Math.min((box.w - 24) / img.naturalWidth, (box.h - 48) / img.naturalHeight);

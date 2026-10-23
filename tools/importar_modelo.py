@@ -38,6 +38,10 @@ Opções: --cima/--frente: eixo do arquivo que aponta para cima / para onde o pe
 Com --id kael o arquivo gerado substitui js/assets/kael3d.js (o Kael do jogo passa a usar a
 malha importada; as luvas modeladas ficam de fora, porque a malha já tem as mãos). Para os
 aliados, grava HERO3D.<id> no mesmo formato (js/models/hero_tex3d.js lê as duas versões).
+Armaduras vestidas em jogo (os GLB de assets/modelos/armaduras/, personagens completos com a
+armadura): --armadura <nome> grava ARMOR3D[<nome>] em js/assets/armaduras/<nome>.js, carregado
+só quando a armadura é equipada (js/heroes/armaduras3d.js):
+  python3 tools/importar_modelo.py assets/modelos/armaduras/lyra/lyra_n1.glb --id lyra --armadura lyra_n1 --tex 1024 --max-tri 16000
 Requer numpy, scipy, opencv-python-headless, fast-simplification, xatlas e node.
 """
 import argparse
@@ -535,6 +539,7 @@ def main():
     ap.add_argument('--saida', default=None)
     ap.add_argument('--maos-do-modelo', action='store_true', help='mantém as mãos da malha (sem as luvas articuladas do jogo)')
     ap.add_argument('--sem-simbolo', action='store_true', help='não acrescenta o símbolo luminoso das costas (Kael)')
+    ap.add_argument('--armadura', default=None, help='grava ARMOR3D[<nome>] (armadura vestida em jogo, js/heroes/armaduras3d.js) em vez do modelo do herói')
     a = ap.parse_args()
     H = a.altura or {'kael': 62.1, 'lyra': 58.5, 'drakos': 66.5, 'sera': 60.0, 'orion': 63.0}.get(a.id, 62.1)
     casaco = a.casaco if a.casaco is not None else a.id in ('kael', 'lyra', 'sera', 'orion')
@@ -762,9 +767,21 @@ def main():
 // Não edite à mão: importe de novo o modelo.
 // ---------------------------------------------------------------------------
 """
+    if a.armadura:
+        dados['heroi'] = a.id
+        destino = a.saida or os.path.join(RAIZ, 'js', 'assets', 'armaduras', f'{a.armadura}.js')
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
     with open(destino, 'w', encoding='utf-8') as f:
         f.write(cabec)
-        if a.id == 'kael':
+        if a.armadura:
+            k = json.dumps(a.armadura)
+            f.write(f'(window.ARMOR3D = window.ARMOR3D || {{}})[{k}] = ' + json.dumps(dados, separators=(',', ':')) + ';\n')
+            f.write(f"ARMOR3D[{k}].tex = 'data:image/jpeg;base64," + tex64 + "';\n")
+            f.write(f"ARMOR3D[{k}].mat = 'data:image/jpeg;base64," + mat64 + "';\n")
+            if nrm64:
+                f.write(f"ARMOR3D[{k}].nrm = 'data:image/jpeg;base64," + nrm64 + "';\n")
+            f.write(f"if (typeof ArmorModels !== 'undefined') ArmorModels.loaded({k});\n")
+        elif a.id == 'kael':
             f.write('const KAEL3D = ' + json.dumps(dados, separators=(',', ':')) + ';\n')
             f.write("KAEL3D.tex = 'data:image/jpeg;base64," + tex64 + "';\n")
             f.write("KAEL3D.mat = 'data:image/jpeg;base64," + mat64 + "';\n")

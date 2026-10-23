@@ -1584,7 +1584,14 @@ class RosterScreen {
 
     // Preview 3D giratório 360° com aura e fumaça
     if (L.box3D && typeof GLBViewer !== 'undefined' && GLBViewer.drawTurntablePreview) {
-      GLBViewer.drawTurntablePreview(ctx, a, L.box3D, Date.now() / 1000, { yaw: this.previewYaw, pitch: this.previewPitch });
+      // o herói vestindo a armadura (modelo do jogo): sempre que a malha não é a do próprio herói
+      // (armaduras sem .glb e as de todos, que usam a malha do Kael); nas outras, enquanto o .glb carrega
+      const aid = id, own = typeof ArmorModels !== 'undefined' ? ArmorModels.modOf(d.id, aid) : null;
+      GLBViewer.drawTurntablePreview(ctx, a, L.box3D, Date.now() / 1000, {
+        yaw: this.previewYaw, pitch: this.previewPitch, prefer3D: !own,
+        model3D: typeof ArmorModels !== 'undefined' ? (c, x, y, sz, yaw) => ArmorModels.drawPreview(c, d.id, aid, x, y, sz, yaw, Date.now() / 1000) : null,
+        loading3D: typeof ArmorModels !== 'undefined' && ArmorModels.carregando(d.id, aid),
+      });
     }
 
     // Botão 3D se disponível

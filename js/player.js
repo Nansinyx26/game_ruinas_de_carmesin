@@ -1596,10 +1596,8 @@ class Player extends Entity {
         ctx.stroke();
         // Partículas sutis de vapor energético ascendente
         if (Math.random() < 0.18 && typeof game !== 'undefined' && game.particles) {
-          game.particles.spawn(this.x + rand(-8, 8), this.y + rand(-8, 8), rand(2, 10), {
-            vx: rand(-6, 6), vy: rand(-6, 6), vz: rand(18, 38),
-            life: rand(0.3, 0.5), size: rand(2, 3.5), rgb: aRgb
-          });
+          game.particles.emit(P.EMBER, this.x + rand(-8, 8), this.y + rand(-8, 8), rand(2, 10),
+            rand(-6, 6), rand(-6, 6), rand(18, 38), rand(0.3, 0.5), rand(2, 3.5), aRgb, 0, 1);
         }
       }
     }

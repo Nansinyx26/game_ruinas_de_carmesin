@@ -57,16 +57,21 @@ function heroUltInfo(p) {
   const k = p.kit, s = skillDef(k.ult);
   return { learned: k.ultLevel(p) > 0, lvl: s ? s.lvl : 1, name: s ? s.name : 'Suprema', icon: k.ultIcon || (s && s.icon) || 'eclipse', label: k.ultLabel || 'SUPREMA', rgb: k.rgb };
 }
-// Chave do modelo 3D em uso (o texturizado, se existir)
-function heroModelKey(def) {
+// Chave do modelo 3D em uso: a armadura especial equipada vestida em 3D (js/heroes/armaduras3d.js,
+// assim que a malha dela carrega), senão o texturizado, se existir. semArmadura: o modelo de sempre
+function heroModelKey(def, semArmadura) {
+  const ak = !semArmadura && def && typeof ArmorModels !== 'undefined' ? ArmorModels.keyFor(def.id) : null;
+  if (ak) return ak;
   const k0 = (def && def.model) || 'kael';
   return MODELS3D[k0 + 'Tex'] ? k0 + 'Tex' : MODELS3D[k0] ? k0 : 'kael';
 }
 // Cor da armadura equipada para o modelo 3D texturizado: [r, g, b, intensidade] ou null (a padrão
-// de cada um não tem cor própria: visual.tint null em js/data/armors.js)
+// de cada um não tem cor própria: visual.tint null em js/data/armors.js; a armadura vestida em 3D
+// já traz as cores na textura)
 const HERO_TINTS = {};
 function heroArmorTint(id) {
   const aid = typeof RosterManager !== 'undefined' ? RosterManager.equippedArmor(id) : null;
+  if (aid && typeof ArmorModels !== 'undefined' && ArmorModels.keyFor(id, aid)) return null;
   const a = aid && ARMOR_DEFS[aid], hx = a && a.visual && a.visual.tint;
   if (!hx) return null;
   return HERO_TINTS[hx] || (HERO_TINTS[hx] = [...hexToRgb(hx).split(',').map((v) => +v / 255), 0.72]);

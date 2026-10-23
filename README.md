@@ -107,6 +107,8 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **`RosterManager`** (`js/roster.js`): desbloqueados, personagem ativo e armadura de cada um (eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`).
 - **Como cada um luta**: Drakos (machado e martelo), Sera (bastão neural e drone, magia tecnológica) e Orion (lâminas duplas, furtividade, golpe pelas costas) usam os golpes, especiais e supremas definidos em `js/player.js` / `js/combat.js` / `js/abilities.js`. A **Lyra** usa o **kit** completo de `js/heroes/lyra.js` (estrutura em `js/heroes/kit.js`): arco de fóton com poses de arqueira em 3D, as 4 árvores dela com efeito em todos os nós, armadilhas, iscas, chuva de flechas, gancho e o Foco de Batalha. Um personagem com kit desvia os ganchos do `Player` (`this.kit`); sem kit, o `Player` segue o código de sempre — o Kael não tem kit e continua idêntico.
 - **Modelos 3D**: o jogo usa o modelo texturizado (`MODELS3D.<id>Tex`, malhas do Meshy em `js/assets/<id>3d.js`) e, sem ele, o procedural (`js/models/<id>.js`); os fantasmas da esquiva usam o procedural. As armas 3D de cada um ficam em `HERO_WEAPONS.<id>` (o mesmo objeto de `window.HERO_WEAPONS`). A **armadura equipada tinge** as placas, o tecido e o couro do modelo texturizado (uniforme `uTint` do `R3D`, sem mexer na pele nem no neon).
+- **Armaduras especiais vestidas em 3D** (`js/heroes/armaduras3d.js`, `ArmorModels`): cada armadura especial aponta para o `.glb` do personagem inteiro com ela (`assets/modelos/armaduras/<herói>/<herói>_nN.glb`). `python3 tools/importar_modelo.py <glb> --id <herói> --armadura <herói>_nN --tex 1024 --max-tri 16000` (Kael: mais `--maos-do-modelo --sem-simbolo`) gera `js/assets/armaduras/<herói>_nN.js` (as 36 já estão geradas, cerca de 1,1 MB cada). O arquivo só carrega quando a armadura é equipada ou aparece na prévia (um `<script>` injetado, funciona também pelo `file://`) e vira `MODELS3D.arm_<herói>_nN`, com as mesmas animações, armas e brilhos do herói; enquanto carrega, fica o modelo de sempre. Com ela vestida, a cor (`tint`) não é aplicada, porque a textura já traz as cores. As armaduras de todos (`owner: 'all'`) usam malhas do Kael: só ele as veste em 3D, nos outros fica a cor.
+- **Prévia 360° do elenco**: o `.glb` original com a textura embutida dele (cor base do material); enquanto ele carrega, ou pelo `file://`, o herói em 3D vestindo a armadura (motor do jogo). Armaduras sem `.glb` mostram o herói em 3D com a cor da armadura.
 - **Árvore de habilidades** (Tab): Z/C trocam de personagem e **cada personagem do grupo gasta os próprios pontos**, mesmo fora de campo (valem quando ele entrar).
 - **Retratos**: a seleção usa as artes de `assets/selecionar_personagem/`; o HUD e a árvore usam os retratos de `js/assets/retratos.js` (gerado por `tools/gerar_retratos.py` a partir de `assets/images/retratos_elenco.webp`).
 - **Salvamento v2**: guarda o elenco de cada espaço (desbloqueados, ativo, armaduras) e o progresso de cada personagem (`party`).
@@ -242,7 +244,7 @@ Custo: ~38,5 mil triângulos e ~2,7 ms por quadro para posar e aplicar a pele no
 
 Abra o `index.html` no navegador (duplo clique): o jogo roda sem instalação nem internet, só com scripts clássicos.
 
-Para ver as **armas e armaduras em 3D** (os `.glb` de `assets/`) use um servidor local — pelo `file://` o navegador não deixa o jogo ler esses arquivos e a tela mostra a imagem 2D no lugar: `python3 -m http.server 8080` na pasta do projeto e acesse `http://localhost:8080`. O mesmo servidor serve para testar em outro aparelho da rede.
+Para ver os **`.glb` originais** das armas e armaduras (prévia 360° e [V] AMPLIAR 3D) use um servidor local — pelo `file://` o navegador não deixa o jogo ler esses arquivos (as armaduras aparecem no modelo do jogo; as armas, na imagem 2D): `python3 -m http.server 8080` na pasta do projeto e acesse `http://localhost:8080`. O mesmo servidor serve para testar em outro aparelho da rede.
 
 No menu inicial, **MODO 3ª PESSOA (3D)** abre a arena de teste em terceira pessoa (`js/thirdperson.js`).
 
@@ -288,7 +290,7 @@ js/
                     lyra.js (o kit completo da Lyra)
   quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
   world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
-  glbviewer.js      visualizador dos .glb de armas e armaduras (tela de seleção)
+  glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)
                     — opção "Sprites 2D" e o modo sem WebGL

@@ -23,6 +23,9 @@ const EclipseTests = {
     g.slot = 2; g.startRun();
     await new Promise((r) => setTimeout(r, 300));
     const salvar = g.saveGame; g.saveGame = () => {};          // os testes não gravam
+    // malha de uma armadura especial (carregada por <script>, como no jogo; espera até 15 s)
+    ArmorModels.ensure('lyra_n1');
+    for (let i = 0; i < 150 && ArmorModels.estado.lyra_n1 === 'carregando'; i++) await new Promise((r) => setTimeout(r, 100));
     try {
       this.armas();
       this.encaixes();
@@ -35,6 +38,7 @@ const EclipseTests = {
       this.trocaArma();
       this.telaElenco();
       this.pistolaOrion();
+      this.armaduras3d();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -304,6 +308,46 @@ const EclipseTests = {
     RosterManager.equipWeapon('orion', 'laminas_duplas');
     this.igual('Orion com as lâminas volta a cortar', p.combatStyle(), 'orion');
     g.enemies.length = 0; g.projectiles.clear();
+  },
+
+  // ------------------------------------------------- armaduras vestidas em 3D
+  armaduras3d() {
+    // cada armadura especial com GLB do próprio herói aponta para um módulo <herói>_nN
+    const nomes = new Set();
+    for (const id in SPECIAL_ARMOR_DEFS) {
+      const a = SPECIAL_ARMOR_DEFS[id], base = a.glb.split('/').pop().replace('.glb', '');
+      if (a.owner === 'all') {
+        this.igual(`armadura ${id} (de todos): só o Kael veste a malha`, ArmorModels.modOf('kael', id), base);
+        this.igual(`armadura ${id} (de todos): a Lyra fica com a cor`, ArmorModels.modOf('lyra', id), null);
+      } else {
+        this.igual(`armadura ${id}: módulo ${base}`, ArmorModels.modOf(a.owner, id), base);
+        nomes.add(base);
+      }
+    }
+    this.igual('36 malhas de armadura distintas', nomes.size, 36);
+    this.igual('armadura comum (sem GLB) não tem malha', ArmorModels.modOf('lyra', 'lyra_padrao'), null);
+    // a malha carregada vira um modelo com as mesmas animações e a arma do herói
+    this.igual('lyra_n1 carregou (js/assets/armaduras/lyra_n1.js)', ArmorModels.estado.lyra_n1, 'ok');
+    const M = game.model3('arm_lyra_n1');
+    this.ok('modelo arm_lyra_n1 montado', !!M && M.skins && M.skins.length > 0 && !!M.tex, M);
+    if (!M) return;
+    // veste direto (a Patrulha exige nível 5; a partida dos testes começa no 1)
+    const lyra = CHARACTERS_BY_ID.lyra, antes = RosterManager.armor.lyra;
+    RosterManager.armor.lyra = 'lyra_patrulha';
+    this.igual('Lyra com a Patrulha usa a malha da armadura', heroModelKey(lyra), 'arm_lyra_n1');
+    this.igual('sem a cor por cima da textura da armadura', heroArmorTint('lyra'), null);
+    this.igual('modelo sem armadura continua disponível', heroModelKey(lyra, true), 'lyraTex');
+    let erro = null;
+    try {
+      const e = { def: lyra, x: 0, y: 0, z: 0, state: 'idle', stateTime: 0.5, animTime: 0.5, facing: 0, flash: 0, moveSpeed: 0, wpnOut: true };
+      const o = game.opts3(e, 0), it = game.queue3('arm_lyra_n1', e, o);
+      R3D.flush(1);
+      this.ok('armadura desenha no motor 3D', !R3D.active || (it && it.ok), it && it.ok);
+      this.ok('arco da Lyra na armadura', !!(M.nodes && (M.nodes.bow || M.wr || Object.keys(M.nodes).some((k) => /bow|arco|whand/i.test(k)))), Object.keys(M.nodes || {}).join(','));
+    } catch (e) { erro = e.message; }
+    this.ok('pose da armadura sem erro', !erro, erro);
+    if (antes === undefined) delete RosterManager.armor.lyra; else RosterManager.armor.lyra = antes;
+    this.ok('volta ao modelo de sempre ao trocar', heroModelKey(lyra) !== 'arm_lyra_n1');
   },
 
   // Resultado na tela (canto superior esquerdo), por cima do jogo
