@@ -212,7 +212,7 @@ const ATTACKS = {
     swing: [-2.6, 0.5], blade: 100, slamRing: true,
     rgb: '90,150,255', core: '235,245,255', sound: 'swingHeavy', fury: 11, zoom: 0.05, arcs: 1,
   },
-  // Revés (L H L, nó Revés do Horizonte): vira para trás no meio do combo e corta o que estava
+  // Revés (H L ou L H L, nó Revés do Horizonte): vira para trás no meio do combo e corta o que estava
   // às costas (sem direção apertada; com direção, corta para onde o jogador apontar)
   reverse: {
     name: 'REVÉS DO HORIZONTE', windup: 0.07, active: 0.12, recovery: 0.28, chainFrac: 0.35,
@@ -486,7 +486,7 @@ const ALLY_COMBO_SKILLS = { drakos_finisher: 'drakos_queda_tita', drakos_counter
 const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio', finisher: 'sentenca_eclipse', reverse: 'reves_horizonte' };
 
 const CHARACTER_COMBOS = {
-  kael: { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', LLLH: 'finisher', H: 'heavy', LH: 'uppercut', LHL: 'reverse', HH: 'slam' },
+  kael: { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', LLLH: 'finisher', H: 'heavy', LH: 'uppercut', LHL: 'reverse', HL: 'reverse', HH: 'slam' },
   lyra: { L: 'lyra_light1', LL: 'lyra_light2', LLL: 'lyra_light3', LLH: 'lyra_pierce', H: 'lyra_heavy', LH: 'lyra_pierce', HH: 'lyra_heavy' },
   drakos: { L: 'drakos_light1', LL: 'drakos_light2', LLL: 'drakos_light3', LLH: 'drakos_sweep', LLLH: 'drakos_finisher', H: 'drakos_heavy', LH: 'drakos_sweep', HH: 'drakos_quake' },
   sera: { L: 'sera_light1', LL: 'sera_light2', LLL: 'sera_light3', LLH: 'sera_burst', H: 'sera_heavy', LH: 'sera_lift', HH: 'sera_burst' },

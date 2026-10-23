@@ -144,7 +144,7 @@ const SKILLS = {
     desc: (l) => `Sequência de ${5 + l} cortes rápidos em cone (${14 + 5 * l} de dano cada).` },
   // Combos novos (js/combat.js: COMBO_SKILLS)
   reves_horizonte: { tree: 'espadachim', name: 'Revés do Horizonte', kind: 'tecnica', icon: 'counter', max: 1, lvl: 7, col: 0, row: 3, req: [['ruptura_guarda', 1]],
-    desc: () => 'L → H → L: vira no meio do combo e corta o que estava às costas (com direção apertada, corta para onde apontar).' },
+    desc: () => 'H → L (ou L → H → L): vira no meio do combo e corta o que estava às costas (com direção apertada, corta para onde apontar).' },
   sentenca_eclipse: { tree: 'espadachim', name: 'Sentença do Eclipse', kind: 'tecnica', icon: 'eclipse', max: 1, lvl: 9, col: 1, row: 4, req: [['corte_vazio', 1]],
     desc: () => 'L → L → L → H: finalização com salto e golpe por cima até o chão, com onda de choque (42 de dano em área).' },
   corte_vazio: { tree: 'espadachim', name: 'Corte do Vazio', kind: 'tecnica', icon: 'void', max: 3, lvl: 5, col: 1, row: 3, req: [['ruptura_guarda', 1]],
