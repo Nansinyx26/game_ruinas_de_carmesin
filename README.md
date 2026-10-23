@@ -65,6 +65,7 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | I | **Eclipse Absoluto** (100 de energia, depois de desbloqueado) |
 | Tab / H | Árvore de habilidades |
 | E / F | Conversar com NPCs |
+| Q / X | Trocar de arma (a próxima liberada do personagem: ex. machado ↔ martelo do Drakos) |
 | ESC | Pausa (menu de pausa) / pular história / voltar nos menus |
 | M | Som liga/desliga |
 | G | Gráficos 3D / 2D |
@@ -112,6 +113,9 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **Missões de lealdade** (`js/quests.js`): depois que o Refúgio dos Desconectados é liberado, os aliados do grupo que não estão em campo aparecem lá em 3D; conversando com eles ([E]) cada um oferece uma missão — Lyra *Caçada Longe da Rede* (25 abates com ela), Drakos *Onze Anos* (6 legionários com ele), Sera *Silêncio na Rede* (15 máquinas com ela) e Orion *Ninguém Me Vê Chegar* (20 abates com ele). Conta em qualquer setor seguinte; ao completar, o aliado fala pelo rádio e libera a **armadura suprema** dele e a **arma especial** (lendárias). As falas novas são texto; a dublagem gravada toca quando a fala é a mesma da gravação. Estado em `flags.lealdade` do salvamento.
 - **Animação parada** (`js/player.js` + `js/models/kael.js`): além das variações sorteadas por personagem (respirar, olhar em volta, ajustar a arma, trocar o peso…), a situação tem prioridade: **vitória** (ergue a espada ao liberar o setor) → **alerta/guarda** (inimigo a menos de 320) → **cansado** (depois de correr ou lutar muito: respiração funda, tronco curvado, mão na coxa). A mesma variação não se repete em seguida, e a caminhada (analógico pela metade) tem passos mais lentos que a corrida.
 - **Golpes corpo a corpo** (`js/models/kael.js`, `SWING_STYLES`): cada golpe do combo tem um movimento próprio — diagonal descendente (1º), revés ascendente (2º), corte saltando (3º), golpe largo com as duas mãos (pesado) e golpe por cima até o chão (carregado). O Drakos e o Orion usam o mesmo sistema com estilos próprios (machado por cima, adagas de pulso rápido). Só a animação muda: dano, alcance e janelas continuam os de `ATTACKS`.
+- **Armas 3D (GLB) nas mãos e nas costas** (`js/heroes/armas3d.js`): fora de combate a arma fica presa às costas — a espada do Kael na diagonal (cabo sobre o ombro direito), o machado e o martelo do Drakos cruzados, o arco da Lyra, as duas lâminas do Orion em V com as pontas acima dos ombros, o bastão da Sera e a pistola do Orion no coldre da coxa. Com um inimigo a menos de 380 o herói **saca** (a mão vai ao cabo nas costas e a arma passa para a mão sem salto); um golpe com a arma guardada saca na hora; depois de 4 s sem ameaça ele **guarda** com o gesto inverso. Só visual: não muda dano nem tempo das ações.
+- **Idle de cada herói**: Drakos com respiração pesada e tensão (punhos, pescoço), Lyra ajustando o arco e levando a mão às flechas, Orion em vigilância e base baixa com as mãos nas lâminas, Kael com a mão no cabo da espada guardada (pronto para sacar). As variações dependem do estado da arma e trocam passando pelo repouso (sem salto de pose).
+- **Coreografias novas** (`ATTACKS`, `CHARACTER_COMBOS` em `js/combat.js`): Kael — Sentença do Eclipse (J J J K, salto e golpe com onda de choque) e Revés do Horizonte (K J, vira e corta o que está atrás); Drakos — o 3º golpe usa a arma das costas (machado ↔ martelo), Queda do Titã (J J J K) e Retaliação (J até 1 s depois de bloquear com o Escudo de Energia); Orion — 2º golpe com a lâmina esquerda, Corte em X (K K, as duas lâminas) e Salto do Corvo (J J J K, salto mortal). As finalizações e a retaliação são liberadas por nós da árvore. Cada inimigo toma um acerto por golpe (os giratórios, até o `multiHit` deles).
 
 ## Mundo aberto (protótipo jogável)
 
@@ -164,7 +168,9 @@ Desempenho: molduras, retrato, planta do radar, losangos e o preenchimento das b
 
 Kael ganha **experiência** derrotando inimigos (elites valem o triplo), liberando setores, recuperando memórias e vencendo NEXUS. Cada nível aumenta vida, energia, dano, poder das habilidades, defesa, velocidade e reduz as recargas, além de dar **pontos de habilidade** (dois a cada cinco níveis).
 
-Os pontos são gastos em **quatro árvores** (Tab):
+Cada personagem tem **cinco ramos** (Tab), um por aba, nesta ordem: **Ataque**, **Poderes**, **Defesa e sobrevivência**, **Mobilidade** e **Supremas**. O ramo Supremas (Eclipse, Luz Caçadora, Titã, Núcleo Vyne, Corvo) é igual em estrutura para todos e custa 2 a 4 pontos por nível: suprema mais barata, mais poder, energia nos golpes pesados, **Convergência** (depois de uma habilidade, o próximo golpe é mais forte), Último Fôlego, Ressonância (energia por abate durante a suprema) e Ascensão. Os efeitos ficam em `js/heroes/passivas.js`.
+
+As árvores do Kael (Tab):
 
 | Árvore | Habilidades |
 |---|---|
@@ -226,7 +232,9 @@ O Kael do jogo (`MODELS3D.kaelTex`) usa a malha modelada no Meshy a partir da ar
 
 **Importar outro modelo detalhado** (OBJ com MTL e textura, ou GLB, por exemplo do Tripo, Meshy ou Blender): `python3 tools/importar_modelo.py modelo.glb --id kael`. Use `--cima` e `--frente` se o arquivo tiver outros eixos e confira o resultado no inspetor. Para voltar ao Kael esculpido só com as imagens da arte: `python3 tools/gerar_kael3d.py`.
 
-**Aliados**: Lyra, Drakos, Sera e Orion também vêm das malhas do Meshy (`assets/modelos/lyra.glb`, `drakos.glb`, `sera.glb`, `orion.glb`), pelo mesmo importador (`python3 tools/importar_modelo.py assets/modelos/lyra.glb --id lyra`, e assim por diante): cada um no esqueleto do Kael com as próprias proporções, as mesmas animações, as mãos da própria malha e as luzes brilhando na cor-tema do personagem. Eles já aparecem no inspetor (↑/↓ troca o modelo); jogá-los com kit próprio ainda é uma etapa pendente.
+**Aliados**: Lyra, Drakos, Sera e Orion também vêm das malhas do Meshy (`assets/modelos/lyra.glb`, `drakos.glb`, `sera.glb`, `orion.glb`), pelo mesmo importador (`python3 tools/importar_modelo.py assets/modelos/lyra.glb --id lyra`, e assim por diante): cada um no esqueleto do Kael com as próprias proporções, as mesmas animações, as mãos da própria malha e as luzes brilhando na cor-tema do personagem. Eles aparecem no inspetor (↑/↓ troca o modelo) e são todos jogáveis (a Lyra com kit próprio; Drakos, Sera e Orion pelo código do `Player`).
+
+**Armas**: as armas GLB entram como peças do próprio modelo (`tools/importar_arma.py` → `js/assets/armas3d.js`; encaixes em `js/heroes/armas3d.js`), presas ao nó `sword` do esqueleto (que segue os golpes), à mão esquerda, ao tronco (costas) ou à coxa. Como são peças do mesmo modelo, ficam na frente ou atrás do corpo corretamente (profundidade única). As armas procedurais antigas (caixas e cilindros de `js/models/<herói>.js`) continuam no código e voltam sozinhas se `js/assets/armas3d.js` faltar.
 
 Custo: ~38,5 mil triângulos e ~2,7 ms por quadro para posar e aplicar a pele no Kael (CPU); `js/assets/kael3d.js` tem 3 MB (malha, textura 2048 px, mapas de material e de normais).
 
@@ -237,6 +245,10 @@ Abra o `index.html` no navegador (duplo clique): o jogo roda sem instalação ne
 Para ver as **armas e armaduras em 3D** (os `.glb` de `assets/`) use um servidor local — pelo `file://` o navegador não deixa o jogo ler esses arquivos e a tela mostra a imagem 2D no lugar: `python3 -m http.server 8080` na pasta do projeto e acesse `http://localhost:8080`. O mesmo servidor serve para testar em outro aparelho da rede.
 
 No menu inicial, **MODO 3ª PESSOA (3D)** abre a arena de teste em terceira pessoa (`js/thirdperson.js`).
+
+**Testes automatizados**: abra `index.html?testes=1` (por `file://` ou pelo servidor). A suíte (`js/testes.js`, sem bibliotecas) roda dentro do jogo e mostra o resultado no canto da tela e no console: armas GLB (dados, decodificação e — pelo servidor — os arquivos de origem), encaixes de todos os heróis, sacar/guardar, dano único por golpe, combos e os nós que os liberam, árvore (ramos, custos, requisitos, efeitos), salvar/carregar, idle e troca de arma. `window.__testes` guarda o resultado para automação.
+
+**Armas 3D (GLB)**: os modelos-fonte ficam em `assets/armas/eclipse/` (10–27 MB cada, gerados no Meshy). O jogo usa uma versão reduzida gerada por `python3 tools/importar_arma.py` (1,5–2,8 mil triângulos por arma, com cor, metal e brilho amostrados da textura do GLB) em `js/assets/armas3d.js`, que também abre por `file://`. Para trocar uma arma: substitua o `.glb` e rode o importador; a orientação, a posição da mão e o comprimento de cada arma ficam em `ARMAS` no próprio importador, e os encaixes (mão, costas, coxa) em `BACK` de `js/heroes/armas3d.js`.
 
 ### Celular, tablet e app instalado
 
