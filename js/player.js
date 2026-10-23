@@ -34,12 +34,15 @@ const WHISPERS = [
 // (idle_breathing, idle_look_around, idle_weapon_inspect, idle_combat_ready,
 //  idle_weight_shift, idle_stretch, idle_alert, idle_fidget)
 const CHARACTER_IDLE_PROFILES = {
+  // Variações por personagem (poses em js/models/kael.js, rest; a mão no cabo da arma guardada em
+  // js/heroes/armas3d.js). req: 'out' só com a arma na mão, 'guarded' só com ela nas costas.
   kael: {
     baseInterval: [3.5, 6.0],
     variants: [
       { id: 'idle_breathing', weight: 35, duration: [3.0, 5.0] },
       { id: 'idle_look_around', weight: 15, duration: [2.5, 4.0] },
-      { id: 'idle_weapon_inspect', weight: 20, duration: [2.5, 3.8] },
+      { id: 'idle_weapon_inspect', weight: 20, duration: [2.5, 3.8], req: 'out' },
+      { id: 'idle_hilt_touch', weight: 18, duration: [2.2, 3.4], req: 'guarded' },
       { id: 'idle_combat_ready', weight: 15, duration: [2.0, 3.5] },
       { id: 'idle_weight_shift', weight: 10, duration: [2.0, 3.0] },
       { id: 'idle_alert', weight: 5, duration: [1.8, 2.5] },
@@ -48,31 +51,38 @@ const CHARACTER_IDLE_PROFILES = {
   orion: {
     baseInterval: [2.5, 4.5],
     variants: [
-      { id: 'idle_breathing', weight: 25, duration: [2.5, 4.0] },
-      { id: 'idle_fidget', weight: 25, duration: [2.0, 3.2] },
-      { id: 'idle_weapon_inspect', weight: 20, duration: [2.2, 3.5] },
-      { id: 'idle_combat_ready', weight: 15, duration: [2.0, 3.0] },
-      { id: 'idle_alert', weight: 15, duration: [1.5, 2.5] },
+      { id: 'idle_breathing', weight: 20, duration: [2.5, 4.0] },
+      { id: 'idle_weight_shift', weight: 15, duration: [2.0, 3.2] },
+      { id: 'idle_scan', weight: 20, duration: [2.4, 3.6] },
+      { id: 'idle_crouch_ready', weight: 15, duration: [2.0, 3.2] },
+      { id: 'idle_hilt_touch', weight: 15, duration: [1.8, 2.8], req: 'guarded' },
+      { id: 'idle_fidget', weight: 10, duration: [2.0, 3.2] },
+      { id: 'idle_weapon_inspect', weight: 10, duration: [2.2, 3.5], req: 'out' },
     ]
   },
   lyra: {
     baseInterval: [3.0, 5.5],
     variants: [
-      { id: 'idle_breathing', weight: 30, duration: [3.0, 5.0] },
-      { id: 'idle_look_around', weight: 25, duration: [2.8, 4.5] },
-      { id: 'idle_stretch', weight: 15, duration: [2.2, 3.5] },
-      { id: 'idle_weapon_inspect', weight: 15, duration: [2.0, 3.2] },
-      { id: 'idle_alert', weight: 15, duration: [1.8, 2.8] },
+      { id: 'idle_breathing', weight: 25, duration: [3.0, 5.0] },
+      { id: 'idle_look_around', weight: 20, duration: [2.8, 4.5] },
+      { id: 'idle_scan', weight: 15, duration: [2.4, 3.6] },
+      { id: 'idle_bow_adjust', weight: 15, duration: [2.2, 3.4], req: 'out' },
+      { id: 'idle_nock_tease', weight: 10, duration: [2.4, 3.2], req: 'out' },
+      { id: 'idle_hilt_touch', weight: 10, duration: [2.0, 3.0], req: 'guarded' },
+      { id: 'idle_alert', weight: 10, duration: [1.8, 2.8] },
+      { id: 'idle_stretch', weight: 5, duration: [2.2, 3.5] },
     ]
   },
   drakos: {
     baseInterval: [4.0, 7.0],
     variants: [
-      { id: 'idle_breathing', weight: 35, duration: [3.5, 6.0] },
-      { id: 'idle_weight_shift', weight: 25, duration: [2.5, 4.2] },
-      { id: 'idle_combat_ready', weight: 20, duration: [2.5, 4.0] },
-      { id: 'idle_stretch', weight: 10, duration: [2.2, 3.5] },
-      { id: 'idle_weapon_inspect', weight: 10, duration: [2.0, 3.2] },
+      { id: 'idle_breathing', weight: 25, duration: [3.5, 6.0] },
+      { id: 'idle_heavy_breath', weight: 20, duration: [3.0, 5.0] },
+      { id: 'idle_weight_shift', weight: 15, duration: [2.5, 4.2] },
+      { id: 'idle_flex', weight: 15, duration: [2.4, 3.6] },
+      { id: 'idle_hilt_touch', weight: 10, duration: [2.2, 3.4], req: 'guarded' },
+      { id: 'idle_combat_ready', weight: 10, duration: [2.5, 4.0] },
+      { id: 'idle_weapon_inspect', weight: 5, duration: [2.0, 3.2], req: 'out' },
     ]
   },
   sera: {
@@ -80,9 +90,11 @@ const CHARACTER_IDLE_PROFILES = {
     variants: [
       { id: 'idle_breathing', weight: 30, duration: [3.0, 5.0] },
       { id: 'idle_look_around', weight: 20, duration: [2.5, 4.0] },
-      { id: 'idle_fidget', weight: 25, duration: [2.0, 3.5] },
-      { id: 'idle_weapon_inspect', weight: 15, duration: [2.0, 3.2] },
-      { id: 'idle_stretch', weight: 10, duration: [2.0, 3.0] },
+      { id: 'idle_fidget', weight: 20, duration: [2.0, 3.5] },
+      { id: 'idle_scan', weight: 10, duration: [2.4, 3.4] },
+      { id: 'idle_weapon_inspect', weight: 10, duration: [2.0, 3.2], req: 'out' },
+      { id: 'idle_hilt_touch', weight: 5, duration: [2.0, 3.0], req: 'guarded' },
+      { id: 'idle_stretch', weight: 5, duration: [2.0, 3.0] },
     ]
   }
 };
@@ -123,13 +135,14 @@ class Player extends Entity {
     if (this.kit) this.kit.init(this);
 
     // Sistema dinâmico de variações de Idle
-    this.idleVariant = 'idle_breathing';
+    this.idleVariant = 'idle_breathing'; this.idleNext = null;
     this.idleTimer = 3.0 + Math.random() * 2.0;
     this.idleBlend = 0.0;
     this.idleTime = 0.0;
     // Contexto do idle (tem prioridade sobre o sorteio, ver idleContext): cansaço depois de
     // correr ou lutar muito, comemoração ao liberar o setor e a variação anterior (sem repetir)
     this.fatigue = 0; this.tired = false; this.victoryT = 0; this.lastIdle = null; this.idleForced = false;
+    this.idleNext = null;          // próxima variação, esperando a atual sair (setIdle)
     // Arma (js/heroes/armas3d.js): começa nas costas; saca ao entrar em combate e guarda na calma
     this.wpnOut = false; this.wpnAnim = null; this.wpnCalm = 0; this.wpnFlash = 0;
   }
@@ -187,18 +200,28 @@ class Player extends Entity {
   // Escolhe próxima animação de idle baseada no perfil do personagem
   pickNextIdleVariant() {
     const prof = CHARACTER_IDLE_PROFILES[this.def.id] || CHARACTER_IDLE_PROFILES.kael;
-    const totalWeight = prof.variants.reduce((sum, v) => sum + v.weight, 0);
+    // só as que fazem sentido agora (arma na mão ou nas costas)
+    const out = this.wpnOut !== false;
+    const list = prof.variants.filter((v) => !v.req || (v.req === 'out') === out);
+    const totalWeight = list.reduce((sum, v) => sum + v.weight, 0);
     let r = Math.random() * totalWeight;
-    let chosen = prof.variants[0];
-    for (const v of prof.variants) {
+    let chosen = list[0];
+    for (const v of list) {
       if (r < v.weight) { chosen = v; break; }
       r -= v.weight;
     }
     // não repete a variação anterior (a respiração pode voltar: é o repouso)
-    if (chosen.id === this.lastIdle && chosen.id !== 'idle_breathing') chosen = prof.variants[0];
+    if (chosen.id === this.lastIdle && chosen.id !== 'idle_breathing') chosen = list[0];
     this.lastIdle = chosen.id;
-    this.idleVariant = chosen.id;
+    this.setIdle(chosen.id);
     this.idleTimer = chosen.duration[0] + Math.random() * (chosen.duration[1] - chosen.duration[0]);
+  }
+  // Troca de variação com transição: a atual volta ao repouso (mistura → 0) antes da próxima
+  // entrar, em vez de pular de uma pose para a outra
+  setIdle(id) {
+    if (id === this.idleVariant) { this.idleNext = null; return; }
+    if (this.idleBlend < 0.05 || this.idleVariant === 'idle_breathing') { this.idleVariant = id; this.idleNext = null; }
+    else this.idleNext = id;
   }
 
   get dashing() { return this.state === 'dash'; }
@@ -245,7 +268,7 @@ class Player extends Entity {
       case 'idle':
       case 'run': {
         if (this.tryActions(wd)) {
-          this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+          this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
           break;
         }
         let tvx = 0, tvy = 0;
@@ -256,7 +279,7 @@ class Player extends Entity {
           this.state = 'run';
           this.idleTime = 0;
           this.idleBlend = 0;
-          this.idleVariant = 'idle_breathing';
+          this.idleVariant = 'idle_breathing'; this.idleNext = null;
           this.idleTimer = 3.0 + Math.random() * 2.0;
         } else {
           this.state = 'idle';
@@ -264,9 +287,11 @@ class Player extends Entity {
           this.idleTimer -= dt;
           // a situação (vitória, inimigo perto, cansaço) vence o sorteio; quando passa, sorteia de novo
           const forced = this.idleContext();
-          if (forced) { this.idleVariant = forced; this.idleForced = true; }
+          if (forced) { this.setIdle(forced); this.idleForced = true; }
           else if (this.idleTimer <= 0 || this.idleForced) { this.idleForced = false; this.pickNextIdleVariant(); }
-          const targetBlend = this.idleVariant === 'idle_breathing' ? 0.0 : 1.0;
+          // a anterior sai (mistura → 0) e a próxima entra; vale para qualquer taxa de quadros (dt)
+          if (this.idleNext && this.idleBlend <= 0.04) { this.idleVariant = this.idleNext; this.idleNext = null; }
+          const targetBlend = this.idleNext || this.idleVariant === 'idle_breathing' ? 0.0 : 1.0;
           this.idleBlend = approach(this.idleBlend, targetBlend, dt * 3.5);
         }
         const acc = 2800 * dt;
@@ -275,28 +300,28 @@ class Player extends Entity {
         break;
       }
       case 'attack':
-        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.updateAttack(dt, input, wd);
         break;
       case 'charge':
-        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.updateCharge(dt, input, wd);
         break;
       case 'dash':
-        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.updateDash(dt);
         break;
       case 'hurt':
-        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.vx *= Math.exp(-10 * dt); this.vy *= Math.exp(-10 * dt);
         if (this.stateTime >= 0.22) this.state = 'idle';
         break;
       case 'special':
-        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.updateSpecial(dt);
         break;
       case 'dead':
-        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing';
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.vx *= Math.exp(-6 * dt); this.vy *= Math.exp(-6 * dt);
         break;
     }

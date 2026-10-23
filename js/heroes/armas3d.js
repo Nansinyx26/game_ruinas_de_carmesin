@@ -243,10 +243,15 @@ const WeaponRig = (function () {
       P.hR[0] = 4 - P.hL[0]; P.hR[1] = -P.hL[1]; P.hR[2] = P.hL[2];
       P.pR[0] = P.pL[0]; P.pR[1] = -P.pL[1]; P.pR[2] = P.pL[2];
     }
-    if (!A || !TMx) return free;
+    // idle com a arma guardada: a mão descansa no cabo, pronta para sacar (sem sacar)
+    const touch = !A && free && e.idleVariant === 'idle_hilt_touch' ? num(e.idleBlend) * (0.82 + 0.05 * Math.sin(num(e.animTime) * 2.1)) : 0;
+    if ((!A && touch <= 0.001) || !TMx) return free;
     // gesto: a mão vai até a empunhadura nas costas e volta
-    const k = cl(A.t / Math.max(0.05, A.dur), 0, 1), sw = A.k === 'draw' ? 0.45 : 0.55;
-    const reach = k < sw ? sm(k / sw) : 1 - sm((k - sw) / (1 - sw));
+    let reach = touch;
+    if (A) {
+      const k = cl(A.t / Math.max(0.05, A.dur), 0, 1), sw = A.k === 'draw' ? 0.45 : 0.55;
+      reach = k < sw ? sm(k / sw) : 1 - sm((k - sw) / (1 - sw));
+    }
     M3.trs(TMx, [0, 0, P.hz + K.HZ0 + 0.5], [P.tr, P.tp, P.ty], [1, 1, 1]);
     for (const side of ['R', 'L']) {
       const id = G[side];

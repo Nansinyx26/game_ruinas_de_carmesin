@@ -442,8 +442,11 @@ function buildTempestadeNula(g, k, part, lod) {
 
   const HZR = 26.5;   // altura do quadril em repouso (pernas longas)
   // Repouso (base de todas as poses). hz = altura do quadril (o solver soma HZ0); mãos somam HAND0
+  // Respiração de cada personagem: [ritmo, amplitude] (o Drakos respira fundo e devagar)
+  const BREATH = { kael: [2.2, 1], drakos: [1.5, 2.1], lyra: [2.6, 0.8], orion: [2.4, 0.7], sera: [2.3, 0.85] };
   function rest(P, e) {
-    const t = num(e.animTime), br = Math.sin(t * 2.2);
+    const cid = e.def && e.def.id, BRT = BREATH[cid] || BREATH.kael;
+    const t = num(e.animTime), br = Math.sin(t * BRT[0]) * BRT[1];
     P.bz = 0; P.br = 0; P.bp = 0; P.by = 0; P.sq = cl(num(e.squash), -0.3, 0.3); P.fallA = 0; P.fallD = 0;
     P.hz = HZR + br * 0.12; P.hy = 0.08;
     P.tp = 0.08 + br * 0.015; P.tr = 0; P.ty = 0.1;
@@ -500,6 +503,44 @@ function buildTempestadeNula(g, k, part, lod) {
         P.hz += (-1.5 + pant * 0.45) * b; P.tp += (0.2 + pant * 0.05) * b; P.hp += (0.16 - pant * 0.04) * b;
         P.hL[0] += 3.0 * b; P.hL[1] += 2.4 * b; P.hL[2] += (-4.8 + pant * 0.5) * b;
         P.hR[2] += (-1.6 + pant * 0.4) * b;
+      } else if (variant === 'idle_heavy_breath') {
+        // respiração pesada (Drakos): peito e ombros sobem e descem devagar, base mais aberta e
+        // os braços afastados do corpo pelo volume da armadura
+        const hb = Math.sin(t * 1.4);
+        P.hz += hb * 0.4 * b; P.tp += (-0.04 + hb * 0.05) * b; P.hp -= hb * 0.05 * b;
+        P.hL[1] -= 1.4 * b; P.hL[2] += hb * 0.7 * b; P.hR[1] += 1.2 * b; P.hR[2] += hb * 0.7 * b;
+        P.fL[1] -= 0.9 * b; P.fR[1] += 0.9 * b;
+      } else if (variant === 'idle_flex') {
+        // tensão e prontidão (Drakos): punhos cerrados afastados, peito aberto, leve agachamento
+        // e o pescoço estalando de um lado para o outro
+        const k = smooth(cl(num(e.idleTime) * 0.9, 0, 1));
+        P.hz -= 1.4 * k * b; P.tp -= 0.07 * k * b; P.hp -= 0.06 * b;
+        P.hL[0] += 3 * k * b; P.hL[1] -= 2.8 * k * b; P.hL[2] += 3.5 * k * b;
+        P.hR[0] += 2 * k * b; P.hR[1] += 2.2 * k * b; P.hR[2] += 2.5 * k * b;
+        P.hr += Math.sin(t * 2.4) * 0.12 * b; P.hyw += Math.sin(t * 1.2) * 0.1 * b;
+        P.fL[1] -= 1.2 * k * b; P.fR[1] += 1.2 * k * b;
+      } else if (variant === 'idle_scan') {
+        // vigilância: a cabeça vira em saltos curtos (olha, para, olha de novo); o tronco acompanha pouco
+        const sg = Math.floor(t * 0.9), ph = t * 0.9 - sg;
+        const TG = [0.5, -0.45, 0.15, -0.6, 0.35];
+        const yaw = mix(TG[sg % 5], TG[(sg + 1) % 5], smooth(cl(ph * 4, 0, 1)));
+        P.hyw += yaw * b; P.ty += yaw * 0.2 * b; P.hp -= 0.05 * b; P.hz += 0.4 * b;
+      } else if (variant === 'idle_crouch_ready') {
+        // prontidão furtiva (Orion): base baixa e larga, peso na ponta dos pés, mãos à frente
+        P.hz -= 3.2 * b; P.tp += 0.22 * b; P.hp -= 0.14 * b; P.tr += Math.sin(t * 1.9) * 0.04 * b;
+        P.fL[0] += 2 * b; P.fL[1] -= 1.6 * b; P.fR[0] -= 2.4 * b; P.fR[1] += 1.6 * b; P.toeR = 0.35 * b;
+        P.hL[0] += 4 * b; P.hL[2] += 3 * b; P.hR[0] += 3 * b; P.hR[2] += 2 * b;
+      } else if (variant === 'idle_bow_adjust') {
+        // ajusta o arco (Lyra): ergue à frente, gira um pouco e olha para ele
+        const w = Math.sin(t * 1.3);
+        P.hL[0] += 6 * b; P.hL[1] += 3.5 * b; P.hL[2] += (7 + w * 1.2) * b;
+        P.pL[0] += 0.5 * b; P.hyw -= (0.3 + w * 0.06) * b; P.hp += 0.18 * b; P.ty -= 0.12 * b;
+      } else if (variant === 'idle_nock_tease') {
+        // prepara a corda (Lyra): a mão direita vai às flechas atrás do ombro e volta, duas vezes
+        const c = 0.5 - 0.5 * Math.cos(t * 2.0);
+        const k = c * b;
+        P.hR[0] = mix(P.hR[0], -4.5, k); P.hR[1] = mix(P.hR[1], 5.5, k); P.hR[2] = mix(P.hR[2], 41, k);
+        P.ty += 0.12 * k; P.hyw += 0.22 * k; P.hL[0] += 2 * b; P.hL[2] += 2 * b;
       } else if (variant === 'idle_victory') {
         // setor liberado: ergue a espada um instante, peito aberto e o olhar para cima
         const up = Math.min(1, num(e.victoryT, 0) > 2.6 ? (3.2 - num(e.victoryT)) / 0.6 : 1);
