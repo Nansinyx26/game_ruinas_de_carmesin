@@ -1014,6 +1014,29 @@ function lyraPoseInfo(e) {
     return g;
   }
   const PARTS = ['lyraBow', 'lyraStrA', 'lyraStrB', 'lyraArrow'];
+  // Arco GLB (assets/armas/eclipse/lyra_arco.glb via js/heroes/armas3d.js), se existir: a malha
+  // importada vai para o referencial do arco (+X flecha, +Z ponta de cima): (x, y, z) da arma →
+  // (−z, y, x). A corda do arquivo foi tirada na importação; a corda desenhada sai das pontas dele.
+  let GLB = null;                                   // { raw, tex, top: [x, z], bot: [x, z] } ou false
+  function glbBow() {
+    if (GLB !== null) return GLB;
+    GLB = false;
+    if (typeof WeaponRig === 'undefined' || !WeaponRig.has('lyra_arco')) return GLB;
+    const conv = (g) => {
+      const o = new Float32Array(g.length);
+      for (let i = 0; i < g.length; i += 10) {
+        o[i] = -g[i + 2]; o[i + 1] = g[i + 1]; o[i + 2] = g[i];
+        o[i + 3] = -g[i + 5]; o[i + 4] = g[i + 4]; o[i + 5] = g[i + 3];
+        o[i + 6] = g[i + 6]; o[i + 7] = g[i + 7]; o[i + 8] = g[i + 8]; o[i + 9] = g[i + 9];
+      }
+      return o;
+    };
+    const P = WEAPON3D.lyra_arco.pontas;
+    GLB = { raw: conv(WeaponRig.geo('lyra_arco', false)), tex: conv(WeaponRig.geo('lyra_arco', true)), top: [-P[0][1], P[0][0]], bot: [-P[1][1], P[1][0]] };
+    return GLB;
+  }
+  // Pontas onde a corda prende: [x, z] de cima e de baixo
+  const tipTop = () => (GLB ? GLB.top : [limbX(HB), HB]), tipBot = () => (GLB ? GLB.bot : [limbX(-HB), -HB]);
   // Modelos com textura (model.tex) leem a cor por vértice como (r, g, −1 − b): converte uma vez
   function texFormat(m) {
     if (!m.tex) return;
@@ -1033,17 +1056,18 @@ function lyraPoseInfo(e) {
     const sA = bow.add(new N3('lyraStrA', gString())), sB = bow.add(new N3('lyraStrB', gString()));
     const ar = bow.add(new N3('lyraArrow', gArrow()));
     for (const nd of [bow, sA, sB, ar]) { m.nodes[nd.name] = nd; m.rest[nd.name] = { p: nd.p.slice(), r: nd.r.slice(), s: nd.s.slice() }; }
+    glbBow();
     m.anchor('bowGrip', 'lyraBow', [1.4, 0, 0]);
-    m.anchor('bowTop', 'lyraBow', [limbX(HB), 0, HB]);
-    m.anchor('bowBot', 'lyraBow', [limbX(-HB), 0, -HB]);
+    m.anchor('bowTop', 'lyraBow', [tipTop()[0], 0, tipTop()[1]]);
+    m.anchor('bowBot', 'lyraBow', [tipBot()[0], 0, tipBot()[1]]);
     m.anchor('arrowTip', 'lyraArrow', [ALEN + 2, 0, 0]);
     texFormat(m);
     return m;
   }
 
-  // Corda: do encaixe (ponta do arco) até o ponto de puxada (nx, 0, 0), no referencial do arco
-  function placeString(nd, zt, nx) {
-    const tx = limbX(zt), vx = nx - tx, vz = -zt, L = Math.hypot(vx, vz) || 1;
+  // Corda: do encaixe (ponta do arco [x, z]) até o ponto de puxada (nx, 0, 0), no referencial do arco
+  function placeString(nd, tip, nx) {
+    const tx = tip[0], zt = tip[1], vx = nx - tx, vz = -zt, L = Math.hypot(vx, vz) || 1;
     nd.p[0] = tx; nd.p[1] = 0; nd.p[2] = zt;
     nd.r[0] = 0; nd.r[1] = Math.atan2(-vz, vx); nd.r[2] = 0;
     nd.s[0] = L; nd.s[1] = 1; nd.s[2] = 1;
@@ -1051,9 +1075,11 @@ function lyraPoseInfo(e) {
 
   function pose(m, e, o) {
     medidas(m);
-    texFormat(m);
     const n = m.nodes;
     if (!n.lyraBow) return;
+    // arco GLB no formato do modelo (com textura ou de cores); texFormat não mexe nele
+    if (glbBow() && n.lyraBow._glb !== !!m.tex) { n.lyraBow.geo = m.tex ? GLB.tex : GLB.raw; n.lyraBow._glb = !!m.tex; n.lyraBow._texFmt = true; }
+    texFormat(m);
     if (n.sword) n.sword.vis = false;           // a espada do Kael não aparece na Lyra
     if (n.mark) n.mark.vis = false;             // nem a marca do pulso dele
     const I = e ? lyraPoseInfo(e) : null;
@@ -1138,16 +1164,19 @@ function lyraPoseInfo(e) {
     orient(bow.r, D, U);
     bow.s[0] = bow.s[1] = bow.s[2] = 1;
     // Corda: puxada até a âncora (âncora → empunhadura) ou vibrando depois de soltar
-    let nx = -TIPX;
+    const TX = -(tipTop()[0] + tipBot()[0]) / 2;      // corda em repouso (reta entre as pontas)
+    let nx = -TX;
     if (aiming) {
-      const span = Math.max(TIPX, Math.hypot(G[0] - A[0], G[1] - A[1], G[2] - A[2]) - 1);
-      nx = -(TIPX + drawK * (span - TIPX));
+      const span = Math.max(TX, Math.hypot(G[0] - A[0], G[1] - A[1], G[2] - A[2]) - 1);
+      nx = -(TX + drawK * (span - TX));
       if (I && !I.nocked && I.rel < 1) nx += Math.sin(I.rel * 46) * (1 - I.rel) * 1.6;
     }
-    placeString(n.lyraStrA, HB, nx);
-    placeString(n.lyraStrB, -HB, nx);
+    placeString(n.lyraStrA, tipTop(), nx);
+    placeString(n.lyraStrB, tipBot(), nx);
     const arw = n.lyraArrow;
     arw.vis = nockOn;
+    // arco guardado nas costas (js/heroes/armas3d.js): some da mão (o das costas aparece lá)
+    if (e && e.wpnOut === false && !aiming) bow.vis = false;
     arw.p[0] = nx; arw.p[1] = 0; arw.p[2] = 0; arw.r[0] = arw.r[1] = arw.r[2] = 0;
     // Mão da corda: no encaixe enquanto puxa; depois de soltar, segue para trás do queixo
     if (aiming) {

@@ -1081,12 +1081,12 @@ function buildTempestadeNula(g, k, part, lod) {
     if (n.hair) { n.hair.r[1] += s.h * 0.35; n.hair.r[2] += s.r * 0.6; }
   }
   // Mãos: a direita fecha no cabo; a esquerda fecha em punho, abre ao lançar habilidades
-  function hands(m, e, P, dead) {
+  function hands(m, e, P, dead, free) {
     const n = m.nodes;
     if (!n.handR) return;
     const a = e && e.attack, d = a && a.def;
     const cast = e && e.state === 'attack' && d && d.ability && !d.thrust;
-    curl(n, 'R', 1, dead ? 0.55 : 1);
+    curl(n, 'R', 1, dead ? 0.55 : free ? 0.4 : 1);
     curl(n, 'L', -1, dead ? 0.4 : P.grip2 > 0.5 ? 1 : cast ? 0.2 : 0.85);
   }
 
@@ -1171,8 +1171,10 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (st === 'special') P = specialPose(POSE, e);
       else if (num(e.moveSpeed) > 40) P = runPose(POSE, e);
       else P = rest(POSE, e);
+      // arma guardada (mão livre) e o gesto de sacar/guardar (js/heroes/armas3d.js)
+      const free = typeof WeaponRig !== 'undefined' && WeaponRig.handPose(m, e, P, m.props || KAEL_PROPS);
       solve(m, P, e, t, false);
-      hands(m, e, P, false);
+      hands(m, e, P, false, free);
       if (m.sec) secondary(m, e, P);
     },
 
@@ -1202,6 +1204,8 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (st === 'special') { glow = 1; big = 1; }
       const energy = dead ? 0.05 : Math.max(glow, 0.1 + 0.25 * furyOf(e));
       // Halos atrás do corpo (vista de costas) são atenuados; a ponta, fora da silhueta, assume o brilho
+      // espada guardada nas costas (js/heroes/armas3d.js): os halos da lâmina ficam lá, discretos
+      if (e.wpnOut === false && typeof WeaponRig !== 'undefined' && WeaponRig.ok) { WeaponRig.glows('kael', e, add); return; }
       const oc = OCC && OCC.get(e), hm = oc ? oc.mid : 0, ht = oc ? oc.tip : 0, hh = oc ? oc.hilt : 0;
       add('swordMid', Math.min(14, 6 + energy * 8) + big * 8 * (1 - hm), '50,120,255', (Math.min(0.42, 0.1 + energy * 0.3) + big * 0.15) * (1 - 0.7 * hm));
       add('hilt', 4.5, '80,160,255', (dead ? 0.2 : 0.35) * (1 - 0.7 * hh));

@@ -577,6 +577,18 @@ class AudioSys {
           this.osc('sine', 320, 120, 0.08, 0.04 * p);
           this.osc('square', 2400, 900, 0.05, 0.012 * p);   // estalo elétrico da lâmina
           break;
+        case 'draw':          // sacar a arma das costas: lâmina deslizando para fora + tinido
+          if (!this.throttle(name, 0.2)) return;
+          this.noise(0.22, 0.12 * p, 'bandpass', 1800, 5200, 2.2);
+          this.osc('sine', 2600, 3400, 0.35, 0.018 * p, 0.16);
+          this.osc('square', 900, 1400, 0.05, 0.01 * p);
+          break;
+        case 'sheathe':       // guardar: lâmina deslizando para dentro + clique da trava
+          if (!this.throttle(name, 0.2)) return;
+          this.noise(0.26, 0.1 * p, 'bandpass', 4200, 1500, 2.0);
+          this.osc('square', 1700, 600, 0.04, 0.02 * p, 0.27);
+          this.noise(0.03, 0.12 * p, 'highpass', 3000, 3000, 0.8, 0.27);
+          break;
         case 'swingHeavy':
           this.noise(0.26, 0.3, 'bandpass', 380, 1900, 1.1);
           this.osc('sawtooth', 130, 55, 0.22, 0.05);

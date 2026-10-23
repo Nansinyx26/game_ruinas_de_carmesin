@@ -5,12 +5,14 @@
 //   kind: tipo do item (para o ícone e o comportamento quando for implementado)
 //   implemented: false → aparece na lista, ainda sem efeito no jogo
 //   A Armadura Exoesqueleto também aparece nesta lista (ref: ARMOR_DEFS.exoesqueleto).
+//   glb: modelo-fonte (prévia dos menus); no jogo a arma usa a versão reduzida de
+//   js/assets/armas3d.js (tools/importar_arma.py) com os encaixes de js/heroes/armas3d.js.
 // ---------------------------------------------------------------------------
 const WEAPON_DEFS = {
   tempestade_nula: {
     owner: 'kael', name: 'Tempestade Nula', kind: 'sword', implemented: true, stats: { dmg: 50, speed: 1.1 },
-    glb: 'assets/armas/eclipse/kael_espada.glb',
-    png: 'assets/armas/eclipse/kael_espada.png',
+    glb: 'assets/armas/eclipse/kael_espada_oficial.glb',
+    png: 'assets/armas/eclipse/kael_espada_oficial.png',
     desc: 'A lendária lâmina que devora a energia de NEXUS.'
   },
   granada_plasma: {
@@ -51,8 +53,8 @@ const WEAPON_DEFS = {
   },
   laminas_duplas: {
     owner: 'orion', name: 'Lâminas Duplas', kind: 'blades', implemented: true, stats: { dmg: 26, hits: 2, speed: 1.35 },
-    glb: 'assets/armas/eclipse/orion_primaria.glb',
-    png: 'assets/armas/eclipse/orion_primaria.png',
+    glb: 'assets/armas/eclipse/orion_laminas_v2.glb',
+    png: 'assets/armas/eclipse/orion_laminas_v2.png',
     desc: 'Par de lâminas curtas de alta vibração para sequências rápidas e letais.'
   },
   modulo_stealth: {

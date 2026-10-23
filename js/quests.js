@@ -84,6 +84,7 @@ const LoyaltyQuests = {
       const n = new NPC({ model: heroModelKey(def), name: def.name.toUpperCase(), at, facing: Math.PI * 0.5, lines: ['…'] }, pt.x, pt.y);
       n.quest = id;
       n.height = 58;
+      n.wpnOut = false;                     // armas guardadas nas costas (js/heroes/armas3d.js)
       n.talk = () => this.talk(n, id);
       game.npcs.push(n);
     }

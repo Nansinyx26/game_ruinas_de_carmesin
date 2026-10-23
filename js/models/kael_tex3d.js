@@ -124,13 +124,18 @@ function instPeles3D(SK, m) {
     // Peles: dados compartilhados, ossos e rascunhos por instância
     m.skins = instPeles3D(SKINS, m);
     m.tex = TEX;
+    // Espada GLB (Kael_Espada_oficial, js/heroes/armas3d.js) no lugar da procedural: os nós
+    // blade/hilt ficam sem geometria, só para as âncoras dos halos e o alcance do golpe
+    if (typeof WeaponRig !== 'undefined' && WeaponRig.has('kael_espada') && WeaponRig.install(m, 'kael')) {
+      m.nodes.blade.geo = null; m.nodes.hilt.geo = null;
+    }
     m.sec = true;              // movimento secundário do casaco, do capuz e do cabelo
     return m;
   }
 
   MODELS3D.kaelTex = {
     build,
-    pose(m, e, o) { MODELS3D.kael.pose(m, e, o); },
+    pose(m, e, o) { MODELS3D.kael.pose(m, e, o); if (m.wr) WeaponRig.pose(m, e); },
     opts(e) { return MODELS3D.kael.opts(e); },
     glows(e, add) { MODELS3D.kael.glows(e, add); },
   };

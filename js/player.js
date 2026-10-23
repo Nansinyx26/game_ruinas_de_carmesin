@@ -130,6 +130,45 @@ class Player extends Entity {
     // Contexto do idle (tem prioridade sobre o sorteio, ver idleContext): cansaço depois de
     // correr ou lutar muito, comemoração ao liberar o setor e a variação anterior (sem repetir)
     this.fatigue = 0; this.tired = false; this.victoryT = 0; this.lastIdle = null; this.idleForced = false;
+    // Arma (js/heroes/armas3d.js): começa nas costas; saca ao entrar em combate e guarda na calma
+    this.wpnOut = false; this.wpnAnim = null; this.wpnCalm = 0; this.wpnFlash = 0;
+  }
+
+  // Inimigo ativo por perto (para sacar a arma e para a guarda do idle)
+  threatNear(r) {
+    if (!(game.combatActive && game.combatActive())) return false;
+    for (const e of game.enemies) if (e.alive && !e.dormant && dist2(e.x, e.y, this.x, this.y) < r * r) return true;
+    return false;
+  }
+  // Arma na mão ou nas costas: golpe, carga ou suprema sacam na hora; inimigo a menos de 380
+  // saca com o gesto (a mão vai às costas); depois de 4 s sem ameaça, guarda com o gesto.
+  // Só visual: não muda dano, alcance nem tempo de nenhuma ação.
+  updateWeapon(dt) {
+    if (typeof WeaponRig === 'undefined' || !WeaponRig.ok) return;
+    if (this.wpnFlash > 0) this.wpnFlash -= dt;
+    const st = this.state, A = this.wpnAnim;
+    if (st === 'dead') return;
+    if (st === 'attack' || st === 'charge' || st === 'special') {
+      if (!this.wpnOut || A) { this.wpnOut = true; this.wpnAnim = null; this.wpnFlash = 0.22; game.audio.play('draw', 0.7); }
+      this.wpnCalm = 0;
+      return;
+    }
+    if (A) {
+      A.t += dt;
+      if (!A.swap && A.t >= A.dur * (A.k === 'draw' ? 0.45 : 0.55)) {
+        A.swap = true; this.wpnOut = A.k === 'draw';
+        game.audio.play(A.k === 'draw' ? 'draw' : 'sheathe', 0.8);
+      }
+      if (A.t >= A.dur) this.wpnAnim = null;
+      return;
+    }
+    const threat = this.threatNear(380);
+    if (this.wpnOut) {
+      this.wpnCalm = threat || st === 'hurt' ? 0 : this.wpnCalm + dt;
+      if (this.wpnCalm > 4 && (st === 'idle' || st === 'run')) this.wpnAnim = { k: 'sheathe', t: 0, dur: 0.7 };
+    } else if (threat && (st === 'idle' || st === 'run' || st === 'hurt')) {
+      this.wpnAnim = { k: 'draw', t: 0, dur: 0.5 };
+    }
   }
 
   // Variação imposta pela situação, em ordem de prioridade: vitória → alerta/guarda (inimigo a
@@ -271,6 +310,7 @@ class Player extends Entity {
     this.moveSpeed = Math.hypot(this.vx, this.vy);
 
     for (const g of this.ghosts) if (g.life > 0) g.life -= dt;
+    this.updateWeapon(dt);
   }
 
   // Ações disponíveis em estado livre: especial, esquiva ou golpe
