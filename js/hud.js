@@ -210,7 +210,7 @@ class HUD {
     m.h = 36 + m.lines.length * 15;
     m.title = w.def.name;
     const sectors = this.sectors || (this.sectors = ROOM_DEFS.filter((d) => !d.boss).length);
-    m.kicker = w.def.boss ? 'NÚCLEO DE NEXUS' : `SETOR ${w.roomIndex + 1} / ${sectors}`;
+    m.kicker = game.world ? game.world.kicker() : w.def.boss ? 'NÚCLEO DE NEXUS' : `SETOR ${w.roomIndex + 1} / ${sectors}`;
     L.comboY = m.y + 150;
     // Habilidades: 4 losangos + Eclipse, alinhados à direita
     const a = L.ab, pad = game.input.lastDevice === 'pad';
@@ -381,6 +381,7 @@ class HUD {
   abilityDenied(k) { this.abDeny[k] = 0.3; }
 
   objectiveText() {
+    if (game.world) return game.world.objective();
     const w = game.waves;
     if (w.def.boss) return game.boss ? 'Derrote NEXUS' : 'Alcance o núcleo de NEXUS';
     if (w.state === 'cleared' || w.state === 'exiting') {
@@ -1376,7 +1377,7 @@ class HUD {
     const key = game.input.lastDevice === 'pad' ? game.input.padLabels.x : 'E';
     ctx.save();
     ctx.font = `bold 12px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const txt = `Falar · ${n.name}`, w = ctx.measureText(txt).width + 40, bob = Math.sin(this.time * 4) * 2;
+    const txt = `${n.verb || 'Falar'} · ${n.name}`, w = ctx.measureText(txt).width + 40, bob = Math.sin(this.time * 4) * 2;   // verb: objetos do mundo aberto
     ctx.fillStyle = 'rgba(3,7,16,0.82)';
     techPanelPath(ctx, q.x - w / 2, q.y - 12 + bob, w, 24, 6); ctx.fill();
     ctx.strokeStyle = 'rgba(255,212,122,0.8)'; ctx.lineWidth = 1; ctx.stroke();

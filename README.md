@@ -112,6 +112,18 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **Missões de lealdade** (`js/quests.js`): depois que o Refúgio dos Desconectados é liberado, os aliados do grupo que não estão em campo aparecem lá em 3D; conversando com eles ([E]) cada um oferece uma missão — Lyra *Caçada Longe da Rede* (25 abates com ela), Drakos *Onze Anos* (6 legionários com ele), Sera *Silêncio na Rede* (15 máquinas com ela) e Orion *Ninguém Me Vê Chegar* (20 abates com ele). Conta em qualquer setor seguinte; ao completar, o aliado fala pelo rádio e libera a **armadura suprema** dele e a **arma especial** (lendárias). As falas novas são texto; a dublagem gravada toca quando a fala é a mesma da gravação. Estado em `flags.lealdade` do salvamento.
 - **Animação parada** (`js/player.js` + `js/models/kael.js`): além das variações sorteadas por personagem (respirar, olhar em volta, ajustar a arma, trocar o peso…), a situação tem prioridade: **vitória** (ergue a espada ao liberar o setor) → **alerta/guarda** (inimigo a menos de 320) → **cansado** (depois de correr ou lutar muito: respiração funda, tronco curvado, mão na coxa). A mesma variação não se repete em seguida, e a caminhada (analógico pela metade) tem passos mais lentos que a corrida.
 
+## Mundo aberto (protótipo jogável)
+
+Menu inicial → **MUNDO ABERTO**. Primeira etapa do plano de mundo aberto: em vez de uma página bonita, uma região **realmente explorável** com o mesmo combate, personagens, árvores e HUD da campanha.
+
+- **Ruínas de Carmesin** (`js/world.js`): 9 zonas numa grade 3×3 (Mercado Afundado, Portões Partidos, Avenida dos Ecos, Torre de Vigia, Praça Carmesim, Galerias de Serviço, Laboratório Esquecido, Fendas Rubras e Coração Carmesim), cada uma com nível recomendado. **Passagens** acesas nas bordas levam à zona vizinha (pare sobre a luz).
+- **Acampamentos**: os inimigos ficam parados até o herói chegar perto ou um deles ser atingido; aí o grupo inteiro acorda e persegue. Voltam a cada visita (o do chefe não, depois de derrotado).
+- **Baús** (células, experiência, cápsula de reparo), **terminais** com memórias da cidade, um **local secreto** que só aparece de perto, **NPCs** no Mercado e o **chefe regional** (Guardião Carmesim) no Coração Carmesim — o baú dele só abre depois.
+- **Descoberta e viagem rápida**: entrar numa zona pela primeira vez a descobre (experiência); **portais** ativados viram destinos de viagem rápida.
+- **Mapa do mundo** (tecla **M**, botão MAPA no toque, ou o portal): as 7 regiões (Ruínas de Carmesin, Nexus, Floresta de Velmora, Montanhas de Asterion, Deserto de Seraph, Lagoa Cristalina e Cratera de Obsidiano) com bioma, faixa de nível e perigo; as zonas de Carmesin com o que já foi descoberto, portais, o chefe e onde você está. Q/E aproximam e afastam. As outras seis regiões aparecem bloqueadas: são as próximas fases.
+- **Salvamento próprio** (`localStorage`, chave `eclipse_zero_mundo_v1`): nível, árvores, elenco, zonas descobertas, baús e portais. Não mexe nos 5 espaços da campanha. Ao cair, o herói volta ao último portal.
+- **Limites desta fase**: o cenário de cada zona é o gerador de salas da campanha (com os temas existentes), sem paredes abertas entre zonas (as passagens fazem a ligação); ainda não há ciclo de dia e noite, clima, inventário com raridade, comércio, missões encadeadas nem multiplayer (não há servidor; nada de multiplayer simulado).
+
 ## Menus, salvamentos e configurações
 
 - **Capa** → **Tela inicial** (JOGAR, CONFIGURAÇÕES, CRÉDITOS, SAIR) → **Menu principal** (CONTINUAR, NOVO JOGO, CARREGAR, CONFIGURAÇÕES, SAIR) com o painel **Última missão**.
@@ -262,6 +274,7 @@ js/
   heroes/           kit.js (estrutura dos kits de personagem, HERO_WEAPONS, HeroObjects) e
                     lyra.js (o kit completo da Lyra)
   quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
+  world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
   glbviewer.js      visualizador dos .glb de armas e armaduras (tela de seleção)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)

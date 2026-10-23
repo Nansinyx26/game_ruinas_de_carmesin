@@ -16,6 +16,7 @@ const KEYMAP = {
   interact: ['KeyE', 'KeyF'], debugXp: ['F4'], erase: ['Delete'],
   charPrev: ['KeyZ'], charNext: ['KeyC'],   // árvore de habilidades: trocar de personagem
   view3d: ['KeyV'],
+  worldMap: ['KeyM'],   // mapa do mundo aberto (no mundo, M deixa de ser o mudo)
 };
 // Mapeamento padrão da Gamepad API ("standard"), igual em Xbox, PlayStation e GameSir:
 // 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB/L1 5=RB/R1 6=LT/L2 7=RT/R2 8=View/Create 9=Menu/Options

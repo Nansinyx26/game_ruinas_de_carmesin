@@ -49,6 +49,7 @@ class Game {
     TouchControls.init(this.canvas, this.input);   // controles de toque (js/touch.js)
     LoyaltyQuests.init();   // missões de lealdade dos aliados (js/quests.js)
     this.thirdPerson = (typeof ThirdPersonMode !== 'undefined') ? new ThirdPersonMode(this) : null;
+    this.world = null;   // modo mundo aberto (World, js/world.js) quando ativo
     this.progress = new Progress();
     this.flags = {};
     this.checkpoint = 0;
@@ -187,7 +188,7 @@ class Game {
     // Console de desenvolvimento aberto (só em modo dev): o jogo espera
     if (DevTools.update(dt, inp)) { inp.endFrame(); return; }
     // Atalhos M (som) e G (3D/2D) também atualizam as configurações salvas
-    if (inp.pressed.mute) { Settings.v.sound = this.audio.toggleMute(); Settings.save(); }
+    if (inp.pressed.mute && !(this.world && this.state === 'playing')) { Settings.v.sound = this.audio.toggleMute(); Settings.save(); }   // no mundo, M é o mapa
     if (inp.pressed.gfx && R3D.ok) {
       R3D.enabled = !R3D.enabled;
       Settings.v.gfx3d = R3D.enabled; Settings.save();
@@ -211,6 +212,7 @@ class Game {
       case 'playing': this.updatePlaying(dt); break;
       case 'paused': this.menu.update(dt, inp); break;
       case 'thirdperson': if (this.thirdPerson) this.thirdPerson.update(dt, inp); break;
+      case 'worldmap': World.updateMap(dt, inp); break;   // mapa do mundo aberto (js/world.js)
       case 'upgrade': this.updateUpgrade(dt); break;
       case 'gameover':
       case 'victory': this.updateEnd(dt); break;
@@ -218,6 +220,9 @@ class Game {
     this.camera.update(dt);
     inp.endFrame();
   }
+
+  // Mundo aberto (protótipo): Ruínas de Carmesin, com o personagem escolhido (js/world.js)
+  startWorld() { World.start(); }
 
   startThirdPerson() {
     this.audio.unlock();
@@ -249,6 +254,7 @@ class Game {
 
   // Começa (ou retoma, com 'save') a jornada de Kael
   startRun(save = null) {
+    if (this.world) this.world.stop();   // a campanha não usa o mundo aberto
     this.audio.unlock();
     this.audio.startAmbient();
     this.stats = this.freshStats();
@@ -316,6 +322,10 @@ class Game {
     const inp = this.input, p = this.player;
     if (inp.pressed.pause && !this.fadeCb) { this.pauseGame(); return; }
     if (inp.pressed.skills && !this.fadeCb && p.state !== 'dead') { this.openSkills('playing'); return; }
+    if (this.world) {
+      if (inp.pressed.worldMap && !this.fadeCb) { this.world.openMap(false); return; }
+      this.world.update(dt);
+    }
     if (this.debug) {
       if (inp.pressed.debugXp) this.gainXP(400, p.x, p.y);
       if (inp.pressed.debugKill) {
@@ -390,6 +400,7 @@ class Game {
 
   // Há combate no setor? (NPCs se protegem e não conversam)
   combatActive() {
+    if (this.world) return this.world.inCombat();   // mundo aberto: há inimigo acordado
     const s = this.waves.state;
     return s === 'intro' || s === 'spawning' || s === 'fighting' || s === 'between' || s === 'boss';
   }
@@ -402,6 +413,7 @@ class Game {
     // NPCs são sólidos para Kael (a esquiva atravessa)
     if (pSolid) {
       for (const n of this.npcs) {
+        if (n.flat) continue;   // passagens e portais do mundo aberto
         const dx = p.x - n.x, dy = p.y - n.y, min = n.radius + p.radius, d2 = dx * dx + dy * dy;
         if (d2 < min * min && d2 > 0.0001) { const d = Math.sqrt(d2); p.x = n.x + (dx / d) * min; p.y = n.y + (dy / d) * min; }
       }
@@ -478,6 +490,7 @@ class Game {
     if (p.kit) p.kit.onKill(p, e);
     LoyaltyQuests.onKill(e);   // missões de lealdade (js/quests.js)
     HeroPassives.kill(p, e);   // passivas das árvores (js/heroes/passivas.js)
+    if (this.world) this.world.onKill(e);   // chefe regional do mundo aberto
     if (e.elite) this.hud.toast('Unidade de elite destruída', '255,200,90');
     // Efeitos de morte: máquinas explodem em faíscas e peças; humanos sangram
     if (e.T.mech) {
@@ -720,6 +733,7 @@ class Game {
   // Volta ao menu principal (o progresso é salvo antes)
   toMenu() {
     this.saveGame();
+    if (this.world) { this.world.save(); this.world.stop(); }
     this.state = 'menu';
     this.menu.toMain();
     this.audio.stopAmbient();
@@ -927,6 +941,7 @@ class Game {
 
   // Derrota: Kael desperta no último ponto seguro, mantendo a evolução
   respawn(penalty = true) {
+    if (this.world) { this.world.respawn(); return; }   // mundo aberto: volta ao último portal
     const s = this.stats;
     const lost = penalty ? Math.floor(s.soulsBank * 0.25) : 0;
     s.soulsBank -= lost;
@@ -1099,6 +1114,7 @@ class Game {
       this.renderScreenFx(ctx);
       if (this.state === 'playing') { this.hud.draw(ctx); TouchControls.draw(ctx); }   // botões de toque (celular)
       if (this.state === 'paused') this.menu.draw(ctx, this.realTime);
+      else if (this.state === 'worldmap') World.drawMap(ctx, this.realTime);
       else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);
       else if (this.state === 'gameover') this.screens.drawEnd(ctx, false, this.realTime);

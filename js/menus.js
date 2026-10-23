@@ -903,6 +903,7 @@ class Menus {
     const x = Math.min(VIEW_W - w - 40, cx - w / 2), y0 = VIEW_H * 0.38;
     const items = [
       ['play', 'JOGAR', 'play'],
+      ['world', 'MUNDO ABERTO', 'star'],
       ['thirdperson', 'MODO 3ª PESSOA (3D)', 'sword'],
       ['settings', 'CONFIGURAÇÕES', 'gear'],
       ['credits', 'CRÉDITOS', 'star'],
@@ -917,6 +918,7 @@ class Menus {
     this.navList(inp, L.rects, (id) => {
       if (id === 'play') this.startSlashTransition('main');
       else if (id === 'thirdperson') game.startThirdPerson();
+      else if (id === 'world') game.startWorld();
       else if (id === 'settings') this.open('settings');
       else if (id === 'credits') this.open('credits');
       else if (id === 'install') this.installApp();

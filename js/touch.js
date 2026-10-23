@@ -42,6 +42,7 @@ const TouchControls = {
     B.push({ id: 'use', key: 'KeyF', x: W - 232, y: H - 340, r: 28, icon: null, label: 'E' });
     B.push({ id: 'pause', key: 'Escape', x: 44, y: 178, r: 24, icon: null, label: 'II' });
     B.push({ id: 'tree', key: 'Tab', x: 44, y: 236, r: 24, icon: null, label: 'TAB' });
+    if (game.world) B.push({ id: 'map', key: 'KeyM', x: 44, y: 294, r: 24, icon: null, label: 'MAPA' });
     const A = game.hud && game.hud.L && game.hud.L.ab;
     if (A && A.d) {
       for (let k = 0; k < 4; k++) B.push({ id: 'ab' + k, key: 'Digit' + (k + 1), x: A.x0 + k * A.gap, y: A.y, r: A.d * 1.25, hud: true });

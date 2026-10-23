@@ -673,6 +673,7 @@ class RosterScreen {
   canSwap() {
     if (this.mode === 'new') return true;
     if (!game.waves) return true;
+    if (game.world) return !game.world.inCombat();   // mundo aberto: fora de combate (acampamentos dormindo não contam)
     return game.waves.state === 'cleared' || (game.enemies && game.enemies.length === 0);
   }
 

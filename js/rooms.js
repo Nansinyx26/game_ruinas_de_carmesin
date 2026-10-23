@@ -82,9 +82,10 @@ const NEON_COLORS = ['255,60,200', '80,220,255', '170,100,255', '255,70,90'];
 const GRAFFITI = ['DESCONECTE-SE', 'SEM REDE SEM DONO', 'LEMBRE-SE', 'NEXUS MENTE', 'LIVRES'];
 
 class Room {
-  constructor(index) {
+  // def: definição própria (zonas do mundo aberto, js/world.js); sem ela, o setor ROOM_DEFS[index]
+  constructor(index, def = null) {
     this.index = index;
-    this.def = ROOM_DEFS[index];
+    this.def = def || ROOM_DEFS[index];
     this.theme = THEMES[this.def.theme];
     this.w = this.h = this.def.tiles * TILE;
     this.seed = 9973 * (index + 1) + Math.floor(Math.random() * 100000);
