@@ -8,6 +8,8 @@
 //                      pontuação e painel de missão (setor + objetivo atual)
 //   inferior direito   habilidades em losangos com as teclas (ou os botões do controle,
 //                      segurando LB/L1), o Eclipse Absoluto em destaque e os efeitos ativos
+// Tudo do personagem ativo: nível, XP, atalhos e suprema vêm do progresso e do kit dele
+// (heroProgressOf / heroUltInfo em js/heroes/kit.js); com o Kael o HUD é o de sempre.
 //   inferior esquerdo  células de energia
 // No meio ficam os avisos temporários: combo, nomes das técnicas, letreiros, memórias,
 // evolução de nível, legendas e avisos curtos, que se encaixam no espaço livre entre os
@@ -58,6 +60,15 @@ const HUDV = { px: 60, py: 64, pr: 40, x: 112, tab: 64, hpY: 28, hpH: 20, hpW: 3
 // Pontos cardeais no radar. O radar é a vista de cima do setor girada 45° para
 // acompanhar a câmera isométrica (para cima na tela = para cima no radar), então o
 // norte do mundo (-y, onde fica a saída) aparece na diagonal superior direita.
+// Cores do losango da suprema: as do Eclipse Absoluto (Kael) e as geradas da cor-tema de outro personagem
+const ECLIPSE_PAL = { lo: 'rgba(20,60,170,0.95)', hi: 'rgba(90,170,255,0.9)', glow: 'rgba(120,190,255,1)', edge: '#e6f3ff', inner: 'rgba(200,230,255,0.7)',
+  base: 'rgba(61,139,255,0.75)', base2: 'rgba(61,139,255,0.25)', dot: 'rgba(120,180,255,0.8)' };
+function ultPalette(rgb) {
+  const [r, g, b] = rgb.split(',').map(Number), dk = `${Math.round(r * 0.3)},${Math.round(g * 0.3)},${Math.round(b * 0.55)}`;
+  const lt = `${Math.round(r + (255 - r) * 0.45)},${Math.round(g + (255 - g) * 0.45)},${Math.round(b + (255 - b) * 0.45)}`;
+  return { lo: rgba(dk, 0.95), hi: rgba(rgb, 0.9), glow: rgba(lt, 1), edge: rgba(`${Math.round(r + (255 - r) * 0.85)},${Math.round(g + (255 - g) * 0.85)},${Math.round(b + (255 - b) * 0.85)}`, 1),
+    inner: rgba(lt, 0.7), base: rgba(rgb, 0.75), base2: rgba(rgb, 0.25), dot: rgba(lt, 0.8) };
+}
 const RADAR_DIRS = [['N', -Math.PI / 4], ['L', Math.PI / 4], ['S', Math.PI * 3 / 4], ['O', -Math.PI * 3 / 4]];
 
 class HUD {
@@ -216,6 +227,7 @@ class HUD {
     if (b.shield > 0) B.push(['hex', b.shield, '80,230,200', `Escudo ${p.shieldHp}`]);
     if (b.sync > 0) B.push(['sync', b.sync, '80,230,200', 'Sincronia']);
     if (p.counterT > 0) B.push(['counter', p.counterT, '220,228,240', 'Contra-ataque']);
+    if (p.kit) p.kit.hudBuffs(p, B);   // efeitos próprios do personagem (Foco, camuflagem…)
     L.lvlY = L.compact ? 266 : 140;
     L.cellsX = 20; L.cellsY = VIEW_H - 80; L.cellsS = 58;
     // Legenda (caixa e linhas) e altura do letreiro, que sobe para não cobrir a legenda
@@ -415,8 +427,9 @@ class HUD {
     g.fillStyle = labelColor; g.fillText(label, x + 7, y + h / 2 + 0.5);
     g.letterSpacing = '0px';
   }
-  // Retrato circular: rosto da ficha oficial (Kael) ou silhueta na cor-tema do personagem
-  paintPortrait(g, S, rgb, face) {
+  // Retrato circular: rosto da ficha oficial (Kael), o retrato da arte de seleção (aliados)
+  // ou, enquanto a imagem não carrega, a silhueta na cor-tema do personagem
+  paintPortrait(g, S, rgb, face, id) {
     const c = S / 2, r = HUDV.pr;
     const hg = g.createRadialGradient(c, c, r * 0.75, c, c, c);
     hg.addColorStop(0, rgba(rgb, 0.45)); hg.addColorStop(1, rgba(rgb, 0));
@@ -424,10 +437,18 @@ class HUD {
     g.save();
     g.beginPath(); g.arc(c, c, r, 0, TAU); g.clip();
     g.fillStyle = '#04070f'; g.fillRect(0, 0, S, S);
-    if (face) {
+    if (face && id !== 'kael') drawHeroFace(g, id, c, c, r);
+    else if (face) {
       // Recorte do rosto na ficha (268×336): da franja ao queixo, com os olhos um pouco acima do centro
       const im = KAEL_PORTRAIT.face, k = im.naturalWidth / 268;
       g.drawImage(im, 30 * k, 60 * k, 208 * k, 208 * k, c - r, c - r, 2 * r, 2 * r);
+    } else if (id && id !== 'kael' && SKILL_PORTRAIT[id]) {
+      // Aliados: a silhueta da história (Backdrop.ally) contra a luz da cor-tema
+      const bg = g.createRadialGradient(c, c - r * 0.25, r * 0.05, c, c, r * 1.05);
+      bg.addColorStop(0, rgba(rgb, 1)); bg.addColorStop(0.55, rgba(rgb, 0.45)); bg.addColorStop(1, 'rgba(4,7,15,1)');
+      g.fillStyle = bg; g.fillRect(0, 0, S, S);
+      const P = SKILL_PORTRAIT[id], sc = (r / 30) * P.s;
+      Backdrop.ally(g, id, c, c - r * 0.3 + P.head * sc, sc, 0);
     } else {
       const bg = g.createLinearGradient(0, c - r, 0, c + r);
       bg.addColorStop(0, rgba(rgb, 0.38)); bg.addColorStop(1, 'rgba(4,7,15,1)');
@@ -461,14 +482,15 @@ class HUD {
   }
 
   drawVitals(ctx, p) {
-    const V = HUDV, pr = game.progress, inp = game.input, pad = inp.lastDevice === 'pad';
+    const V = HUDV, pr = heroProgressOf(p), inp = game.input, pad = inp.lastDevice === 'pad';   // Kael: game.progress
+    const U = heroUltInfo(p);
     const rgb = hexToRgb(p.def.color || '#2F8CFF');
     ctx.save();
     ctx.globalAlpha = this.panelAlpha('vitals', 0, 0, V.right, V.bottom);
     this.blit(ctx, this.layer('vit-moldura', V.right + 4, V.bottom + 2, (g) => this.paintVitalsFrame(g)), 0, 0);
     // Retrato do personagem ativo
-    const face = p.def.art === 'kael' && kaelPortraitReady('face'), S = 2 * V.pr + 24;
-    this.blit(ctx, this.layer(`retrato-${p.def.id}-${face ? 1 : 0}-${rgb}`, S, S, (g) => this.paintPortrait(g, S, rgb, face)), V.px - S / 2, V.py - S / 2);
+    const face = p.def.art === 'kael' ? kaelPortraitReady('face') : !!heroPortrait(p.def.id), S = 2 * V.pr + 24;
+    this.blit(ctx, this.layer(`retrato-${p.def.id}-${face ? 1 : 0}-${rgb}`, S, S, (g) => this.paintPortrait(g, S, rgb, face, p.def.id)), V.px - S / 2, V.py - S / 2);
     if (p.canEclipse()) this.glowAt(ctx, rgb, V.px, V.py, V.pr * 1.75, 0.32 + 0.16 * Math.sin(this.time * 6));
     const low = p.hp / p.maxHp < 0.3;
     const red = Math.max(low ? 0.16 + 0.12 * Math.sin(this.time * 9) : 0, this.hurtT * 1.1);
@@ -531,22 +553,15 @@ class HUD {
     this.blitPart(ctx, full
       ? this.layer('energia-cheia', ew, V.enH, (g, w, h) => this.paintBarFill(g, w, h, V.enTip, 'slant', '#1a4fae', '#d6ecff'))
       : this.layer('energia', ew, V.enH, (g, w, h) => this.paintBarFill(g, w, h, V.enTip, 'slant', '#0c2a66', '#3d8bff')), ex, V.enY, ek);
-    const isKael = !p.def || p.def.id === 'kael';
-    const ultLearned = isKael ? pr.lv('eclipse_absoluto') : true;
-    if (ultLearned && p.maxEnergy > SPECIAL_COST) {
+    if (U.learned && p.maxEnergy > SPECIAL_COST) {
       ctx.fillStyle = 'rgba(230,240,255,0.85)'; ctx.fillRect(ex + ew * (SPECIAL_COST / p.maxEnergy) - 1, V.enY - 3, 2, V.enH + 6);
     }
     const tx = V.x + V.enW + 8 + sh;
     ctx.font = `bold 12px ${FONT_TITLE}`;
     if (full) {
       const key = pad ? inp.padLabels.lt : 'I';
-      const ultName = isKael ? 'ECLIPSE' :
-                      p.def.id === 'lyra' ? 'FOCO' :
-                      p.def.id === 'drakos' ? 'IMPACTO' :
-                      p.def.id === 'sera' ? 'CURA' :
-                      p.def.id === 'orion' ? 'SOMBRA' : 'ECLIPSE';
       ctx.fillStyle = PAL.accentHi;
-      ctx.fillText(Math.floor(this.time * 3) % 2 ? `[${key}] ${ultName}` : 'PRONTO', tx, V.enY + V.enH / 2 + 0.5);
+      ctx.fillText(Math.floor(this.time * 3) % 2 ? `[${key}] ${U.label}` : 'PRONTO', tx, V.enY + V.enH / 2 + 0.5);
     } else {
       const n = String(Math.floor(p.fury));
       ctx.fillStyle = PAL.accent; ctx.fillText(n, tx, V.enY + V.enH / 2 + 0.5);
@@ -858,10 +873,7 @@ class HUD {
     if (on) { g.shadowColor = rgba(rgb, 0.9); g.shadowBlur = 9; }
     diamondPath(g, c, c, d); g.strokeStyle = rgba(rgb, on ? 0.95 : 0.4); g.lineWidth = 1.6; g.stroke();
     g.shadowBlur = 0;
-    if (icon) {
-      const drawFn = typeof drawRosterAbilityIcon === 'function' ? drawRosterAbilityIcon : (typeof drawSkillIcon === 'function' ? drawSkillIcon : drawIcon);
-      drawFn(g, icon, c, c, d * 1.1, on ? rgba(rgb, 1) : 'rgba(140,150,170,0.6)');
-    }
+    if (icon) drawSkillIcon(g, icon, c, c, d * 1.1, on ? rgba(rgb, 1) : 'rgba(140,150,170,0.6)');   // = drawIcon nos do Kael
   }
   // Tecla sob um losango (no controle, o botão desenhado como na tela de controles)
   keyCap(ctx, cx, y, key, hot) {
@@ -908,8 +920,8 @@ class HUD {
     const info = p.abilityInfo(k);
     id = id || (info ? info.id : null);
     const S = info ? (info.S || (id ? (SKILLS[id] || (typeof skillDef === 'function' ? skillDef(id) : null) || ABILITY_DEFS[id]) : null)) : (id ? (SKILLS[id] || (typeof skillDef === 'function' ? skillDef(id) : null) || ABILITY_DEFS[id]) : null);
-    const tree = (S && S.tree) ? SKILL_TREES.find((q) => q.id === S.tree) : null;
-    const rgb = tree ? tree.rgb : (p.def && p.def.color ? p.def.color : '120,130,150');
+    const tree = (S && S.tree) ? heroTreeOf(S.tree) : null;
+    const rgb = tree ? tree.rgb : (p.def && p.def.color ? hexToRgb(p.def.color) : '120,130,150');
     const cd = S ? (p.cds[id] || 0) : 0, total = S ? Math.max(0.01, (S.cd !== undefined && S.cd !== null ? S.cd : (S.cooldown || 5)) * p.stats.cdr) : 1;
     const cost = S ? p.abilityCost(id) : 0, noE = !!S && p.fury < cost;
     const x = cx + (this.abDeny[k] > 0 ? Math.sin(this.abDeny[k] * 70) * 3 : 0);
@@ -941,46 +953,41 @@ class HUD {
     this.keyCap(ctx, x, cy + d + 4, key, hot);
   }
 
-  paintEclipse(g, S, D, mode) {
-    const c = S / 2;
+  // pal: cores da suprema de outro personagem (sem pal = o azul do Eclipse Absoluto)
+  paintEclipse(g, S, D, mode, pal) {
+    const c = S / 2, Q = pal || ECLIPSE_PAL;
     if (mode === 'carga') {   // interior que enche de baixo para cima
       diamondPath(g, c, c, D - 3);
       const gr = g.createLinearGradient(0, c + D, 0, c - D);
-      gr.addColorStop(0, 'rgba(20,60,170,0.95)'); gr.addColorStop(1, 'rgba(90,170,255,0.9)');
+      gr.addColorStop(0, Q.lo); gr.addColorStop(1, Q.hi);
       g.fillStyle = gr; g.fill();
       return;
     }
     if (mode === 'pronto') {  // contorno aceso
-      g.shadowColor = 'rgba(120,190,255,1)'; g.shadowBlur = 14;
-      diamondPath(g, c, c, D); g.strokeStyle = '#e6f3ff'; g.lineWidth = 2.4; g.stroke();
+      g.shadowColor = Q.glow; g.shadowBlur = 14;
+      diamondPath(g, c, c, D); g.strokeStyle = Q.edge; g.lineWidth = 2.4; g.stroke();
       g.shadowBlur = 0;
-      diamondPath(g, c, c, D - 6); g.strokeStyle = 'rgba(200,230,255,0.7)'; g.lineWidth = 1; g.stroke();
+      diamondPath(g, c, c, D - 6); g.strokeStyle = Q.inner; g.lineWidth = 1; g.stroke();
       return;
     }
     diamondPath(g, c, c, D);
     g.fillStyle = 'rgba(4,8,18,0.95)'; g.fill();
     if (mode === 'base') {
-      diamondPath(g, c, c, D); g.strokeStyle = 'rgba(61,139,255,0.75)'; g.lineWidth = 2; g.stroke();
-      diamondPath(g, c, c, D - 6); g.strokeStyle = 'rgba(61,139,255,0.25)'; g.lineWidth = 1; g.stroke();
-      g.fillStyle = 'rgba(120,180,255,0.8)';
+      diamondPath(g, c, c, D); g.strokeStyle = Q.base; g.lineWidth = 2; g.stroke();
+      diamondPath(g, c, c, D - 6); g.strokeStyle = Q.base2; g.lineWidth = 1; g.stroke();
+      g.fillStyle = Q.dot;
       for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) { g.beginPath(); g.arc(c + dx * (D + 6), c + dy * (D + 6), 1.6, 0, TAU); g.fill(); }
     } else {
       diamondPath(g, c, c, D); g.strokeStyle = 'rgba(120,130,150,0.4)'; g.lineWidth = 1.5; g.stroke();
     }
   }
   eclipseSlot(ctx, cx, cy, D, key, p, capY) {
-    const isKael = !p.def || p.def.id === 'kael';
-    const learned = isKael ? (game.progress.lv('eclipse_absoluto') > 0) : true;
+    const U = heroUltInfo(p), learned = U.learned;   // suprema do personagem ativo (Kael: Eclipse Absoluto)
     const k = clamp(p.fury / SPECIAL_COST, 0, 1), ready = learned && k >= 1;
     const x = cx + (this.furyDeny > 0 ? Math.sin(this.furyDeny * 80) * 3 : 0);
-    const S = 2 * D + 30, lay = (mode) => this.layer(`eclipse-${mode}-${D}`, S, S, (g) => this.paintEclipse(g, S, D, mode));
-    const ultIcon = isKael ? 'eclipse' :
-                    p.def.id === 'lyra' ? 'focus' :
-                    p.def.id === 'drakos' ? 'quake' :
-                    p.def.id === 'sera' ? 'heal' :
-                    p.def.id === 'orion' ? 'shadowStrike' : 'eclipse';
-    const ultColor = isKael ? '80,150,255' : (p.def.color || '80,150,255');
-    if (ready) this.glowAt(ctx, ultColor, x, cy, D * (2 + 0.25 * Math.sin(this.time * 8)), 0.75);
+    const pal = U.rgb ? ultPalette(U.rgb) : null;
+    const S = 2 * D + 30, lay = (mode) => this.layer(`eclipse-${mode}-${D}${pal ? '-' + U.rgb : ''}`, S, S, (g) => this.paintEclipse(g, S, D, mode, pal));
+    if (ready) this.glowAt(ctx, U.rgb || '80,150,255', x, cy, D * (2 + 0.25 * Math.sin(this.time * 8)), 0.75);
     this.blit(ctx, lay(learned ? 'base' : 'bloqueado'), x - S / 2, cy - S / 2);
     if (learned) {
       // Carga: o losango enche de baixo para cima até os 100 de energia
@@ -1001,13 +1008,12 @@ class HUD {
         ctx.strokeStyle = `rgba(190,225,255,${(0.9 * (1 - t)).toFixed(3)})`; ctx.lineWidth = 2;
         diamondPath(ctx, x, cy, D + 4 + t * 26); ctx.stroke();
       }
-      const drawFn = typeof drawRosterAbilityIcon === 'function' ? drawRosterAbilityIcon : (typeof drawSkillIcon === 'function' ? drawSkillIcon : drawIcon);
-      drawFn(ctx, ultIcon, x, cy, D * 0.95, ready ? '#f2f8ff' : 'rgba(170,200,240,0.8)');
+      drawSkillIcon(ctx, U.icon, x, cy, D * 0.95, ready ? '#f2f8ff' : 'rgba(170,200,240,0.8)');
     } else {
       drawIcon(ctx, 'lock', x, cy - 5, D * 0.5, 'rgba(150,160,180,0.65)');
       ctx.font = `bold 9px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(180,190,210,0.75)';
-      ctx.fillText(`NV ${SKILLS.eclipse_absoluto.lvl}`, x, cy + 15);
+      ctx.fillText(`NV ${U.lvl}`, x, cy + 15);
     }
     this.keyCap(ctx, x, capY, key, ready);
   }
@@ -1018,11 +1024,11 @@ class HUD {
     ctx.save();
     ctx.font = `bold 11px ${FONT_UI}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     this.buffs.forEach(([icon, tLeft, rgb, label], i) => {
-      const txt = `${label} ${tLeft.toFixed(1)}s`, w = ctx.measureText(txt).width + 30;
+      const txt = tLeft > 0 ? `${label} ${tLeft.toFixed(1)}s` : label, w = ctx.measureText(txt).width + 30;   // sem tempo: efeito contínuo
       const bx = VIEW_W - 22 - w, by = L.ab.top - 30 - i * 24;
       ctx.fillStyle = 'rgba(3,7,16,0.78)'; ctx.fillRect(bx, by, w, 20);
       ctx.strokeStyle = rgba(rgb, 0.7); ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, 19);
-      drawIcon(ctx, icon, bx + 11, by + 10, 15, rgba(rgb, 1));
+      drawSkillIcon(ctx, icon, bx + 11, by + 10, 15, rgba(rgb, 1));
       ctx.fillStyle = '#e8f0fb'; ctx.fillText(txt, bx + 22, by + 10);
     });
     ctx.restore();

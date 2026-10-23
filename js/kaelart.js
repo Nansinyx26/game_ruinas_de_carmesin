@@ -132,3 +132,22 @@ function loadKaelPortraits() {
   for (const k of ['body', 'face']) { const im = new Image(); im.src = KAEL_ARTE[k]; KAEL_PORTRAIT[k] = im; }
 }
 function kaelPortraitReady(k) { const im = KAEL_PORTRAIT[k]; return !!(im && im.complete && im.naturalWidth); }
+
+// Retratos do elenco (js/assets/retratos.js, da arte de seleção): cartões da seleção de
+// personagem, HUD e árvore de habilidades. Devolve a imagem quando já carregou (ou null)
+const HERO_PORTRAIT = {};
+function heroPortrait(id) {
+  if (typeof RETRATOS === 'undefined' || !RETRATOS[id]) return null;
+  let im = HERO_PORTRAIT[id];
+  if (!im) { im = HERO_PORTRAIT[id] = new Image(); im.src = RETRATOS[id]; }
+  return im.complete && im.naturalWidth ? im : null;
+}
+// Rosto no retrato (288×288): quadrado da testa ao queixo, para os retratos redondos
+const HERO_FACE = { kael: [58, 22, 172], lyra: [62, 26, 170], drakos: [52, 6, 184], sera: [60, 24, 172], orion: [56, 14, 180] };
+function drawHeroFace(g, id, x, y, r) {
+  const im = heroPortrait(id);
+  if (!im) return false;
+  const k = im.naturalWidth / 288, F = HERO_FACE[id] || [54, 18, 180];
+  g.drawImage(im, F[0] * k, F[1] * k, F[2] * k, F[2] * k, x - r, y - r, 2 * r, 2 * r);
+  return true;
+}

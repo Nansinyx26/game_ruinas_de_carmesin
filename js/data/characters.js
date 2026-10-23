@@ -9,7 +9,9 @@
 //   unlock: { type: 'always' | 'chapter_complete' | 'quest_complete' | 'boss_defeated' | 'flag', value }
 //   devStatus: 'ready' (jogável) | 'partial' (jogável, habilidades faltando ficam
 //              acinzentadas) | 'coming_soon' (aparece como "EM BREVE", não selecionável)
-//   model: chave do modelo 3D (MODELS3D); null = usa o do Kael tingido na cor-tema
+//   model: chave do modelo 3D (MODELS3D; se existir MODELS3D[model + 'Tex'], o texturizado é
+//          usado no lugar); null = usa o do Kael. O que o personagem faz em jogo vem do
+//          kit dele (js/heroes/<id>.js, registro em js/heroes/kit.js)
 //   art: conjunto de sprites da arte oficial (só o Kael tem por enquanto)
 // Os capítulos são os setores da campanha: "Capítulo N concluído" = saiu do setor N.
 // ---------------------------------------------------------------------------

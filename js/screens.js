@@ -55,7 +55,8 @@ class Screens {
     ctx.closePath();
   }
 
-  // Retrato redondo: rosto da ficha (Kael) ou a silhueta do personagem na cor-tema
+  // Retrato redondo: rosto da ficha (Kael), o retrato da arte de seleção (aliados) ou a
+  // silhueta do personagem na cor-tema
   skillPortrait(ctx, id, x, y, r, rgb, t, dim) {
     ctx.save();
     ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
@@ -67,7 +68,7 @@ class Screens {
     if (id === 'kael' && kaelPortraitReady('face')) {
       const im = KAEL_PORTRAIT.face, k = im.naturalWidth / 268;
       ctx.drawImage(im, 30 * k, 60 * k, 208 * k, 208 * k, x - r, y - r, 2 * r, 2 * r);
-    } else {
+    } else if (id === 'kael' || !drawHeroFace(ctx, id, x, y, r)) {
       // Silhuetas de js/storyscreen.js: cabeça e ombros dentro do círculo
       const P = SKILL_PORTRAIT[id] || SKILL_PORTRAIT.kael, s = (r / 30) * P.s;
       const fy = y - r * 0.3 + P.head * s;

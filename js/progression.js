@@ -214,8 +214,9 @@ class Progress {
 // o mesmo formato de sempre no salvamento). Os outros personagens do elenco usam
 // CharacterProgress, com a mesma interface, sobre as próprias árvores
 // (js/data/skilltrees.js). PartyProgress.of(id) devolve o progresso de qualquer um.
-// Os aliados ainda não ganham experiência: o progresso deles nasce vazio e só vai
-// para o salvamento ('party') quando tiver algo; salvamentos sem 'party' carregam vazios.
+// Quem está em campo ganha a experiência (game.activeProgress). Ao entrar no grupo, o
+// aliado recebe um nível próximo do do Kael (PartyProgress.join). O progresso só vai para
+// o salvamento ('party') quando tiver algo; salvamentos sem 'party' carregam vazios.
 // ---------------------------------------------------------------------------
 class CharacterProgress {
   constructor(charId) { this.charId = charId; this.reset(); }
@@ -284,6 +285,17 @@ const PartyProgress = {
     return this.chars[charId] || (this.chars[charId] = new CharacterProgress(charId));
   },
   reset() { this.chars = {}; },
+  // Aliado que entra no grupo (recrutado, liberado ou posto em campo sem progresso): um nível
+  // abaixo do Kael (mínimo 1) e os pontos que o Kael teria nesse nível (os 2 iniciais + os de
+  // cada nível), para não chegar inútil. Só vale para quem ainda está vazio
+  join(charId, refLevel) {
+    const pr = this.of(charId);
+    if (!pr || pr === game.progress || !pr.empty) return false;
+    const L = clamp((refLevel | 0) - 1, 1, PROG.maxLevel);
+    pr.level = L; pr.xp = 0; pr.sp = 2;
+    for (let l = 2; l <= L; l++) pr.sp += PROG.pointsAt(l);
+    return true;
+  },
   // Só quem tem algo vai para o salvamento (nada = null)
   toJSON() {
     const chars = {};

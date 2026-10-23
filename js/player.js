@@ -1,5 +1,7 @@
 'use strict';
 // ECLIPSE ZERO · Jogador: Kael Veyron (movimento, golpes, esquiva, habilidades, Eclipse, desenho 2D)
+// Os outros personagens usam o mesmo Player: o que é próprio de cada um vem do kit
+// (this.kit, js/heroes/kit.js). Com o Kael, this.kit é null e nada abaixo muda.
 // ---------------------------------------------------------------------------
 // JOGADOR
 // ---------------------------------------------------------------------------
@@ -116,6 +118,9 @@ class Player extends Entity {
     this.counterT = 0;             // janela do contra-ataque após uma esquiva perfeita
     this.abBuffer = -1; this.abBufT = 0;
     this.dashStock = 1; this.dashGap = 0;
+    // Kit do personagem (js/heroes/<id>.js): ataques, habilidades, suprema e passivas próprias
+    this.kit = heroKitOf(def);
+    if (this.kit) this.kit.init(this);
 
     // Sistema dinâmico de variações de Idle
     this.idleVariant = 'idle_breathing';
@@ -164,6 +169,7 @@ class Player extends Entity {
     this.squash = approach(this.squash, 0, dt * 1.2);
     this.combo.update(dt, this.state === 'attack' || this.state === 'charge');
     this.updateAbilities(dt);
+    if (this.kit) this.kit.update(this, dt);   // passivas e efeitos do kit
 
     const mv = input.move, mag = Math.min(1, Math.hypot(mv.x, mv.y));
     const wd = mag > 0.15 ? screenToWorldDir(mv.x, mv.y, this.tmp) : null;
@@ -271,6 +277,7 @@ class Player extends Entity {
   }
 
   startAttack(id, wd, chargeLevel = 0) {
+    if (this.kit) { this.kit.startAttack(this, id, wd, chargeLevel); return; }
     const def = ATTACKS[id];
     if (!def) return;
     let dir = wd ? Math.atan2(wd.y, wd.x) : this.facing;
@@ -304,6 +311,7 @@ class Player extends Entity {
   }
 
   updateAttack(dt, input, wd) {
+    if (this.kit) { this.kit.updateAttack(this, dt, input, wd); return; }
     const a = this.attack, d = a.def;
     const prevT = a.t;
     a.t += dt * (this.buffs.overload > 0 ? 1.2 : 1);
@@ -531,6 +539,7 @@ class Player extends Entity {
   }
 
   updateCharge(dt, input, wd) {
+    if (this.kit) { this.kit.updateCharge(this, dt, input, wd); return; }
     this.chargeTime += dt * this.stats.chargeSpeed;
     const lvl = this.chargeTime >= 0.95 ? 2 : this.chargeTime >= 0.4 ? 1 : 0;
     if (lvl > this.chargeLevel) {
@@ -580,6 +589,7 @@ class Player extends Entity {
     this.squash = -0.1;
     game.audio.play('dash');
     game.particles.dust(this.x, this.y, 6, 8, 80);
+    if (this.kit) this.kit.onDash(this);
   }
 
   updateDash(dt) {
@@ -602,6 +612,7 @@ class Player extends Entity {
   }
 
   startSpecial() {
+    if (this.kit) { this.kit.startUltimate(this); return; }   // suprema do personagem (tecla I)
     this.fury = Math.max(0, this.fury - SPECIAL_COST);
     this.state = 'special'; this.stateTime = 0;
     this.specialFired = false;
@@ -618,6 +629,7 @@ class Player extends Entity {
   }
 
   updateSpecial(dt) {
+    if (this.kit) { this.kit.updateSpecial(this, dt); return; }
     const t = this.stateTime;
     this.vx = this.vy = 0;
     this.z = t < 0.45 ? easeOutCubic(t / 0.45) * 28 : Math.max(0, 28 - (t - 0.45) * 300);
@@ -785,7 +797,7 @@ class Player extends Entity {
     if (this.state === 'special') return;
     const before = this.fury;
     this.fury = Math.min(this.maxEnergy, this.fury + n);
-    if (before < SPECIAL_COST && this.fury >= SPECIAL_COST && game.progress.lv('eclipse_absoluto') > 0) {
+    if (before < SPECIAL_COST && this.fury >= SPECIAL_COST && this.ultLevel() > 0) {
       game.hud.furyReady(); game.audio.play('chargeTier', 2);
     }
   }
@@ -810,7 +822,7 @@ class Player extends Entity {
 
   takeDamage(dmg, sx, sy, kb = 260) {
     if (this.state === 'dead' || this.invuln > 0 || game.state !== 'playing') return false;
-    dmg = Math.max(1, Math.round(dmg * Settings.diff.dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1)));
+    dmg = Math.max(1, Math.round(dmg * Settings.diff.dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1) * (this.kit ? this.kit.damageTakenMult(this) : 1)));
     // Drakos: Escudo de Energia frontal bloqueia ataques frontais
     if (this.buffs.drakosShield > 0) {
       const hitAng = Math.atan2(sy - this.y, sx - this.x);
@@ -853,6 +865,7 @@ class Player extends Entity {
       game.onPlayerDeath();
     } else {
       this.state = 'hurt'; this.stateTime = 0;
+      if (this.kit) this.kit.onHurt(this, dmg);
     }
     return true;
   }
@@ -861,7 +874,7 @@ class Player extends Entity {
   // Recalcula os atributos a partir do nível, das evoluções, das habilidades
   // passivas e das escolhas da história (fill: começa com vida cheia)
   recalc(fill = false) {
-    const pr = game.progress, S = this.stats, L = pr.level - 1, PL = PROG.perLevel;
+    const pr = heroProgressOf(this), S = this.stats, L = pr.level - 1, PL = PROG.perLevel;   // Kael: game.progress
     const oldMax = this.maxHp;
     Object.assign(S, BASE_STATS);
     this.combo.unlocked.clear();
@@ -881,6 +894,7 @@ class Player extends Entity {
     if ((l = lv('corte_vazio'))) { S.voidSpread = l >= 2 ? 3 : 1; S.voidBig = l >= 3 ? 1 : 0; }
     if ((l = lv('drenagem'))) { S.furyMult += 0.3 * l; S.critHeal = l; }
     if ((l = lv('analise'))) { S.crit += 0.08 * l; S.eliteMult += 0.1 * l; S.showBars = 1; }
+    if (this.kit) this.kit.passives(this, S, pr);   // passivas da árvore do personagem (as do Kael acima valem 0)
     const of = game.flags.oferta;
     if (of === 0) S.dmgMult += 0.15; else if (of === 1) S.hpBonus += 15; else if (of === 2) S.crit += 0.1;
     // Modificadores da armadura equipada (ARMOR_DEFS e armaduras especiais)
@@ -924,15 +938,16 @@ class Player extends Entity {
 
   canDash() { return this.dashStock >= 1 && this.dashGap <= 0; }
   canEclipse() {
-    if (this.def.id === 'kael') return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST;
+    if (this.kit) return this.kit.canUltimate(this);
+    if (this.def.id === DEFAULT_CHARACTER) return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= SPECIAL_COST;
     return this.fury >= SPECIAL_COST;
   }
+  // Nível da suprema do personagem (Kael: Eclipse Absoluto; os aliados sem kit: sempre 1)
+  ultLevel() { return this.kit ? this.kit.ultLevel(this) : this.def.id === DEFAULT_CHARACTER ? game.progress.lv('eclipse_absoluto') : 1; }
   denyEclipse() {
-    const ultName = this.def.id === 'lyra' ? 'Foco de Batalha' :
-                    this.def.id === 'drakos' ? 'Zona de Impacto' :
-                    this.def.id === 'sera' ? 'Cura de Emergência' :
-                    this.def.id === 'orion' ? 'Dança das Sombras' : 'Eclipse Absoluto';
-    game.hud.toast(`${ultName} bloqueado · Energia insuficiente (100)`, '255,92,122');
+    if (this.kit) { this.kit.denyUltimate(this); return; }
+    if (this.def.id !== DEFAULT_CHARACTER) game.hud.toast(`${heroUltInfo(this).name} bloqueado · Energia insuficiente (${SPECIAL_COST})`, '255,92,122');
+    else if (!game.progress.lv('eclipse_absoluto')) game.hud.toast(`Eclipse Absoluto bloqueado · Árvore Elétrica (nível ${SKILLS.eclipse_absoluto.lvl})`, '255,92,122');
     game.hud.furyDenied();
     game.audio.play('uiDeny');
   }
@@ -992,6 +1007,7 @@ class Player extends Entity {
 
   // Atalho k (0–3): dados da habilidade atribuída
   abilityInfo(k) {
+    if (this.kit) return this.kit.abilityInfo(this, k);
     const pr = (typeof PartyProgress !== 'undefined' && PartyProgress.of(this.def.id)) || game.progress;
     let id = pr.slots ? pr.slots[k] : null;
     if (!id && this.def.abilities && this.def.abilities[k]) {
@@ -1363,6 +1379,7 @@ class Player extends Entity {
 
   // Efeitos visíveis das habilidades ativas e da armadura equipada (camada emissiva, coordenadas de mundo)
   drawAura(ctx, t) {
+    if (this.kit) this.kit.drawAura(this, ctx, t);
     const b = this.buffs;
     const aid = (typeof RosterManager !== 'undefined' && this.def) ? RosterManager.equippedArmor(this.def.id) : null;
     const aDef = (aid && typeof ARMOR_DEFS !== 'undefined') ? ARMOR_DEFS[aid] : null;
@@ -1486,7 +1503,8 @@ class Player extends Entity {
   // ------------------------------------------------------------------ desenho
   draw(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z;
-    if (KaelArt.active()) { KaelArt.drawPlayer(ctx, this, sx, sy); return; }
+    if (this.kit) { this.kit.draw(this, ctx, sx, sy); return; }   // modelo/desenho do personagem
+    if (this.def.id === DEFAULT_CHARACTER && KaelArt.active()) { KaelArt.drawPlayer(ctx, this, sx, sy); return; }   // sprites da arte oficial: só o Kael
     if (game.use3D && this.spr && this.spr.ok) { this.draw3D(ctx, sx, sy); return; }
     // Imagens residuais da esquiva (silhuetas de eletricidade azul)
     ctx.save();
@@ -1532,11 +1550,13 @@ class Player extends Entity {
     R3D.blit(ctx, this.spr, sx, sy);
     ctx.restore();
     const mk0 = this.def ? (this.def.model || this.def.id || 'kael') : 'kael';
-    game.glows3D(ctx, mk0, this, this.spr, sx, sy);
+    // halos do modelo que foi desenhado (o texturizado, quando é ele: as âncoras são as dele)
+    game.glows3D(ctx, this.mk3 && MODELS3D[this.mk3] && MODELS3D[this.mk3].glows ? this.mk3 : mk0, this, this.spr, sx, sy);
   }
   // Partes luminosas do modelo (desenhadas depois da escuridão)
   drawEmissive(ctx) {
-    if (KaelArt.active()) { KaelArt.drawEmissive(ctx, this, isoX(this.x, this.y), isoY(this.x, this.y) - this.z); return; }
+    if (this.kit) { this.kit.drawEmissive(this, ctx); return; }
+    if (this.def.id === DEFAULT_CHARACTER && KaelArt.active()) { KaelArt.drawEmissive(ctx, this, isoX(this.x, this.y), isoY(this.x, this.y) - this.z); return; }
     if (!game.use3D || !this.spr || !this.spr.ok) return;
     R3D.blitEmissive(ctx, this.spr, isoX(this.x, this.y), isoY(this.x, this.y) - this.z, this.blinking() ? 0.55 : 1);
   }

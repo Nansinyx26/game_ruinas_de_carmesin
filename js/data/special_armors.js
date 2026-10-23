@@ -3,12 +3,12 @@
 // ---------------------------------------------------------------------------
 // Integração completa de todos os assets adicionados em:
 //   - assets/modelos/Modelos armadura/
-//   - assets/armas/armas eclipse/
+//   - assets/armas/eclipse/
 // Progressão dos níveis 0 ao 100 com marcos nos níveis 20, 37, 40, 60 e 90.
 // ---------------------------------------------------------------------------
 
 const SPECIAL_ARMORS_BASE = 'assets/modelos/armaduras';
-const SPECIAL_WEAPONS_BASE = 'assets/armas/armas eclipse';
+const SPECIAL_WEAPONS_BASE = 'assets/armas/eclipse';
 
 const SPECIAL_ARMOR_DEFS = {
   // =========================================================================
@@ -616,64 +616,64 @@ const SPECIAL_WEAPON_DEFS = {
   espada_kael_3d: {
     owner: 'kael', kind: 'sword', implemented: true, unlockLevel: 25,
     name: 'Espada Kael',
-    png: `${SPECIAL_WEAPONS_BASE}/Espada kael.png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/Espada do Kael.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/kael_espada.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/kael_espada.glb`,
     stats: { dmg: 65, crit: 0.12, speed: 1.15 },
     desc: 'Lâmina afiada com núcleo de plasma condensado feita sob medida para a Unidade Zero.'
   },
   arco_lyra_3d: {
     owner: 'lyra', kind: 'bow', implemented: true, unlockLevel: 25,
     name: 'Arco Neon',
-    png: `${SPECIAL_WEAPONS_BASE}/arco da lyra.png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/arco da lyra.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/lyra_arco.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/lyra_arco.glb`,
     stats: { dmg: 52, range: 750, crit: 0.20 },
     desc: 'Arco de fótons com acelerador magnético que dispara projéteis perfurantes hipersônicos.'
   },
   machado_drakos_3d: {
     owner: 'drakos', kind: 'axe', implemented: true, unlockLevel: 37, // Marco obrigatório 37
     name: 'Machado Pesado',
-    png: `${SPECIAL_WEAPONS_BASE}/machado drako .png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/Machado drakos.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/drakos_machado.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/drakos_machado.glb`,
     stats: { dmg: 85, radius: 150, guardBreak: 0.25 },
     desc: 'Machado colossal de combate capaz de fender blindagens mecânicas e criar ondas de choque.'
   },
   bastao_sera_3d: {
     owner: 'sera', kind: 'staff', implemented: true, unlockLevel: 37, // Marco obrigatório 37
     name: 'Bastão Neural',
-    png: `${SPECIAL_WEAPONS_BASE}/bastao da sera.png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/Bastao da sera.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/sera_bastao.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/sera_bastao.glb`,
     stats: { dmg: 40, range: 480, cdr: -0.15 },
     desc: 'Emissor focal que projeta pulsos elétricos disruptivos e sobrecarrega androides.'
   },
   martelo_drakos_3d: {
     owner: 'drakos', kind: 'hammer', implemented: true, unlockLevel: 45,
     name: 'Martelo Fóton',
-    png: `${SPECIAL_WEAPONS_BASE}/martelo drako .png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/martelo drakos.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/drakos_martelo.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/drakos_martelo.glb`,
     stats: { dmg: 105, stun: 1.0, radius: 170 },
     desc: 'Arma de destruição maciça, forjada para esmagar chefes de setor e blindagens de ferro.'
   },
   drone_sera_3d: {
     owner: 'sera', kind: 'drone', implemented: true, unlockLevel: 45,
     name: 'Drone Orbital',
-    png: `${SPECIAL_WEAPONS_BASE}/Drone Orbital Cibernético Neon.png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/drone da sera.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/sera_drone.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/sera_drone.glb`,
     stats: { dps: 45, radius: 280, chain: 2 },
     desc: 'Unidade autônoma de suporte aéreo com IA tática de ataque rápido e disparos em cadeia.'
   },
   arma_primaria_orion_3d: {
     owner: 'orion', kind: 'rifle', implemented: true, unlockLevel: 55,
     name: 'Fuzil Sombra',
-    png: `${SPECIAL_WEAPONS_BASE}/arma primaria do orion .png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/Arma primaria do orion.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/orion_primaria.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/orion_primaria.glb`,
     stats: { dmg: 75, range: 720, crit: 0.28 },
     desc: 'Armamento balístico silencioso de calibre pesado, otimizado para abates rápidos e precisos.'
   },
   arma_secundaria_orion_3d: {
     owner: 'orion', kind: 'pistol', implemented: true, unlockLevel: 55,
     name: 'Pistola Oculta',
-    png: `${SPECIAL_WEAPONS_BASE}/arma secudaria do orion .png`,
-    glb: `${SPECIAL_WEAPONS_BASE}/arma secundaria do orion.glb`,
+    png: `${SPECIAL_WEAPONS_BASE}/orion_secundaria.png`,
+    glb: `${SPECIAL_WEAPONS_BASE}/orion_secundaria.glb`,
     stats: { dmg: 45, hits: 3, speed: 1.3 },
     desc: 'Disparador compacto de alta cadência escondido sob a manga, com disparos em rajada.'
   },

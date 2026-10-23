@@ -26,6 +26,7 @@ class Game {
     // Gráficos 3D (WebGL) para personagens, inimigos e armas; G liga/desliga
     R3D.init();
     KaelArt.init(); loadKaelPortraits();   // Kael com a arte oficial (js/kaelart.js)
+    for (const d of CHARACTER_DEFS) heroPortrait(d.id);   // retratos do elenco (carregam em segundo plano)
     this.use3D = false; this.ghostProxies = [];
     this.camera = new Camera();
     this.camera.baseZoom = 1.22;
@@ -258,6 +259,7 @@ class Game {
     this.newRoster = null;
     this.checkRosterUnlocks();
     PartyProgress.load(save ? save.party : null);     // progresso dos outros personagens (vazio nos saves antigos)
+    PartyProgress.join(RosterManager.active, this.progress.level);   // aliado em campo sem progresso: entra perto do nível do Kael
     AllyRadio.reset();
     this.thumb = (save && save.thumb) || null; this.thumbT = this.realTime - 3;
     this.lookOff.x = this.lookOff.y = 0;
@@ -286,6 +288,7 @@ class Game {
     this.enemies.length = 0;
     this.projectiles.clear(); this.pickups.clear(); this.particles.clear();
     this.hazards.clear(); this.trails.clear(); this.texts.clear(); this.arcs.clear();
+    HeroObjects.clear();   // flechas, minas e iscas dos kits (js/heroes/kit.js)
     this.boss = null; this.eclipse = null; this.skyFlash = 0;
     this.counter.reset(true);
     this.room = new Room(i);
@@ -344,13 +347,16 @@ class Game {
     this.time += sdt;
     if (p.state !== 'dead' && this.waves.state !== 'exiting' && this.victoryTimer <= 0) this.stats.time += dt;
 
-    p.update(sdt, this.fadeCb ? this.nullInput : inp);
+    // O kit pode deixar o herói no tempo real durante a câmera lenta (Kael: sempre sdt)
+    const pdt = p.kit ? p.kit.timeStep(p, dt, sdt) : sdt;
+    p.update(pdt, this.fadeCb ? this.nullInput : inp);
     for (const e of this.enemies) e.update(sdt);
     for (const n of this.npcs) n.update(sdt);
     this.separate();
     this.director.update();
     this.projectiles.update(sdt);
     if (this.traps) this.traps.update(sdt);
+    HeroObjects.update(pdt);
     this.hazards.update(sdt);
     this.pickups.update(sdt);
     this.particles.update(sdt);
@@ -443,11 +449,11 @@ class Game {
     const dir = Math.atan2(ky, kx);
     const hz = Math.min(e.height * 0.55, 46) + e.z;
     const hx = e.x - kx * e.radius * 0.6, hy = e.y - ky * e.radius * 0.6;
-    this.particles.sparks(hx, hy, hz, dir, crit ? 16 : def.heavy ? 12 : 8, crit ? '235,248,255' : '150,205,255', def.heavy ? 560 : 420);
+    this.particles.sparks(hx, hy, hz, dir, crit ? 16 : def.heavy ? 12 : 8, crit ? '235,248,255' : def.spark || '150,205,255', def.heavy ? 560 : 420);
     if (e.T.mech) this.particles.sparks(hx, hy, hz, dir, 4, '255,190,120', 380);   // faíscas de metal
     this.particles.flash(hx, hy, hz, crit ? 48 : def.heavy ? 38 : 26, crit ? '240,250,255' : '190,220,255', 0.1);
     this.particles.blood(e.x, e.y, hz, dir, def.heavy ? 8 : 5, e.T.blood);
-    if (def.heavy) this.particles.ring(e.x, e.y, 42, '120,190,255', 0.22, 4);
+    if (def.heavy) this.particles.ring(e.x, e.y, 42, def.spark || '120,190,255', 0.22, 4);
     if (Settings.v.damageNumbers) {
       this.texts.spawn(e.x, e.y, (e.height || 40) + e.z + (e.jumpZ || 0), crit ? `${dmg}!` : dmg,
         crit ? PAL.accentHi : def.heavy ? '#8fd0ff' : '#ffffff', crit ? 31 : def.heavy ? 25 : 21);
@@ -467,6 +473,7 @@ class Game {
     for (let i = 0; i < n; i++) this.pickups.drop('soul', e.x, e.y, Math.floor(total / n) + (i < total % n ? 1 : 0));
     if (!e.isBoss && (e.elite || Math.random() < e.T.orb + p.stats.orbChance)) this.pickups.drop('health', e.x, e.y, 12);
     this.gainXP(this.xpFor(e), e.x, e.y);
+    if (p.kit) p.kit.onKill(p, e);
     if (e.elite) this.hud.toast('Unidade de elite destruída', '255,200,90');
     // Efeitos de morte: máquinas explodem em faíscas e peças; humanos sangram
     if (e.T.mech) {
@@ -768,8 +775,11 @@ class Game {
     return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1);
   }
 
+  // Progresso do personagem em campo (o do Kael é this.progress, no formato de sempre)
+  activeProgress() { return PartyProgress.of(RosterManager.active) || this.progress; }
+
   gainXP(n, x, y) {
-    const pr = this.progress;
+    const pr = this.activeProgress();
     n = Math.round(n);
     if (n <= 0 || pr.level >= PROG.maxLevel) return;
     pr.xp += n;
@@ -783,14 +793,14 @@ class Game {
 
   // Subida de nível: atributos, pontos de habilidade, vida e energia restauradas
   onLevelUp(from, to) {
-    const p = this.player, pr = this.progress;
+    const p = this.player, pr = this.activeProgress();
     let sp = 0;
     for (let l = from + 1; l <= to; l++) sp += PROG.pointsAt(l);
     pr.sp += sp;
     p.recalc();
     p.hp = p.maxHp; p.fury = Math.max(p.fury, p.maxEnergy);
     this.hud.ghostHp = p.hp;
-    const fresh = Object.values(SKILLS).filter((s) => s.lvl > from && s.lvl <= to).map((s) => s.name);
+    const fresh = Object.values(skillsOf(RosterManager.active)).filter((s) => s.lvl > from && s.lvl <= to).map((s) => s.name);
     this.hud.levelUp(to, sp, fresh);
     const P_ = this.particles;
     P_.ring(p.x, p.y, 150, '170,140,255', 0.6, 10);
@@ -824,6 +834,7 @@ class Game {
   }
   checkRosterUnlocks() { return RosterManager.checkUnlocks(this.rosterContext()); }
   onCharacterUnlocked(d) {
+    PartyProgress.join(d.id, this.progress.level);   // entra um nível abaixo do Kael (mínimo 1), com os pontos
     const soon = d.devStatus === 'coming_soon';
     this.hud.toast(`${soon ? t('newAllySoon') : t('newAlly')} · ${d.name.toUpperCase()}`, hexToRgb(d.color));
     this.audio.play('memory');
@@ -841,6 +852,7 @@ class Game {
   onCharacterChanged() {
     const old = this.player, def = RosterManager.activeDef;
     if (!old || !this.room || this.state === 'menu' || old.def === def) return;
+    PartyProgress.join(def.id, this.progress.level);   // liberado sem progresso (dev, salvamento antigo)
     const hpK = old.maxHp > 0 ? clamp(old.hp / old.maxHp, 0, 1) : 1;
     const enK = old.maxEnergy > 0 ? clamp(old.fury / old.maxEnergy, 0, 1) : 0;
     const p = new Player(old.x, old.y, def);
@@ -903,7 +915,7 @@ class Game {
     const s = SaveSys.read(slot);
     this.slot = slot;
     this.startRun(s || null);
-    if (s) this.hud.toast(`Sinal restaurado · nível ${this.progress.level}`, '185,168,255');
+    if (s) this.hud.toast(`Sinal restaurado · nível ${this.activeProgress().level}`, '185,168,255');
     // Encontro com um aliado interrompido (o jogo fechou durante as páginas): termina antes de seguir
     const late = pendingRecruits(this);
     if (late.length) this.playStory(recruitPages(late, this), () => { joinAllies(late, this); this.fadeTo(() => { this.state = 'playing'; this.fadeTarget = 0; }); });
@@ -928,8 +940,8 @@ class Game {
   }
 
   // ------------------------------------------------ árvore de habilidades
-  // Abre nas árvores do personagem ativo; Z/C (LT/RT) mostram as dos outros personagens
-  // (só o ativo aprende: skillTreeAccess em js/data/skilltrees.js)
+  // Abre nas árvores do personagem ativo; Z/C (LT/RT) mostram as dos outros personagens, e
+  // cada personagem do grupo gasta os próprios pontos (skillTreeAccess em js/data/skilltrees.js)
   openSkills(from = 'playing') {
     const ui = this.skillUI;
     ui.from = from; ui.msg = ''; ui.msgT = 0; ui.fx = null;
@@ -1110,7 +1122,7 @@ class Game {
   // Opções reaproveitadas por entidade (sem alocar a cada quadro)
   opts3(e, flash) {
     const o = e._o3 || (e._o3 = {});
-    o.yaw = e.facing || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
+    o.yaw = e.facing || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.tint = null;
     return o;
   }
   queue3(key, e, o) {
@@ -1143,12 +1155,15 @@ class Game {
     if (!this.use3D) return;
     const th = this.room.theme, lc = th.lamp.split(',').map((v) => v / 255);
     R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
-    const p = this.player, art = KaelArt.active();
-    // Modelo do personagem: usa a versão texturizada se existir, senão o modelo procedural próprio do herói
-    const mk0 = p.def.model || 'kael';
-    const mk = MODELS3D[mk0 + 'Tex'] ? (mk0 + 'Tex') : (MODELS3D[mk0] ? mk0 : 'kael');
-    p.spr = (art && mk0 === 'kael') ? null : this.queue3(mk, p, this.opts3(p, p.flash > 0 ? 0.9 : 0));
-    let n = (art && mk0 === 'kael') ? 99 : 0;   // com a arte oficial do Kael, os fantasmas também são sprites
+    const p = this.player, art = !p.kit && p.def.id === DEFAULT_CHARACTER && KaelArt.active();   // os sprites da arte oficial são só do Kael
+    // Modelo do personagem: a versão texturizada (<modelo>Tex) tem preferência; sem ela, o modelo
+    // procedural do herói (ou o do Kael)
+    const mk0 = p.def.model || 'kael', mk = heroModelKey(p.def);
+    p.mk3 = mk;
+    const o3 = this.opts3(p, p.flash > 0 ? 0.9 : 0);
+    o3.tint = heroArmorTint(p.def.id);   // cor da armadura equipada no modelo texturizado
+    p.spr = art ? null : this.queue3(mk, p, o3);
+    let n = art ? 99 : 0;   // com a arte oficial, os fantasmas da esquiva também são sprites
     for (let i = 0; i < p.ghosts.length; i++) {
       const g = p.ghosts[i];
       g.spr = null;
@@ -1156,7 +1171,7 @@ class Game {
       n++;
       const gp = this.ghostProxy(i, p, g);
       const o = g._o3 || (g._o3 = {});
-      o.yaw = g.f; o.ghost = [0.25, 0.55, 1.0]; o.flash = 0; o.emi = undefined; o.holo = false; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
+      o.yaw = g.f; o.ghost = p.kit ? p.kit.ghostRgb : heroGhostRgb(p.def); o.flash = 0; o.emi = undefined; o.holo = false; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
       g.spr = this.queue3(MODELS3D[mk0] ? mk0 : 'kael', gp, o);   // fantasmas: o modelo procedural do herói
     }
     for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
@@ -1276,6 +1291,7 @@ class Game {
     room.addLights(L, this.realTime);
     for (const n of this.npcs) if (n.lightRgb) L.add(isoX(n.x, n.y), isoY(n.x, n.y) - 30, n.holo ? 150 : 95, 0.5);
     this.projectiles.addLights(L);
+    HeroObjects.addLights(L);
     for (const e of this.enemies) {
       if (e.isBoss) L.add(isoX(e.x, e.y), isoY(e.x, e.y) - 60 - e.jumpZ, e.phase === 3 ? 300 : 220, 0.7);
       else if (e.telegraph) L.add(isoX(e.x, e.y), isoY(e.x, e.y) - 20, 90, 0.45);
@@ -1291,8 +1307,8 @@ class Game {
     room.drawEmissive(ctx, this.realTime);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    GlowCache.drawFlat(ctx, '60,120,255', isoX(p.x, p.y), isoY(p.x, p.y), 260, 0.14 + 0.08 * (p.fury / 100));
-    if (p.state === 'charge') GlowCache.drawFlat(ctx, '120,180,255', isoX(p.x, p.y), isoY(p.x, p.y), 60 + p.chargeLevel * 30, 0.4 + 0.1 * p.chargeLevel);
+    GlowCache.drawFlat(ctx, p.kit ? p.kit.glowRgb || p.kit.rgb : '60,120,255', isoX(p.x, p.y), isoY(p.x, p.y), 260, 0.14 + 0.08 * (p.fury / 100));
+    if (p.state === 'charge') GlowCache.drawFlat(ctx, p.kit ? p.kit.rgb : '120,180,255', isoX(p.x, p.y), isoY(p.x, p.y), 60 + p.chargeLevel * 30, 0.4 + 0.1 * p.chargeLevel);
     for (const e of this.enemies) {
       if (e.elite && e.state !== 'dying') GlowCache.drawFlat(ctx, '255,180,60', isoX(e.x, e.y), isoY(e.x, e.y), e.radius * 3.4, 0.4 + 0.12 * Math.sin(this.realTime * 5 + e.id));
     }
@@ -1306,6 +1322,7 @@ class Game {
     if (this.traps) this.traps.draw(ctx);
     this.pickups.draw(ctx, this.realTime);
     this.projectiles.draw(ctx);
+    HeroObjects.draw(ctx);
     this.particles.drawEmissive(ctx);
     this.trails.draw(ctx);
     p.drawEmissive(ctx);

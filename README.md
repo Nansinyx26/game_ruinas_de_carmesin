@@ -98,16 +98,17 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 
 **Limitações conhecidas:** controles que o navegador não reconhece como "standard" podem ter botões trocados (o diagnóstico avisa); a vibração depende do navegador (Chrome/Edge sim; Firefox e Safari geralmente não); um botão do controle não conta como "gesto" para o navegador, então a tela cheia precisa ser ligada com um clique ou tecla (ou F11); no Safari antigo e em alguns navegadores de celular a Gamepad API é limitada.
 
-## Elenco de personagens (em desenvolvimento)
+## Elenco de personagens
 
-Kael Veyron é o personagem inicial. Lyra Kaede, Drakos, Sera Vyne e Orion já existem nos dados e são liberados pela campanha (Capítulos I, II, III e IV concluídos), mas ainda aparecem como **EM BREVE**: ficam salvos como desbloqueados e passam a ser escolhíveis quando forem implementados. O desbloqueio mostra um aviso "NOVO ALIADO DESBLOQUEADO" e vem junto com as páginas de recrutamento da história (veja **Os aliados**). Cada personagem tem 4 habilidades, 4 armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
+Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são liberados pela campanha (Orion já começa disponível) e **todos são jogáveis**. Cada um tem atributos, cor-tema, 4 habilidades, armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
 
-- **Dados** (`js/data/`): `characters.js` (fichas: atributos, cor-tema, lore, habilidades, armaduras, armas, condição de desbloqueio e `devStatus`: `ready` | `partial` | `coming_soon`), `abilities.js`, `armors.js`, `weapons.js` e `strings.js` (textos da interface, prontos para tradução).
-- **`RosterManager`** (`js/roster.js`): personagens desbloqueados, personagem ativo e armadura de cada um; `isUnlocked`, `unlock`, `setActive`, `equipArmor`, `checkUnlocks` e os eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`. O jogo chama `checkUnlocks` ao concluir um setor, ao derrotar NEXUS e ao registrar escolhas da história.
-- **Kael usa a própria ficha**: vida, energia, velocidade, raio, nome no HUD e modelo vêm de `CHARACTER_DEFS`. As 4 habilidades da ficha dele apontam para o que o jogo já tem (combos da espada, esquiva, Ruptura de Plasma e Sobrecarga); a árvore de habilidades continua a mesma.
-- **Salvamento v2**: guarda o elenco de cada espaço (desbloqueados, ativo, armaduras). Salvamentos antigos carregam com Kael ativo e armadura Padrão.
-
-Próximas fases: tela de elenco com os 5 cartões e menu de desenvolvimento → Lyra → Drakos, Sera e Orion → armaduras (visual e atributos) → popup animado de desbloqueio.
+- **Dados** (`js/data/`): `characters.js` (fichas e `devStatus`), `abilities.js`, `armors.js`, `special_armors.js` (armaduras especiais por nível, com `.glb`/`.png`), `weapons.js` (com o `.glb`/`.png` de cada arma), `skilltrees.js` (as 4 árvores de cada personagem) e `strings.js`.
+- **`RosterManager`** (`js/roster.js`): desbloqueados, personagem ativo e armadura de cada um (eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`).
+- **Como cada um luta**: Drakos (machado e martelo), Sera (bastão neural e drone, magia tecnológica) e Orion (lâminas duplas, furtividade, golpe pelas costas) usam os golpes, especiais e supremas definidos em `js/player.js` / `js/combat.js` / `js/abilities.js`. A **Lyra** usa o **kit** completo de `js/heroes/lyra.js` (estrutura em `js/heroes/kit.js`): arco de fóton com poses de arqueira em 3D, as 4 árvores dela com efeito em todos os nós, armadilhas, iscas, chuva de flechas, gancho e o Foco de Batalha. Um personagem com kit desvia os ganchos do `Player` (`this.kit`); sem kit, o `Player` segue o código de sempre — o Kael não tem kit e continua idêntico.
+- **Modelos 3D**: o jogo usa o modelo texturizado (`MODELS3D.<id>Tex`, malhas do Meshy em `js/assets/<id>3d.js`) e, sem ele, o procedural (`js/models/<id>.js`); os fantasmas da esquiva usam o procedural. As armas 3D de cada um ficam em `HERO_WEAPONS.<id>` (o mesmo objeto de `window.HERO_WEAPONS`). A **armadura equipada tinge** as placas, o tecido e o couro do modelo texturizado (uniforme `uTint` do `R3D`, sem mexer na pele nem no neon).
+- **Árvore de habilidades** (Tab): Z/C trocam de personagem e **cada personagem do grupo gasta os próprios pontos**, mesmo fora de campo (valem quando ele entrar).
+- **Retratos**: a seleção usa as artes de `assets/selecionar_personagem/`; o HUD e a árvore usam os retratos de `js/assets/retratos.js` (gerado por `tools/gerar_retratos.py` a partir de `assets/images/retratos_elenco.webp`).
+- **Salvamento v2**: guarda o elenco de cada espaço (desbloqueados, ativo, armaduras) e o progresso de cada personagem (`party`).
 
 ## Menus, salvamentos e configurações
 
@@ -216,9 +217,11 @@ Custo: ~38,5 mil triângulos e ~2,7 ms por quadro para posar e aplicar a pele no
 
 ## Como executar
 
-Abra o `index.html` no navegador (duplo clique). Não precisa de servidor, instalação nem internet: o jogo usa apenas scripts clássicos e não carrega nenhum arquivo externo além dos próprios `css/` e `js/`.
+Abra o `index.html` no navegador (duplo clique): o jogo roda sem instalação nem internet, só com scripts clássicos.
 
-Se preferir um servidor local (por exemplo, para testar em outro aparelho da rede): `python3 -m http.server 8000` na pasta do projeto e acesse `http://localhost:8000`.
+Para ver as **armas e armaduras em 3D** (os `.glb` de `assets/`) use um servidor local — pelo `file://` o navegador não deixa o jogo ler esses arquivos e a tela mostra a imagem 2D no lugar: `python3 -m http.server 8080` na pasta do projeto e acesse `http://localhost:8080`. O mesmo servidor serve para testar em outro aparelho da rede.
+
+No menu inicial, **MODO 3ª PESSOA (3D)** abre a arena de teste em terceira pessoa (`js/thirdperson.js`).
 
 ## Estrutura do código
 

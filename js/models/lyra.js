@@ -145,7 +145,8 @@ function buildArcoLyra(g, k, part, lod) {
   }
 
   window.HERO_WEAPONS = window.HERO_WEAPONS || {};
-  window.HERO_WEAPONS.lyra = {
+  // O kit da Lyra (js/heroes/lyra.js) já registra o arco com as poses de arqueira: este fica de reserva
+  if (!window.HERO_WEAPONS.lyra) window.HERO_WEAPONS.lyra = {
     add(m) {
       if (m.nodes.handL && !m.nodes.bowNode) {
         const b = m.nodes.handL.add(new N3('bowNode'));

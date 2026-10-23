@@ -157,6 +157,9 @@ const GLBViewer = (() => {
       gl = canvas.getContext('webgl', { antialias: true, alpha: true }) ||
            canvas.getContext('experimental-webgl', { antialias: true, alpha: true });
       if (!gl) return false;
+      // Os .glb das armas e armaduras usam índices de 32 bits (UNSIGNED_INT, 5125): no WebGL 1
+      // isso só desenha com esta extensão (sem ela, drawElements falha e sobrava a imagem 2D)
+      gl.getExtension('OES_element_index_uint');
 
       const vertShader = createShader(gl, gl.VERTEX_SHADER, VS_SOURCE);
       const fragShader = createShader(gl, gl.FRAGMENT_SHADER, FS_SOURCE);
@@ -342,9 +345,17 @@ const GLBViewer = (() => {
 
       let idxBuf = null;
       if (p.indices) {
+        // Sem a extensão de índices de 32 bits, uma malha que cabe em 16 bits é convertida
+        let ind = p.indices;
+        if (ind instanceof Uint32Array && !g.getExtension('OES_element_index_uint')) {
+          let mx = 0;
+          for (let i = 0; i < ind.length; i++) if (ind[i] > mx) mx = ind[i];
+          if (mx < 65536) ind = Uint16Array.from(ind);
+        }
+        p.indexType32 = ind instanceof Uint32Array;
         idxBuf = g.createBuffer();
         g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, idxBuf);
-        g.bufferData(g.ELEMENT_ARRAY_BUFFER, p.indices, g.STATIC_DRAW);
+        g.bufferData(g.ELEMENT_ARRAY_BUFFER, ind, g.STATIC_DRAW);
         totalTris += p.indices.length / 3;
       } else {
         totalTris += p.vertexCount / 3;
@@ -355,7 +366,7 @@ const GLBViewer = (() => {
         posBuf, normBuf, uvBuf, idxBuf,
         indexCount: p.indexCount,
         vertexCount: p.vertexCount,
-        indexType: p.indices instanceof Uint32Array ? g.UNSIGNED_INT : g.UNSIGNED_SHORT
+        indexType: p.indexType32 ? g.UNSIGNED_INT : g.UNSIGNED_SHORT
       });
     }
 
@@ -711,6 +722,7 @@ const GLBViewer = (() => {
       prevCanvas.height = 256;
       prevGL = prevCanvas.getContext('webgl', { antialias: true, alpha: true, preserveDrawingBuffer: true });
       if (!prevGL) return false;
+      prevGL.getExtension('OES_element_index_uint');   // índices de 32 bits dos .glb (ver initGL)
 
       const vs = createShader(prevGL, prevGL.VERTEX_SHADER, VS_SOURCE);
       const fs = createShader(prevGL, prevGL.FRAGMENT_SHADER, FS_SOURCE);

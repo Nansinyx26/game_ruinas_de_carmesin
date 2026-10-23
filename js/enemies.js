@@ -92,7 +92,7 @@ class Enemy extends Entity {
       if (this.T.mech && Math.random() < dt * 5) game.arcs.crackle(this.x, this.y, this.height * 0.5 + this.z, 1, this.radius * 1.4, '140,200,255', 0.09);
       if (this.stun <= 0 && this.z <= 0) this.afterStun();
     } else if (this.z <= 0) {
-      this.think(dt, game.player);
+      this.think(dt, heroTargetFor(this));   // o jogador, ou uma isca de um herói (js/heroes/kit.js)
     }
 
     // Física: knockback com atrito + colisão com paredes e pilares

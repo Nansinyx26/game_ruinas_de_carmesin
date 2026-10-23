@@ -84,7 +84,7 @@ const ROSTER_SKILLS = {
   lyra_folego: { tree: 'lyra_foton', name: 'Fôlego Contido', kind: 'passiva', icon: 'bow', max: 2, lvl: 6, col: 1, row: 3, req: [['lyra_ponto_cego', 1], ['lyra_rajada', 1]],
     desc: (l) => `Enquanto carrega um disparo, Lyra recebe ${15 * l}% menos dano e a carga fica ${10 * l}% mais rápida.` },
   lyra_foco_batalha: { tree: 'lyra_foton', name: 'Foco de Batalha', kind: 'suprema', icon: 'focus', ability: 'lyra_foco', max: 3, lvl: 8, col: 1, row: 4, req: [['lyra_folego', 1]], energy: 100, cd: 0,
-    desc: (l) => `Tecla I (100 de energia): o tempo desacelera para 40% por ${skillNum(3 + 0.5 * (l - 1))}s e todo disparo é crítico garantido${l >= 3 ? '; cada abate devolve 10 de energia' : ''}.` },
+    desc: (l) => `Tecla I (100 de energia): o mundo desacelera para 40% por ${skillNum(3 + 0.5 * (l - 1))}s (Lyra continua no ritmo normal) e todo disparo é crítico garantido${l >= 3 ? '; cada abate devolve 10 de energia' : ''}.` },
 
   // ----- Caçadora (armadilhas): a Armadilha de Plasma da ficha
   lyra_armadilha_plasma: { tree: 'lyra_caca', name: 'Armadilha de Plasma', kind: 'ativa', icon: 'trap', ability: 'lyra_armadilha', max: 3, lvl: 2, col: 1, row: 0, req: [], energy: 20, cd: 8,
@@ -94,7 +94,7 @@ const ROSTER_SKILLS = {
   lyra_rastreadora: { tree: 'lyra_caca', name: 'Rastreadora', kind: 'passiva', icon: 'footprint', max: 3, lvl: 3, col: 2, row: 1, req: [['lyra_armadilha_plasma', 1]],
     desc: (l) => `Inimigos pegos por uma armadilha ou por um disparo carregado ficam marcados por 5s: +${10 * l}% de dano contra eles.` },
   lyra_isca: { tree: 'lyra_caca', name: 'Isca de Sucata', kind: 'ativa', icon: 'decoy', max: 2, lvl: 5, col: 0, row: 2, req: [['lyra_fio_tropeco', 1]], energy: 22, cd: 14,
-    desc: (l) => `Arremessa um drone desmontado que chia por ${3 + 2 * l}s e atrai os inimigos próximos; ao ser destruído, ele explode (${30 + 20 * l} de dano).` },
+    desc: (l) => `Arremessa um drone desmontado que chia por ${3 + 2 * l}s e atrai os inimigos próximos; quando é destruído ou o tempo acaba, explode (${30 + 20 * l} de dano).` },
   lyra_reacao: { tree: 'lyra_caca', name: 'Reação em Cadeia', kind: 'passiva', icon: 'chain', max: 2, lvl: 6, col: 2, row: 2, req: [['lyra_rastreadora', 1]],
     desc: (l) => `Uma armadilha que explode detona as outras a até ${180 + 60 * l} de distância, com +${20 * l}% de dano.` },
   lyra_campo_minado: { tree: 'lyra_caca', name: 'Campo Minado', kind: 'passiva', icon: 'burst', max: 2, lvl: 7, col: 1, row: 3, req: [['lyra_isca', 1], ['lyra_reacao', 1]],
@@ -118,7 +118,7 @@ const ROSTER_SKILLS = {
   lyra_salto_recuado: { tree: 'lyra_sobrevivente', name: 'Salto Recuado', kind: 'tecnica', icon: 'dash', max: 2, lvl: 2, col: 0, row: 1, req: [['lyra_passos_leves', 1]],
     desc: (l) => `Esquiva → Leve: salta para trás disparando uma flecha rápida (${25 + 15 * l} de dano)${l >= 2 ? ' que atordoa por 0,5s' : ''}.` },
   lyra_fora_da_rede: { tree: 'lyra_sobrevivente', name: 'Onde a Rede Não Olha', kind: 'passiva', icon: 'stealth', max: 2, lvl: 3, col: 2, row: 1, req: [['lyra_passos_leves', 1]],
-    desc: (l) => `Depois de 3s sem lutar, Lyra se camufla: os inimigos demoram ${30 * l}% mais para notá-la e o primeiro disparo causa +${25 * l}% de dano.` },
+    desc: (l) => `Depois de 3s sem lutar, Lyra se camufla: os inimigos demoram ${30 * l}% mais para atacá-la e o primeiro disparo causa +${25 * l}% de dano.` },
   lyra_sangue_frio: { tree: 'lyra_sobrevivente', name: 'Sangue-Frio', kind: 'passiva', icon: 'heart', max: 3, lvl: 5, col: 0, row: 2, req: [['lyra_salto_recuado', 1]],
     desc: (l) => `Abaixo de 35% de vida: +${15 * l}% de velocidade e +${10 * l}% de chance de crítico por 5s (no máximo uma vez a cada 30s).` },
   lyra_gancho: { tree: 'lyra_sobrevivente', name: 'Gancho de Cabo', kind: 'ativa', icon: 'hook', max: 2, lvl: 6, col: 2, row: 2, req: [['lyra_fora_da_rede', 1]], energy: 15, cd: 7,
@@ -340,8 +340,8 @@ function skillSheetAbility(id) {
   return null;
 }
 
-// Pode aprender agora? Só nas árvores do personagem ativo. As outras ficam para consulta:
-//   state: 'active' | 'locked' (ainda não entrou no grupo) | 'soon' (EM BREVE) | 'inactive'
+// Pode aprender agora? Qualquer personagem do grupo (os bloqueados e os em breve só para consulta):
+//   state: 'active' | 'locked' (ainda não entrou no grupo) | 'soon' (EM BREVE) | 'inactive' (fora de campo, editável)
 //   badge: selo curto · title/detail: aviso da tela · deny: mensagem ao tentar aprender
 function skillTreeAccess(charId) {
   const d = CHARACTERS_BY_ID[charId], name = charFirstName(charId);
@@ -353,10 +353,8 @@ function skillTreeAccess(charId) {
   if (d.devStatus === 'coming_soon') {
     return { editable: false, state: 'soon', badge: t('comingSoon'), title: t('inDevelopment'), detail: t('skillsSoonDetail', { name }), deny: t('skillsSoonDeny', { name }) };
   }
-  if (RosterManager.active !== charId) {
-    const title = t('skillsInactive', { name });
-    return { editable: false, state: 'inactive', badge: t('available'), title, detail: t('skillsInactiveDetail'), deny: title };
-  }
+  // Fora de campo também evolui: cada um gasta os próprios pontos (valem quando ele entrar em campo)
+  if (RosterManager.active !== charId) return { editable: true, state: 'inactive', badge: t('available'), title: '', detail: '', deny: '' };
   return { editable: true, state: 'active', badge: t('active'), title: '', detail: '', deny: '' };
 }
 

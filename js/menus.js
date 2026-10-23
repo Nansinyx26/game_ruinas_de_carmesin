@@ -1501,14 +1501,17 @@ class Menus {
     if (iw > 300) {
       const g = game, p = g.player;
       const lv = (id) => g.progress.lv(id);
-      const list = [['Leve · Leve', 'Golpes da Tempestade Nula'], ['Pesado (segurado)', 'Impacto Carregado']];
-      if (lv('corte_duplo')) list.push(['Leve · Leve · Leve', 'Descarga Tríplice']);
-      if (lv('lamina_giratoria')) list.push(['Leve · Leve · Pesado', 'Círculo da Ruína']);
-      if (lv('pulso_fantasma')) list.push(['Esquiva → Leve', 'Pulso Fantasma']);
-      if (lv('corte_vazio')) list.push(['Esquiva → Pesado', 'Corte do Vazio']);
-      if (p.combo.unlocked.has('slam')) list.push(['Pesado · Pesado', 'Colapso Magnético']);
-      if (p.combo.unlocked.has('uppercut')) list.push(['Leve · Pesado', 'Relâmpago Ascendente']);
-      if (lv('eclipse_absoluto')) list.push(['Eclipse (100 de energia)', 'Eclipse Absoluto']);
+      // Técnicas do personagem em campo (os outros trazem a lista no kit, js/heroes/<id>.js)
+      const list = p.kit ? p.kit.techniques(p) : [['Leve · Leve', 'Golpes da Tempestade Nula'], ['Pesado (segurado)', 'Impacto Carregado']];
+      if (!p.kit) {
+        if (lv('corte_duplo')) list.push(['Leve · Leve · Leve', 'Descarga Tríplice']);
+        if (lv('lamina_giratoria')) list.push(['Leve · Leve · Pesado', 'Círculo da Ruína']);
+        if (lv('pulso_fantasma')) list.push(['Esquiva → Leve', 'Pulso Fantasma']);
+        if (lv('corte_vazio')) list.push(['Esquiva → Pesado', 'Corte do Vazio']);
+        if (p.combo.unlocked.has('slam')) list.push(['Pesado · Pesado', 'Colapso Magnético']);
+        if (p.combo.unlocked.has('uppercut')) list.push(['Leve · Pesado', 'Relâmpago Ascendente']);
+        if (lv('eclipse_absoluto')) list.push(['Eclipse (100 de energia)', 'Eclipse Absoluto']);
+      }
       const ups = UPGRADES.filter((u) => g.upgrades.level(u.id) > 0).slice(0, 9)
         .map((u) => `${u.name}${u.max > 1 ? ` (${g.upgrades.level(u.id)}/${u.max})` : ''}`);
       const evo = ups.length ? ups : ['Nenhuma ainda'];
@@ -1533,7 +1536,7 @@ class Menus {
       ctx.font = `bold 18px ${FONT_UI}`; ctx.fillStyle = '#eef3fa';
       ctx.fillText(room.name, ix + 22, P.y + 54);
       ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = PAL.accentHi;
-      ctx.fillText(`Nível ${g.progress.level}   ·   Memórias ${g.stats.memories} / ${MEMORIES.length}   ·   Tempo ${fmtPlay(g.stats.time)}   ·   Espaço ${g.slot}`, ix + 22, P.y + 78);
+      ctx.fillText(`Nível ${g.activeProgress().level}   ·   Memórias ${g.stats.memories} / ${MEMORIES.length}   ·   Tempo ${fmtPlay(g.stats.time)}   ·   Espaço ${g.slot}`, ix + 22, P.y + 78);
       ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = PAL.accent;
       ctx.fillText('TÉCNICAS', ix + 22, P.y + 114);
       ctx.fillText('EVOLUÇÕES', ex, ehy);

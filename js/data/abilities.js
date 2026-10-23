@@ -21,15 +21,15 @@ const ABILITY_DEFS = {
   kael_furia: { owner: 'kael', name: 'Fúria Interior', icon: 'overload', type: 'buff', ultimate: true, cooldown: null, cost: null, implemented: true,
     binding: { skill: 'sobrecarga' }, desc: 'Aumento temporário de dano e de velocidade dos golpes (Sobrecarga na árvore).' },
 
-  // ----- LYRA KAEDE
-  lyra_tiro: { owner: 'lyra', name: 'Tiro Preciso', icon: 'aim', type: 'projectile', cooldown: 1.2, cost: 0, implemented: true,
-    binding: { system: 'combo' }, params: { chargeTime: 0.9, dmg: 60, critBonus: 0.6 }, desc: 'Disparo carregado de alto dano crítico.' },
+  // ----- LYRA KAEDE (jogável: kit em js/heroes/lyra.js; cada uma é um nó das árvores dela)
+  lyra_tiro: { owner: 'lyra', name: 'Tiro Preciso', icon: 'aim', type: 'projectile', cooldown: 0, cost: 0, implemented: true,
+    params: { chargeTime: 0.9, dmg: 60, critBonus: 0.6 }, desc: 'Disparo carregado de alto dano crítico.' },
   lyra_armadilha: { owner: 'lyra', name: 'Armadilha de Plasma', icon: 'trap', type: 'trap', cooldown: 8, cost: 20, implemented: true,
     params: { radius: 70, dmg: 80, max: 2 }, desc: 'Mina no chão que explode ao contato.' },
   lyra_flecha: { owner: 'lyra', name: 'Flecha Explosiva', icon: 'arrowBurst', type: 'aoe', cooldown: 6, cost: 25, implemented: true,
     params: { radius: 110, dmg: 70 }, desc: 'Flecha com dano em área.' },
   lyra_foco: { owner: 'lyra', name: 'Foco de Batalha', icon: 'focus', type: 'buff', ultimate: true, cooldown: 0, cost: 100, implemented: true,
-    params: { duration: 3, timeScale: 0.4 }, desc: 'Câmera lenta curta e acerto crítico garantido.' },
+    params: { duration: 3, timeScale: 0.4 }, desc: 'Câmera lenta curta (Lyra continua no ritmo normal) e acerto crítico garantido.' },
 
   // ----- DRAKOS
   drakos_golpe: { owner: 'drakos', name: 'Golpe Pesado', icon: 'hammer', type: 'melee', cooldown: 0, cost: 0, implemented: true,

@@ -711,8 +711,9 @@ class RosterScreen {
     L.capW = capW;
     L.tabs = ROSTER_TABS.map((tb, i) => ({ id: i, x: x0 + capW + 4 + i * tw, y: 64, w: tw - 6, h: 32 }));
     const tab = this.tabId;
-    // Botões SEMPRE fixos no rodapé, nunca sobrepõem os cards
-    const by = VIEW_H - 58;
+    // Botões SEMPRE fixos no rodapé, nunca sobrepõem os cards; a linha de dicas de teclas fica
+    // embaixo deles (VIEW_H − 13, ver draw), sem cobrir o CONFIRMAR
+    const by = VIEW_H - 74;
     const b1 = 184, b2 = 150;
     let infoY, infoH;
     if (tab === 'chars') {
@@ -1014,7 +1015,7 @@ class RosterScreen {
     else if (tab === 'armors') hints.push([['#←', '#→', '#↑', '#↓'], ['@dpad'], t('armors')], [['#Enter'], ['@a'], t('equip')], [['#V'], ['@y'], '3D']);
     else hints.push([['#←', '#→', '#↑', '#↓'], ['@dpad'], t('choose')], [['#Enter'], ['@a'], t('equip')], [['#V'], ['@y'], '3D']);
     hints.push([['#Esc'], ['@b'], t('back')]);
-    M.drawHints(ctx, hints);
+    M.drawHints(ctx, hints, VIEW_W - 34, VIEW_H - 13);
     if (tab === 'chars' && this.hoverAb >= 0) this.drawAbilityTip(ctx, L);
   }
   // CONFIRMAR aceso só quando faz algo: no jogo novo, personagem escolhível; na pausa,

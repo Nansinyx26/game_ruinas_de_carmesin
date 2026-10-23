@@ -723,11 +723,13 @@ class ThirdPersonMode {
     const camBackX = -Math.cos(this.cam.yaw) * Math.cos(this.cam.pitch);
     const camBackY = -Math.sin(this.cam.yaw) * Math.cos(this.cam.pitch);
     const camBackZ = Math.sin(this.cam.pitch);
-    const camRightX = -Math.sin(this.cam.yaw);
-    const camRightY = Math.cos(this.cam.yaw);
+    // lado direito da câmera (para o deslocamento sobre o ombro); camRightX/Y já existem acima,
+    // calculados antes da câmera girar neste quadro
+    const shRightX = -Math.sin(this.cam.yaw);
+    const shRightY = Math.cos(this.cam.yaw);
 
-    const targetLookX = p.x + camRightX * this.cam.shoulderOffset;
-    const targetLookY = p.y + camRightY * this.cam.shoulderOffset;
+    const targetLookX = p.x + shRightX * this.cam.shoulderOffset;
+    const targetLookY = p.y + shRightY * this.cam.shoulderOffset;
     const targetLookZ = p.z + this.cam.height;
 
     const shakeX = (Math.random() - 0.5) * this.cam.shake * 8;

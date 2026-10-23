@@ -251,7 +251,7 @@ uniform sampler2D uTex; uniform sampler2D uMat; uniform float uMatOn; uniform fl
 uniform sampler2D uNrm; uniform float uNrmOn; uniform float uPbr;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
-uniform vec4 uGlow;
+uniform vec4 uGlow; uniform vec4 uTint;
 void main() {
   vec3 V = vec3(0.57735);
   vec3 n = normalize(vNor);
@@ -273,6 +273,15 @@ void main() {
     } else {
       float b = col.b - max(col.r, col.g);
       e = smoothstep(0.08, 0.26, b) * smoothstep(0.28, 0.55, col.b) * vCol.w * 1.8;
+    }
+    if (uTint.w > 0.0) {
+      // armadura equipada (uTint = cor, intensidade): recolore o que é escuro e pouco saturado
+      // (placas, tecido, couro) mantendo a luminância; pele, cabelo colorido e neon ficam como estão
+      float lum = dot(col, vec3(0.299, 0.587, 0.114));
+      float sat = max(col.r, max(col.g, col.b)) - min(col.r, min(col.g, col.b));
+      float tk = uTint.w * (1.0 - smoothstep(0.08, 0.22, sat)) * (1.0 - smoothstep(0.55, 0.85, lum));
+      float tl = max(dot(uTint.rgb, vec3(0.299, 0.587, 0.114)), 0.06);
+      col = mix(col, clamp(uTint.rgb * (lum / tl) * 1.15, 0.0, 1.0), tk);
     }
     if (uMatOn > 0.5) {
       vec3 mm = texture2D(uMat, vCol.xy).rgb;
@@ -378,7 +387,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -409,7 +418,8 @@ const R3D = {
   get active() { return this.ok && this.enabled; },
 
   // Enfileira um modelo para este quadro. pose(model, arg) posiciona os nós.
-  // o: { yaw, roll, pitch, scale, flash, ghost: 'r,g,b' | null, emi, holo, lift, m: matriz da raiz (opcional) }
+  // o: { yaw, roll, pitch, scale, flash, ghost: 'r,g,b' | null, emi, holo, lift, m: matriz da raiz (opcional),
+  //      tint: [r, g, b, intensidade] da armadura equipada (modelos com textura) }
   queue(model, pose, arg, o = {}) {
     let it = this.items[this.used];
     if (!it) it = this.items[this.used] = { model: null, pose: null, arg: null, o: null, ok: false, cx: 0, cy: 0, cw: 0, ch: 0, minX: 0, minY: 0, w: 0, h: 0, v0: 0, vn: 0, anchors: {} };
@@ -566,6 +576,7 @@ const R3D = {
         const rc = o.rim ? hex3(o.rim) : lt.rim;
         gl.uniform3f(L.uRimCol, rc[0], rc[1], rc[2]);
         if (o.ghost) { const gc = o.ghost; gl.uniform4f(L.uGhost, gc[0], gc[1], gc[2], 1); } else gl.uniform4f(L.uGhost, 0, 0, 0, 0);
+        if (o.tint) { const tc = o.tint; gl.uniform4f(L.uTint, tc[0], tc[1], tc[2], tc[3]); } else gl.uniform4f(L.uTint, 0, 0, 0, 0);
         gl.drawArrays(gl.TRIANGLES, it.v0, it.vn);
       }
       gl.disable(gl.SCISSOR_TEST);
