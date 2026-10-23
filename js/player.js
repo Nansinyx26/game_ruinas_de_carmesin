@@ -145,7 +145,38 @@ class Player extends Entity {
     this.fatigue = 0; this.tired = false; this.victoryT = 0; this.lastIdle = null; this.idleForced = false;
     this.idleNext = null;          // próxima variação, esperando a atual sair (setIdle)
     // Arma (js/heroes/armas3d.js): começa nas costas; saca ao entrar em combate e guarda na calma
-    this.wpnOut = false; this.wpnAnim = null; this.wpnCalm = 0; this.wpnFlash = 0;
+    this.wpnOut = false; this.wpnAnim = null; this.wpnCalm = 0; this.wpnFlash = 0; this.swapPending = 0;
+  }
+
+  // Próxima arma do personagem (liberada e com efeito no jogo), na ordem da ficha; null se não há outra
+  nextWeapon() {
+    if (typeof RosterManager === 'undefined') return null;
+    const id = this.def.id, cur = RosterManager.equippedWeapon(id);
+    const list = RosterManager.weaponsFor(id).filter((w) => {
+      const d = WEAPON_DEFS[w];
+      return d && d.owner === id && d.implemented !== false && RosterManager.isWeaponUnlocked(w);
+    });
+    if (list.length < 2) return null;
+    return list[(list.indexOf(cur) + 1) % list.length];
+  }
+  // Troca de arma em campo (Q / X / R3): espera golpe, carga, suprema e esquiva terminarem
+  // (fica pendente por 1,5 s); a mão vai às costas, troca e volta com a nova (gesto de sacar).
+  // Os atributos são recalculados pelo RosterManager ('weaponChanged' → recalc).
+  swapWeapon() {
+    const next = this.nextWeapon();
+    if (!next) {
+      game.hud.toast(`Sem outra arma liberada para ${charFirstName(this.def.id)}`, '170,180,200');
+      game.audio.play('uiDeny');
+      return false;
+    }
+    const st = this.state;
+    if (st === 'attack' || st === 'charge' || st === 'special' || st === 'dash' || st === 'dead') { this.swapPending = 1.5; return false; }
+    this.swapPending = 0;
+    if (!RosterManager.equipWeapon(this.def.id, next)) return false;
+    this.wpnOut = false; this.wpnAnim = { k: 'draw', t: 0, dur: 0.5 };
+    game.hud.toast(`ARMA · ${WEAPON_DEFS[next].name.toUpperCase()}`, hexToRgb(this.def.color));
+    game.audio.play('sheathe', 0.7);
+    return true;
   }
 
   // Inimigo ativo por perto (para sacar a arma e para a guarda do idle)
@@ -254,6 +285,12 @@ class Player extends Entity {
     if (this.specialBuffer > 0) this.specialBuffer -= dt;
     if (this.abBufT > 0) this.abBufT -= dt;
     if (this.blockCounterT > 0) this.blockCounterT -= dt;
+    // troca de arma: na hora, ou assim que a ação crítica terminar
+    if (input.pressed.swapWeapon && this.state !== 'dead') this.swapWeapon();
+    else if (this.swapPending > 0) {
+      this.swapPending -= dt;
+      if (this.state === 'idle' || this.state === 'run' || this.state === 'hurt') this.swapWeapon();
+    }
     this.squash = approach(this.squash, 0, dt * 1.2);
     this.combo.update(dt, this.state === 'attack' || this.state === 'charge');
     this.updateAbilities(dt);

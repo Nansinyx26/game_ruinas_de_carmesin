@@ -17,6 +17,7 @@ const KEYMAP = {
   charPrev: ['KeyZ'], charNext: ['KeyC'],   // árvore de habilidades: trocar de personagem
   view3d: ['KeyV'],
   worldMap: ['KeyM'],   // mapa do mundo aberto (no mundo, M deixa de ser o mudo)
+  swapWeapon: ['KeyQ', 'KeyX'],   // em jogo: troca para a próxima arma liberada do personagem
 };
 // Mapeamento padrão da Gamepad API ("standard"), igual em Xbox, PlayStation e GameSir:
 // 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB/L1 5=RB/R1 6=LT/L2 7=RT/R2 8=View/Create 9=Menu/Options
@@ -28,6 +29,7 @@ const PADMAP = {
   pause: [9], confirm: [0], reroll: [2], buyHeal: [3], toTitle: [8], erase: [2],
   charPrev: [6], charNext: [7],   // LT/RT (L2/R2) na árvore de habilidades: trocar de personagem
   view3d: [3],
+  swapWeapon: [11],     // R3
 };
 const PAD_LAYER = 4;                                  // LB/L1: modificador das habilidades
 const PAD_LAYER_MAP = { ab1: 2, ab2: 3, ab3: 1, ab4: 0 };   // LB + X, Y, B, A

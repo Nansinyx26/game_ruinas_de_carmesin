@@ -179,6 +179,7 @@ class HUD {
     this.drawObjective(ctx, L);
     this.drawCells(ctx, L);
     this.drawAbilities(ctx, p, L);
+    this.drawWeapon(ctx, p, L);
     this.drawBuffs(ctx, L);
     this.drawBossBar(ctx, L);
     this.drawCombo(ctx, L);
@@ -219,6 +220,9 @@ class HUD {
     a.x0 = a.eX - a.D - 10 - a.d - 3 * a.gap; a.y = VIEW_H - 66;
     a.left = a.x0 - a.d - (pad ? 52 : 6);
     a.top = a.eY - a.D - 4;
+    // Arma equipada e estado de combate, à esquerda das habilidades
+    const wp = L.wp || (L.wp = {});
+    wp.w = 176; wp.h = 62; wp.x = a.left - 14 - wp.w; wp.y = VIEW_H - 18 - wp.h;
     // Efeitos ativos (tempo restante), empilhados acima das habilidades
     const B = this.buffs, b = p.buffs;
     B.length = 0;
@@ -252,6 +256,7 @@ class HUD {
     this.zone('R', L.mission.x, L.mission.y - 8, VIEW_W, L.mission.y + L.mission.h);
     if (c.count >= 2 || c.dropped || this.tier) this.zone('R', VIEW_W - 250, L.comboY - 70, VIEW_W, L.comboY + 112);
     this.zone('R', L.ab.left, L.ab.top - 34 - this.buffs.length * 24, VIEW_W, VIEW_H);
+    if (L.wp) this.zone('R', L.wp.x - 6, L.wp.y - 6, L.ab.left, VIEW_H);
     this.zone('L', 0, L.cellsY - 18, L.cellsX + L.cellsS + 10, VIEW_H);
     if (this.savedT > 0) this.zone('L', 0, VIEW_H - 40, 260, VIEW_H);
   }
@@ -889,6 +894,55 @@ class HUD {
     ctx.fillStyle = hot ? '#ffffff' : '#dfe6f2';
     ctx.fillText(key, cx, y + 8.5);
   }
+  // Painel da arma: ícone e nome da arma equipada, estado (em combate, sacando, guardada),
+  // a tecla de troca e, durante um combo, os próximos golpes possíveis (L → … · H → …)
+  drawWeapon(ctx, p, L) {
+    const W = L.wp, wid = typeof RosterManager !== 'undefined' ? RosterManager.equippedWeapon(p.def.id) : null, wd = wid && WEAPON_DEFS[wid];
+    if (!wd) return;
+    const rgb = hexToRgb(p.def.color);
+    ctx.save();
+    ctx.globalAlpha = this.panelAlpha('weapon', W.x, W.y, W.w, W.h);
+    ctx.fillStyle = 'rgba(4,8,18,0.72)';
+    techPanelPath(ctx, W.x, W.y, W.w, W.h, 8); ctx.fill();
+    ctx.strokeStyle = rgba(rgb, 0.45); ctx.lineWidth = 1; ctx.stroke();
+    // ícone (imagem da arma; sem ela, o símbolo do tipo)
+    const im = wd.png && typeof SpecialAssets !== 'undefined' ? SpecialAssets.getImg(wd.png) : null, ic = 44, ix = W.x + 8, iy = W.y + (W.h - ic) / 2;
+    ctx.fillStyle = rgba(rgb, 0.12); ctx.fillRect(ix, iy, ic, ic);
+    if (im && im.complete && im.naturalWidth) {
+      const k = Math.min(ic / im.naturalWidth, ic / im.naturalHeight);
+      ctx.drawImage(im, ix + (ic - im.naturalWidth * k) / 2, iy + (ic - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k);
+    } else drawIcon(ctx, 'sword', ix + ic / 2, iy + ic / 2, 26, rgba(rgb, 0.9));
+    const tx = ix + ic + 9;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '1px'; ctx.fillStyle = '#eef4ff';
+    ctx.fillText(wd.name.toUpperCase().slice(0, 18), tx, W.y + 15);
+    const A = p.wpnAnim, out = p.wpnOut !== false;
+    const st = A ? (A.k === 'draw' ? 'SACANDO' : 'GUARDANDO') : out ? (p.threatNear && p.threatNear(380) ? 'EM COMBATE' : 'EMPUNHADA') : 'NAS COSTAS';
+    ctx.font = `bold 10px ${FONT_TITLE}`;
+    ctx.fillStyle = st === 'EM COMBATE' ? '#ff8a7a' : out ? rgba(rgb, 0.95) : 'rgba(180,195,215,0.85)';
+    ctx.fillText(st, tx, W.y + 31);
+    ctx.letterSpacing = '0px';
+    if (p.nextWeapon && p.nextWeapon()) {
+      ctx.font = `10px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,212,230,0.7)';
+      ctx.fillText(game.input.lastDevice === 'pad' ? `${game.input.padLabels.rs} trocar arma` : '[Q] trocar arma', tx, W.y + 47);
+    }
+    // combo em andamento: o que cada botão faz agora
+    const seq = p.combo && p.combo.seq;
+    if (seq && seq !== 'D' && p.state !== 'dead') {
+      const T = CHARACTER_COMBOS[p.def.id] || COMBO_TABLE, nx = [];
+      for (const b of ['L', 'H']) {
+        const id = T[seq + b];
+        if (id && p.combo.isUnlocked(id) && ATTACKS[id]) nx.push(`${b === 'L' ? 'J' : 'K'} → ${(ATTACKS[id].name || (b === 'L' ? 'golpe leve' : 'golpe pesado')).toLowerCase()}`);
+      }
+      if (nx.length) {
+        ctx.font = `bold 11px ${FONT_UI}`; ctx.textAlign = 'right';
+        ctx.fillStyle = rgba(rgb, 0.95);
+        ctx.fillText(`COMBO ${seq.split('').join('·')}   ${nx.join('  ·  ')}`, W.x + W.w, W.y - 12);
+      }
+    }
+    ctx.restore();
+  }
+
   drawAbilities(ctx, p, L) {
     const A = L.ab, inp = game.input, pad = inp.lastDevice === 'pad';
     const hot = pad && !!inp.padNow[PAD_LAYER];   // LB/L1 segurado

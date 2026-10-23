@@ -40,6 +40,7 @@ const TouchControls = {
     B.push({ id: 'heavy', key: 'KeyK', x: W - 252, y: H - 222, r: 40, icon: 'burst', label: 'PESADO' });
     B.push({ id: 'dash', key: 'KeyL', x: W - 112, y: H - 392, r: 40, icon: 'dash', label: 'ESQUIVA' });
     B.push({ id: 'use', key: 'KeyF', x: W - 232, y: H - 340, r: 28, icon: null, label: 'E' });
+    B.push({ id: 'swap', key: 'KeyQ', x: W - 330, y: H - 300, r: 24, icon: null, label: 'ARMA' });
     B.push({ id: 'pause', key: 'Escape', x: 44, y: 178, r: 24, icon: null, label: 'II' });
     B.push({ id: 'tree', key: 'Tab', x: 44, y: 236, r: 24, icon: null, label: 'TAB' });
     if (game.world) B.push({ id: 'map', key: 'KeyM', x: 44, y: 294, r: 24, icon: null, label: 'MAPA' });
