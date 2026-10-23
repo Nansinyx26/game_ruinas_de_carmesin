@@ -51,6 +51,7 @@ SAIDA = 'js/assets/armas3d.js'
 #   pca: alinha pelos eixos principais da malha (arma na diagonal no arquivo)
 #   len: comprimento total no jogo; tri: triângulos depois da redução
 #   glow: cor do brilho (halos do jogo) 'r,g,b'
+#   fio: filetes finos acesos (emissão pela maior amostra do canto, não pela cor média)
 #   parte: (eixo, sinal) — só os triângulos daquele lado do arquivo (par de lâminas num arquivo só)
 #   sem_corda: tira a corda do arco (o jogo desenha a corda que estica ao puxar)
 #   cabo_z: a origem em Z fica na empunhadura (meio do arco), não no centro da caixa
@@ -69,7 +70,7 @@ ARMAS = {
     'orion_lamina_e': dict(arq='orion_laminas_v2.glb', parte=('x', -1), eixo='y', largura='x', inv=False, invz=False, cabo=0.25, len=34, tri=1600, glow='255,138,31'),
     'orion_lamina_v1_d': dict(arq='orion_laminas_v1.glb', parte=('x', 1), eixo='y', largura='x', inv=False, invz=False, cabo=0.25, len=34, tri=1600, glow='255,138,31'),
     'orion_lamina_v1_e': dict(arq='orion_laminas_v1.glb', parte=('x', -1), eixo='y', largura='x', inv=False, invz=False, cabo=0.25, len=34, tri=1600, glow='255,138,31'),
-    'orion_pistola': dict(arq='orion_secundaria.glb', eixo='x', largura='y', inv=True, invz=False, cabo=0.1, mz=-0.2, len=17, tri=2000, glow='255,138,31'),
+    'orion_pistola': dict(arq='orion_secundaria.glb', eixo='x', largura='y', inv=True, invz=False, cabo=0.1, mz=-0.2, len=19, tri=6000, fio=True, glow='255,138,31'),
     'sera_bastao': dict(arq='sera_bastao.glb', eixo='x', largura='z', inv=False, invz=False, cabo=0.45, len=62, tri=2400, glow='25,230,210'),
     'sera_drone': dict(arq='sera_drone.glb', eixo='x', largura='z', inv=False, invz=False, cabo=0.5, len=17, tri=2600, glow='25,230,210'),
 }
@@ -123,8 +124,17 @@ def normais_cantos(V, F, quina=40.0):
     return N
 
 
-def cores_cantos(Vh, Fh, UVh, mapas, VL, FL):
-    """Cor, metal e emissão de cada canto (amostrados na malha original perto do canto)."""
+def emissao(cor):
+    """Brilho das cores fortes e saturadas da textura (veias, filetes acesos)."""
+    mx, mn = cor.max(-1), cor.min(-1)
+    sat = (mx - mn) / (mx + 1e-6)
+    return np.clip((mx - 0.45) / 0.35, 0, 1) * np.clip((sat - 0.35) / 0.3, 0, 1)
+
+
+def cores_cantos(Vh, Fh, UVh, mapas, VL, FL, fio=False):
+    """Cor, metal e emissão de cada canto (amostrados na malha original perto do canto).
+    fio: a emissão do canto é a maior entre as amostras, não a da cor média (filetes finos
+    acesos, como os da pistola do Orion, somem na média)."""
     A, B, C = Vh[Fh[:, 0]], Vh[Fh[:, 1]], Vh[Fh[:, 2]]
     fh = np.cross(B - A, C - A)
     fh /= np.linalg.norm(fh, axis=1, keepdims=True) + 1e-12
@@ -134,6 +144,8 @@ def cores_cantos(Vh, Fh, UVh, mapas, VL, FL):
     cen = VL[FL].mean(1)
     cor = np.zeros((len(FL), 3, 3))
     met = np.zeros((len(FL), 3))
+    emi_fio = np.zeros((len(FL), 3))
+    cor_fio = np.zeros((len(FL), 3, 3))
     # 3 pontos perto de cada canto (o canto puxado para o centro e para os vizinhos)
     W = [(0.72, 0.18, 0.10), (0.72, 0.10, 0.18), (0.55, 0.225, 0.225)]
     for j in range(3):
@@ -149,14 +161,18 @@ def cores_cantos(Vh, Fh, UVh, mapas, VL, FL):
             r = np.arange(len(P))
             f, b = cand[r, k], bc[r, k]
             uv = np.einsum('nk,nkj->nj', b, UVh[Fh[f]])
-            acc_c = acc_c + amostra(mapas['cor'], uv)[:, ::-1] / 255.0          # BGR → RGB
+            amo = amostra(mapas['cor'], uv)[:, ::-1] / 255.0                    # BGR → RGB
+            acc_c = acc_c + amo
+            e = emissao(amo)
+            maior = e > emi_fio[:, j]
+            emi_fio[maior, j], cor_fio[maior, j] = e[maior], amo[maior]
             if mapas.get('mr') is not None:
                 acc_m = acc_m + amostra(mapas['mr'], uv)[:, 0] / 255.0          # azul = metal
         cor[:, j] = acc_c / len(W)
         met[:, j] = acc_m / len(W) if mapas.get('mr') is not None else 0.5
-    mx, mn = cor.max(-1), cor.min(-1)
-    sat = (mx - mn) / (mx + 1e-6)
-    emi = np.clip((mx - 0.45) / 0.35, 0, 1) * np.clip((sat - 0.35) / 0.3, 0, 1)
+    emi = emi_fio if fio else emissao(cor)
+    if fio:                                     # o canto aceso fica com a cor do filete
+        cor = np.where(emi[..., None] > 0.3, cor_fio, cor)
     return cor, met, emi
 
 
@@ -226,7 +242,7 @@ def importar(nome, c):
         VL, FL = reduzir(P, F, c['tri'])
     else:
         VL, FL = P.copy(), F.copy()
-    cor, met, emi = cores_cantos(P, F, UV, mapas, VL, FL)
+    cor, met, emi = cores_cantos(P, F, UV, mapas, VL, FL, c.get('fio', False))
     N = normais_cantos(VL, FL)
     q = 32767 / (np.abs(VL).max() + 1e-6)
     reg = bytearray()
