@@ -181,7 +181,11 @@ const WeaponRig = (function () {
     for (const k of ['wHandR', 'wHandL', 'wBack0', 'wBack1', 'wBack2', 'wHip', 'wDrone']) if (n[k]) n[k].vis = false;
     if (!V) return;
     const out = isOut(e);
-    const main = V.main || [];
+    let main = V.main || [], back = V.back || [];
+    // golpe alternado (def.altWeapon, ex.: o 3º golpe do Drakos): usa a arma das costas e a
+    // principal vai para o lugar dela durante o golpe
+    const ad = e && e.state === 'attack' && e.attack && e.attack.def;
+    if (out && ad && ad.altWeapon && back.length) { const t0 = main; main = back.slice(0, 1).concat(main.slice(1)); back = t0.slice(0, 1).concat(back.slice(1)); }
     let b = 0;
     // principal: na mão (direita → nó 'sword'; segunda → mão esquerda) ou nas costas
     for (let i = 0; i < main.length; i++) {
@@ -201,7 +205,7 @@ const WeaponRig = (function () {
         setMesh(m, nd, id); placeBack(nd, BACK[id], K, t);
       }
     }
-    for (const id of V.back || []) { if (!BACK[id]) continue; const nd = n['wBack' + b++]; setMesh(m, nd, id); placeBack(nd, BACK[id], K, t); }
+    for (const id of back) { if (!BACK[id]) continue; const nd = n['wBack' + b++]; setMesh(m, nd, id); placeBack(nd, BACK[id], K, t); }
     for (const id of V.hip || []) { if (BACK[id]) { setMesh(m, n.wHip, id); placeBack(n.wHip, BACK[id], K, t); } }
     for (const id of V.drone || []) { if (BACK[id]) { setMesh(m, n.wDrone, id); placeBack(n.wDrone, BACK[id], K, t); } }
     // energia: a arma na mão brilha mais no golpe e na carga

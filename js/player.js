@@ -128,6 +128,7 @@ class Player extends Entity {
     this.buffs = { overload: 0, field: 0, shield: 0, sync: 0 };
     this.shieldHp = 0; this.shieldMax = 0; this.fieldTick = 0; this.fieldLv = 1; this.overloadMult = 1;
     this.counterT = 0;             // janela do contra-ataque após uma esquiva perfeita
+    this.blockCounterT = 0;        // janela da retaliação depois de um bloqueio (Drakos)
     this.abBuffer = -1; this.abBufT = 0;
     this.dashStock = 1; this.dashGap = 0;
     // Kit do personagem (js/heroes/<id>.js): ataques, habilidades, suprema e passivas próprias
@@ -252,6 +253,7 @@ class Player extends Entity {
     if (this.dashBuffer > 0) this.dashBuffer -= dt;
     if (this.specialBuffer > 0) this.specialBuffer -= dt;
     if (this.abBufT > 0) this.abBufT -= dt;
+    if (this.blockCounterT > 0) this.blockCounterT -= dt;
     this.squash = approach(this.squash, 0, dt * 1.2);
     this.combo.update(dt, this.state === 'attack' || this.state === 'charge');
     this.updateAbilities(dt);
@@ -344,8 +346,17 @@ class Player extends Entity {
     if (this.abBufT > 0) { this.abBufT = 0; if (this.castAbility(this.abBuffer, wd)) return true; }
     if (this.dashBuffer > 0 && this.canDash()) { this.dashBuffer = 0; this.startDash(wd); return true; }
     const b = this.combo.takeBuffer();
-    if (b) { this.startAttack(this.combo.resolve(b), wd); return true; }
+    if (b) { this.startAttack(this.resolveInput(b), wd); return true; }
     return false;
+  }
+
+  // Golpe do input: a retaliação depois de um bloqueio (ATTACKS.<id>_counter) vem antes do combo
+  resolveInput(b) {
+    if (this.blockCounterT > 0 && b === 'L' && ATTACKS[this.def.id + '_counter']) {
+      this.blockCounterT = 0; this.combo.seq = 'L';
+      return this.def.id + '_counter';
+    }
+    return this.combo.resolve(b);
   }
 
   // Assistência de mira: corrige levemente a direção para o inimigo mais próximo no cone
@@ -373,6 +384,7 @@ class Player extends Entity {
     const def = ATTACKS[id];
     if (!def) return;
     let dir = wd ? Math.atan2(wd.y, wd.x) : this.facing;
+    if (def.turn && !wd) dir += def.turn;          // revés: vira para trás (sem direção apertada)
     if (def.shape.type !== 'circle' || def.shape.offset) dir = this.aimAssist(dir, def);
     this.facing = dir;
     if (this.attack && this.attack.trail) this.attack.trail.release();
@@ -471,7 +483,7 @@ class Player extends Entity {
         if (this.castAbility(this.abBuffer, wd)) return;
       }
       const b = this.combo.takeBuffer();
-      if (b) { this.startAttack(this.combo.resolve(b), wd); return; }
+      if (b) { this.startAttack(this.resolveInput(b), wd); return; }
     }
     // Esquiva cancela a preparação e a recuperação (nunca os frames ativos)
     if (this.dashBuffer > 0 && this.canDash() && (a.t < tW || a.t >= tA)) {
@@ -512,6 +524,7 @@ class Player extends Entity {
     if (a.id === 'spin') dmg *= S.spinMult;
     dmg *= this.targetMult(e);
     let crit = Math.random() < S.crit;
+    if (d.counter) crit = true;                  // retaliação depois do bloqueio
     // Contra-ataque: o golpe logo após uma esquiva perfeita é crítico e mais forte
     if (this.counterT > 0 && S.counter > 0) {
       crit = true; dmg *= 1 + S.counter; this.counterT = 0;
@@ -927,6 +940,7 @@ class Player extends Entity {
         game.audio.play('deflect');
         game.texts.spawn(this.x, this.y, 60, 'BLOQUEIO', '#ff7070', 16, 0.7);
         this.invuln = Math.max(this.invuln, 0.35);
+        this.blockCounterT = 1.0;                 // janela da retaliação (L)
         return true;
       }
     }

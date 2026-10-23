@@ -204,6 +204,22 @@ const ATTACKS = {
     hitstop: 0.04, shake: 0.18, lunge: 80, swing: [-1.5, 1.5], blade: 82, projectile: 'crescent',
     rgb: '140,210,255', core: '240,250,255', sound: 'thrust', fury: 5, arcs: 0.3,
   },
+  // Finalização (L L L H, nó Sentença do Eclipse): salto e golpe por cima até o chão, com onda
+  finisher: {
+    name: 'SENTENÇA DO ECLIPSE', windup: 0.2, active: 0.12, recovery: 0.46, chainFrac: 0.55,
+    shape: { type: 'circle', radius: 132, offset: 52 }, dmg: 42, kb: 560, launch: 320, stun: 1.0,
+    hitstop: 0.14, shake: 0.65, heavy: true, heavyType: true, radialKb: true, lunge: 260, leap: 9,
+    swing: [-2.6, 0.5], blade: 100, slamRing: true,
+    rgb: '90,150,255', core: '235,245,255', sound: 'swingHeavy', fury: 11, zoom: 0.05, arcs: 1,
+  },
+  // Revés (L H L, nó Revés do Horizonte): vira para trás no meio do combo e corta o que estava
+  // às costas (sem direção apertada; com direção, corta para onde o jogador apontar)
+  reverse: {
+    name: 'REVÉS DO HORIZONTE', windup: 0.07, active: 0.12, recovery: 0.28, chainFrac: 0.35,
+    shape: { type: 'arc', range: 98, arc: 1.5 }, dmg: 19, kb: 320, launch: 0, stun: 0.5, turn: Math.PI,
+    hitstop: 0.07, shake: 0.24, heavy: true, lunge: 200, swing: [-2.2, 1.7], blade: 92,
+    rgb: '70,140,255', core: '220,238,255', sound: 'swingHeavy', fury: 6, arcs: 0.5,
+  },
   // ----- Habilidades ativas que usam o corpo de Kael (dano escala com o poder)
   volt: {
     name: 'ARCO VOLTAICO', windup: 0.07, active: 0.07, recovery: 0.2, chainFrac: 0.3,
@@ -297,7 +313,7 @@ const ATTACKS = {
     name: 'IMPACTO CONCUSSIVO', windup: 0.14, active: 0.12, recovery: 0.36, chainFrac: 0.45,
     shape: { type: 'circle', radius: 110, offset: 40 }, dmg: 36, kb: 480, launch: 220, stun: 0.75,
     hitstop: 0.11, shake: 0.45, heavy: true, radialKb: true, lunge: 180, swing: [-2.2, 0.8], blade: 92,
-    rgb: '255,30,45', core: '255,200,205', sound: 'stomp', fury: 8, zoom: 0.04,
+    rgb: '255,30,45', core: '255,200,205', sound: 'stomp', fury: 8, zoom: 0.04, altWeapon: true,
   },
   drakos_heavy: {
     name: 'GOLPE PESADO', windup: 0.26, active: 0.12, recovery: 0.4, chainFrac: 0.4,
@@ -322,6 +338,21 @@ const ATTACKS = {
     shape: { type: 'capsule', length: 170, width: 70 }, dmg: 58, kb: 520, launch: 320, stun: 0.9,
     hitstop: 0.12, shake: 0.6, heavy: true, heavyType: true, lunge: 100, swing: [-2.2, 0.4], blade: 92,
     rgb: '255,40,55', core: '255,200,205', sound: 'stomp', fury: 10, zoom: 0.05,
+  },
+  // Finalização (L L L H): salto com a arma erguida e a queda sobre o chão
+  drakos_finisher: {
+    name: 'QUEDA DO TITÃ', windup: 0.26, active: 0.13, recovery: 0.52, chainFrac: 0.55,
+    shape: { type: 'circle', radius: 150, offset: 54 }, dmg: 70, kb: 640, launch: 380, stun: 1.1, breaksShield: true,
+    hitstop: 0.16, shake: 0.8, heavy: true, heavyType: true, radialKb: true, lunge: 240, leap: 11,
+    swing: [-2.6, 0.6], blade: 100, slamRing: true,
+    rgb: '255,50,60', core: '255,230,230', sound: 'stomp', fury: 13, zoom: 0.07,
+  },
+  // Retaliação: L logo depois de um bloqueio do Escudo de Energia (1 s) — crítico garantido
+  drakos_counter: {
+    name: 'RETALIAÇÃO', windup: 0.06, active: 0.12, recovery: 0.32, chainFrac: 0.4,
+    shape: { type: 'arc', range: 110, arc: 1.3 }, dmg: 48, kb: 520, launch: 200, stun: 0.9, breaksShield: true, counter: true,
+    hitstop: 0.12, shake: 0.45, heavy: true, lunge: 260, swing: [-2.3, 1.0], blade: 96,
+    rgb: '255,90,70', core: '255,230,215', sound: 'swingHeavy', fury: 10, zoom: 0.04,
   },
   drakos_charge: {
     name: 'INVESTIDA DA LEGIÃO', windup: 0.04, active: 0.28, recovery: 0.25, chainFrac: 0.3,
@@ -423,6 +454,20 @@ const ATTACKS = {
     hitstop: 0.03, shake: 0.15, multiHit: 4, rehit: 0.07, radialKb: true, lunge: 140,
     swing: [0, TAU * 1.5], blade: 80, rgb: '255,150,45', core: '255,235,210', sound: 'swing', fury: 7,
   },
+  // Corte em X (H H): as duas lâminas cruzam juntas — dois acertos
+  orion_cross: {
+    name: 'CORTE EM X', windup: 0.07, active: 0.1, recovery: 0.22, chainFrac: 0.3,
+    shape: { type: 'arc', range: 90, arc: 1.3 }, dmg: 15, kb: 240, launch: 0, stun: 0.45,
+    hitstop: 0.05, shake: 0.2, multiHit: 2, rehit: 0.05, heavy: true, lunge: 220, swing: [-1.3, 1.3], blade: 78,
+    rgb: '255,150,45', core: '255,238,210', sound: 'swingHeavy', fury: 6,
+  },
+  // Finalização acrobática (L L L H): salto mortal por cima do alvo e as duas lâminas na queda
+  orion_finisher: {
+    name: 'SALTO DO CORVO', windup: 0.08, active: 0.2, recovery: 0.3, chainFrac: 0.45,
+    shape: { type: 'circle', radius: 110, offset: 44 }, dmg: 24, kb: 360, launch: 260, stun: 0.7,
+    hitstop: 0.07, shake: 0.32, multiHit: 2, rehit: 0.1, heavy: true, radialKb: true, lunge: 300,
+    swing: [-2.2, 1.6], blade: 82, rgb: '255,160,55', core: '255,245,220', sound: 'swingHeavy', fury: 9, zoom: 0.03,
+  },
   orion_upper: {
     name: 'CORTE ASCENDENTE', windup: 0.05, active: 0.08, recovery: 0.24, chainFrac: 0.3,
     shape: { type: 'arc', range: 84, arc: 1.1 }, dmg: 22, kb: 80, launch: 580, stun: 0.75,
@@ -437,14 +482,14 @@ const ATTACKS = {
 const COMBO_TABLE = { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 'heavy', LH: 'uppercut', HH: 'slam' };
 const COMBO_REQUIRES = { uppercut: 'uppercut', slam: 'slam' }; // técnicas das evoluções
 // Técnicas liberadas pela árvore de habilidades
-const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio' };
+const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio', finisher: 'sentenca_eclipse', reverse: 'reves_horizonte' };
 
 const CHARACTER_COMBOS = {
-  kael: { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 'heavy', LH: 'uppercut', HH: 'slam' },
+  kael: { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', LLLH: 'finisher', H: 'heavy', LH: 'uppercut', LHL: 'reverse', HH: 'slam' },
   lyra: { L: 'lyra_light1', LL: 'lyra_light2', LLL: 'lyra_light3', LLH: 'lyra_pierce', H: 'lyra_heavy', LH: 'lyra_pierce', HH: 'lyra_heavy' },
-  drakos: { L: 'drakos_light1', LL: 'drakos_light2', LLL: 'drakos_light3', LLH: 'drakos_sweep', H: 'drakos_heavy', LH: 'drakos_sweep', HH: 'drakos_quake' },
+  drakos: { L: 'drakos_light1', LL: 'drakos_light2', LLL: 'drakos_light3', LLH: 'drakos_sweep', LLLH: 'drakos_finisher', H: 'drakos_heavy', LH: 'drakos_sweep', HH: 'drakos_quake' },
   sera: { L: 'sera_light1', LL: 'sera_light2', LLL: 'sera_light3', LLH: 'sera_burst', H: 'sera_heavy', LH: 'sera_lift', HH: 'sera_burst' },
-  orion: { L: 'orion_light1', LL: 'orion_light2', LLL: 'orion_light3', LLH: 'orion_flurry', H: 'orion_heavy', LH: 'orion_upper', HH: 'orion_flurry' },
+  orion: { L: 'orion_light1', LL: 'orion_light2', LLL: 'orion_light3', LLH: 'orion_flurry', LLLH: 'orion_finisher', H: 'orion_heavy', LH: 'orion_upper', HH: 'orion_cross' },
 };
 
 class ComboSystem {

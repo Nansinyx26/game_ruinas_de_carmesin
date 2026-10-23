@@ -615,12 +615,31 @@ function buildTempestadeNula(g, k, part, lod) {
     overhead: { z0: 50, z1: 14, o0: 38, o1: -24, crouch: 4.5, g2: 1, post: (A, ee) => { A.tp += 0.24 * ee - 0.1 * (1 - ee); A.hp += 0.12 * ee; A.fL[0] += 2; } },
     // corte rápido de pulso: quase sem mexer o corpo (adagas)
     quick: { z0: 30, z1: 29, o0: 1, o1: 0, crouch: 1.2, post: (A) => { A.fL[0] -= 2; A.fR[0] += 1.5; A.toeR = 0; } },
+    // segunda lâmina (Orion): a mão esquerda faz o arco espelhado; a direita fica em guarda baixa
+    left: { z0: 30, z1: 28, o0: 2, o1: -2, crouch: 1.6, post: (A) => {
+      set3(A.hL, A.hR[0], -A.hR[1], A.hR[2]); set3(A.pL, A.pR[0], -A.pR[1], A.pR[2]);
+      set3(A.hR, 5, 7.5, 26); set3(A.bd, -0.25, 0.35, -0.9); set3(A.bu, 1, 0, 0); set3(A.pR, -0.6, 0.8, -0.3);
+      A.reach = 0; A.ty = -A.ty; A.hy = -A.hy; A.hyw = -A.hyw; A.fL[0] += 1.5; A.fR[0] -= 1;
+    } },
+    // as duas lâminas juntas (Orion): a esquerda espelha a direita e as duas cruzam em X
+    dual: { z0: 33, z1: 25, o0: 6, o1: -6, crouch: 2.4, post: (A) => {
+      set3(A.hL, A.hR[0], -A.hR[1], A.hR[2]); set3(A.pL, A.pR[0], -A.pR[1], A.pR[2]);
+      A.ty *= 0.3; A.hy *= 0.3; A.hyw *= 0.3; A.tp += 0.1;
+    } },
+    // salto mortal (Orion): sobe, gira o corpo inteiro para a frente e desce com as duas lâminas
+    flip: { z0: 40, z1: 20, o0: 12, o1: -10, crouch: 3, post: (A, ee, pa, wind) => {
+      const h = wind ? 0 : Math.sin(Math.min(1, pa * 1.05) * PI);
+      A.bz = 13 * h; A.bp = !wind && pa < 1 ? -TWO * smooth(pa) : 0;
+      A.fL[2] += 6 * h; A.fR[2] += 6 * h; A.fL[0] -= 2 * h; A.fR[0] += 2 * h; A.toeL = 0.5 * h; A.toeR = 0.5 * h;
+      set3(A.hL, A.hR[0], -A.hR[1], A.hR[2]); set3(A.pL, A.pR[0], -A.pR[1], A.pR[2]);
+    } },
   };
   // Golpe → estilo (Kael e os aliados que usam o rig do Kael para os golpes de ATTACKS)
   const SWING_OF = {
     light1: 'diag', light2: 'rise', light3: 'leap', heavy: 'cleave', charged: 'overhead',
     drakos_light1: 'diag', drakos_light2: 'rise', drakos_light3: 'overhead', drakos_heavy: 'overhead', drakos_charged: 'leap', drakos_sweep: 'cleave',
-    orion_light1: 'quick', orion_light2: 'rise', orion_light3: 'diag', orion_heavy: 'cleave', orion_charged: 'leap',
+    orion_light1: 'quick', orion_light2: 'left', orion_light3: 'diag', orion_heavy: 'cleave', orion_charged: 'leap',
+    reverse: 'cleave', drakos_counter: 'overhead', orion_cross: 'dual', orion_finisher: 'flip', orion_upper: 'rise',
   };
   let ATTACK_ID = null;   // definição → id (montado na primeira consulta)
   function swingStyle(d) {
@@ -724,6 +743,11 @@ function buildTempestadeNula(g, k, part, lod) {
       if (mode === 0) { set3(A.fL, 8.5, -6.0, 0); set3(A.fR, -6, 6.8, 0); A.toeR = 0.2; }
       else { set3(A.fL, 6.5, -6.4, 0); set3(A.fR, -5.5, 7.0, 0); }
       if (style && style.post) style.post(A, ee, pa, tt < tW);
+      if (num(d.leap) > 0) {
+        // finalização com salto (d.leap = altura): sobe na preparação e cai no começo do ativo
+        const up = tt < tW ? smooth(cl(tt / tW, 0, 1)) : Math.max(0, 1 - pa * 2.5);
+        A.bz = num(d.leap) * up; A.fL[2] += 4 * up; A.fR[2] += 5 * up; A.toeL = 0.4 * up; A.toeR = 0.5 * up;
+      }
       A.cB = 0.35 + crouch * 0.08; A.flare = 0.12 + Math.abs(A.ty) * 0.12; A.cFl = 0.07;
       if (mode === 2) {
         // Ruptura de Plasma: concentra energia agachado (mão livre à frente) e explode abrindo os braços
