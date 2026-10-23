@@ -555,6 +555,38 @@ function buildTempestadeNula(g, k, part, lod) {
   }
 
   const HZA = HZR - 1.2;   // quadril na base de combate
+  // Estilos dos golpes de arco (só a animação: alcance, dano e janelas continuam os de ATTACKS).
+  // z0/z1: altura da mão no começo e no fim do corte; o0/o1: ponta da lâmina acima/abaixo do
+  // rastro; crouch: o quanto o corpo desce; g2: as duas mãos no cabo; post: o resto do corpo
+  const SWING_STYLES = {
+    // diagonal descendente: entra alto pelo ombro e corta até o quadril oposto
+    diag: { z0: 38, z1: 20, o0: 10, o1: -10, crouch: 2.6, post: (A, ee) => { A.tp += 0.12 * ee; A.fL[0] += 1.5; } },
+    // revés ascendente: sai de baixo, gira o quadril e termina com a lâmina alta, peso no pé de trás
+    rise: { z0: 21, z1: 38, o0: -10, o1: 12, crouch: 2, post: (A, ee) => { A.tp -= 0.1 * ee; A.hp -= 0.08 * ee; A.fR[0] -= 2.5; A.fL[0] -= 1.5; A.toeR = 0.45; } },
+    // corte saltando: pequeno salto no ativo, as pernas encolhem e a lâmina cai de cima
+    leap: { z0: 42, z1: 18, o0: 14, o1: -12, crouch: 3.5, post: (A, ee, pa, wind) => {
+      const h = wind ? 0 : Math.sin(Math.min(1, pa * 1.15) * PI);
+      A.bz = 7 * h; A.fL[2] += 4 * h; A.fR[2] += 6 * h; A.tp += 0.18 * ee; A.toeL = 0.4 * h; A.toeR = 0.5 * h;
+    } },
+    // golpe largo com as duas mãos: passo longo e baixo, corte na altura da cintura
+    cleave: { z0: 31, z1: 27, o0: 2, o1: -4, crouch: 5, g2: 1, post: (A) => { A.fL[0] += 3.5; A.fR[0] -= 3; A.tp += 0.06; } },
+    // por cima com as duas mãos: arma erguida atrás da cabeça e descida até o chão
+    overhead: { z0: 50, z1: 14, o0: 38, o1: -24, crouch: 4.5, g2: 1, post: (A, ee) => { A.tp += 0.24 * ee - 0.1 * (1 - ee); A.hp += 0.12 * ee; A.fL[0] += 2; } },
+    // corte rápido de pulso: quase sem mexer o corpo (adagas)
+    quick: { z0: 30, z1: 29, o0: 1, o1: 0, crouch: 1.2, post: (A) => { A.fL[0] -= 2; A.fR[0] += 1.5; A.toeR = 0; } },
+  };
+  // Golpe → estilo (Kael e os aliados que usam o rig do Kael para os golpes de ATTACKS)
+  const SWING_OF = {
+    light1: 'diag', light2: 'rise', light3: 'leap', heavy: 'cleave', charged: 'overhead',
+    drakos_light1: 'diag', drakos_light2: 'rise', drakos_light3: 'overhead', drakos_heavy: 'overhead', drakos_charged: 'leap', drakos_sweep: 'cleave',
+    orion_light1: 'quick', orion_light2: 'rise', orion_light3: 'diag', orion_heavy: 'cleave', orion_charged: 'leap',
+  };
+  let ATTACK_ID = null;   // definição → id (montado na primeira consulta)
+  function swingStyle(d) {
+    if (!ATTACK_ID) { ATTACK_ID = new Map(); if (typeof ATTACKS !== 'undefined') for (const k in ATTACKS) ATTACK_ID.set(ATTACKS[k], k); }
+    const s = SWING_OF[ATTACK_ID.get(d)];
+    return s ? SWING_STYLES[s] : null;
+  }
   function attackPose(P, e) {
     const a = e.attack, d = a && a.def;
     if (!d || typeof d !== 'object') return rest(P, e);
@@ -625,6 +657,8 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (d.oscillate) { z0 = 29; z1 = 29; o0 = 0; o1 = 0; crouch = 2.2; }
       else if (d.projectile) { z0 = 32; z1 = 30; o0 = 2; o1 = 2; crouch = 1.5; }
       else crouch = 2.4;
+      const style = mode === 0 && !d.oscillate && !d.projectile ? swingStyle(d) : null;
+      if (style) { z0 = style.z0; z1 = style.z1; o0 = style.o0; o1 = style.o1; crouch = style.crouch; if (style.g2) g2 = 1; }
       const trailZ = 26 + (num(d.launch) > 300 ? pa * 18 : 0);
       // preparação: lâmina armada mais alta e recolhida junto ao corpo, soltando no início do ativo
       const raise = mode === 0 && !d.oscillate ? (tt < tW ? 1 : Math.max(0, 1 - pa * 3)) : 0;
@@ -648,6 +682,7 @@ function buildTempestadeNula(g, k, part, lod) {
       // passo: pé esquerdo à frente, direito atrás
       if (mode === 0) { set3(A.fL, 8.5, -6.0, 0); set3(A.fR, -6, 6.8, 0); A.toeR = 0.2; }
       else { set3(A.fL, 6.5, -6.4, 0); set3(A.fR, -5.5, 7.0, 0); }
+      if (style && style.post) style.post(A, ee, pa, tt < tW);
       A.cB = 0.35 + crouch * 0.08; A.flare = 0.12 + Math.abs(A.ty) * 0.12; A.cFl = 0.07;
       if (mode === 2) {
         // Ruptura de Plasma: concentra energia agachado (mão livre à frente) e explode abrindo os braços
