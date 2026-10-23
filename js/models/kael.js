@@ -626,6 +626,15 @@ function buildTempestadeNula(g, k, part, lod) {
       set3(A.hL, A.hR[0], -A.hR[1], A.hR[2]); set3(A.pL, A.pR[0], -A.pR[1], A.pR[2]);
       A.ty *= 0.3; A.hy *= 0.3; A.hyw *= 0.3; A.tp += 0.1;
     } },
+    // tiro (pistola do Orion): braço estendido na altura do ombro, cano reto, a outra mão firmando
+    // a empunhadura e um coice curto no disparo (o golpe tem swing [0, 0]: o braço aponta para a mira)
+    aim: { z0: 35, z1: 35, o0: 0, o1: 0, crouch: 1.2, post: (A, ee, pa, wind) => {
+      const k = wind ? 0 : Math.max(0, 1 - pa * 4);
+      set3(A.hR, 15.5 - 2.4 * k, 2.2, 35 + 1.2 * k); set3(A.pR, -0.4, 0.8, -0.5);
+      set3(A.bd, 1, 0, 0.04 + 0.28 * k); set3(A.bu, 0, 0, 1);
+      A.grip2 = 0.85; A.reach = 0; A.ty += 0.2; A.hyw -= 0.15; A.tp = 0.06; A.hp = -0.06;
+      A.fL[0] += 1; A.fR[0] -= 1.5;
+    } },
     // salto mortal (Orion): sobe, gira o corpo inteiro para a frente e desce com as duas lâminas
     flip: { z0: 40, z1: 20, o0: 12, o1: -10, crouch: 3, post: (A, ee, pa, wind) => {
       const h = wind ? 0 : Math.sin(Math.min(1, pa * 1.05) * PI);
@@ -640,6 +649,7 @@ function buildTempestadeNula(g, k, part, lod) {
     drakos_light1: 'diag', drakos_light2: 'rise', drakos_light3: 'overhead', drakos_heavy: 'overhead', drakos_charged: 'leap', drakos_sweep: 'cleave',
     orion_light1: 'quick', orion_light2: 'left', orion_light3: 'diag', orion_heavy: 'cleave', orion_charged: 'leap',
     reverse: 'cleave', drakos_counter: 'overhead', orion_cross: 'dual', orion_finisher: 'flip', orion_upper: 'rise',
+    orion_shot1: 'aim', orion_shot2: 'aim', orion_shot3: 'aim', orion_pistol_heavy: 'aim', orion_pistol_charged: 'aim', orion_pistol_roll: 'aim',
   };
   let ATTACK_ID = null;   // definição → id (montado na primeira consulta)
   function swingStyle(d) {
@@ -717,7 +727,7 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (d.oscillate) { z0 = 29; z1 = 29; o0 = 0; o1 = 0; crouch = 2.2; }
       else if (d.projectile) { z0 = 32; z1 = 30; o0 = 2; o1 = 2; crouch = 1.5; }
       else crouch = 2.4;
-      const style = mode === 0 && !d.oscillate && !d.projectile ? swingStyle(d) : null;
+      const style = mode === 0 && !d.oscillate && (!d.projectile || d.aimPose) ? swingStyle(d) : null;
       if (style) { z0 = style.z0; z1 = style.z1; o0 = style.o0; o1 = style.o1; crouch = style.crouch; if (style.g2) g2 = 1; }
       const trailZ = 26 + (num(d.launch) > 300 ? pa * 18 : 0);
       // preparação: lâmina armada mais alta e recolhida junto ao corpo, soltando no início do ativo

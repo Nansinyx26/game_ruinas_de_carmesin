@@ -37,6 +37,7 @@ class ProjectileSystem {
       case 'tech_orb': return '25,230,210';
       case 'drone_laser': return '40,255,225';
       case 'phantom_blade': return '255,140,30';
+      case 'bullet': case 'bullet_pierce': case 'bullet_big': return '255,180,80';
       default: return '110,170,255';
     }
   }
@@ -277,6 +278,21 @@ class ProjectileSystem {
           ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8;
           ctx.beginPath(); ctx.moveTo(sx - ux * 16, sy - uy * 16); ctx.lineTo(sx, sy); ctx.stroke();
           GlowCache.draw(ctx, '40,255,225', sx, sy, p.r * 2.5, 0.7 * fade);
+          break;
+        }
+        case 'bullet':
+        case 'bullet_pierce':
+        case 'bullet_big': {
+          // tiro da pistola do Orion: traçador fino com núcleo branco
+          const sv = worldAngleToScreen(p.angle, game.tmpV);
+          const l = Math.hypot(sv.x, sv.y) || 1, ux = sv.x / l, uy = sv.y / l, big = p.kind === 'bullet_big';
+          const len = big ? 34 : p.kind === 'bullet_pierce' ? 26 : 18;
+          ctx.globalAlpha = fade; ctx.lineCap = 'round';
+          ctx.strokeStyle = 'rgba(255,170,60,0.55)'; ctx.lineWidth = big ? 6 : 3.5;
+          ctx.beginPath(); ctx.moveTo(sx - ux * len, sy - uy * len); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.strokeStyle = '#fff6e0'; ctx.lineWidth = big ? 2.4 : 1.4;
+          ctx.beginPath(); ctx.moveTo(sx - ux * len * 0.7, sy - uy * len * 0.7); ctx.lineTo(sx, sy); ctx.stroke();
+          GlowCache.draw(ctx, '255,170,60', sx, sy, p.r * (big ? 3 : 2.2), 0.7 * fade);
           break;
         }
         case 'phantom_blade': {

@@ -468,6 +468,48 @@ const ATTACKS = {
     hitstop: 0.07, shake: 0.32, multiHit: 2, rehit: 0.1, heavy: true, radialKb: true, lunge: 300,
     swing: [-2.2, 1.6], blade: 82, rgb: '255,160,55', core: '255,245,220', sound: 'swingHeavy', fury: 9, zoom: 0.03,
   },
+  // ----- Orion com a pistola equipada (Pistola Oculta e a versão especial): tiros de verdade.
+  // noHit: o dano é só o do projétil; burst: tiros por golpe (burstGap entre eles); aimPose:
+  // braço estendido com o cano reto (js/models/kael.js, estilo 'aim'); noTrail: sem rastro de lâmina
+  orion_shot1: {
+    name: null, windup: 0.05, active: 0.05, recovery: 0.13, chainFrac: 0.15,
+    shape: { type: 'capsule', length: 300, width: 12 }, dmg: 12, kb: 90, launch: 0, stun: 0.15,
+    hitstop: 0.02, shake: 0.05, lunge: 0, swing: [0, 0], blade: 40, projectile: 'bullet', aimPose: true, noHit: true, noTrail: true,
+    rgb: '255,170,60', core: '255,240,210', sound: 'shot', fury: 3, light: true,
+  },
+  orion_shot2: {
+    name: null, windup: 0.04, active: 0.05, recovery: 0.13, chainFrac: 0.15,
+    shape: { type: 'capsule', length: 300, width: 12 }, dmg: 13, kb: 90, launch: 0, stun: 0.15,
+    hitstop: 0.02, shake: 0.05, lunge: 0, swing: [0, 0], blade: 40, projectile: 'bullet', aimPose: true, noHit: true, noTrail: true,
+    rgb: '255,170,60', core: '255,240,210', sound: 'shot', fury: 3, light: true,
+  },
+  orion_shot3: {
+    name: 'RAJADA SOMBRIA', windup: 0.06, active: 0.2, recovery: 0.22, chainFrac: 0.35,
+    shape: { type: 'capsule', length: 300, width: 12 }, dmg: 11, kb: 110, launch: 0, stun: 0.25, burst: 3, burstGap: 0.07,
+    hitstop: 0.02, shake: 0.08, lunge: 0, swing: [0, 0], blade: 40, projectile: 'bullet', aimPose: true, noHit: true, noTrail: true,
+    rgb: '255,170,60', core: '255,240,210', sound: 'shot', fury: 5, light: true,
+  },
+  orion_pistol_heavy: {
+    name: 'TIRO PERFURANTE', windup: 0.18, active: 0.06, recovery: 0.26, chainFrac: 0.35,
+    shape: { type: 'capsule', length: 340, width: 14 }, dmg: 30, kb: 260, launch: 0, stun: 0.45,
+    hitstop: 0.05, shake: 0.18, heavy: true, heavyType: true, chargeable: true, lunge: 0, swing: [0, 0], blade: 40,
+    projectile: 'bullet_pierce', aimPose: true, noHit: true, noTrail: true,
+    rgb: '255,150,40', core: '255,235,200', sound: 'shot', fury: 6, zoom: 0.02,
+  },
+  orion_pistol_charged: {
+    name: 'EXECUÇÃO À DISTÂNCIA', windup: 0.04, active: 0.08, recovery: 0.34, chainFrac: 0.45,
+    shape: { type: 'capsule', length: 380, width: 18 }, dmg: 72, kb: 480, launch: 0, stun: 0.8,
+    hitstop: 0.1, shake: 0.4, heavy: true, heavyType: true, lunge: -120, swing: [0, 0], blade: 40,
+    projectile: 'bullet_big', aimPose: true, noHit: true, noTrail: true,
+    rgb: '255,180,70', core: '255,250,230', sound: 'shotHeavy', fury: 10, zoom: 0.04,
+  },
+  // Esquiva → J com a pistola: dois tiros no fim do rolamento
+  orion_pistol_roll: {
+    name: 'TIRO EM ROLAMENTO', windup: 0.03, active: 0.12, recovery: 0.2, chainFrac: 0.3,
+    shape: { type: 'capsule', length: 300, width: 12 }, dmg: 15, kb: 140, launch: 0, stun: 0.3, burst: 2, burstGap: 0.08,
+    hitstop: 0.03, shake: 0.1, lunge: 120, swing: [0, 0], blade: 40, projectile: 'bullet', aimPose: true, noHit: true, noTrail: true,
+    rgb: '255,170,60', core: '255,240,210', sound: 'shot', fury: 5,
+  },
   orion_upper: {
     name: 'CORTE ASCENDENTE', windup: 0.05, active: 0.08, recovery: 0.24, chainFrac: 0.3,
     shape: { type: 'arc', range: 84, arc: 1.1 }, dmg: 22, kb: 80, launch: 580, stun: 0.75,
@@ -490,6 +532,8 @@ const CHARACTER_COMBOS = {
   lyra: { L: 'lyra_light1', LL: 'lyra_light2', LLL: 'lyra_light3', LLH: 'lyra_pierce', H: 'lyra_heavy', LH: 'lyra_pierce', HH: 'lyra_heavy' },
   drakos: { L: 'drakos_light1', LL: 'drakos_light2', LLL: 'drakos_light3', LLH: 'drakos_sweep', LLLH: 'drakos_finisher', H: 'drakos_heavy', LH: 'drakos_sweep', HH: 'drakos_quake' },
   sera: { L: 'sera_light1', LL: 'sera_light2', LLL: 'sera_light3', LLH: 'sera_burst', H: 'sera_heavy', LH: 'sera_lift', HH: 'sera_burst' },
+  // Orion com a pistola equipada (Player.combatStyle)
+  orion_pistol: { L: 'orion_shot1', LL: 'orion_shot2', LLL: 'orion_shot3', LLH: 'orion_pistol_heavy', H: 'orion_pistol_heavy', LH: 'orion_pistol_heavy', HH: 'orion_pistol_heavy' },
   orion: { L: 'orion_light1', LL: 'orion_light2', LLL: 'orion_light3', LLH: 'orion_flurry', LLLH: 'orion_finisher', H: 'orion_heavy', LH: 'orion_upper', HH: 'orion_cross' },
 };
 
@@ -528,10 +572,15 @@ class ComboSystem {
   // Decide qual golpe executar para o input, considerando a cadeia em andamento
   resolve(type) {
     const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
-    const table = CHARACTER_COMBOS[charId] || COMBO_TABLE;
+    // estilo pela arma equipada (ex.: o Orion com a pistola atira em vez de cortar)
+    const style = game.player && game.player.combatStyle ? game.player.combatStyle() : charId;
+    const table = CHARACTER_COMBOS[style] || CHARACTER_COMBOS[charId] || COMBO_TABLE;
     if (this.dashWindow > 0) {
       this.dashWindow = 0;
-      if (charId === 'lyra') {
+      if (style === 'orion_pistol') {
+        if (type === 'L') { this.seq = 'D'; return 'orion_pistol_roll'; }
+        if (type === 'H') { this.seq = 'D'; return 'orion_pistol_heavy'; }
+      } else if (charId === 'lyra') {
         if (type === 'L') { this.seq = 'D'; return 'lyra_backstep'; }
         if (type === 'H') { this.seq = 'D'; return 'lyra_pierce'; }
       } else if (charId === 'orion') {

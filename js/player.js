@@ -148,6 +148,13 @@ class Player extends Entity {
     this.wpnOut = false; this.wpnAnim = null; this.wpnCalm = 0; this.wpnFlash = 0; this.swapPending = 0;
   }
 
+  // Estilo de combate pela arma equipada: o Orion com uma pistola (kind 'pistol') usa os tiros de
+  // CHARACTER_COMBOS.orion_pistol; os outros, os golpes de sempre do personagem
+  combatStyle() {
+    if (this.def.id !== 'orion' || typeof RosterManager === 'undefined') return this.def.id;
+    const w = WEAPON_DEFS[RosterManager.equippedWeapon('orion')];
+    return w && w.kind === 'pistol' ? 'orion_pistol' : 'orion';
+  }
   // Próxima arma do personagem (liberada e com efeito no jogo), na ordem da ficha; null se não há outra
   nextWeapon() {
     if (typeof RosterManager === 'undefined') return null;
@@ -398,7 +405,7 @@ class Player extends Entity {
 
   // Assistência de mira: corrige levemente a direção para o inimigo mais próximo no cone
   aimAssist(dir, def) {
-    const isRanged = this.def.id === 'lyra' || this.def.id === 'sera';
+    const isRanged = this.def.id === 'lyra' || this.def.id === 'sera' || !!def.aimPose;
     const s = def.shape;
     const baseRange = (s.range || s.length || s.radius || 90);
     const range = isRanged ? Math.max(380, baseRange * 2.5) : baseRange * 1.7;
@@ -480,7 +487,8 @@ class Player extends Entity {
     if (!a.started && a.t >= tW) {
       a.started = true;
       game.audio.play(d.sound);
-      a.trail = game.trails.create(d.rgb, d.core, d.thrust ? 0.1 : 0.14);
+      a.trail = d.noTrail ? null : game.trails.create(d.rgb, d.core, d.thrust ? 0.1 : 0.14);
+      a.shots = 0;
       this.squash = d.heavy ? 0.14 : 0.07;
       if (d.projectile === 'volt') this.fireVolt(a.dir);
       else if (d.projectile === 'arrow') this.fireArrow(a.dir, d.dmg, false);
@@ -489,9 +497,16 @@ class Player extends Entity {
       else if (d.projectile === 'charged_arrow') this.fireArrow(a.dir, d.dmg, true, true);
       else if (d.projectile === 'tech_orb') this.fireTechOrb(a.dir, d.dmg);
       else if (d.projectile === 'blade' || d.projectile === 'phantom_blade') this.firePhantomBlade(a.dir, d.dmg);
+      else if (/^bullet/.test(d.projectile)) { /* tiros: disparados abaixo (um ou uma rajada) */ }
       else if (d.projectile) this.fireCrescent(a.dir);
       if (d.slamRing) this.slamEffects(a.dir);
       if (d.plasma) this.plasmaEffects();
+    }
+
+    // Tiros (pistola): o primeiro no início do ativo, os da rajada a cada burstGap
+    if (a.started && d.projectile && /^bullet/.test(d.projectile) && a.shots < (d.burst || 1) && a.t >= tW + a.shots * (d.burstGap || 0.06)) {
+      this.fireBullet(a.dir, d);
+      a.shots++;
     }
 
     // Amostras do rastro da lâmina (sub-amostradas para curvas suaves)
@@ -715,7 +730,8 @@ class Player extends Entity {
     if (!input.held.heavy) {
       const level = clamp(this.chargeTime / 0.95, 0, 1);
       this.combo.seq = '';
-      const chargedId = this.def.id === 'lyra' ? 'lyra_charged' :
+      const chargedId = this.combatStyle() === 'orion_pistol' ? 'orion_pistol_charged' :
+                        this.def.id === 'lyra' ? 'lyra_charged' :
                         this.def.id === 'drakos' ? 'drakos_charged' :
                         this.def.id === 'sera' ? 'sera_charged' :
                         this.def.id === 'orion' ? 'orion_charged' : 'charged';
@@ -1417,6 +1433,21 @@ class Player extends Entity {
       dmg: d, hostile: false, kind: 'tech_orb', life: 0.8, pierce: false,
     });
     game.audio.play('zap');
+  }
+
+  // Orion com a pistola: projétil rápido (perfurante no pesado e no carregado), clarão no cano
+  fireBullet(dir, d) {
+    const big = d.projectile === 'bullet_big', pierce = big || d.projectile === 'bullet_pierce';
+    const a = dir + (d.burst > 1 ? (Math.random() - 0.5) * 0.06 : 0);
+    const dmg = Math.round(d.dmg * this.stats.dmgMult * (this.buffs.stealth > 0 ? 1.6 : 1) * rand(0.95, 1.05));
+    const sp = big ? 1500 : 1300, mx = this.x + Math.cos(a) * 30, my = this.y + Math.sin(a) * 30;
+    game.projectiles.spawn({
+      x: mx, y: my, z: 34, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: big ? 12 : 7,
+      dmg, hostile: false, kind: big ? 'bullet_big' : pierce ? 'bullet_pierce' : 'bullet', life: big ? 0.6 : 0.42, pierce,
+    });
+    game.particles.flash(mx, my, 34, big ? 46 : 26, '255,190,90', 0.08);
+    game.particles.sparks(mx, my, 34, a, big ? 8 : 4, '255,200,120', 300, 0.5);
+    game.audio.play(d.sound || 'shot');
   }
 
   // Orion: Lâmina Fantasma perfurante

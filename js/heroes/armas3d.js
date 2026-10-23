@@ -76,9 +76,10 @@ const WeaponRig = (function () {
     arco_foton: { main: ['lyra_arco'] },
     arco_lyra_3d: { main: ['lyra_arco'] },
     laminas_duplas: { main: ['orion_lamina_d', 'orion_lamina_e'], hip: ['orion_pistola'] },
-    modulo_stealth: { main: ['orion_lamina_d', 'orion_lamina_e'], hip: ['orion_pistola'] },
+    // pistola equipada: ela vai para a mão (o Orion atira, Player.combatStyle) e as lâminas para as costas
+    modulo_stealth: { main: ['orion_pistola'], back: ['orion_lamina_d', 'orion_lamina_e'] },
     arma_primaria_orion_3d: { main: ['orion_lamina_v1_d', 'orion_lamina_v1_e'], hip: ['orion_pistola'] },
-    arma_secundaria_orion_3d: { main: ['orion_lamina_d', 'orion_lamina_e'], hip: ['orion_pistola'] },
+    arma_secundaria_orion_3d: { main: ['orion_pistola'], back: ['orion_lamina_d', 'orion_lamina_e'] },
     orbe_controle: { main: ['sera_bastao'] },
     bastao_sera_3d: { main: ['sera_bastao'] },
     drone_s01: { main: ['sera_bastao'], drone: ['sera_drone'] },
@@ -106,7 +107,8 @@ const WeaponRig = (function () {
     orion_lamina_v1_d: { node: 'torso', g: [-5.0, 4.6, 4.5], d: [-0.05, -0.3, -0.95] },
     orion_lamina_v1_e: { node: 'torso', g: [-5.6, -4.6, 4.5], d: [-0.05, 0.3, -0.95] },
     sera_bastao: { node: 'torso', g: [-5.2, 1.5, -12], d: [-0.04, -0.45, 0.89] },
-    orion_pistola: { node: 'thighR', g: [0.6, 2.7, -5.5], d: [0, 0, -1], u: [1, 0, 0], abs: true },
+    // coldre na coxa; grab: onde a mão busca a pistola (referencial do corpo, ao lado do quadril)
+    orion_pistola: { node: 'thighR', g: [0.6, 2.7, -5.5], d: [0, 0, -1], u: [1, 0, 0], abs: true, grab: [1.5, 8.6, 21] },
     sera_drone: { node: 'torso', g: [-4, -9.5, 12], d: [1, 0, 0], u: [0, 0, 1], hover: true },
   };
   // vetores e orientação (mesma convenção de orient() em js/models/kael.js: X = d, Z ≈ up)
@@ -262,8 +264,9 @@ const WeaponRig = (function () {
       if (!id || !BACK[id]) continue;
       const B = BACK[id], ax = backAxes(B), g0 = backPoint(B, K);
       const g = B.reach ? [g0[0] + ax.d[0] * B.reach, g0[1] + ax.d[1] * B.reach, g0[2] + ax.d[2] * B.reach] : g0;
-      const at = xf(TMx, g), d = xr(TMx, ax.d), u = xr(TMx, ax.u);
-      at[2] -= K.HAND0;                                          // alvos das mãos não incluem HAND0
+      // encaixe fora do tronco (coldre na coxa): a mão vai ao ponto 'grab' (corpo) e a arma aponta para baixo
+      const at = B.grab ? B.grab.slice() : xf(TMx, g), d = B.grab ? [0.2, 0.1, -1] : xr(TMx, ax.d), u = B.grab ? [1, 0, 0] : xr(TMx, ax.u);
+      if (!B.grab) at[2] -= K.HAND0;                             // alvos das mãos não incluem HAND0
       if (side === 'R') {
         lerp3(P.hR, P.hR, at, reach);
         P.pR[0] = mix(P.pR[0], -1, reach); P.pR[1] = mix(P.pR[1], 0.6, reach); P.pR[2] = mix(P.pR[2], 0.4, reach);

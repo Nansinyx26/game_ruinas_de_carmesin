@@ -577,6 +577,17 @@ class AudioSys {
           this.osc('sine', 320, 120, 0.08, 0.04 * p);
           this.osc('square', 2400, 900, 0.05, 0.012 * p);   // estalo elétrico da lâmina
           break;
+        case 'shot':          // pistola com supressor: estalo abafado e o ferrolho
+          if (!this.throttle(name, 0.035)) return;
+          this.noise(0.07, 0.22 * p, 'bandpass', 2600, 900, 1.6);
+          this.osc('square', 220, 90, 0.05, 0.04 * p);
+          this.noise(0.03, 0.08 * p, 'highpass', 5000, 5000, 0.8, 0.05);
+          break;
+        case 'shotHeavy':     // tiro carregado: estampido mais grave e o eco
+          this.noise(0.16, 0.32 * p, 'lowpass', 2400, 300, 0.9);
+          this.osc('sawtooth', 160, 45, 0.18, 0.06 * p);
+          this.noise(0.3, 0.06 * p, 'bandpass', 900, 500, 1.2, 0.08);
+          break;
         case 'draw':          // sacar a arma das costas: lâmina deslizando para fora + tinido
           if (!this.throttle(name, 0.2)) return;
           this.noise(0.22, 0.12 * p, 'bandpass', 1800, 5200, 2.2);

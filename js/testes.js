@@ -34,6 +34,7 @@ const EclipseTests = {
       this.idle();
       this.trocaArma();
       this.telaElenco();
+      this.pistolaOrion();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -278,6 +279,31 @@ const EclipseTests = {
       try { rs.act(); } catch (e) { erro = e.message; }
       this.ok('elenco: arma (já equipada) mostra aviso sem erro', !erro && !!(rs.msg && rs.msg.text), erro);
     } finally { game.saveGame = salvar; }
+  },
+
+  // Orion com a pistola: os golpes viram tiros (projéteis que causam dano) e a pistola vai para a mão
+  pistolaOrion() {
+    const g = game;
+    RosterManager.unlock('orion', true);
+    RosterManager.equipWeapon('orion', 'modulo_stealth');
+    if (RosterManager.active !== 'orion') RosterManager.setActive('orion');
+    const p = g.player;
+    this.igual('Orion com a pistola: estilo de combate', p.combatStyle(), 'orion_pistol');
+    const cs = new ComboSystem(); cs.reset();
+    this.igual('Orion com a pistola: J J J → rajada', ['L', 'L', 'L'].map((b) => cs.resolve(b)).join(','), 'orion_shot1,orion_shot2,orion_shot3');
+    this.igual('Orion com a pistola: a pistola na mão', WeaponRig.visualOf('orion').main[0], 'orion_pistola');
+    g.enemies.length = 0; g.projectiles.clear(); g.waves.state = 'cleared';
+    const e = createEnemy('rastejador', p.x + 160, p.y, 1); e.hp = e.maxHp = 5000; e.spawnT = 0; e.state = 'idle'; g.enemies.push(e);
+    const step = (s) => { for (let t = 0; t < s; t += 1 / 60) { p.update(1 / 60, this.entrada()); g.projectiles.update(1 / 60); } };
+    p.facing = 0; p.state = 'idle';
+    p.startAttack('orion_shot1', null); step(0.4);
+    const h1 = e.hp;
+    this.ok('tiro da pistola causa dano', h1 < 5000, h1);
+    p.startAttack('orion_shot3', null); step(0.7);
+    this.ok('rajada acerta mais de uma vez', 5000 - e.hp > 2 * (5000 - h1) * 0.8, `${5000 - h1} → ${5000 - e.hp}`);
+    RosterManager.equipWeapon('orion', 'laminas_duplas');
+    this.igual('Orion com as lâminas volta a cortar', p.combatStyle(), 'orion');
+    g.enemies.length = 0; g.projectiles.clear();
   },
 
   // Resultado na tela (canto superior esquerdo), por cima do jogo
