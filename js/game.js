@@ -1142,7 +1142,7 @@ class Game {
   // Opções reaproveitadas por entidade (sem alocar a cada quadro)
   opts3(e, flash) {
     const o = e._o3 || (e._o3 = {});
-    o.yaw = e.facing || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.tint = null;
+    o.yaw = (typeof e.viewFacing === 'number' ? e.viewFacing : e.facing) || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.tint = null;
     return o;
   }
   queue3(key, e, o) {

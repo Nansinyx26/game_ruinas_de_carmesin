@@ -559,7 +559,7 @@ function buildTempestadeNula(g, k, part, lod) {
     const k = cl((num(e.moveSpeed) - 20) / 200, 0, 1.15);
     // Cadência: caminhada (analógico pela metade, toque) a passos mais lentos, corrida a 13 rad/s;
     // a fase acumula na entidade para a troca de ritmo não pular o passo
-    const rate = 7 + 6 * Math.min(1, k * 1.4);
+    const rate = 7 + 9 * Math.min(1, k * 1.4), A = 9 + 3 * Math.min(1, k);
     if (e._gt === undefined || t < e._gt || t - e._gt > 0.5) e._gp = t * rate;
     else e._gp += (t - e._gt) * rate;
     e._gt = t;
@@ -568,8 +568,8 @@ function buildTempestadeNula(g, k, part, lod) {
     P.hz = HZR - 1.2 * k;
     P.tp = mix(P.tp, 0.3, k); P.ty = mix(P.ty, -s * 0.16, k); P.hy = s * 0.14 * k;
     P.hp = mix(P.hp, -0.12, k); P.hyw = mix(P.hyw, s * 0.1, k);
-    set3(P.fL, mix(P.fL[0], s * 9 + 1, k), -4.4, Math.max(0, c) * 5.5 * k);
-    set3(P.fR, mix(P.fR[0], -s * 9 + 1, k), 4.6, Math.max(0, -c) * 5.5 * k);
+    set3(P.fL, mix(P.fL[0], s * A + 1, k), -4.4, Math.max(0, c) * 5.5 * k);
+    set3(P.fR, mix(P.fR[0], -s * A + 1, k), 4.6, Math.max(0, -c) * 5.5 * k);
     P.toeL = Math.max(0, -s) * 0.5 * k; P.toeR = Math.max(0, s) * 0.5 * k;
     set3(P.hL, mix(P.hL[0], -s * 9 + 2, k), mix(P.hL[1], -9.8, k), mix(P.hL[2], 24.7 + Math.abs(s) * 2.5, k));
     set3(P.hR, mix(P.hR[0], s * 3 - 2.5, k), mix(P.hR[1], 10.4, k), mix(P.hR[2], 23.5, k));
@@ -578,6 +578,46 @@ function buildTempestadeNula(g, k, part, lod) {
     P.cB = 0.04 + 0.8 * k; P.flare = 0.06 + 0.08 * k;
     P.cFl = 0.02 + 0.1 * k; P.cFq = mix(1.7, 17, k);
     return P;
+  }
+
+  // ------------------------------------------------------------ pés plantados
+  // Sem isto os pés escorregam no chão quando a pose muda e o corpo não anda (virar parado,
+  // parar de correr, trocar de variação do idle, abrir a base): cada pé fica preso onde pisou
+  // e, quando a pose pede outro lugar a mais de STEP_D, dá um passo curto (levanta, vai e pousa)
+  // — um pé de cada vez. Correndo, no ar ou em avanço rápido, os pés seguem a pose normalmente.
+  // Só visual: posição, colisão e golpes não mudam.
+  const PLANT = typeof WeakMap === 'function' ? new WeakMap() : null;
+  // direção em que o modelo é desenhado (o jogador gira o corpo suave: Player.viewFacing)
+  const viewYaw = (e) => (typeof e.viewFacing === 'number' ? e.viewFacing : num(e.facing));
+  const STEP_T = 0.15, STEP_D = 1.6, STEP_H = 2.4;
+  function plantFeet(P, e) {
+    if (!PLANT || !e || typeof e.x !== 'number' || e.state === 'dead') return;
+    const t = num(e.animTime);
+    let S = PLANT.get(e);
+    if (!S || t < S.t || t - S.t > 0.3) { S = { t, L: null, R: null }; PLANT.set(e, S); }
+    const dt = t - S.t; S.t = t;
+    // livres: correndo, esquivando, no ar ou avançando num golpe; parado e ainda freando, os pés plantam
+    const free = P.bz > 1.5 || Math.abs(P.bp) > 0.3 || Math.abs(P.br) > 0.3 || num(e.z) > 1 ||
+      e.state === 'run' || e.state === 'dash' || (num(e.moveSpeed) > 40 && e.state !== 'idle' && e.state !== 'hurt');
+    const yaw = viewYaw(e) + P.by, c = Math.cos(yaw), sn = Math.sin(yaw);
+    for (let side = 0; side < 2; side++) {
+      const k = side ? 'R' : 'L', F = side ? P.fR : P.fL, other = S[side ? 'L' : 'R'];
+      if (free || F[2] > 0.4) { S[k] = null; continue; }            // pé no ar: sem trava
+      const wx = e.x + c * F[0] - sn * F[1], wy = e.y + sn * F[0] + c * F[1];   // onde a pose quer o pé
+      let q = S[k];
+      if (!q) { S[k] = { x: wx, y: wy, step: false, u: 0, sx: 0, sy: 0 }; continue; }   // pisou: trava aqui
+      if (q.step) {
+        q.u += dt / STEP_T;
+        if (q.u >= 1) { q.step = false; q.x = wx; q.y = wy; }
+      } else if (Math.hypot(wx - q.x, wy - q.y) > STEP_D && !(other && other.step)) {
+        q.step = true; q.u = Math.min(0.99, dt / STEP_T); q.sx = q.x; q.sy = q.y;
+      }
+      let px = q.x, py = q.y, lift = 0;
+      if (q.step) { const u = smooth(q.u); px = mix(q.sx, wx, u); py = mix(q.sy, wy, u); lift = Math.sin(q.u * PI) * STEP_H; }
+      const dx = px - e.x, dy = py - e.y;
+      F[0] = c * dx + sn * dy; F[1] = -sn * dx + c * dy; F[2] += lift;
+      if (lift > 0) { if (side) P.toeR = Math.max(P.toeR, 0.35 * lift / STEP_H); else P.toeL = Math.max(P.toeL, 0.35 * lift / STEP_H); }
+    }
   }
 
   // Ângulo local da lâmina (desenrolado no giro): mesma fórmula de Player.bladeAngle
@@ -1248,6 +1288,7 @@ function buildTempestadeNula(g, k, part, lod) {
       else P = rest(POSE, e);
       // arma guardada (mão livre) e o gesto de sacar/guardar (js/heroes/armas3d.js)
       const free = typeof WeaponRig !== 'undefined' && WeaponRig.handPose(m, e, P, m.props || KAEL_PROPS);
+      plantFeet(P, e);                     // pés presos ao chão (passos em vez de escorregar)
       solve(m, P, e, t, false);
       hands(m, e, P, false, free);
       if (m.sec) secondary(m, e, P);

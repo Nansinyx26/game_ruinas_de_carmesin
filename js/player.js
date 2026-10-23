@@ -382,6 +382,11 @@ class Player extends Entity {
 
     for (const g of this.ghosts) if (g.life > 0) g.life -= dt;
     this.updateWeapon(dt);
+    // Direção em que o corpo é desenhado: gira rápido mas suave (os pés não "pulam" de lado ao
+    // virar); em golpes, esquivas e supremas acompanha na hora. Só visual (facing segue igual)
+    const vs = this.state;
+    if (typeof this.viewFacing !== 'number' || vs === 'attack' || vs === 'charge' || vs === 'special' || vs === 'dash' || vs === 'dead') this.viewFacing = this.facing;
+    else { const d = angleDiff(this.viewFacing, this.facing), mx = 15 * dt; this.viewFacing += d > mx ? mx : d < -mx ? -mx : d; }
   }
 
   // Ações disponíveis em estado livre: especial, esquiva ou golpe
