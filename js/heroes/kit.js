@@ -229,6 +229,7 @@ const HeroObjects = {
 
 // Alvo que um inimigo persegue: o jogador ou uma isca próxima (os chefes ignoram iscas)
 function heroTargetFor(e) {
+  if (e._cego > 0 && typeof AllyFx !== 'undefined') return AllyFx.alvoFalso(e);   // na Bomba de Fumaça do Orion
   const L = HeroObjects.list;
   if (!L.length || e.isBoss) return game.player;
   let best = null, bd = Infinity;

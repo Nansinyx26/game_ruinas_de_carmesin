@@ -168,8 +168,9 @@ const HeroPassives = {
     for (const [fx, l] of list) if (fx.stats) fx.stats(S, l, p);
     p._baseSpeedMult = S.speedMult;
   },
-  dealt(p, e) { let m = 1; const L = p._passives; if (L) for (const [fx, l] of L) if (fx.dealt) m *= fx.dealt(p, e, l); return m; },
-  taken(p) { let m = 1; const L = p._passives; if (L) for (const [fx, l] of L) if (fx.taken) m *= fx.taken(p, l); return Math.max(0.2, m); },
+  // (com os efeitos ativos dos aliados: Grito de Guerra, Muralha Viva — js/heroes/aliados.js)
+  dealt(p, e) { let m = typeof AllyFx !== 'undefined' ? AllyFx.dealt(p, e) : 1; const L = p._passives; if (L) for (const [fx, l] of L) if (fx.dealt) m *= fx.dealt(p, e, l); return m; },
+  taken(p) { let m = typeof AllyFx !== 'undefined' ? AllyFx.taken(p) : 1; const L = p._passives; if (L) for (const [fx, l] of L) if (fx.taken) m *= fx.taken(p, l); return Math.max(0.2, m); },
   hit(p, e, dmg) { const L = p._passives; if (L) for (const [fx, l] of L) if (fx.hit) fx.hit(p, e, l, dmg); },
   kill(p, e) { const L = p._passives; if (L) for (const [fx, l] of L) if (fx.kill) fx.kill(p, e, l); },
   tick(p, dt) { const L = p._passives; if (L) for (const [fx, l] of L) if (fx.tick) fx.tick(p, dt, l); },

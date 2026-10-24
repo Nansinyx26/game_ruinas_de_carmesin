@@ -931,7 +931,7 @@ class HUD {
     if (seq && seq !== 'D' && p.state !== 'dead') {
       const T = CHARACTER_COMBOS[p.def.id] || COMBO_TABLE, nx = [];
       for (const b of ['L', 'H']) {
-        const id = T[seq + b];
+        const id = p.combo.pick ? p.combo.pick(p.combatStyle ? p.combatStyle() : p.def.id, seq + b) : T[seq + b];
         if (id && p.combo.isUnlocked(id) && ATTACKS[id]) nx.push(`${b === 'L' ? 'J' : 'K'} → ${(ATTACKS[id].name || (b === 'L' ? 'golpe leve' : 'golpe pesado')).toLowerCase()}`);
       }
       if (nx.length) {

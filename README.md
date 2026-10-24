@@ -172,6 +172,12 @@ Kael ganha **experiência** derrotando inimigos (elites valem o triplo), liberan
 
 Cada personagem tem **cinco ramos** (Tab), um por aba, nesta ordem: **Ataque**, **Poderes**, **Defesa e sobrevivência**, **Mobilidade** e **Supremas**. O ramo Supremas (Eclipse, Luz Caçadora, Titã, Núcleo Vyne, Corvo) é igual em estrutura para todos e custa 2 a 4 pontos por nível: suprema mais barata, mais poder, energia nos golpes pesados, **Convergência** (depois de uma habilidade, o próximo golpe é mais forte), Último Fôlego, Ressonância (energia por abate durante a suprema) e Ascensão. Os efeitos ficam em `js/heroes/passivas.js`.
 
+**Nós dos aliados com efeito** (`js/heroes/aliados.js`, `AllyFx`): todas as ativas, passivas e técnicas das árvores do Drakos, da Sera e do Orion funcionam.
+- **Drakos.** Ativas: Muralha Viva (atrai os inimigos e −30/40% de dano recebido), Onda do Martelo (onda de choque em linha que empurra) e Grito de Guerra (+20/40% de dano e inimigos perto mais lentos). Passivas: Bloqueio Perfeito (escudo erguido no último instante devolve um empurrão que atordoa), Escudo Refletor (projéteis voltam contra quem atirou) e Sem Freio (3 abates seguidos recarregam a Investida). Técnicas: Varredura (L L H) e Arremesso do Machado (esquiva → H, ida e volta).
+- **Sera.** Ativas: Sentinela Fixa (torreta), Pulso Repulsor (empurra e apaga projéteis), Apagão (máquinas caem e projéteis se apagam) e Injeção Estimulante (velocidade e recargas). Passivas: Enxame (drones menores com o S-01), Domo Condutor (dano e lentidão dentro do campo), Matriz Estável (o campo acompanha a Sera e reflete) e Arquivo 0-ZERO (o Hack desacelera chefes). Técnicas: Ordem de Ataque (L L H, o drone mergulha) e Sobrecarga Remota (L L L, descarga que salta). O Campo de Força agora fica onde foi lançado, com o raio e a duração do nível.
+- **Orion.** Ativas: Bomba de Fumaça (quem está dentro perde o alvo e erra os tiros) e Leque de Lâminas. Passivas: Há Três Dias (começa cada setor invisível; Furtividade com 2 cargas), Ricochete (a lâmina volta nas paredes e salta para outro alvo) e Marca do Alvo (o próximo crítico no alvo marcado é mais forte). Técnicas: Dança de Aço (L L H), Passo na Sombra (esquiva → L, reaparece atrás do inimigo) e Rolamento de Corte (esquiva → H).
+- As técnicas trocam o golpe da sequência só quando o nó está aprendido (`TECH_UPGRADES` em `js/combat.js`); sem ele fica o golpe de sempre. As 4 ativas da ficha (Campo de Força, Hack, Drone, Lâmina) são achadas pelo campo `ability` do nó.
+
 As árvores do Kael (Tab):
 
 | Árvore | Habilidades |

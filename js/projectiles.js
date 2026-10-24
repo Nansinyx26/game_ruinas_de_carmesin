@@ -19,6 +19,7 @@ class ProjectileSystem {
     p.dmg = o.dmg || 10; p.hostile = o.hostile !== false; p.kind = o.kind || 'orb';
     p.life = p.max = o.life || 2; p.pierce = !!o.pierce;
     p.hits.clear(); p.dodgeCredited = false;
+    p.bounces = o.bounces || 0; p.jumps = o.jumps || 0;   // Ricochete (Orion): paredes e saltos entre alvos
     p.angle = Math.atan2(p.vy, p.vx);
     return p;
   }
@@ -57,6 +58,13 @@ class ProjectileSystem {
   clearHostile(fx) {
     for (let i = this.count - 1; i >= 0; i--) if (this.items[i].hostile) this.kill(i, fx);
   }
+  // Devolve o projétil hostil i contra quem atirou (Escudo Refletor, Matriz Estável): mult = fração do dano
+  reflect(i, mult) {
+    const p = this.items[i];
+    p.hostile = false; p.vx = -p.vx * 1.15; p.vy = -p.vy * 1.15; p.angle = Math.atan2(p.vy, p.vx);
+    p.dmg = Math.max(1, Math.round(p.dmg * mult)); p.life = Math.max(p.life, 0.9); p.hits.clear();
+    game.particles.flash(p.x, p.y, p.z, 30, '255,200,140', 0.12);
+  }
   // Campo Magnético e Ruptura de Plasma: destroem projéteis hostis dentro do raio
   clearInRadius(x, y, r) {
     for (let i = this.count - 1; i >= 0; i--) {
@@ -81,6 +89,12 @@ class ProjectileSystem {
       p.x += p.vx * dt; p.y += p.vy * dt;
       if (p.kind === 'data' && Math.random() < 0.35) game.particles.emit(P.WISP, p.x, p.y, p.z, -p.vx * 0.1, -p.vy * 0.1, 10, 0.3, 1.6, '110,255,230', 0, 1);
       if (game.room.blocksPoint(p.x, p.y, p.r * 0.4)) {
+        if (p.bounces > 0) {                    // ricocheteia: volta pelo caminho e procura outro alvo
+          p.bounces--; p.x -= p.vx * dt; p.y -= p.vy * dt; p.vx = -p.vx; p.vy = -p.vy;
+          p.angle = Math.atan2(p.vy, p.vx); p.life = Math.max(p.life, 0.35);
+          this.burst(p);
+          continue;
+        }
         if (p.kind === 'explosive_arrow') this.detonateExplosive(p);
         this.kill(i, true);
         continue;
@@ -92,6 +106,7 @@ class ProjectileSystem {
             if (!p.dodgeCredited) { p.dodgeCredited = true; game.onPerfectDodge(pl); }
             continue;
           }
+          if (typeof AllyFx !== 'undefined' && AllyFx.reflectShot(pl, p)) continue;   // Escudo Refletor (Drakos)
           if (pl.takeDamage(p.dmg, p.x - p.vx * 0.05, p.y - p.vy * 0.05, 200)) { this.kill(i, true); continue; }
         }
       } else {
@@ -111,6 +126,20 @@ class ProjectileSystem {
             }
             if (e.takeHit({ dmg, kx, ky, kb: volt ? 160 : 220, launch: 0, stun: volt ? 0.45 : 0.3, heavy: false, crit: false, shock: volt })) {
               game.onEnemyHit(e, dmg, false, PROJ_HIT_DEF, kx, ky);
+            }
+            if (p.jumps > 0) {                  // salta para o inimigo mais próximo ainda não atingido
+              let nx = null, nd = 260 * 260;
+              for (const o of game.enemies) {
+                if (!o.canBeHit() || p.hits.has(o)) continue;
+                const d2 = dist2(o.x, o.y, p.x, p.y);
+                if (d2 < nd) { nd = d2; nx = o; }
+              }
+              if (nx) {
+                p.jumps--;
+                const sp = Math.hypot(p.vx, p.vy), q = Math.atan2(nx.y - p.y, nx.x - p.x);
+                p.vx = Math.cos(q) * sp; p.vy = Math.sin(q) * sp; p.angle = q; p.life = Math.max(p.life, 0.4);
+                continue outer;
+              }
             }
             if (!p.pierce) { this.kill(i, true); continue outer; }
           }

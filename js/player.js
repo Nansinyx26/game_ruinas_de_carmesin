@@ -443,6 +443,7 @@ class Player extends Entity {
     a.trail = null; a.started = false;
     a.charge = chargeLevel;
     a.mult = id === 'charged' ? 1 + chargeLevel : 1;
+    a.launchMult = 1;
     if (id === 'spin') def.multiHit = this.stats.spinHits;
     this.state = 'attack'; this.stateTime = 0;
     this.vx *= 0.2; this.vy *= 0.2;
@@ -506,6 +507,7 @@ class Player extends Entity {
       else if (d.projectile) this.fireCrescent(a.dir);
       if (d.slamRing) this.slamEffects(a.dir);
       if (d.plasma) this.plasmaEffects();
+      if (d.onStart) d.onStart(this, a);   // técnicas das árvores dos aliados (js/heroes/aliados.js)
     }
 
     // Tiros (pistola): o primeiro no início do ativo, os da rajada a cada burstGap
@@ -580,7 +582,7 @@ class Player extends Entity {
     if (d.thrust && !d.ability) dmg *= S.thrustMult;
     if (a.id === 'spin') dmg *= S.spinMult;
     dmg *= this.targetMult(e);
-    let crit = Math.random() < S.crit;
+    let crit = Math.random() < S.crit || !!d.alwaysCrit;
     if (d.counter) {                               // retaliação depois do bloqueio (nível 2: +25%)
       crit = true;
       const pr = heroProgressOf(this);
@@ -621,6 +623,7 @@ class Player extends Entity {
       game.audio.play('stomp');
     }
     if (crit) { dmg *= 2; if (S.critHeal > 0) this.heal(S.critHeal, false); }
+    if (typeof AllyFx !== 'undefined') dmg = AllyFx.critMod(this, e, dmg, crit);   // Marca do Alvo (Orion)
     // Corte Elétrico: golpes leves soltam arcos mais vezes, e o arco reforça o golpe
     const arc = Math.random() < (d.arcs || 0) + (d.light ? S.arcBonus : 0);
     if (arc && d.light && S.arcBonus > 0) dmg *= 1.15;
@@ -634,7 +637,7 @@ class Player extends Entity {
       const kl = Math.hypot(kx, ky) || 1; kx /= kl; ky /= kl;
     }
     const kb = d.kb * (a.id === 'charged' ? 1 + a.charge * 0.5 : 1);
-    const launch = d.launch * (a.id === 'charged' ? 0.6 + a.charge * 0.6 : 1);
+    const launch = d.launch * (a.id === 'charged' ? 0.6 + a.charge * 0.6 : 1) * (a.launchMult === undefined ? 1 : a.launchMult);
     if (!e.takeHit({ dmg, kx, ky, kb, launch, stun: d.stun, heavy: !!d.heavy, crit, shock: !!d.shock, breakArmor: S.guardBreak >= 0.6, poise: 1 + S.guardBreak })) return;
     game.onEnemyHit(e, dmg, crit, d, kx, ky);
     HeroPassives.hit(this, e, dmg);   // passivas que reagem ao golpe (Ritmo Letal, Execução…)
@@ -1003,6 +1006,7 @@ class Player extends Entity {
         game.texts.spawn(this.x, this.y, 60, 'BLOQUEIO', '#ff7070', 16, 0.7);
         this.invuln = Math.max(this.invuln, 0.35);
         this.blockCounterT = 1.0;                 // janela da retaliação (L)
+        if (typeof AllyFx !== 'undefined') AllyFx.onBlock(this, sx, sy);   // Bloqueio Perfeito
         return true;
       }
     }
@@ -1146,6 +1150,7 @@ class Player extends Entity {
       if (b[k] <= 0) this.onBuffEnd(k);
     }
     if (b.field > 0) this.updateField(dt);
+    if (typeof AllyFx !== 'undefined') AllyFx.tick(this, dt);   // efeitos das árvores dos aliados (js/heroes/aliados.js)
     if (b.supportDrone > 0) this.updateSupportDrone(dt);
     if (b.forceField > 0) this.updateForceField(dt);
     if (b.overload > 0 && Math.random() < dt * 12) {
@@ -1194,7 +1199,8 @@ class Player extends Entity {
     }
     if (!id) return null;
     const S = (typeof skillDef === 'function' ? skillDef(id) : null) || (typeof SKILLS !== 'undefined' ? SKILLS[id] : null) || (typeof ABILITY_DEFS !== 'undefined' ? ABILITY_DEFS[id] : null);
-    const A = typeof ABILITIES !== 'undefined' ? ABILITIES[id] : null;
+    // a habilidade do nó (ou a da ficha que ele representa: sera_campo_forca → sera_campo)
+    const A = typeof ABILITIES !== 'undefined' ? (ABILITIES[id] || (S && S.ability ? ABILITIES[S.ability] : null)) : null;
     const lv = (pr && typeof pr.lv === 'function') ? (pr.lv(id) || 1) : 1;
     return { id, lv, S, A };
   }
@@ -1459,10 +1465,11 @@ class Player extends Entity {
   firePhantomBlade(dir, dmg) {
     const isStealth = this.buffs.stealth > 0;
     const d = Math.round(dmg * this.stats.dmgMult * (isStealth ? 1.8 : 1));
+    const rc = AllyFx.lv(this, 'orion_ricochete');   // Ricochete: volta nas paredes e salta para outro alvo
     game.projectiles.spawn({
       x: this.x + Math.cos(dir) * 26, y: this.y + Math.sin(dir) * 26, z: 24,
       vx: Math.cos(dir) * 920, vy: Math.sin(dir) * 920, r: 16,
-      dmg: d, hostile: false, kind: 'phantom_blade', life: 0.75, pierce: true,
+      dmg: d, hostile: false, kind: 'phantom_blade', life: 0.75 + 0.25 * rc, pierce: true, bounces: rc, jumps: rc,
     });
     game.audio.play('thrust');
   }
@@ -1554,12 +1561,13 @@ class Player extends Entity {
 
   // Sera Vyne: Campo de Força de absorção e bloqueio de projéteis
   updateForceField(dt) {
-    const R = 130;
-    game.projectiles.clearInRadius(this.x, this.y, R);
+    const F = AllyFx.field(this), R = F.r;
+    if (F.reflete) AllyFx.reflectInRadius(F.x, F.y, R, 1);
+    else game.projectiles.clearInRadius(F.x, F.y, R);
     if (Math.random() < dt * 8) {
       const q = rand(0, TAU);
-      game.arcs.spawn(this.x + Math.cos(q) * R, this.y + Math.sin(q) * R, 10,
-        this.x + Math.cos(q + 0.6) * R, this.y + Math.sin(q + 0.6) * R, 10, { w: 1.4, life: 0.12, rgb: '40,255,220' });
+      game.arcs.spawn(F.x + Math.cos(q) * R, F.y + Math.sin(q) * R, 10,
+        F.x + Math.cos(q + 0.6) * R, F.y + Math.sin(q + 0.6) * R, 10, { w: 1.4, life: 0.12, rgb: '40,255,220' });
     }
   }
 
@@ -1575,6 +1583,7 @@ class Player extends Entity {
   // Efeitos visíveis das habilidades ativas e da armadura equipada (camada emissiva, coordenadas de mundo)
   drawAura(ctx, t) {
     if (this.kit) this.kit.drawAura(this, ctx, t);
+    if (typeof AllyFx !== 'undefined') AllyFx.drawAura(this, ctx, t);   // muralha, grito, sentinela, fumaça…
     const b = this.buffs;
     const aid = (typeof RosterManager !== 'undefined' && this.def) ? RosterManager.equippedArmor(this.def.id) : null;
     const aDef = (aid && typeof ARMOR_DEFS !== 'undefined') ? ARMOR_DEFS[aid] : null;
@@ -1619,13 +1628,13 @@ class Player extends Entity {
     // Sera: Domo do Campo de Força
     if (b.forceField > 0) {
       const a = Math.min(1, b.forceField * 2);
-      const R = 130;
-      GlowCache.drawFlat(ctx, '30,230,210', sx, sy, R * 1.5, 0.22 * a);
+      const F = AllyFx.field(this), R = F.r;
+      GlowCache.drawFlat(ctx, '30,230,210', isoX(F.x, F.y), isoY(F.x, F.y), R * 1.5, 0.22 * a);
       ctx.strokeStyle = rgba('50,255,230', 0.7 * a); ctx.lineWidth = 2.4;
-      isoCirclePath(ctx, this.x, this.y, R); ctx.stroke();
+      isoCirclePath(ctx, F.x, F.y, R); ctx.stroke();
       ctx.setLineDash([14, 10]); ctx.lineDashOffset = t * 60;
       ctx.strokeStyle = rgba('180,255,245', 0.5 * a);
-      isoCirclePath(ctx, this.x, this.y, R * 0.85); ctx.stroke();
+      isoCirclePath(ctx, F.x, F.y, R * 0.85); ctx.stroke();
       ctx.setLineDash([]);
     }
     // Sera: Drone de Suporte S-01 orbitando

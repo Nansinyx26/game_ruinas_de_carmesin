@@ -516,6 +516,59 @@ const ATTACKS = {
     hitstop: 0.06, shake: 0.2, heavy: true, lunge: 180, swing: [1.3, -1.3], blade: 76,
     rgb: '255,135,30', core: '255,225,195', sound: 'swing', fury: 6,
   },
+
+  // ---- Técnicas das árvores dos aliados (TECH_UPGRADES): substituem o golpe da sequência
+  // quando o nó está aprendido. onStart(p, a) roda no início da fase ativa (js/heroes/aliados.js);
+  // a.mult e a.launchMult ajustam o dano e a derrubada pelo nível do nó
+  drakos_varredura: {
+    name: 'VARREDURA', windup: 0.14, active: 0.16, recovery: 0.32, chainFrac: 0.45,
+    shape: { type: 'arc', range: 136, arc: 2.4 }, dmg: 42, kb: 420, launch: 340, stun: 0.7,
+    hitstop: 0.08, shake: 0.34, heavy: true, lunge: 90, swing: [-2.3, 2.3], blade: 104,
+    rgb: '255,60,70', core: '255,220,225', sound: 'swingHeavy', fury: 8, zoom: 0.03,
+    onStart: (p, a) => AllyFx.tecnica(p, a, 'drakos_varredura', [42, 54], true),
+  },
+  drakos_arremesso: {
+    name: 'ARREMESSO DO MACHADO', windup: 0.14, active: 0.08, recovery: 0.34, chainFrac: 0.4,
+    shape: { type: 'arc', range: 60, arc: 0.6 }, dmg: 70, kb: 360, launch: 0, stun: 0.6, noHit: true,
+    hitstop: 0.06, shake: 0.2, heavy: true, lunge: 40, swing: [-2.4, 0.6], blade: 94,
+    rgb: '255,46,61', core: '255,215,220', sound: 'swingHeavy', fury: 6,
+    onStart: (p, a) => AllyFx.arremesso(p, a),
+  },
+  sera_ordem: {
+    name: 'ORDEM DE ATAQUE', windup: 0.1, active: 0.08, recovery: 0.3, chainFrac: 0.4,
+    shape: { type: 'arc', range: 60, arc: 0.6 }, dmg: 50, kb: 200, launch: 0, stun: 0.5, noHit: true, noTrail: true,
+    hitstop: 0.04, shake: 0.12, lunge: 0, swing: [0.6, -0.6], blade: 66, aimPose: true,
+    rgb: '25,230,210', core: '220,255,250', sound: 'zap', fury: 6,
+    onStart: (p, a) => AllyFx.ordemAtaque(p, a),
+  },
+  sera_sobrecarga: {
+    name: 'SOBRECARGA REMOTA', windup: 0.08, active: 0.08, recovery: 0.28, chainFrac: 0.4,
+    shape: { type: 'arc', range: 60, arc: 0.6 }, dmg: 37, kb: 200, launch: 0, stun: 0.45, noHit: true, noTrail: true,
+    hitstop: 0.04, shake: 0.14, lunge: 0, swing: [-0.6, 0.6], blade: 66, aimPose: true,
+    rgb: '40,250,225', core: '235,255,255', sound: 'zap', fury: 7,
+    onStart: (p, a) => AllyFx.sobrecarga(p, a),
+  },
+  orion_danca: {
+    name: 'DANÇA DE AÇO', windup: 0.05, active: 0.48, recovery: 0.24, chainFrac: 0.35,
+    shape: { type: 'circle', radius: 112, offset: 0 }, dmg: 14, kb: 200, launch: 0, stun: 0.3,
+    hitstop: 0.025, shake: 0.12, multiHit: 6, rehit: 0.06, radialKb: true, lunge: 120,
+    swing: [0, TAU * 2.2], blade: 82, rgb: '255,160,55', core: '255,240,215', sound: 'swing', fury: 8,
+    onStart: (p, a) => { a.def.multiHit = AllyFx.lv(p, 'orion_danca_aco') >= 2 ? 8 : 6; AllyFx.tecnica(p, a, 'orion_danca_aco', [14, 18]); },
+  },
+  orion_passo: {
+    name: 'PASSO NA SOMBRA', windup: 0.04, active: 0.09, recovery: 0.22, chainFrac: 0.3,
+    shape: { type: 'arc', range: 92, arc: 1.3 }, dmg: 50, kb: 260, launch: 0, stun: 0.5, alwaysCrit: true,
+    hitstop: 0.07, shake: 0.24, heavy: true, lunge: 0, swing: [-1.3, 1.1], blade: 80,
+    rgb: '255,150,45', core: '255,240,215', sound: 'thrust', fury: 6,
+    onStart: (p, a) => AllyFx.passoSombra(p, a),
+  },
+  orion_rolamento: {
+    name: 'ROLAMENTO DE CORTE', windup: 0.02, active: 0.3, recovery: 0.2, chainFrac: 0.3,
+    shape: { type: 'circle', radius: 62, offset: 0 }, dmg: 45, kb: 240, launch: 0, stun: 0.4,
+    hitstop: 0.04, shake: 0.16, lunge: 620, swing: [0, TAU * 1.5], blade: 74, thrust: true,
+    rgb: '255,140,35', core: '255,230,200', sound: 'swing', fury: 6,
+    onStart: (p, a) => { p.invuln = Math.max(p.invuln, 0.3); AllyFx.tecnica(p, a, 'orion_rolamento', [45, 60]); },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -524,7 +577,18 @@ const ATTACKS = {
 const COMBO_TABLE = { L: 'light1', LL: 'light2', LLL: 'light3', LLH: 'spin', H: 'heavy', LH: 'uppercut', HH: 'slam' };
 const COMBO_REQUIRES = { uppercut: 'uppercut', slam: 'slam' }; // técnicas das evoluções
 // Técnicas liberadas pela árvore de habilidades
-const ALLY_COMBO_SKILLS = { drakos_finisher: 'drakos_queda_tita', drakos_counter: 'drakos_retaliacao', orion_finisher: 'orion_salto_corvo' };
+const ALLY_COMBO_SKILLS = {
+  drakos_finisher: 'drakos_queda_tita', drakos_counter: 'drakos_retaliacao', orion_finisher: 'orion_salto_corvo',
+  drakos_varredura: 'drakos_varredura', drakos_arremesso: 'drakos_arremesso', sera_ordem: 'sera_ordem_ataque',
+  sera_sobrecarga: 'sera_sobrecarga_remota', orion_danca: 'orion_danca_aco', orion_passo: 'orion_passo_sombra', orion_rolamento: 'orion_rolamento',
+};
+// Técnicas das árvores dos aliados: a sequência (D = esquiva) passa a fazer o golpe novo quando
+// o nó está aprendido; sem ele, segue o golpe de sempre da tabela (CHARACTER_COMBOS)
+const TECH_UPGRADES = {
+  drakos: { LLH: 'drakos_varredura', DH: 'drakos_arremesso' },
+  sera: { LLH: 'sera_ordem', LLL: 'sera_sobrecarga' },
+  orion: { LLH: 'orion_danca', DL: 'orion_passo', DH: 'orion_rolamento' },
+};
 const COMBO_SKILLS = { light3: 'corte_duplo', spin: 'lamina_giratoria', thrust: 'pulso_fantasma', wave: 'corte_vazio', finisher: 'sentenca_eclipse', reverse: 'reves_horizonte' };
 
 const CHARACTER_COMBOS = {
@@ -569,6 +633,14 @@ class ComboSystem {
     return !sk || !game || !game.progress || game.progress.lv(sk) > 0;
   }
 
+  // Golpe da sequência s no estilo: a técnica da árvore, se aprendida, ou o da tabela
+  pick(style, s) {
+    const up = TECH_UPGRADES[style] && TECH_UPGRADES[style][s];
+    if (up && this.isUnlocked(up)) return up;
+    const T = CHARACTER_COMBOS[style] || COMBO_TABLE;
+    return T[s];
+  }
+
   // Decide qual golpe executar para o input, considerando a cadeia em andamento
   resolve(type) {
     const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
@@ -577,6 +649,8 @@ class ComboSystem {
     const table = CHARACTER_COMBOS[style] || CHARACTER_COMBOS[charId] || COMBO_TABLE;
     if (this.dashWindow > 0) {
       this.dashWindow = 0;
+      const tech = TECH_UPGRADES[style] && TECH_UPGRADES[style]['D' + type];
+      if (tech && this.isUnlocked(tech)) { this.seq = 'D'; return tech; }
       if (style === 'orion_pistol') {
         if (type === 'L') { this.seq = 'D'; return 'orion_pistol_roll'; }
         if (type === 'H') { this.seq = 'D'; return 'orion_pistol_heavy'; }
@@ -598,7 +672,8 @@ class ComboSystem {
       }
     }
     const s = this.seq + type;
-    const id = table[s];
+    const up = TECH_UPGRADES[style] && TECH_UPGRADES[style][s];
+    const id = up && this.isUnlocked(up) ? up : table[s];
     if (id && this.isUnlocked(id)) { this.seq = s; return id; }
     // Sem correspondência: recomeça a cadeia a partir deste input
     this.seq = type;
