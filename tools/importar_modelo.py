@@ -601,6 +601,9 @@ def main():
     ABAS = {'cFR': 64, 'cSR': 107, 'cBR': 147, 'cBL': -147, 'cSL': -107, 'cFL': -64}
     if casaco:
         nomes += list(ABAS) + [c + '2' for c in ABAS]
+    cabelo = a.id != 'drakos'                 # o Drakos usa elmo (os chifres não balançam)
+    if cabelo:
+        nomes.append('hair')
     ix = {nm: i for i, nm in enumerate(nomes)}
     rot = np.full(n, ix['torso'])
     rot[Z < z_cint] = ix['hips']
@@ -612,6 +615,14 @@ def main():
     # com casaco, só o que está bem perto do osso é perna (o pano em volta é das abas)
     raio_perna = 0.055 * H if casaco else 0.12 * H
     perna = (Z < z_cint + 1.0) & (dmin < raio_perna)
+    if casaco:
+        # botas e caneleiras: abaixo do joelho a perna é mais grossa (botas de armadura). O que está
+        # perto do osso nessa altura é perna, não a barra do casaco; senão a bota balança com a aba
+        # e vira uma cunha comprida no chão ao andar
+        z_joelho = props['ANK'] + props['LSH']
+        z_bota = props['ANK'] + 0.07 * H
+        r_baixo = np.interp(Z, [z_bota, z_joelho], [0.09 * H, raio_perna])
+        perna |= (Z < z_joelho) & (dmin < r_baixo)
     for i, kk in enumerate(pernas):
         rot[perna & (perto == i)] = ix[kk]
     if casaco:
@@ -653,6 +664,23 @@ def main():
     W = np.zeros((n, len(nomes)))
     W[np.arange(n), rot] = 1
     W = suavizar_pesos(W, F, n, it=5)
+    if cabelo:
+        # cabelo: o que sai do crânio (mechas, franja, rabo de cavalo, capuz solto) passa aos poucos
+        # para o osso 'hair' (raiz na cabeça, ponta solta): balança com o movimento secundário. O
+        # rosto (frente e abaixo da testa) fica na cabeça
+        hd = W[:, ix['head']]
+        sel = hd > 0.5
+        if sel.sum() > 20:
+            zc = z_pesc + 0.065 * H
+            xc = float(np.median(X[sel]))
+            d = np.sqrt((X - xc) ** 2 + Y ** 2 + ((Z - zc) * 0.85) ** 2)
+            wh = np.clip((d - 0.062 * H) / (0.05 * H), 0, 1)
+            rosto = np.clip((X - (xc + 0.015 * H)) / (0.03 * H), 0, 1) * np.clip(((zc + 0.035 * H) - Z) / (0.03 * H), 0, 1)
+            wh *= 1 - rosto
+            tr = hd * wh
+            W[:, ix['hair']] += tr
+            W[:, ix['head']] -= tr
+            print('cabelo:', int((tr > 0.3).sum()), 'vértices soltos')
     ordem = np.argsort(-W, axis=1)[:, :4]
     w = np.take_along_axis(W, ordem, axis=1)
     w[w < 0.04] = 0

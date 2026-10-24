@@ -1113,6 +1113,7 @@ class Menus {
   drawKael3D(ctx, t, x, y, sc) {
     if (!R3D.active || !game.model3('kael')) return false;
     const k = this.kael || (this.kael = new Player(0, 0));
+    k.vitrine = true;   // gira no lugar: sem trava dos pés
     k.state = 'idle'; k.animTime = t; k.stateTime = t; k.fury = 100; k.moveSpeed = 0; k.flash = 0;
     k.facing = 0.55 + 0.5 * Math.sin(t * 0.3);
     const o = game.opts3(k, 0); o.scale = sc;

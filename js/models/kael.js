@@ -591,7 +591,8 @@ function buildTempestadeNula(g, k, part, lod) {
   const viewYaw = (e) => (typeof e.viewFacing === 'number' ? e.viewFacing : num(e.facing));
   const STEP_T = 0.15, STEP_D = 1.6, STEP_H = 2.4;
   function plantFeet(P, e) {
-    if (!PLANT || !e || typeof e.x !== 'number' || e.state === 'dead') return;
+    // e.vitrine: modelo girando no lugar (prévias do elenco), sem trava dos pés
+    if (!PLANT || !e || typeof e.x !== 'number' || e.state === 'dead' || e.vitrine) return;
     const t = num(e.animTime);
     let S = PLANT.get(e);
     if (!S || t < S.t || t - S.t > 0.3) { S = { t, L: null, R: null }; PLANT.set(e, S); }
@@ -1169,7 +1170,7 @@ function buildTempestadeNula(g, k, part, lod) {
     if (!SEC || !e || typeof e !== 'object') return;
     const n = m.nodes, t = num(e.animTime), f = num(e.facing);
     let s = SEC.get(e);
-    if (!s) { s = { t, f, vf: 0, vs: 0, bz: P.bz, cx: 0, cxv: 0, cy: 0, cyv: 0, h: 0, hv: 0, r: 0, rv: 0 }; SEC.set(e, s); }
+    if (!s) { s = { t, f, vf: 0, vs: 0, bz: P.bz, cx: 0, cxv: 0, cy: 0, cyv: 0, h: 0, hv: 0, r: 0, rv: 0, cp: 0, cpv: 0, cr: 0, crv: 0 }; SEC.set(e, s); }
     const dt = t - s.t;
     if (dt > 0 && dt < 0.1) {
       // velocidade no referencial do corpo (frente / lado) e o giro
@@ -1183,7 +1184,12 @@ function buildTempestadeNula(g, k, part, lod) {
       // capuz e cabelo: balançam com a subida e a descida do corpo e com o giro
       spring(s, 'h', cl(-vz * 0.02 - af * 0.0002, -0.35, 0.35), dt, 18, 0.28);
       spring(s, 'r', cl(-yaw * 0.035 - vz * 0.01, -0.3, 0.3), dt, 22, 0.3);
-    } else if (!(dt >= 0 && dt < 0.1)) { s.cx = s.cy = s.h = s.r = 0; s.cxv = s.cyv = s.hv = s.rv = 0; }
+      // cabelo (mola própria, mais solta): para trás com a velocidade e na arrancada, cai quando o
+      // corpo sobe a cada passada e abre para o lado de fora no giro
+      const vel = Math.hypot(vx, vy);
+      spring(s, 'cp', cl(cl(vel / 260, 0, 1) * 0.3 + cl(af * 0.00035, -0.2, 0.25) - vz * 0.015, -0.3, 0.55), dt, 11, 0.22);
+      spring(s, 'cr', cl(-yaw * 0.06 - as * 0.0002, -0.45, 0.45), dt, 10, 0.24);
+    } else if (!(dt >= 0 && dt < 0.1)) { s.cx = s.cy = s.h = s.r = s.cp = s.cr = 0; s.cxv = s.cyv = s.hv = s.rv = s.cpv = s.crv = 0; }
     s.t = t; s.f = f; s.bz = P.bz;
     for (let i = 0; i < PANELS.length; i++) {
       const nd = n[PANELS[i][0]], hem = n[PANELS[i][0] + '2'], am = nd.r[2];
@@ -1193,7 +1199,12 @@ function buildTempestadeNula(g, k, part, lod) {
       hem.r[1] -= lx * 0.7; hem.r[0] += ly * 0.7;
     }
     if (n.hood) { n.hood.r[1] += s.h; n.hood.r[0] += s.r * 0.5; }
-    if (n.hair) { n.hair.r[1] += s.h * 0.35; n.hair.r[2] += s.r * 0.6; }
+    if (n.hair) {
+      // r[1] > 0 leva as pontas para trás e para cima; parado, uma brisa leve
+      const brisa = Math.sin(t * 1.7) * 0.045 + Math.sin(t * 2.9 + 1.3) * 0.025;
+      n.hair.r[1] += s.cp + brisa;
+      n.hair.r[2] += cl(s.cr, -0.45, 0.45) + Math.sin(t * 1.3 + 0.5) * 0.035;
+    }
   }
   // Mãos: a direita fecha no cabo; a esquerda fecha em punho, abre ao lançar habilidades
   function hands(m, e, P, dead, free) {

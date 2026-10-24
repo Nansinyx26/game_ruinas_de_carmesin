@@ -94,6 +94,9 @@ class Game {
     document.addEventListener('fullscreenchange', () => Settings.onFullscreenChange());
     // Ao fechar ou trocar de aba no celular, guarda o progresso (tempo de jogo, miniatura)
     window.addEventListener('pagehide', () => this.saveGame());
+    // De volta ao jogo (outra aba, outro app, tela desbloqueada): tenta retomar o áudio; se o
+    // navegador exigir um gesto, o próximo toque ou tecla retoma (Input.onFirstInput)
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); });
     this.last = performance.now();
     this.loopBound = (t) => this.loop(t);
     requestAnimationFrame(this.loopBound);

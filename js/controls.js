@@ -99,6 +99,10 @@ class Input {
       this.lastDevice = 'kb';
       if (this.onFirstInput) this.onFirstInput();
     });
+    // Toque solto (celular): conta como gesto para o navegador. Em jogo os toques não viram
+    // cliques (js/touch.js), então é aqui que o áudio volta depois de suspenso (tela bloqueada,
+    // troca de app, ligação)
+    window.addEventListener('touchend', () => { if (this.onFirstInput) this.onFirstInput(); }, { passive: true });
     window.addEventListener('gamepadconnected', (e) => {
       this.padConnected = true;
       if (this.onPadChange) this.onPadChange('connected', this.describe(e.gamepad));

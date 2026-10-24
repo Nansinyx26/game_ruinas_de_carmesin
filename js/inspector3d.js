@@ -73,7 +73,7 @@ const Inspector3D = (() => {
       return this.open;
     },
     key() { return this.models()[this.model] || 'kael'; },
-    models() { return MODELOS.filter((k) => MODELS3D[k]); },
+    models() { return MODELOS.concat(Object.keys(MODELS3D).filter((k) => k.indexOf('arm_') === 0)).filter((k) => MODELS3D[k]); },   // e as armaduras já carregadas
 
     // Referência da arte: script de dados carregado sob demanda (data URI: não suja o canvas)
     loadRef(key) {
@@ -168,6 +168,7 @@ const Inspector3D = (() => {
     },
     entity() {
       const p = this.ent || (this.ent = new Player(0, 0));
+      p.vitrine = true;   // modelo no lugar (a animação de caminhada não sai do lugar): sem trava dos pés
       p.facing = Math.PI / 4; p.vx = p.vy = 0; p.z = 0; p.flash = 0; p.fury = 40; p.moveSpeed = 0; p.chargeLevel = 0;
       if (p.state !== 'attack') p.attack = null;
       ANIMS[this.anim][1](p, this.t);

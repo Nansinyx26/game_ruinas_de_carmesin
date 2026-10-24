@@ -117,7 +117,7 @@ const ArmorModels = {
       tint = hx ? [...hexToRgb(hx).split(',').map((v) => +v / 255), 0.72] : null;
     }
     if (!game.model3(key)) return false;
-    const e = this.prevE[heroId] || (this.prevE[heroId] = { def, x: 0, y: 0, z: 0, state: 'idle', stateTime: 0, animTime: 0, facing: 0, flash: 0, moveSpeed: 0, wpnOut: false, hp: 1, maxHp: 1, fury: 0 });
+    const e = this.prevE[heroId] || (this.prevE[heroId] = { def, x: 0, y: 0, z: 0, state: 'idle', stateTime: 0, animTime: 0, facing: 0, flash: 0, moveSpeed: 0, wpnOut: false, hp: 1, maxHp: 1, fury: 0, vitrine: true });
     e.animTime = t; e.stateTime = t; e.facing = e.viewFacing = yaw;
     const o = game.opts3(e, 0);
     o.scale = e.pvS || 2.4;

@@ -481,7 +481,8 @@ class AudioSys {
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    // 'suspended' (sem gesto ainda) ou 'interrupted' (iOS: ligação, outro app): retoma
+    if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') { const r = this.ctx.resume(); if (r && r.catch) r.catch(() => {}); }
   }
 
   toggleMute() {
