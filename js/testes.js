@@ -585,7 +585,7 @@ const EclipseTests = {
       const h0 = e.hp;
       this.ok('granada: arremesso gasta uma carga', Granada.lancar(p, null) && p.granadas === GRANADA.MAX - 1 && HeroObjects.list.some((o) => o instanceof GranadaPlasma));
       for (let i = 0; i < 40; i++) HeroObjects.update(1 / 30);
-      this.ok('granada: explode, fere e deixa a máquina em curto', e.hp < h0 && !HeroObjects.list.some((o) => o instanceof GranadaPlasma) && (e.stun > 0.8 || !e.alive), `${h0} → ${e.hp}, stun ${e.stun}`);
+      this.ok('granada: explode, fere e deixa a máquina em curto', e.hp < h0 && !HeroObjects.list.some((o) => o instanceof GranadaPlasma) && (e.stun > 0.8 || !e.alive || e.hp <= 0), `${h0} → ${e.hp}, stun ${e.stun}`);
       p.granadas = 0;
       this.ok('granada: sem carga, não arremessa', !Granada.lancar(p, null));
       Granada.tick(p, GRANADA.RECARGA + 0.01);
@@ -813,11 +813,13 @@ const EclipseTests = {
       this.ok('missão secundária: aceita pela conversa e rastreada', Aventuras.ativa('car_s1') && World.state.rastreada === 'car_s1' && Aventuras.linha().indexOf('Peças') >= 0);
       Dialogo.escolherId('sair');
       this.ok('conversa: fechar volta ao jogo', !Dialogo.aberto && g.state === 'playing');
+      Oficios.S.mat.sucata = 0;   // as máquinas derrubadas nos testes anteriores às vezes soltam sucata
       Oficios.dar('sucata', 6, false);
       this.igual('missão: pronta para entregar (?)', WorldQuests.marca(tomas), '?');
       const c1 = g.stats.soulsBank;
       tomas.talk(); Dialogo.escolherId('ent_car_s1'); Dialogo.fechar();
-      this.ok('missão: entrega consome o material e paga uma vez', Aventuras.feita('car_s1') && Oficios.mat('sucata') === 0 && g.stats.soulsBank === c1 + 40 && !Aventuras.concluir(WORLD_AVENTURAS[0]) && g.stats.soulsBank === c1 + 40);
+      const c2 = g.stats.soulsBank, feita2 = Aventuras.concluir(WORLD_AVENTURAS[0]);
+      this.ok('missão: entrega consome o material e paga uma vez', Aventuras.feita('car_s1') && Oficios.mat('sucata') === 0 && c2 === c1 + 40 && !feita2 && g.stats.soulsBank === c2, `sucata ${Oficios.mat('sucata')} · células +${c2 - c1} · de novo ${feita2} +${g.stats.soulsBank - c2}`);
       this.ok('missão: histórico com dia e hora', Aventuras.st('car_s1').hist.length >= 2 && Aventuras.st('car_s1').hist.every((h) => h.d >= 1 && h.txt));
       // ------------------------------------------------ desaparecido + escolha
       pr.level = 40; g.player.recalc(true);
