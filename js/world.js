@@ -568,60 +568,79 @@ const World = {
     for (const id in WORLD_ZONES) { const z = WORLD_ZONES[id], d = dims[z.region] || (dims[z.region] = [0, 0]); d[0] = Math.max(d[0], z.r); d[1] = Math.max(d[1], z.c); }
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], c = pos(worldRegion(z.region).at), d = dims[z.region];
-      zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.25, y: c.y + (z.r - d[0] / 2) * s * 1.25, s };
+      zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.5, y: c.y + (z.r - d[0] / 2) * s * 1.5, s };
     }
     return { x0, y0, mw, mh, pos, zones };
   },
+  // Mapa desenhado: o terreno pintado (js/mundo/mapa.js, WorldMapArt), névoa nas regiões não
+  // exploradas, trilhas e marcadores das zonas, nomes das regiões, a ★ da campanha, moldura de
+  // atlas e o painel da zona escolhida
   drawMap(ctx, t) {
     const M = this.map, L = this.mapLayout(), S = this.state, list = this.mapTargets();
+    const CX = 20, CY = 70, CW = VIEW_W - 40, CH = VIEW_H - 130, zk = Math.min(1.5, M.zoom);
+    const sel = list[M.sel];
     ctx.save();
     ctx.fillStyle = '#03060d'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);   // opaco: o mundo e os números de dano não vazam
-    ctx.beginPath(); ctx.rect(20, 70, VIEW_W - 40, VIEW_H - 130); ctx.clip();
-    // Mar e grade
-    ctx.strokeStyle = 'rgba(60,120,200,0.08)'; ctx.lineWidth = 1;
-    for (let gx = L.x0; gx < L.x0 + L.mw; gx += 40 * M.zoom) { ctx.beginPath(); ctx.moveTo(gx, L.y0); ctx.lineTo(gx, L.y0 + L.mh); ctx.stroke(); }
-    for (let gy = L.y0; gy < L.y0 + L.mh; gy += 40 * M.zoom) { ctx.beginPath(); ctx.moveTo(L.x0, gy); ctx.lineTo(L.x0 + L.mw, gy); ctx.stroke(); }
-    // Regiões
+    ctx.beginPath(); ctx.rect(CX, CY, CW, CH); ctx.clip();
+    ctx.fillStyle = '#061020'; ctx.fillRect(CX, CY, CW, CH);            // o mar continua além do terreno
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(WorldMapArt.terreno(L.mw / M.zoom, L.mh / M.zoom), L.x0, L.y0, L.mw, L.mh);
+    // Névoa: regiões sem nenhuma zona descoberta (bloqueadas: mais fechada, com hachura)
+    const explorada = (id) => (this.zone && this.zone.region === id) || worldZonesOf(id).some((z) => S.descobertos.includes(z.id));
     for (const r of WORLD_REGIONS) {
-      const c = L.pos(r.at), rad = r.r * Math.min(L.mw, L.mh);
-      const g = ctx.createRadialGradient(c.x, c.y, rad * 0.1, c.x, c.y, rad);
-      const open = this.regionOpen(r.id), done = this.bossDone(r.id);
-      g.addColorStop(0, rgba(r.rgb, open ? 0.42 : 0.16)); g.addColorStop(1, rgba(r.rgb, 0));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, rad, 0, TAU); ctx.fill();
-      ctx.strokeStyle = rgba(r.rgb, open ? 0.7 : 0.3); ctx.setLineDash(open ? [] : [6, 6]); ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(c.x, c.y, rad * 0.72, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `bold ${Math.round(13 * Math.min(1.4, M.zoom))}px ${FONT_TITLE}`; ctx.fillStyle = open ? '#ffffff' : 'rgba(210,220,235,0.7)';
-      const ly = c.y - rad * 0.72 - 12;
-      ctx.fillText(r.name.toUpperCase() + (done ? ' ✓' : ''), c.x, ly);
-      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = rgba(r.rgb, 0.95);
-      const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
-      ctx.fillText(`${r.biome} · Nv ${r.lv[0]}–${r.lv[1]}${open ? '' : ` · 🔒 nível ${r.lv[0]}${prev ? ` ou o chefe de ${prev.name}` : ''}`}`, c.x, ly + 16);
+      if (explorada(r.id)) continue;
+      const c = L.pos(r.at);
+      WorldMapArt.nevoa(ctx, c.x, c.y, r.r * Math.min(L.mw, L.mh), !this.regionOpen(r.id), t);
     }
-    // Zonas de Carmesin (descobertas, atual, portais) e as passagens entre elas
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Trilhas entre zonas vizinhas (passagens)
     for (const id in WORLD_ZONES) {
-      const z = WORLD_ZONES[id], q = L.zones[id];
+      const z = WORLD_ZONES[id], q = L.zones[id], rgb = worldRegion(z.region).rgb;
       for (const dir of ['E', 'S']) {
         const n = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
         if (!n) continue;
-        const q2 = L.zones[n.id], seen = S.descobertos.includes(id) || S.descobertos.includes(n.id), rgb = worldRegion(z.region).rgb;
-        ctx.strokeStyle = rgba(rgb, seen ? 0.5 : 0.12); ctx.lineWidth = 2;
+        const q2 = L.zones[n.id], seen = S.descobertos.includes(id) || S.descobertos.includes(n.id);
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q2.x, q2.y); ctx.stroke();
+        ctx.setLineDash(seen ? [] : [3, 4]);
+        ctx.strokeStyle = rgba(rgb, seen ? 0.85 : 0.3); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q2.x, q2.y); ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
-    const sel = list[M.sel];
+    // Etiqueta com o nome de uma zona, embaixo do marcador (larg = largura máxima do texto)
+    const etiqueta = (q, m, nome, larg, forte) => {
+      ctx.font = `bold ${Math.round(10 * zk)}px ${FONT_UI}`;
+      let txt = nome;
+      if (ctx.measureText(txt).width > larg) { while (txt.length > 3 && ctx.measureText(txt + '…').width > larg) txt = txt.slice(0, -1); txt = txt.trimEnd() + '…'; }
+      const w = ctx.measureText(txt).width + 10, ty = q.y + m + 10 * zk;
+      ctx.fillStyle = forte ? 'rgba(3,7,16,0.92)' : 'rgba(3,7,16,0.8)'; ctx.fillRect(q.x - w / 2, ty - 7 * zk, w, 14 * zk);
+      ctx.fillStyle = forte ? '#ffffff' : 'rgba(220,230,245,0.9)'; ctx.fillText(txt, q.x, ty + 0.5);
+    };
+    // Marcadores das zonas: losango na cor da região; ícone do que há nela
     for (const id in WORLD_ZONES) {
-      const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = id === this.zone.id, rgb = worldRegion(z.region).rgb;
-      const reach = seen || list.includes(id);
-      ctx.fillStyle = seen ? 'rgba(18,14,26,0.95)' : 'rgba(12,10,16,0.8)';
-      ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
-      ctx.strokeStyle = id === sel ? '#ffffff' : reach ? rgba(rgb, 0.85) : 'rgba(120,110,130,0.35)'; ctx.lineWidth = id === sel ? 2.5 : 1.2;
-      ctx.strokeRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
-      const mark = !seen ? (reach ? '⌂' : '?') : z.camps && z.camps.some((c) => c.boss) && !this.bossDone(z.region) ? '☠' : S.portais.includes(id) ? '◈' : z.hub ? '⌂' : '';
-      ctx.font = `bold ${Math.round(q.s * 0.45)}px ${FONT_UI}`; ctx.fillStyle = seen ? '#ffd2dc' : 'rgba(160,150,170,0.6)';
+      const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = this.zone && id === this.zone.id;
+      const rgb = worldRegion(z.region).rgb, reach = seen || list.includes(id), m = q.s * 0.46;
+      const chefe = z.camps && z.camps.some((c) => c.boss) && !this.bossDone(z.region);
+      if (M.travel && list.includes(id)) { ctx.strokeStyle = `rgba(190,150,255,${0.45 + 0.35 * Math.sin(t * 4)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, m * 1.7, 0, TAU); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(q.x, q.y - m); ctx.lineTo(q.x + m, q.y); ctx.lineTo(q.x, q.y + m); ctx.lineTo(q.x - m, q.y); ctx.closePath();
+      ctx.fillStyle = seen ? 'rgba(10,14,24,0.92)' : 'rgba(10,12,18,0.72)'; ctx.fill();
+      ctx.strokeStyle = id === sel ? '#ffffff' : reach ? rgba(rgb, 0.95) : 'rgba(150,150,170,0.45)'; ctx.lineWidth = id === sel ? 2.5 : 1.4; ctx.stroke();
+      const mark = !seen ? (reach ? '⌂' : '?') : chefe ? '☠' : S.portais.includes(id) ? '◈' : z.hub ? '⌂' : '•';
+      ctx.font = `bold ${Math.round(m * 1.05)}px ${FONT_UI}`;
+      ctx.fillStyle = !seen ? 'rgba(170,165,185,0.75)' : chefe ? '#ff7a8f' : rgba(rgb, 1);
       ctx.fillText(mark, q.x, q.y + 1);
-      if (here) { ctx.strokeStyle = `rgba(120,220,255,${0.6 + 0.4 * Math.sin(t * 6)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, q.s * 0.75, 0, TAU); ctx.stroke(); }
+      if (here) {
+        const k = 0.5 + 0.5 * Math.sin(t * 6);
+        ctx.strokeStyle = `rgba(120,220,255,${0.55 + 0.45 * k})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(q.x, q.y, m * (1.5 + 0.2 * k), 0, TAU); ctx.stroke();
+      }
+      // com zoom, o nome das já descobertas (cortado no espaço entre as zonas)
+      if (seen && M.zoom >= 1.8 && id !== sel && !here) etiqueta(q, m, z.name, q.s * 1.5 - 6, false);
     }
+    // a zona escolhida e a atual: o nome inteiro, por cima de tudo
+    if (this.zone) { const q = L.zones[this.zone.id]; if (q && this.zone.id !== sel) etiqueta(q, q.s * 0.46, this.zone.name, 999, false); }
+    if (sel && L.zones[sel]) etiqueta(L.zones[sel], L.zones[sel].s * 0.46, WORLD_ZONES[sel].name, 999, true);
     // Capítulo da campanha do herói: ★ na cor dele
     const alvo = Campanhas.zonaAlvo();
     if (alvo && L.zones[alvo]) {
@@ -629,25 +648,77 @@ const World = {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       GlowCache.draw(ctx, C.rgb, q.x, q.y, q.s * 1.6, 0.6 * k);
       ctx.restore();
-      ctx.font = `bold ${Math.round(q.s * 0.8)}px ${FONT_UI}`; ctx.fillStyle = rgba(C.rgb, 1); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `bold ${Math.round(q.s * 0.8)}px ${FONT_UI}`; ctx.fillStyle = rgba(C.rgb, 1);
       ctx.fillText('★', q.x + q.s * 0.55, q.y - q.s * 0.55);
     }
+    // Nomes das regiões, numa faixa sobre cada uma
+    for (const r of WORLD_REGIONS) {
+      const c = L.pos(r.at), rad = r.r * Math.min(L.mw, L.mh), open = this.regionOpen(r.id), done = this.bossDone(r.id);
+      const ly = M.zoom <= 1.05 ? Math.max(CY + 30, c.y - rad - 4) : c.y - rad - 4;   // com zoom, sai pela borda com a região
+      const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
+      const t1 = r.name.toUpperCase() + (done ? ' ✓' : ''), t2 = `${r.biome} · Nv ${r.lv[0]}–${r.lv[1]}`;
+      const t3 = open ? '' : `🔒 nível ${r.lv[0]}${prev ? ` ou o chefe de ${prev.name}` : ''}`;
+      ctx.font = `bold ${Math.round(13 * zk)}px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      const w1 = ctx.measureText(t1).width;
+      ctx.letterSpacing = '0px'; ctx.font = `${Math.round(11 * zk)}px ${FONT_UI}`;
+      const w = Math.max(w1, ctx.measureText(t2).width, t3 ? ctx.measureText(t3).width : 0) + 22, h = (t3 ? 50 : 36) * zk;
+      ctx.fillStyle = 'rgba(3,7,16,0.72)'; ctx.fillRect(c.x - w / 2, ly - h / 2, w, h);
+      ctx.fillStyle = rgba(r.rgb, open ? 0.95 : 0.45); ctx.fillRect(c.x - w / 2, ly - h / 2, w, 2);
+      ctx.font = `bold ${Math.round(13 * zk)}px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      ctx.fillStyle = open ? '#ffffff' : 'rgba(205,214,230,0.75)';
+      ctx.fillText(t1, c.x, ly - h / 2 + 12 * zk);
+      ctx.letterSpacing = '0px'; ctx.font = `${Math.round(11 * zk)}px ${FONT_UI}`;
+      ctx.fillStyle = rgba(r.rgb, open ? 0.95 : 0.6); ctx.fillText(t2, c.x, ly - h / 2 + 26 * zk);
+      if (t3) { ctx.fillStyle = 'rgba(255,190,150,0.85)'; ctx.fillText(t3, c.x, ly - h / 2 + 40 * zk); }
+    }
     ctx.restore();
-    // Cabeçalho, legenda e destino selecionado
+    WorldMapArt.moldura(ctx, CX, CY, CW, CH, t);
+    // Cabeçalho, legenda e o painel da zona escolhida
     ctx.save();
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = `bold 22px ${FONT_TITLE}`; ctx.letterSpacing = '6px'; ctx.fillStyle = '#ffffff';
     ctx.fillText(M.travel ? 'VIAGEM RÁPIDA' : 'MAPA DO MUNDO', 40, 40);
     ctx.letterSpacing = '0px';
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-    ctx.fillText('⌂ base · ◈ portal · ☠ chefe regional · ★ campanha · ? não descoberto · ◯ você está aqui', 40, VIEW_H - 40);
+    ctx.fillText('⌂ base · ◈ portal · ☠ chefe regional · ★ campanha · ? não descoberto · névoa: região não explorada · ◯ você está aqui', 40, VIEW_H - 40);
     if (sel) {
-      const z = WORLD_ZONES[sel];
+      const z = WORLD_ZONES[sel], R = worldRegion(z.region);
       ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = '#ffd2dc';
-      ctx.fillText(`${worldRegion(z.region).name.toUpperCase()} · ${z.name.toUpperCase()} · NÍVEL ${z.lv}`, VIEW_W - 40, 40);
+      ctx.fillText(`${R.name.toUpperCase()} · ${z.name.toUpperCase()} · NÍVEL ${z.lv}`, VIEW_W - 40, 40);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
       ctx.fillText(M.travel ? 'Enter: viajar · ←/→ escolher · Q/E zoom · Esc fechar' : '←/→ escolher · Q/E zoom · Esc fechar', VIEW_W - 40, VIEW_H - 40);
+      this.drawMapInfo(ctx, sel, CX + CW - 14, CY + CH - 14);
     }
     ctx.restore();
+  },
+  // Painel da zona escolhida (canto inferior direito do mapa): o que já se sabe dela
+  drawMapInfo(ctx, id, right, bottom) {
+    const z = WORLD_ZONES[id], R = worldRegion(z.region), S = this.state, seen = S.descobertos.includes(id);
+    const itens = [];
+    if (!seen) itens.push(this.mapTargets().includes(id) ? 'Chegada da região: viagem pelo portal' : 'Ainda não descoberta');
+    else {
+      if (z.hub) itens.push('Mercador e missões');
+      if (z.portal) itens.push(S.portais.includes(id) ? 'Portal ativo (viagem rápida)' : 'Portal');
+      if ((z.camps || []).some((c) => c.boss)) itens.push(this.bossDone(z.region) ? 'Chefe regional derrotado' : `Chefe: ${R.boss.name}`);
+      const nb = (z.chests || []).length + (z.secret ? 1 : 0);
+      if (nb) itens.push(`Baús ${S.baus.filter((k) => k.indexOf(id + ':') === 0).length}/${nb}`);
+      if (z.terminal) itens.push(S.terminais.includes(id) ? 'Terminal lido' : 'Terminal');
+      if (z.aberto) itens.push('Campo aberto · recursos para colher');
+    }
+    if (Campanhas.zonaAlvo() === id) { const c = Campanhas.cap(); itens.push(`★ Campanha: ${c.nome}`); }
+    ctx.font = `12px ${FONT_UI}`;
+    const linhas = [], W = 320;
+    let cur = '';
+    for (const it of itens) { const tt = cur ? `${cur} · ${it}` : it; if (ctx.measureText(tt).width > W - 28 && cur) { linhas.push(cur); cur = it; } else cur = tt; }
+    if (cur) linhas.push(cur);
+    const H = 50 + linhas.length * 16, x = right - W, y = bottom - H;
+    ctx.fillStyle = 'rgba(3,7,16,0.86)'; ctx.fillRect(x, y, W, H);
+    ctx.strokeStyle = rgba(R.rgb, 0.6); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, W - 1, H - 1);
+    ctx.fillStyle = rgba(R.rgb, 0.95); ctx.fillRect(x, y, 3, H);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = '#ffffff'; ctx.fillText(z.name.toUpperCase(), x + 14, y + 16);
+    ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = rgba(R.rgb, 0.95); ctx.fillText(`${R.name} · ${R.biome} · nível ${z.lv}`, x + 14, y + 33);
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(210,222,240,0.9)';
+    linhas.forEach((ln, k) => ctx.fillText(ln, x + 14, y + 50 + k * 16));
   },
 };

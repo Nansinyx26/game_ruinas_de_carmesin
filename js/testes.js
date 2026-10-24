@@ -730,10 +730,33 @@ const EclipseTests = {
       this.ok('mundo: árvores no lugar dos pilares', g.room.theme.pillar === 'tree' && g.room.pillars.length > 0 && g.room.pillars[0].hw > g.room.pillars[0].r);
       this.campoAberto();
       this.campanhas();
+      this.mapa();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
     }
+  },
+
+  // Mapa do mundo desenhado (js/mundo/mapa.js): terreno pintado, névoa, marcadores e o painel da zona
+  mapa() {
+    const g = game, M = World.map, z0 = M.zoom, est = g.state;
+    this.ok('mapa: um bioma pintado para cada região', WORLD_REGIONS.every((r) => WorldMapArt.BIOMA[r.id]), WORLD_REGIONS.filter((r) => !WorldMapArt.BIOMA[r.id]).map((r) => r.id).join(','));
+    const t0 = performance.now(), cv = WorldMapArt.terreno(1100, 570), ms = performance.now() - t0;
+    this.ok('mapa: terreno pintado no tamanho pedido (1,6×)', cv && cv.width === 1760 && cv.height === 912, cv && `${cv.width}×${cv.height} · ${ms.toFixed(0)} ms`);
+    this.ok('mapa: terreno guardado (não repinta)', WorldMapArt.terreno(1100, 570) === cv);
+    const px = (u, v) => cv.getContext('2d').getImageData(Math.round(u * cv.width), Math.round(v * cv.height), 1, 1).data;
+    const mar = px(0.01, 0.01), car = px(0.5, 0.45);
+    this.ok('mapa: mar azul na borda e chão avermelhado nas Ruínas de Carmesin', mar[2] > mar[0] && car[0] > car[2], `mar ${mar.slice(0, 3).join(',')} · Carmesin ${car.slice(0, 3).join(',')}`);
+    let erro = null;
+    try {
+      for (const [viagem, zoom] of [[false, 1], [true, 1], [false, 3], [true, 0.8]]) {
+        World.openMap(viagem); M.zoom = zoom;
+        World.drawMap(g.ctx, 1.5);
+      }
+      for (const id in WORLD_ZONES) World.drawMapInfo(g.ctx, id, VIEW_W - 34, VIEW_H - 74);
+    } catch (e) { erro = e.message; }
+    this.ok('mapa: desenha (mapa, viagem e zoom) e o painel de todas as zonas', !erro, erro);
+    World.map.open = false; M.zoom = z0; g.state = est;
   },
 
   // Campo aberto e inimigos variados (chamado de dentro de mundo(), já no modo mundo, em Velmora)
