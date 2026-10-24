@@ -41,6 +41,7 @@ const EclipseTests = {
       this.armaduras3d();
       this.aliados();
       this.terceiraPessoa();
+      this.mundo();   // por último: troca a partida pelo modo mundo
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -448,6 +449,92 @@ const EclipseTests = {
     this.ok('3ª pessoa: o herói fica no meio da tela', P.vis && Math.abs(P.x - VIEW_W / 2) < VIEW_W * 0.1 && P.y > VIEW_H * 0.25 && P.y < VIEW_H * 0.8, JSON.stringify({ x: Math.round(P.x), y: Math.round(P.y) }));
     this.ok('3ª pessoa: isoX volta ao normal depois dos efeitos', isoX(10, 3) === 7 && isoY(10, 4) === 7);
     ThirdView.set(antes, true);
+  },
+
+  // ------------------------------------------------------------ mundo aberto
+  mundo() {
+    // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
+    this.igual('mundo: 7 regiões', WORLD_REGIONS.length, 7);
+    this.igual('mundo: 45 zonas (9 de Carmesin + 6 × 6)', Object.keys(WORLD_ZONES).length, 45);
+    for (const R of WORLD_REGIONS) {
+      const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
+      this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
+      this.ok(`${R.id}: um acampamento de chefe com o inimigo do chefe`, zs.filter((z) => (z.camps || []).some((c) => c.boss && c.mobs[R.boss.type])).length === 1);
+      const ligada = zs.every((z) => zs.length === 1 || Object.values(WORLD_DIRS).some(([dr, dc]) => worldZoneAt(z.r + dr, z.c + dc, R.id)));
+      this.ok(`${R.id}: toda zona tem passagem para outra`, ligada);
+      this.igual(`${R.id}: 3 missões`, WorldQuests.lista(R.id).length, 3);
+      for (const z of zs) if (!THEMES[z.theme]) this.ok(`tema ${z.theme} de ${z.id} existe`, false);
+    }
+    // o modo mundo sem tocar no salvamento do jogador
+    const ls = (() => { try { return localStorage.getItem(WORLD_SAVE_KEY); } catch (e) { return null; } })();
+    const salvar = World.save; World.save = () => {};
+    try { localStorage.removeItem(WORLD_SAVE_KEY); } catch (e) {}
+    try {
+      World.start();
+      const g = game, p = g.player;
+      this.ok('mundo: começa no Mercado Afundado', World.active && World.zone.id === 'mercado' && g.state === 'playing', World.zone && World.zone.id);
+      // relógio e clima
+      this.ok('dia e noite: meio-dia claro, meia-noite escura', WorldTime.luz(12) === 1 && WorldTime.luz(0) === 0);
+      const th = THEMES.floresta, h0 = World.state.hora;
+      World.state.hora = 12; const dia = WorldTime.escuridao(th);
+      World.state.hora = 23; const noite = WorldTime.escuridao(th);
+      this.ok('dia e noite: a floresta é mais escura à noite', noite > dia + 0.2, `${dia} / ${noite}`);
+      this.ok('dia e noite: noite dá +20% de experiência e acampamentos notam menos', WorldTime.xpMult() === 1.2 && WorldTime.senseMult() < 1);
+      World.state.hora = h0;
+      WorldTime.update(1 / 60);
+      this.ok('clima sorteado da região', !!World.state.clima && WORLD_CLIMA_REG.carmesin[World.state.clima.tipo] > 0, JSON.stringify(World.state.clima));
+      let erro = null;
+      try { for (const c in WORLD_CLIMAS) { WorldTime.definir(c, 'carmesin', false); WorldTime.update(0.1); WorldTime.drawOverlay(g.ctx); } } catch (e) { erro = e.message; }
+      this.ok('clima: todos desenham sem erro', !erro, erro);
+      // relíquias
+      const L = WorldInv.gerar(30, 'obsidiano', 4);
+      this.ok('relíquia: raridade mínima respeitada', L.r === 4, L.r);
+      this.igual('relíquia lendária: 3 atributos', Object.keys(L.st).length, 3);
+      this.ok('relíquia: nome com a região', WorldInv.nome(L).indexOf('Obsidiana') > 0, WorldInv.nome(L));
+      const it = WorldInv.ganhar(WorldInv.gerar(10, 'carmesin', 0));
+      it.b = 'nucleo'; it.st = { dano: 0.1 };
+      const d0 = p.stats.dmgMult;
+      WorldInv.equipar(it.id);
+      this.ok('relíquia equipada soma o dano', Math.abs(p.stats.dmgMult - d0 - 0.1) < 1e-9, p.stats.dmgMult - d0);
+      WorldInv.desequipar(WorldInv.S.equip.indexOf(it.id));
+      this.ok('tirar a relíquia volta o dano', Math.abs(p.stats.dmgMult - d0) < 1e-9);
+      // mercador: compra e venda com células
+      WorldInv.ui.shop = true;
+      g.stats.soulsBank = 10000;
+      const est = WorldInv.estoque(), n0 = est.length, v = WorldInv.valor(est[0]);
+      this.igual('mercador: 4 relíquias no estoque do dia', n0, 4);
+      WorldInv.comprar(0);
+      this.ok('mercador: compra desconta as células', g.stats.soulsBank === 10000 - v && WorldInv.estoque().length === n0 - 1, g.stats.soulsBank);
+      const c0 = WorldInv.S.capsulas;
+      WorldInv.comprar(WorldInv.estoque().length);
+      this.igual('mercador: vende cápsula', WorldInv.S.capsulas, c0 + 1);
+      const ult = WorldInv.S.itens[WorldInv.S.itens.length - 1], vv = WorldInv.venda(ult), b0 = g.stats.soulsBank;
+      WorldInv.vender(ult.id);
+      this.ok('mercador: compra relíquia por 40%', g.stats.soulsBank === b0 + vv && !WorldInv.item(ult.id));
+      WorldInv.ui.shop = false;
+      p.hp = 10;
+      WorldInv.usarCapsula();
+      this.ok('cápsula cura 40% da vida', p.hp === Math.min(p.maxHp, 10 + Math.round(p.maxHp * 0.4)), p.hp);
+      // missões: aceitar, contar, entregar
+      const anc = g.npcs.find((n) => n.quest);
+      this.ok('missão: a anciã tem missão (!)', anc && WorldQuests.marca(anc) === '!');
+      anc.talk();
+      const q = WorldQuests.atual('carmesin');
+      this.ok('missão: aceita a primeira', q && q.id === 'car1');
+      for (let i = 0; i < 12; i++) WorldQuests.onKill({ type: 'rastejador' });
+      this.ok('missão: pronta depois de 12 abates (?)', WorldQuests.pronta(q) && WorldQuests.marca(anc) === '?');
+      const n1 = WorldInv.S.itens.length;
+      anc.talk();
+      this.ok('missão: entregue com relíquia de recompensa', World.state.missoes.car1.st === 'feita' && WorldInv.S.itens.length === n1 + 1);
+      // viagem até outra região e desenho da zona
+      erro = null;
+      try { World.loadZone('velmora_trilha', null); g.renderWorld(g.ctx); WorldTime.drawOverlay(g.ctx); } catch (e) { erro = e.message; }
+      this.ok('mundo: zona de Velmora carrega e desenha', !erro && World.zone.id === 'velmora_trilha' && g.enemies.length > 0, erro);
+      this.ok('mundo: árvores no lugar dos pilares', g.room.theme.pillar === 'tree' && g.room.pillars.length > 0 && g.room.pillars[0].hw > g.room.pillars[0].r);
+    } finally {
+      World.save = salvar;
+      try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
+    }
   },
 
   // ------------------------------------------------- armaduras vestidas em 3D

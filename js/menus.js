@@ -1487,6 +1487,7 @@ class Menus {
     const x = Math.max(32, Math.min(70, VIEW_W * 0.05)), y0 = 130, w = 320, h = 46, gap = 8;
     const items = [['resume', 'RETOMAR', 'play'], ['skills', 'HABILIDADES', 'tree'], ['chars', t('rosterTitle'), 'people'],
       ['camera', `CÂMERA: ${ThirdView.on ? '3ª PESSOA' : 'ISOMÉTRICA'}`, 'sword'], ['world', game.world ? 'MAPA DO MUNDO' : 'MUNDO ABERTO', 'star'],
+      ...(game.world ? [['bag', 'MOCHILA E MISSÕES', 'people']] : []),
       ['settings', 'CONFIGURAÇÕES', 'gear'], ['restart', game.world ? 'VOLTAR AO PORTAL' : 'REINICIAR SETOR', 'restart'], ['menu', 'SAIR PARA O MENU', 'exit'], ['quit', 'SAIR DO JOGO', 'power']];
     return { panel: { x, y: y0, w: w + 40, h: items.length * (h + gap) + 34 }, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x: x + 20, y: y0 + 22 + i * (h + gap), w, h })) };
   }
@@ -1500,6 +1501,7 @@ class Menus {
       else if (id === 'skills') game.openSkills('paused');
       else if (id === 'chars') this.open('char');
       else if (id === 'camera') { ThirdView.toggle(); game.audio.play('uiSelect'); }
+      else if (id === 'bag') WorldInv.abrir('mochila', false);
       else if (id === 'world') {
         if (game.world) { game.state = 'playing'; World.openMap(false); }
         else this.ask('MUNDO ABERTO', 'Ir para o mundo aberto? O progresso da campanha fica salvo e você volta a ele pelo menu (CONTINUAR).',
@@ -1556,14 +1558,16 @@ class Menus {
       const ph = side ? P.h : clamp(ery + (erows - 1) * rowH + 24 - P.y, P.h, VIEW_H - 50 - P.y);
       this.drawPanel(ctx, ix, P.y, iw, ph, 0.88);
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      const room = ROOM_DEFS[g.waves.roomIndex];
+      // no mundo aberto: a zona, a região, a hora e as células (no lugar do setor da campanha)
+      const room = g.world ? World.zone : ROOM_DEFS[g.waves.roomIndex];
       ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = PAL.accent;
       ctx.fillText(room.sub, ix + 22, P.y + 28);
       ctx.letterSpacing = '0px';
       ctx.font = `bold 18px ${FONT_UI}`; ctx.fillStyle = '#eef3fa';
       ctx.fillText(room.name, ix + 22, P.y + 54);
       ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = PAL.accentHi;
-      ctx.fillText(`Nível ${g.activeProgress().level}   ·   Memórias ${g.stats.memories} / ${MEMORIES.length}   ·   Tempo ${fmtPlay(g.stats.time)}   ·   Espaço ${g.slot}`, ix + 22, P.y + 78);
+      ctx.fillText(g.world ? `Nível ${g.activeProgress().level}   ·   ${WorldTime.fase().toLowerCase()} do dia ${World.state.dia || 1}, ${WorldTime.C().name.toLowerCase()}   ·   ${g.stats.soulsBank} células   ·   Tempo ${fmtPlay(g.stats.time)}`
+        : `Nível ${g.activeProgress().level}   ·   Memórias ${g.stats.memories} / ${MEMORIES.length}   ·   Tempo ${fmtPlay(g.stats.time)}   ·   Espaço ${g.slot}`, ix + 22, P.y + 78);
       ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = PAL.accent;
       ctx.fillText('TÉCNICAS', ix + 22, P.y + 114);
       ctx.fillText('EVOLUÇÕES', ex, ehy);

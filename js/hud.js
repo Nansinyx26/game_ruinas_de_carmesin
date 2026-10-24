@@ -183,6 +183,7 @@ class HUD {
     this.drawBuffs(ctx, L);
     this.drawBossBar(ctx, L);
     this.drawCombo(ctx, L);
+    if (game.world && typeof WorldQuests !== 'undefined') WorldQuests.drawMarks(ctx, this.time);   // ! e ? sobre quem dá missões
     this.drawTalkPrompt(ctx);
     // Avisos temporários
     this.drawComboNames(ctx);
@@ -760,6 +761,7 @@ class HUD {
   // -------------------------------------------------------- pontuação e missão
   drawScore(ctx, L) {
     const x = VIEW_W - 22, y = L.scoreY;
+    if (game.world && typeof WorldTime !== 'undefined') { WorldTime.drawHud(ctx, x, y); return; }   // no mundo: relógio e clima
     ctx.save();
     ctx.globalAlpha = this.panelAlpha('score', VIEW_W - 220, y - 24, 200, 30);
     ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
@@ -1427,7 +1429,7 @@ class HUD {
   drawTalkPrompt(ctx) {
     const n = game.talkTarget;
     if (!n) return;
-    const h = n.headPoint(), q = game.camera.toScreen(h.x, h.y - 16);
+    const q = hudHeadPoint(n, 16) || { x: VIEW_W / 2, y: VIEW_H / 2 };
     const key = game.input.lastDevice === 'pad' ? game.input.padLabels.x : 'E';
     ctx.save();
     ctx.font = `bold 12px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1496,4 +1498,15 @@ class HUD {
     }
     ctx.restore();
   }
+}
+
+// Ponto da tela logo acima da cabeça de um NPC (ou objeto), 'up' px acima; na 3ª pessoa pela
+// projeção da câmera (null quando fica atrás dela)
+function hudHeadPoint(n, up) {
+  if (typeof ThirdView !== 'undefined' && ThirdView.active()) {
+    const P = ThirdView.proj(n.x, n.y, (n.height || 40) + 14);
+    return P.vis ? { x: P.x, y: P.y - up } : null;
+  }
+  const h = n.headPoint();
+  return game.camera.toScreen(h.x, h.y - up);
 }

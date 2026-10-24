@@ -223,6 +223,7 @@ class Game {
       case 'paused': this.menu.update(dt, inp); break;
       case 'thirdperson': if (this.thirdPerson) this.thirdPerson.update(dt, inp); break;
       case 'worldmap': World.updateMap(dt, inp); break;   // mapa do mundo aberto (js/world.js)
+      case 'worldinv': WorldInv.updateUI(dt, inp); break;   // mochila, loja e missões (js/mundo/inventario.js)
       case 'upgrade': this.updateUpgrade(dt); break;
       case 'gameover':
       case 'victory': this.updateEnd(dt); break;
@@ -334,6 +335,8 @@ class Game {
     if (inp.pressed.skills && !this.fadeCb && p.state !== 'dead') { this.openSkills('playing'); return; }
     if (this.world) {
       if (inp.pressed.worldMap && !this.fadeCb) { this.world.openMap(false); return; }
+      if (inp.pressed.bag && !this.fadeCb && p.state !== 'dead') { WorldInv.abrir('mochila', false); return; }   // relíquias, missões
+      if (inp.pressed.capsule && p.state !== 'dead') WorldInv.usarCapsula();
       this.world.update(dt);
     }
     if (this.debug) {
@@ -802,7 +805,7 @@ class Game {
   // ---------------------------------------------------- progressão e XP
   xpFor(e) {
     if (e.isBoss) return XP_ENEMY.chefe;
-    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1);
+    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1) * (this.world ? WorldTime.xpMult() : 1);   // mundo: +20% à noite
   }
 
   // Progresso do personagem em campo (o do Kael é this.progress, no formato de sempre)
@@ -1123,10 +1126,12 @@ class Game {
       this.story.draw(ctx, this.realTime);
     } else if (this.player && this.room) {
       this.renderWorld(ctx);
+      if (this.world) WorldTime.drawOverlay(ctx);   // dia e noite, clima (js/mundo/tempo.js)
       this.renderScreenFx(ctx);
       if (this.state === 'playing') { this.hud.draw(ctx); TouchControls.draw(ctx); }   // botões de toque (celular)
       if (this.state === 'paused') this.menu.draw(ctx, this.realTime);
       else if (this.state === 'worldmap') World.drawMap(ctx, this.realTime);
+      else if (this.state === 'worldinv') WorldInv.draw(ctx, this.realTime);
       else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);
       else if (this.state === 'gameover') this.screens.drawEnd(ctx, false, this.realTime);
@@ -1332,7 +1337,7 @@ class Game {
     for (const h of this.hazards.list) if (h.fired || h.kind === 'ring') L.add(isoX(h.x, h.y), isoY(h.x, h.y) - 20, h.kind === 'ring' ? 200 : 150, 0.6);
     if (this.eclipse) L.add(isoX(this.eclipse.x, this.eclipse.y), isoY(this.eclipse.x, this.eclipse.y) - 60, 700, 1);
     if (this.skyFlash > 0.3) L.add(isoX(room.w / 2, room.h / 2), isoY(room.w / 2, room.h / 2), 900, this.skyFlash * 0.35);
-    L.render(ctx, cam, room.theme.darkness, room.theme.dark, room.outlinePts);
+    L.render(ctx, cam, this.world ? WorldTime.escuridao(room.theme) : room.theme.darkness, room.theme.dark, room.outlinePts);   // mundo: hora e clima
 
     // 3) Camada emissiva: tochas, avisos, coletáveis, projéteis, faíscas e rastros
     ctx.save();

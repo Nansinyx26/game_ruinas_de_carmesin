@@ -71,6 +71,7 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | G | Gráficos 3D / 2D |
 | V | Câmera isométrica / **3ª pessoa** (atrás do ombro) |
 | Z / C · botão direito do mouse (arrastar) · roda | Na 3ª pessoa: girar a câmera · aproximar e afastar |
+| M · B · 5 | No mundo aberto: mapa · mochila (relíquias, loja, missões) · cápsula de reparo |
 | F1 | Modo debug (hitboxes; F2 elimina inimigos, F3 enche vida e energia, F4 dá XP) |
 
 Nos menus: setas (ou mouse) navegam, Enter/J confirma, Esc volta, Q/E trocam de aba, Del apaga um salvamento.
@@ -121,21 +122,28 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **Idle de cada herói**: Drakos com respiração pesada e tensão (punhos, pescoço), Lyra ajustando o arco e levando a mão às flechas, Orion em vigilância e base baixa com as mãos nas lâminas, Kael com a mão no cabo da espada guardada (pronto para sacar). As variações dependem do estado da arma e trocam passando pelo repouso (sem salto de pose).
 - **Coreografias novas** (`ATTACKS`, `CHARACTER_COMBOS` em `js/combat.js`): Kael — Sentença do Eclipse (J J J K, salto e golpe com onda de choque) e Revés do Horizonte (K J, vira e corta o que está atrás); Drakos — o 3º golpe usa a arma das costas (machado ↔ martelo), Queda do Titã (J J J K) e Retaliação (J até 1 s depois de bloquear com o Escudo de Energia); Orion — 2º golpe com a lâmina esquerda, Corte em X (K K, as duas lâminas) e Salto do Corvo (J J J K, salto mortal). As finalizações e a retaliação são liberadas por nós da árvore. Cada inimigo toma um acerto por golpe (os giratórios, até o `multiHit` deles).
 
-## Mundo aberto (protótipo jogável)
+## Mundo aberto
 
 Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica) ou **MUNDO ABERTO · 3ª PESSOA**. Na pausa: **CÂMERA** alterna as duas vistas e **MUNDO ABERTO** leva da campanha para o mundo (a campanha fica salva); dentro do mundo, o mesmo item abre o mapa. No toque, o botão **3D** alterna a câmera e arrastar na metade direita gira.
 
 **Câmera em 3ª pessoa** (`js/terceira.js`, `ThirdView`): o mesmo jogo (campanha e mundo aberto) visto de trás do ombro, em perspectiva. O motor 3D (`R3D.renderScene`) desenha numa passada a sala montada em 3D a partir da `Room` (piso em ladrilhos, paredes com as aberturas da porta e das passagens, pilares e luminárias), os heróis com armaduras, cabelo e armas, os inimigos, NPCs, baús, coletáveis e sombras, com névoa na cor do tema. Os efeitos 2D (partículas, auras, projéteis, números de dano, barras de vida) usam a projeção da câmera e aparecem no lugar. O movimento é relativo à câmera; parado sem girar, ela volta para trás do herói quando ele anda. O pilar que fica entre a câmera e o herói some. A arena antiga de 3ª pessoa continua no menu como **ARENA 3D (TREINO)**.
 
-Primeira etapa do plano de mundo aberto: em vez de uma página bonita, uma região **realmente explorável** com o mesmo combate, personagens, árvores e HUD da campanha.
+Sete regiões **realmente exploráveis** com o mesmo combate, personagens, árvores e HUD da campanha.
 
 - **Ruínas de Carmesin** (`js/world.js`): 9 zonas numa grade 3×3 (Mercado Afundado, Portões Partidos, Avenida dos Ecos, Torre de Vigia, Praça Carmesim, Galerias de Serviço, Laboratório Esquecido, Fendas Rubras e Coração Carmesim), cada uma com nível recomendado. **Passagens** acesas nas bordas levam à zona vizinha (pare sobre a luz).
+- **As outras seis regiões** (`js/mundo/regioes.js`), com 6 zonas cada (2×3), na ordem sugerida: **Floresta de Velmora** (níveis 8–16, Guardiã das Raízes), **Lagoa Cristalina** (12–22, Sentinela do Abismo), **Nexus** (10–20, Arauto de Nexus), **Deserto de Seraph** (14–24, Faraó de Sucata), **Montanhas de Asterion** (18–28, Titã do Pico) e **Cratera de Obsidiano** (25–40, Núcleo de Obsidiana). Cada uma tem zona de chegada com portal, mercador e quem dá as missões, acampamentos montados com os inimigos da região, baús, um segredo, terminais e o chefe regional na última zona. Uma região abre com o chefe da anterior derrotado ou quando o herói chega ao nível mínimo dela; a primeira ida é pelo portal (viagem rápida até a chegada). Os biomas têm temas próprios: no lugar das colunas, **árvores** (floresta), **rochas** com neve no topo (montanhas) ou fendas de lava (cratera) e **cristais** acesos (lagoa), também em 3D na 3ª pessoa.
+- **Dia e noite** (`js/mundo/tempo.js`): um dia do mundo dura 10 minutos. O relógio aparece no HUD (no lugar da pontuação); as zonas abertas clareiam de dia, escurecem à noite e ficam alaranjadas no amanhecer e no entardecer (os interiores quase não mudam). À noite os acampamentos demoram mais a notar o herói e os abates dão +20% de experiência.
+- **Clima por região**: chuva, tempestade com raios, neve, nevasca, tempestade de areia, chuva de cinzas, brasas no ar, neblina e vaga-lumes (só à noite), sorteados com peso para cada região e trocados a cada poucos minutos. Pouca visibilidade também reduz a distância em que os acampamentos acordam.
+- **Relíquias com raridade** (`js/mundo/inventario.js`): Comum, Incomum, Rara, Épica e Lendária. Cada relíquia tem um atributo principal (dano, vida, energia, crítico, velocidade, defesa ou recarga) e, das raras para cima, atributos extras; o valor cresce com a raridade e com o nível da zona. Até **3 equipadas**, só valem no mundo aberto. Todo baú dá uma (o secreto, rara ou melhor; o do chefe, épica ou melhor), o chefe regional sempre deixa uma e os outros inimigos às vezes (as unidades de elite, que agora aparecem nos acampamentos a partir do nível 6, com mais chance).
+- **Mercador** (na zona de chegada de cada região): vende 4 relíquias da região, renovadas a cada dia do mundo, e cápsulas de reparo; compra as suas relíquias por 40% do valor. Longe dele, uma relíquia pode ser desmontada por 20%. **Cápsulas de reparo**: até 5, tecla **5** cura 40% da vida.
+- **Missões** (`js/mundo/missoes.js`): 3 por região, em sequência, com quem tem **!** sobre a cabeça na zona de chegada (**?** quando há uma para entregar): abates de um tipo de inimigo, unidades de elite, baús, terminais, explorar todas as zonas e o chefe regional. A missão atual aparece no quadro do HUD; a recompensa é em células, experiência e uma relíquia com raridade mínima.
+- **Mochila** (tecla **B**, ou pausa → MOCHILA E MISSÕES): abas MOCHILA (vagas equipadas, bônus somados, cápsulas, grade de relíquias com detalhes), LOJA DO MERCADOR (quando aberta por ele) e MISSÕES (as da região atual e o andamento das outras). Funciona com teclado, controle, mouse e toque.
 - **Acampamentos**: os inimigos ficam parados até o herói chegar perto ou um deles ser atingido; aí o grupo inteiro acorda e persegue. Voltam a cada visita (o do chefe não, depois de derrotado).
 - **Baús** (células, experiência, cápsula de reparo), **terminais** com memórias da cidade, um **local secreto** que só aparece de perto, **NPCs** no Mercado e o **chefe regional** (Guardião Carmesim) no Coração Carmesim — o baú dele só abre depois.
 - **Descoberta e viagem rápida**: entrar numa zona pela primeira vez a descobre (experiência); **portais** ativados viram destinos de viagem rápida.
-- **Mapa do mundo** (tecla **M**, botão MAPA no toque, ou o portal): as 7 regiões (Ruínas de Carmesin, Nexus, Floresta de Velmora, Montanhas de Asterion, Deserto de Seraph, Lagoa Cristalina e Cratera de Obsidiano) com bioma, faixa de nível e perigo; as zonas de Carmesin com o que já foi descoberto, portais, o chefe e onde você está. Q/E aproximam e afastam. As outras seis regiões aparecem bloqueadas: são as próximas fases.
-- **Salvamento próprio** (`localStorage`, chave `eclipse_zero_mundo_v1`): nível, árvores, elenco, zonas descobertas, baús e portais. Não mexe nos 5 espaços da campanha. Ao cair, o herói volta ao último portal.
-- **Limites desta fase**: o cenário de cada zona é o gerador de salas da campanha (com os temas existentes), sem paredes abertas entre zonas (as passagens fazem a ligação); ainda não há ciclo de dia e noite, clima, inventário com raridade, comércio, missões encadeadas nem multiplayer (não há servidor; nada de multiplayer simulado).
+- **Mapa do mundo** (tecla **M**, botão MAPA no toque, ou o portal): as 7 regiões com bioma, faixa de nível, cadeado (e o que abre cada uma) ou ✓ quando o chefe caiu; a grade de zonas de cada região com o que já foi descoberto, portais, o chefe e onde você está. Q/E aproximam e afastam.
+- **Salvamento próprio** (`localStorage`, chave `eclipse_zero_mundo_v1`): nível, árvores, elenco, zonas descobertas, baús, portais, chefes, hora e clima, mochila, estoque do mercador e missões. Não mexe nos 5 espaços da campanha. Ao cair, o herói volta ao último portal.
+- **Limites**: o cenário de cada zona é o gerador de salas da campanha (com os temas, agora também de bioma), sem paredes abertas entre zonas (as passagens fazem a ligação); os inimigos das regiões novas são os mesmos cinco tipos da campanha, mais fortes, e os chefes regionais são versões de elite deles; não há multiplayer (não há servidor; nada de multiplayer simulado).
 
 ## Menus, salvamentos e configurações
 
@@ -305,6 +313,8 @@ js/
                     lyra.js (o kit completo da Lyra)
   quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
   world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
+  mundo/            regioes.js (as outras seis regiões), tempo.js (WorldTime: dia, noite e clima),
+                    inventario.js (WorldInv: relíquias, mochila, mercador), missoes.js (WorldQuests)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)

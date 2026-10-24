@@ -247,7 +247,8 @@ const ThirdView = {
     ctx.fillStyle = '#02040a'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     ctx.fillStyle = bg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     const lc = th.lamp.split(',').map((v) => v / 255);
-    R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
+    const dia = g.world && typeof WorldTime !== 'undefined' ? WorldTime.ambiente(th) : 1;   // mundo aberto: mais escuro à noite
+    R3D.light.amb = [(0.34 + lc[0] * 0.16) * dia, (0.38 + lc[1] * 0.16) * dia, (0.5 + lc[2] * 0.16) * dia];
     const dk = th.dark.split(',').map((v) => v / 255);
     this.view.fog = [dk[0] * 1.4 + 0.01, dk[1] * 1.4 + 0.01, dk[2] * 1.4 + 0.015, 300];   // névoa na cor escura do tema
     g.use3D = true;

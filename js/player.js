@@ -1101,6 +1101,7 @@ class Player extends Entity {
       if (ws.stun) S.guardBreak += ws.stun * 0.2;
       if (ws.chain) S.chain += ws.chain * 0.15;
     }
+    if (game.world && typeof WorldInv !== 'undefined') WorldInv.apply(S);   // relíquias equipadas (só no mundo aberto)
     HeroPassives.apply(this, S, pr);   // efeitos das passivas das árvores (js/heroes/passivas.js)
     S.armor = Math.min(0.75, S.armor);
     const B = this.def.stats;

@@ -61,11 +61,11 @@ const WORLD_ZONES = {
     terminal: { at: [0.15, 0.2], lines: ['A torre via a cidade inteira. Hoje vê só a luz vermelha.', 'Última ordem recebida: "não olhem para o céu".'] } },
   mercado: { r: 1, c: 0, name: 'Mercado Afundado', theme: 'refuge', tiles: 15, pillars: 4, lv: 1, portal: true, hub: true,
     npcs: [
-      { model: 'civil', variant: 1, name: 'COMERCIANTE', at: [0.78, 0.3], facing: 2.2, lines: [
+      { model: 'civil', variant: 1, name: 'COMERCIANTE', merchant: true, at: [0.78, 0.3], facing: 2.2, lines: [
         'As Ruínas de Carmesin começam aqui. Cada passagem acesa leva para uma parte da cidade.',
         'Os baús antigos ainda guardam células. Ninguém teve coragem de abrir os do sul.',
       ] },
-      { model: 'ancia', name: 'ANCIÃ DESCONECTADA', at: [0.22, 0.32], facing: 0.4, lines: [
+      { model: 'ancia', name: 'ANCIÃ DESCONECTADA', quest: true, at: [0.22, 0.32], facing: 0.4, lines: [
         'No Coração Carmesim, ao sudeste, algo grande guarda a fenda. Vá forte, ou não vá.',
         'Os portais respondem a quem já pisou neles. Use o mapa (M) para voltar depressa.',
       ] },
@@ -208,7 +208,7 @@ const World = {
   map: { open: false, travel: false, zoom: 1, x: 0.5, y: 0.45, sel: 0, t: 0 },
   saveT: 0,
 
-  fresh() { return { descobertos: [], baus: [], portais: [], terminais: [], chefe: false, chefes: {}, zona: WORLD_START }; },
+  fresh() { return { descobertos: [], baus: [], portais: [], terminais: [], chefe: false, chefes: {}, zona: WORLD_START, hora: 9, dia: 1, clima: null }; },
   bossDone(region) { const S = this.state; return !!(S.chefes && S.chefes[region]) || (region === 'carmesin' && !!S.chefe); },
   // A região abre com o chefe da anterior (na ordem sugerida) derrotado ou com o nível mínimo dela
   regionOpen(id) {
@@ -268,7 +268,13 @@ const World = {
     const W = g.waves;
     W.def = z; W.roomIndex = Math.min(5, z.lv - 1); W.state = 'world'; W.queue.length = 0;
     g.npcs.length = 0; g.talkTarget = null;
-    for (const d of z.npcs) { const pt = npcSpot(g.room, d.at[0], d.at[1]); g.npcs.push(new NPC(d, pt.x, pt.y)); }
+    for (const d of z.npcs) {
+      const pt = npcSpot(g.room, d.at[0], d.at[1]), n = new NPC(d, pt.x, pt.y);
+      // mercador: a conversa abre a loja; missão: a conversa dá, lembra ou entrega (js/mundo/*.js)
+      if (d.merchant) { n.merchant = true; n.verb = 'Negociar'; n.talk = function () { NPC.prototype.talk.call(this); WorldInv.abrir('loja', true); }; }
+      if (d.quest) { n.quest = true; n.talk = function () { if (!WorldQuests.talk(this)) NPC.prototype.talk.call(this); }; }
+      g.npcs.push(n);
+    }
     const R = g.room, m = 64;
     const gatePos = { N: [R.w / 2, m], S: [R.w / 2, R.h - m], W: [m, R.h / 2], E: [R.w - m, R.h / 2] };
     for (const dir in WORLD_DIRS) {
@@ -295,6 +301,8 @@ const World = {
         e.dormant = true; e.camp = camp; e.setState('idle');   // já no lugar (sem a animação de surgir)
         camp.enemies.push(e); g.enemies.push(e);
       }
+      // a partir do nível 6, às vezes o primeiro do acampamento é uma unidade de elite
+      if (!c.boss && z.lv >= 6 && camp.enemies.length && Math.random() < Math.min(0.5, 0.1 + z.lv * 0.012)) camp.enemies[0].makeElite();
       if (c.boss) {
         const B = worldRegion(z.region).boss;
         const b = camp.enemies.find((e) => e.type === B.type) || camp.enemies[0];
@@ -314,6 +322,7 @@ const World = {
     if (!this.state.descobertos.includes(id)) {
       this.state.descobertos.push(id);
       if (this.state.descobertos.length > 1) { g.hud.toast(`LOCAL DESCOBERTO · ${z.name}`, '120,220,255'); g.gainXP(30 * z.lv, p.x, p.y); }
+      WorldQuests.check();
     }
     if (z.portal && !this.state.portais.includes(id)) { this.state.portais.push(id); g.hud.toast(`Portal ativado · ${z.name}`, '170,120,255'); }
     this.save();
@@ -335,10 +344,11 @@ const World = {
     else game.audio.play('spawn');
   },
   update(dt) {
-    const p = game.player;
+    const p = game.player, R = 300 * WorldTime.senseMult();   // à noite e com pouca visibilidade, mais de perto (js/mundo/tempo.js)
+    WorldTime.update(dt);
     for (const c of this.camps) {
       if (c.awake) continue;
-      if (p.state !== 'dead' && dist2(p.x, p.y, c.x, c.y) < 300 * 300) { const e = c.enemies.find((q) => q.alive); if (e) this.wake(e); }
+      if (p.state !== 'dead' && dist2(p.x, p.y, c.x, c.y) < R * R) { const e = c.enemies.find((q) => q.alive); if (e) this.wake(e); }
     }
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }
@@ -348,6 +358,8 @@ const World = {
     return false;
   },
   onKill(e) {
+    WorldInv.onKill(e);       // saque de relíquias (js/mundo/inventario.js)
+    WorldQuests.onKill(e);    // missões de abate (js/mundo/missoes.js)
     if (e.worldBoss) {
       const reg = worldRegion(e.worldRegion || 'carmesin');
       this.state.chefes[reg.id] = true;
@@ -357,6 +369,7 @@ const World = {
       game.hud.toast(next ? `Nova região liberada · ${next.name} (mapa: M)` : 'Todas as regiões concluídas', reg.rgb);
       game.gainXP(500 * (reg.order + 1), e.x, e.y);
       for (let i = 0; i < 8 + reg.order * 2; i++) game.pickups.drop('soul', e.x, e.y, 6 + reg.order * 2);
+      WorldQuests.check();
       this.save();
     }
   },
@@ -375,12 +388,14 @@ const World = {
     g.particles.sparks(prop.x, prop.y, 20, -Math.PI / 2, 16, '255,200,110', 300, Math.PI);
     g.audio.play('memory');
     g.hud.toast(d.secret ? `SEGREDO ENCONTRADO · ${d.cells} células` : `Baú aberto · ${d.cells} células`, '255,190,90');
+    WorldInv.onChest(d, prop.x, prop.y);   // todo baú tem uma relíquia
+    WorldQuests.check();
     this.save();
   },
   readTerminal(prop) {
     const d = prop.data;
     d.lines.forEach((ln, k) => setTimeout(() => { if (game.state === 'playing') game.hud.say('TERMINAL', ln, 3.6, 0, true); }, k * 3800));
-    if (!this.state.terminais.includes(d.key)) { this.state.terminais.push(d.key); game.gainXP(25, prop.x, prop.y); }
+    if (!this.state.terminais.includes(d.key)) { this.state.terminais.push(d.key); game.gainXP(25, prop.x, prop.y); WorldQuests.check(); }
     game.audio.play('uiMove');
   },
 

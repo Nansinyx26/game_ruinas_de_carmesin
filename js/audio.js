@@ -110,7 +110,7 @@ class MusicPlayer {
       const k = this.pendingKey, opts = this.pendingOpts;
       this.pendingKey = null;
       this.pendingOpts = null;
-      this.play(k, opts);
+      this.play(k, opts || undefined);   // sem opções guardadas: as padrão (null quebrava a desestruturação)
     } else if (this.currentAudio && this.currentAudio.paused) {
       this.currentAudio.play().catch(() => {});
     } else if (!this.currentAudio && typeof game !== 'undefined' && game.state === 'menu') {
