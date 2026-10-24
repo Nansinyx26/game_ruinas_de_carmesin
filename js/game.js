@@ -232,6 +232,7 @@ class Game {
       case 'thirdperson': if (this.thirdPerson) this.thirdPerson.update(dt, inp); break;
       case 'worldmap': World.updateMap(dt, inp); break;   // mapa do mundo aberto (js/world.js)
       case 'worldinv': WorldInv.updateUI(dt, inp); break;   // mochila, loja e missões (js/mundo/inventario.js)
+      case 'worlddlg': Dialogo.update(dt, inp); break;       // conversa com os moradores (js/mundo/dialogo.js)
       case 'upgrade': this.updateUpgrade(dt); break;
       case 'gameover':
       case 'victory': this.updateEnd(dt); break;
@@ -344,6 +345,7 @@ class Game {
     if (this.world) {
       if (inp.pressed.worldMap && !this.fadeCb) { this.world.openMap(false); return; }
       if (inp.pressed.bag && !this.fadeCb && p.state !== 'dead') { WorldInv.abrir('mochila', false); return; }   // relíquias, missões
+      if (inp.pressed.journal && !this.fadeCb && p.state !== 'dead') { WorldInv.abrir('diario', false); return; }   // diário de missões
       if (inp.pressed.capsule && p.state !== 'dead') WorldInv.usarCapsula();
       this.world.update(dt);
     }
@@ -1171,6 +1173,7 @@ class Game {
       if (this.state === 'paused') this.menu.draw(ctx, this.realTime);
       else if (this.state === 'worldmap') World.drawMap(ctx, this.realTime);
       else if (this.state === 'worldinv') WorldInv.draw(ctx, this.realTime);
+      else if (this.state === 'worlddlg') { this.hud.draw(ctx); Dialogo.draw(ctx, this.realTime); }
       else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);
       else if (this.state === 'gameover') this.screens.drawEnd(ctx, false, this.realTime);

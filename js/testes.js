@@ -652,7 +652,7 @@ const EclipseTests = {
   mundo() {
     // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
     this.igual('mundo: 7 regiões', WORLD_REGIONS.length, 7);
-    this.igual('mundo: 45 zonas (9 de Carmesin + 6 × 6)', Object.keys(WORLD_ZONES).length, 45);
+    this.igual('mundo: 45 zonas no mapa (9 de Carmesin + 6 × 6)', Object.values(WORLD_ZONES).filter((z) => !z.instancia).length, 45);
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
@@ -689,7 +689,7 @@ const EclipseTests = {
       this.igual('relíquia lendária: 3 atributos', Object.keys(L.st).length, 3);
       this.ok('relíquia: nome com a região', WorldInv.nome(L).indexOf('Obsidiana') > 0, WorldInv.nome(L));
       const it = WorldInv.ganhar(WorldInv.gerar(10, 'carmesin', 0));
-      it.b = 'nucleo'; it.st = { dano: 0.1 };
+      it.b = 'nucleo'; it.st = { dano: 0.1 }; it.lv = 1;   // o requisito de nível (lv − 4) não atrapalha
       const d0 = p.stats.dmgMult;
       WorldInv.equipar(it.id);
       this.ok('relíquia equipada soma o dano', Math.abs(p.stats.dmgMult - d0 - 0.1) < 1e-9, p.stats.dmgMult - d0);
@@ -715,13 +715,13 @@ const EclipseTests = {
       // missões: aceitar, contar, entregar
       const anc = g.npcs.find((n) => n.quest);
       this.ok('missão: a anciã tem missão (!)', anc && WorldQuests.marca(anc) === '!');
-      anc.talk();
+      anc.talk(); Dialogo.escolherId('regiao'); Dialogo.escolherId('aceitar'); Dialogo.fechar();   // pela conversa (js/mundo/povo.js)
       const q = WorldQuests.atual('carmesin');
       this.ok('missão: aceita a primeira', q && q.id === 'car1');
       for (let i = 0; i < 12; i++) WorldQuests.onKill({ type: 'rastejador' });
       this.ok('missão: pronta depois de 12 abates (?)', WorldQuests.pronta(q) && WorldQuests.marca(anc) === '?');
       const n1 = WorldInv.S.itens.length;
-      anc.talk();
+      anc.talk(); Dialogo.escolherId('regiao'); Dialogo.fechar();
       this.ok('missão: entregue com relíquia de recompensa', World.state.missoes.car1.st === 'feita' && WorldInv.S.itens.length === n1 + 1);
       // viagem até outra região e desenho da zona
       erro = null;
@@ -731,9 +731,281 @@ const EclipseTests = {
       this.campoAberto();
       this.campanhas();
       this.mapa();
+      this.mmo();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
+    }
+  },
+
+  // Mundo aberto à moda de MMO (js/mundo/dialogo.js, oficios.js, povo.js, aventuras.js, locais.js,
+  // eventos.js): dados, conversa, missões secundárias de todos os tipos, contratos, ofícios,
+  // reputação, masmorras, tesouros, eventos, diário e validação do salvamento
+  mmo() {
+    const g = game, pr = g.activeProgress(), lv0 = pr.level, cel0 = g.stats.soulsBank, chefes0 = Object.assign({}, World.state.chefes);
+    const T = (nome) => g.npcs.find((n) => n.name === nome);
+    const matar = (e) => e.takeHit({ dmg: 99999, kx: 0, ky: 0, kb: 0, launch: 0, stun: 0, heavy: true, crit: false });
+    // ------------------------------------------------ dados
+    const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
+    this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
+    this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
+    this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador'].includes(sv))));
+    this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
+    const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
+    this.ok('povo: rumores revelam masmorras, tesouros e zonas que existem', rv.length >= 10 && rv.every((r) => (r.masmorra && WORLD_MASMORRAS[r.masmorra]) || (r.tesouro && WORLD_TESOUROS[r.tesouro]) || (r.zona && WORLD_ZONES[r.zona])), rv.length);
+    for (const sv of ['curandeiro', 'ferreiro', 'artesao', 'treinador']) this.ok(`povo: há ${sv} em pelo menos 3 regiões`, new Set(WORLD_POVO.filter((P) => (P.servicos || []).includes(sv)).map((P) => WORLD_ZONES[zonaDe(P)].region)).size >= 3);
+    this.ok('povo: vilarejos em zonas que existem', Object.keys(WORLD_VILAS).every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].vila));
+    const tipoOk = (t) => !!(ENEMY_TYPES[t] || ENEMY_VARIANTS[t]);
+    const ids = WORLD_AVENTURAS.map((q) => q.id), tipos = new Set();
+    this.ok('missões: ids únicos', new Set(ids).size === ids.length);
+    for (const R of WORLD_REGIONS) this.ok(`missões: ${R.id} tem pelo menos 3 secundárias`, WORLD_AVENTURAS.filter((q) => q.reg === R.id).length >= 3);
+    let ruins = [];
+    for (const q of WORLD_AVENTURAS) {
+      const prob = [];
+      if (!pessoas.includes(q.doador)) prob.push('doador');
+      if (!q.nome || !q.desc || !q.ini || !q.fim) prob.push('textos');
+      for (const r of q.req || []) if (!ids.includes(r)) prob.push('req');
+      q.passos.forEach((P, k) => {
+        tipos.add(P.t);
+        if (!P.txt) prob.push(`txt${k}`);
+        if (P.npc && !pessoas.includes(P.npc)) prob.push(`npc ${P.npc}`);
+        if (P.zona && !WORLD_ZONES[P.zona]) prob.push(`zona ${P.zona}`);
+        if (P.alvo && !tipoOk(P.alvo)) prob.push(`alvo ${P.alvo}`);
+        if (P.chefe && (!tipoOk(P.chefe.tipo) || !Object.keys(P.chefe.escolta || {}).every(tipoOk))) prob.push('chefe');
+        for (const E of P.emboscadas || []) if (!Object.keys(E.mobs).every(tipoOk)) prob.push('emboscada');
+        if (P.mat && !Object.keys(P.mat).every((m) => WORLD_MATERIAIS[m])) prob.push('mat');
+        if (P.t === 'masmorra' && !WORLD_MASMORRAS[P.id]) prob.push('masmorra');
+        if (P.t === 'examinar' && !(P.pistas && P.pistas.length)) prob.push('pistas');
+      });
+      if (!q.passos[q.passos.length - 1].fim) prob.push('sem fim');
+      const recs = [q.rec || {}].concat(q.escolha ? q.escolha.opcoes.map((o) => o.rec || {}) : []);
+      for (const R of recs) {
+        for (const k in R.cons || {}) if (!WORLD_CONSUMIVEIS[k]) prob.push('cons');
+        for (const k in R.mat || {}) if (!WORLD_MATERIAIS[k]) prob.push('rec mat');
+        if (R.unico && (!WORLD_RELIQUIAS.some((b) => b.id === R.unico.b) || !Object.keys(R.unico.st).every((k) => WORLD_ATRIB[k]))) prob.push('único');
+      }
+      if (prob.length) ruins.push(`${q.id}: ${prob.join(',')}`);
+    }
+    this.ok('missões: doadores, passos, alvos, zonas e recompensas válidos', !ruins.length, ruins.join(' · '));
+    this.ok('missões: todos os tipos de objetivo aparecem', ['matar', 'entregar', 'falar', 'achar', 'examinar', 'chefe', 'escolta', 'local', 'masmorra', 'evento'].every((t) => tipos.has(t)), [...tipos].join(','));
+    this.ok('missões: há escolhas com recompensas diferentes', WORLD_AVENTURAS.filter((q) => q.escolha && q.escolha.opcoes.length >= 2).length >= 3);
+    this.ok('receitas: materiais e produtos válidos', WORLD_RECEITAS.every((R) => Object.keys(R.mat).every((k) => k === 'regional' || WORLD_MATERIAIS[k]) && (R.id === 'capsula' || R.id === 'reliquia' || WORLD_CONSUMIVEIS[R.id])));
+    this.igual('masmorras: uma por região', Object.keys(WORLD_MASMORRAS).length, 7);
+    let andaresOk = true;
+    for (const id in WORLD_MASMORRAS) {
+      const M = WORLD_MASMORRAS[id], A = [0, 1, 2].map((k) => WORLD_ZONES[`${id}_${k}`]);
+      if (!WORLD_ZONES[M.zona] || A.some((z) => !z || z.instancia !== id) || worldZoneAt(A[0].r - 1, A[0].c, M.reg) !== A[1] || worldZoneAt(A[1].r - 1, A[1].c, M.reg) !== A[2] || (M.saida && !WORLD_ZONES[M.saida.zona]) || !tipoOk(M.chefe.tipo)) andaresOk = false;
+    }
+    this.ok('masmorras: 3 andares ligados em sequência, entrada e saída em zonas que existem', andaresOk);
+    this.ok('masmorras: fora da grade das regiões e do mapa', WORLD_REGIONS.every((R) => worldZonesOf(R.id).every((z) => !z.instancia)) && !Object.keys(World.mapLayout().zones).some((id) => WORLD_ZONES[id].instancia));
+    this.ok('tesouros: em zonas que existem', Object.values(WORLD_TESOUROS).every((T2) => WORLD_ZONES[T2.zona]));
+    try {
+      // ------------------------------------------------ conversa e uma missão de entrega
+      World.loadZone('mercado', null);
+      Aventuras.S; Oficios.S; Locais.S; Eventos.S;
+      g.stats.soulsBank = 5000;
+      const tomas = T('TOMÁS');
+      this.ok('conversa: morador com função e missão (!)', tomas instanceof Morador && tomas.papel && WorldQuests.marca(tomas) === '!');
+      tomas.talk();
+      this.ok('conversa: abre o diálogo com respostas', g.state === 'worlddlg' && Dialogo.aberto && Dialogo.temId('nova_car_s1') && Dialogo.temId('artesao') && Dialogo.temId('sair'), Dialogo.opcoes.map((o) => o.id).join(','));
+      Dialogo.escolherId('nova_car_s1'); Dialogo.escolherId('aceitar');
+      this.ok('missão secundária: aceita pela conversa e rastreada', Aventuras.ativa('car_s1') && World.state.rastreada === 'car_s1' && Aventuras.linha().indexOf('Peças') >= 0);
+      Dialogo.escolherId('sair');
+      this.ok('conversa: fechar volta ao jogo', !Dialogo.aberto && g.state === 'playing');
+      Oficios.dar('sucata', 6, false);
+      this.igual('missão: pronta para entregar (?)', WorldQuests.marca(tomas), '?');
+      const c1 = g.stats.soulsBank;
+      tomas.talk(); Dialogo.escolherId('ent_car_s1'); Dialogo.fechar();
+      this.ok('missão: entrega consome o material e paga uma vez', Aventuras.feita('car_s1') && Oficios.mat('sucata') === 0 && g.stats.soulsBank === c1 + 40 && !Aventuras.concluir(WORLD_AVENTURAS[0]) && g.stats.soulsBank === c1 + 40);
+      this.ok('missão: histórico com dia e hora', Aventuras.st('car_s1').hist.length >= 2 && Aventuras.st('car_s1').hist.every((h) => h.d >= 1 && h.txt));
+      // ------------------------------------------------ desaparecido + escolha
+      pr.level = 40; g.player.recalc(true);
+      Object.assign(World.state.chefes, { carmesin: true, velmora: true, lagoa: true, nexus: true, seraph: true, asterion: true });
+      Aventuras.aceitar('car_s2');
+      World.loadZone('galerias', null);
+      const lucas = T('LUCAS');
+      this.ok('desaparecido: aparece na zona da missão', !!lucas && lucas.alvoMissao === 'car_s2');
+      if (lucas) { lucas.talk(); Dialogo.fechar(); }
+      this.ok('desaparecido: encontrado, o passo seguinte é avisar a mãe', Aventuras.passo(WORLD_AVENTURAS[1]).npc === 'marta');
+      World.loadZone('praca', null);
+      const n0 = WorldInv.S.itens.length;
+      T('MARTA').talk(); Dialogo.escolherId('fal_car_s2');
+      this.ok('escolha: a conclusão pergunta o que fazer', Dialogo.temId('esc0') && Dialogo.temId('esc1'));
+      Dialogo.escolherId('esc0'); Dialogo.fechar();
+      this.ok('escolha: a resposta escolhida dá a relíquia única', Aventuras.feita('car_s2') && Aventuras.st('car_s2').escolha === 0 && WorldInv.S.itens.length === n0 + 1 && WorldInv.S.itens.some((it) => it.unico === 'Amuleto da Praça'));
+      this.ok('vilarejo: sem acampamentos perto dos moradores', World.camps.every((c) => dist(c.def.at[0], c.def.at[1], WORLD_VILAS.praca.at[0], WORLD_VILAS.praca.at[1]) > WORLD_VILAS.praca.raio));
+      // ------------------------------------------------ investigar + chefe opcional
+      Aventuras.aceitar('car_s3');
+      World.loadZone('laboratorio', null);
+      const pistas = g.npcs.filter((n) => n instanceof MissaoProp && n.alvoMissao === 'car_s3');
+      this.igual('investigar: 3 pistas na zona', pistas.length, 3);
+      for (const m of pistas) { m.talk(); Dialogo.fechar(); }
+      this.ok('investigar: as pistas levam ao chefe', Aventuras.passo(WORLD_AVENTURAS[2]).t === 'chefe');
+      World.loadZone('fendas', null);
+      const eco = g.enemies.find((e) => e.missao === 'car_s3');
+      this.ok('chefe opcional: aparece com nome só com a missão ativa', !!eco && eco.name === 'EXPERIMENTO 7 · ECO' && eco.elite);
+      if (eco) { matar(eco); for (let i = 0; i < 90; i++) g.updatePlaying(1 / 30); }
+      this.ok('chefe opcional: derrotado, falta voltar ao Dr. Ivo', Aventuras.passo(WORLD_AVENTURAS[2]).npc === 'ivo');
+      World.loadZone('laboratorio', null);
+      T('DR. IVO').talk(); Dialogo.escolherId('fal_car_s3'); Dialogo.fechar();
+      this.ok('investigação concluída', Aventuras.feita('car_s3'));
+      // ------------------------------------------------ escolta (com falha e recomeço)
+      Aventuras.aceitar('lag_s2');
+      World.loadZone('lagoa_ilha', null);
+      const esc = g.npcs.find((n) => n instanceof Escoltado);
+      this.ok('escolta: a pessoa espera no início e não aparece duplicada', !!esc && g.npcs.filter((n) => n.name === 'DÉCIO').length === 1);
+      if (esc) {
+        esc.talk(); Dialogo.fechar();
+        this.igual('escolta: começa depois da conversa', esc.estado, 'andando');
+        Aventuras.falhaEscolta(esc);
+        this.ok('escolta: se cair, volta ao início para tentar de novo', esc.estado === 'espera' && esc.hp === esc.maxHp && Aventuras.st('lag_s2').falhas === 1);
+        esc.estado = 'andando'; esc.feitas = 9; esc.talkT = 0;
+        esc.x = esc.destino.x + 10; esc.y = esc.destino.y; g.player.x = esc.x; g.player.y = esc.y + 40;
+        for (const e of g.enemies) e.dormant = true;
+        esc.update(1 / 30);
+      }
+      this.ok('escolta: chegou ao destino e a missão terminou', Aventuras.feita('lag_s2') && esc && esc.estado === 'chegou');
+      // ------------------------------------------------ lugar escondido
+      Aventuras.aceitar('vel_s3');
+      World.loadZone('velmora_ruinas', null);
+      const obs = g.npcs.find((n) => n instanceof MissaoProp && n.sub === 'local');
+      if (obs) { g.player.x = obs.x; g.player.y = obs.y; Aventuras.update(1 / 30); }
+      this.ok('lugar escondido: chegar perto descobre e avança', !!obs && Aventuras.passo(WORLD_AVENTURAS.find((q) => q.id === 'vel_s3')).t === 'examinar');
+      // ------------------------------------------------ evento e contrato
+      World.loadZone('mercado', null);
+      Aventuras.aceitar('car_s5');
+      const ev0 = Eventos.feitos('carmesin');
+      World.loadZone('praca', null);
+      const A = Eventos.sortear('incursao', 'praca');
+      this.ok('evento: começa numa zona descoberta, com estandarte e marca no mapa', !!A && g.npcs.some((n) => n instanceof EventoProp) && Eventos.marcasMapa().length === 1);
+      g.player.x = A.x; g.player.y = A.y + 40;
+      Eventos.update(1 / 30);
+      this.ok('evento: incursão em ondas', Eventos.ativo().fase === 'ativo' && Eventos.alvo.length > 0);
+      // os inimigos que acabam de surgir ficam imunes por um instante: espera, derruba, repete
+      for (let w = 0; w < 5 && Eventos.ativo(); w++) { for (let i = 0; i < 45; i++) g.updatePlaying(1 / 30); for (const e of Eventos.alvo) if (e.canBeHit()) matar(e); for (let i = 0; i < 45; i++) g.updatePlaying(1 / 30); }
+      this.ok('evento: três ondas vencidas concluem e contam', !Eventos.ativo() && Eventos.feitos('carmesin') === ev0 + 1, JSON.stringify(Eventos.ativo()));
+      this.ok('evento: conta para a missão de evento', Aventuras.passo(WORLD_AVENTURAS.find((q) => q.id === 'car_s5')).npc === 'rui');
+      World.loadZone('mercado', null);
+      const quadro = g.npcs.find((n) => n instanceof QuadroProp);
+      const [cc] = Aventuras.contratosDe('carmesin');
+      this.ok('contratos: dois por dia, iguais no mesmo dia', Aventuras.contratosDe('carmesin').length === 2 && Aventuras.contratosDe('carmesin')[0].nome === cc.nome && Aventuras.def(cc.id).nome === cc.nome);
+      quadro.talk(); Dialogo.escolherId(`cn_${cc.id}`); Dialogo.escolherId('aceitar'); Dialogo.fechar();
+      for (let i = 0; i < cc.passos[0].n; i++) Aventuras.onKill({ type: cc.passos[0].alvo, variante: cc.passos[0].alvo });
+      quadro.talk();
+      this.ok('contratos: caça cumprida, recebe no quadro', Dialogo.temId(`cq_${cc.id}`));
+      Dialogo.escolherId(`cq_${cc.id}`); Dialogo.fechar();
+      this.ok('contratos: pago e marcado como cumprido hoje', Aventuras.feita(cc.id) && Aventuras.bloqueio(cc) === 'concluída');
+      // ------------------------------------------------ abandonar e validar
+      Aventuras.aceitar('nex_s1');
+      this.ok('abandonar: volta a ficar disponível', Aventuras.abandonar('nex_s1') && Aventuras.disponivel(WORLD_AVENTURAS.find((q) => q.id === 'nex_s1')));
+      Aventuras.S.lixo = { st: 'ativa', p: 0 }; Aventuras.S.ast_s1 = { st: 'ativa', p: 99, hist: null };
+      Aventuras.validar();
+      this.ok('validar: missão sem definição sai e passo fora da lista é corrigido', !Aventuras.S.lixo && Aventuras.S.ast_s1.p === WORLD_AVENTURAS.find((q) => q.id === 'ast_s1').passos.length - 1 && Array.isArray(Aventuras.S.ast_s1.hist));
+      delete Aventuras.S.ast_s1;
+      // ------------------------------------------------ ofícios, consumíveis e serviços
+      for (const k of ['erva', 'sucata', 'cristal', 'nucleo']) Oficios.dar(k, 10, false);
+      const cap0 = WorldInv.S.capsulas = 0, erva0 = Oficios.mat('erva');
+      Oficios.S.xp.criacao = 0;
+      this.ok('artesão: cria cápsula com os materiais', Oficios.criar('capsula') === '' && WorldInv.S.capsulas === cap0 + 1 && Oficios.mat('erva') === erva0 - 2);
+      this.ok('artesão: receita acima do nível de Criação fica bloqueada', Oficios.criar('tonico').indexOf('Criação') >= 0);
+      Oficios.S.xp.criacao = 200;
+      this.ok('artesão: com Criação 3 cria o tônico', Oficios.nivel('criacao') === 3 && Oficios.criar('tonico') === '' && Oficios.cons('tonico') >= 1);
+      const p = g.player, d0 = p.stats.dmgMult;
+      Oficios.usar('tonico');
+      this.ok('tônico: +20% de dano enquanto dura', p.buffs.tonico > 0 && Math.abs(p.stats.dmgMult - d0 - 0.2) < 1e-9);
+      p.buffs.tonico = 0.01; p.updateAbilities(0.05);
+      this.ok('tônico: o efeito acaba', Math.abs(p.stats.dmgMult - d0) < 1e-9);
+      const it = WorldInv.ganhar(WorldInv.gerar(5, 'carmesin', 0));
+      it.b = 'nucleo'; it.st = { dano: 0.1 };
+      WorldInv.equipar(it.id);
+      const d1 = p.stats.dmgMult;
+      this.ok('ferreiro: aprimora +1 (+10% no atributo) cobrando materiais', Oficios.aprimorar(it.id) === '' && it.ap === 1 && Math.abs(p.stats.dmgMult - d1 - 0.01) < 1e-9 && WorldInv.nome(it).endsWith('+1'));
+      WorldInv.desequipar(WorldInv.S.equip.indexOf(it.id));
+      const alto = WorldInv.ganhar(WorldInv.gerar(60, 'obsidiano', 0));
+      pr.level = 3;
+      this.ok('requisito: relíquia de nível alto não equipa num herói fraco', !WorldInv.equipar(alto.id));
+      pr.level = 40;
+      p.hp = 5; Oficios.curar();
+      this.ok('curandeiro: cura por células', p.hp === p.maxHp);
+      const xpA = pr.xp + pr.level * 1e6;
+      Oficios.S.treinoDia = 0;
+      this.ok('treinador: um treino por dia do mundo', Oficios.treinar() === '' && Oficios.treinar() !== '' && pr.xp + pr.level * 1e6 > xpA);
+      Oficios.aoColetar({ mat: 'erva' });
+      this.ok('coleta: material e experiência do ofício', Oficios.mat('erva') >= 9 && Oficios.S.xp.coleta > 0);
+      // ------------------------------------------------ reputação, desconto e insígnia
+      const pc = WorldInv.precoCapsula();
+      Oficios.ganharRep('carmesin', 400);
+      this.ok('reputação: Honrado dá 10% de desconto', Oficios.repNivel('carmesin') >= 2 && Oficios.desconto('carmesin') >= 0.1 && WorldInv.precoCapsula() < pc);
+      WorldInv.ui.shop = true; WorldInv.ui.loja = 'mercador';
+      const ext = WorldInv.extras(), ins = ext.findIndex((x) => x.insignia);
+      this.ok('reputação: o mercador vende a insígnia da facção', ins >= 0);
+      if (ins >= 0) WorldInv.comprar(WorldInv.estoque().length + 1 + ins);
+      this.ok('insígnia: comprada uma vez só', WorldInv.S.itens.some((q) => q.unico === WORLD_INSIGNIAS.carmesin.unico) && !Oficios.podeInsignia('carmesin'));
+      WorldInv.ui.shop = false; WorldInv.ui.loja = null;
+      // ------------------------------------------------ masmorra
+      World.loadZone('fendas', null);
+      const ent = g.npcs.find((n) => n instanceof LocalProp && n.sub === 'entrada');
+      this.ok('masmorra: entrada escondida até alguém contar', !!ent && !ent.visivel());
+      Locais.revelar({ masmorra: 'catacumbas' });
+      this.ok('masmorra: o rumor revela a entrada e marca o mapa', ent.visivel() && Locais.marcasMapa().some((m) => m.icon === '▼' && m.zona === 'fendas'));
+      Aventuras.aceitar('ser_s2');
+      World.loadZone('catacumbas_0', null, null, [0.5, 0.7]);
+      this.ok('masmorra: o andar sela a passagem até os inimigos caírem', Locais.selada() && g.npcs.some((n) => n.kind === 'gate' && n.data.dir === 'N' && n.selada()));
+      for (const e of g.enemies) matar(e);
+      for (let i = 0; i < 60; i++) g.updatePlaying(1 / 30);
+      this.ok('masmorra: andar limpo abre a passagem', !Locais.selada());
+      World.loadZone('catacumbas_2', 'N');
+      const arq = g.enemies.find((e) => e.chefeMasmorra === 'catacumbas'), bau = g.npcs.find((n) => n.kind === 'chest' && n.data.masmorra);
+      this.ok('masmorra: chefe e baú selado no último andar', !!arq && !!bau);
+      while (WorldInv.S.itens.length > 10) WorldInv.remover(WorldInv.S.itens[0].id);   // espaço na mochila para o prêmio
+      const nb = WorldInv.S.itens.length;
+      if (bau) { g.stats.soulsBank = 0; World.openChest(bau); }
+      this.ok('masmorra: baú fica selado com o chefe vivo', bau && !bau.used && WorldInv.S.itens.length === nb);
+      for (const e of g.enemies) matar(e);
+      for (let i = 0; i < 60; i++) g.updatePlaying(1 / 30);
+      this.ok('masmorra: vencida, com saída e a vitória registrada', Locais.feita('catacumbas') && g.npcs.some((n) => n.kind === 'gate' && n.data.rotulo && n.data.to === 'fendas'));
+      const nb2 = WorldInv.S.itens.length;   // (os abates também podem deixar relíquias)
+      if (bau) World.openChest(bau);
+      this.ok('masmorra: o baú abre depois do chefe', bau && bau.used && WorldInv.S.itens.length === nb2 + 1);
+      this.ok('masmorra: o mapa mostra onde fica (na zona da entrada)', (() => { let er = null; try { World.openMap(false); World.drawMap(g.ctx, 1); World.closeMap(); } catch (e) { er = e.message; } return !er; })());
+      // a missão que pedia outra masmorra (Tumba) continua esperando
+      this.ok('missão de masmorra: só a masmorra certa conta', Aventuras.passo(WORLD_AVENTURAS.find((q) => q.id === 'ser_s2')).t === 'masmorra');
+      // ------------------------------------------------ tesouro
+      Locais.revelar({ tesouro: 'tes_portoes' });
+      World.loadZone('portoes', null);
+      const tes = g.npcs.find((n) => n instanceof LocalProp && n.sub === 'tesouro');
+      const cT = g.stats.soulsBank;
+      if (tes) { g.player.x = tes.x; g.player.y = tes.y + 20; tes.talk(); tes.talk(); }
+      this.ok('tesouro: marcado pelo rumor, cavado uma vez só', !!tes && Locais.S.tes.tes_portoes === 'achado' && g.stats.soulsBank === cT + WORLD_TESOUROS.tes_portoes.rec.cel);
+      // ------------------------------------------------ rotina dos moradores
+      World.loadZone('mercado', null);
+      const hel = T('HELENA'), hx = hel.x, hy = hel.y;
+      g.player.x = 40; g.player.y = 40; World.state.hora = 12; hel.espera = 0; hel.ri = 1;
+      for (let i = 0; i < 60; i++) hel.update(1 / 30);
+      this.ok('rotina: a curandeira anda entre os pontos de dia', dist(hel.x, hel.y, hx, hy) > 5 && (hel.state === 'walk' || hel.andando || hel.espera > 0));
+      // ------------------------------------------------ telas e salvamento
+      let er = null;
+      try {
+        for (const tab of ['diario', 'oficios', 'mochila', 'campanhas']) { WorldInv.abrir(tab, false); for (const c of Aventuras.CATS) { WorldInv.ui.cat = c; WorldInv.draw(g.ctx, 1); } }
+        WorldInv.abrir('loja', true, 'mercador'); WorldInv.draw(g.ctx, 1);
+        WorldInv.abrir('loja', true, 'curandeiro'); WorldInv.draw(g.ctx, 1);
+        WorldInv.abrir('ferreiro', false, null, 'ferreiro'); WorldInv.draw(g.ctx, 1);
+        WorldInv.abrir('artesao', false, null, 'artesao'); WorldInv.draw(g.ctx, 1);
+        WorldInv.fechar();
+        T('VANDA').talk(); Dialogo.draw(g.ctx, 1); Dialogo.fechar();
+        g.hud.draw(g.ctx);
+      } catch (e) { er = e.message; }
+      this.ok('telas: diário, ofícios, lojas, ferreiro, artesão e diálogo desenham sem erro', !er, er);
+      this.ok('diário: ativas, disponíveis e concluídas', Aventuras.diarioLista('concluidas').length >= 5 && Aventuras.diarioLista('disponiveis').length > 0);
+      const salvo = JSON.parse(JSON.stringify(World.state));
+      this.ok('salvamento: missões, ofícios, reputação, masmorras e eventos vão junto', salvo.aventuras.car_s1.st === 'feita' && salvo.oficios.rep.carmesin > 0 && salvo.locais.masm.catacumbas.vezes === 1 && salvo.eventos.feitos.carmesin >= 1);
+    } catch (e) {
+      this.ok('mmo: sem exceção', false, e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e);
+    } finally {
+      if (Dialogo.aberto) Dialogo.fechar();
+      if (g.state !== 'playing') g.state = 'playing';
+      pr.level = lv0; g.stats.soulsBank = cel0; World.state.chefes = chefes0;
+      Eventos.S.atual = null;
     }
   },
 

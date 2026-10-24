@@ -2,13 +2,14 @@
 // ECLIPSE ZERO · Mundo aberto: missões das regiões (WorldQuests)
 // ---------------------------------------------------------------------------
 // Cada região tem 3 missões em sequência, dadas pelo NPC de missão (quest: true) da zona de
-// chegada: conversar com ele aceita a próxima, mostra o andamento da atual e, quando ela está
-// pronta, entrega a recompensa (células, experiência e uma relíquia com raridade mínima).
+// chegada: na conversa com ele (js/mundo/povo.js) dá para aceitar a próxima, ver o andamento da
+// atual e, quando ela está pronta, receber a recompensa (células, experiência, uma relíquia com
+// raridade mínima e reputação com a facção da região).
 // Tipos: 'matar' (n inimigos, de um tipo ou qualquer, na região), 'elite' (n elites), 'baus'
 // (n baús abertos na região), 'terminais' (todos os terminais da região), 'explorar' (todas
 // as zonas da região) e 'chefe' (o chefe regional). Os de contagem só andam com a missão
 // aceita; os outros leem o estado do mundo. A linha da missão atual vai para o quadro de
-// missão do HUD (World.objective) e a aba MISSÕES da mochila lista todas.
+// missão do HUD (World.objective) e o DIÁRIO da mochila (js/mundo/aventuras.js) lista todas.
 // O estado fica em World.state.missoes = { [id]: { st: 'ativa' | 'feita', prog } }.
 // ---------------------------------------------------------------------------
 const WORLD_QUESTS = {
@@ -115,10 +116,11 @@ const WorldQuests = {
   },
 
   // Conversa com o NPC de missão: entrega a pronta, lembra a atual ou dá a próxima.
+  // 'dizer' recebe a fala (a caixa de diálogo); sem ele, a fala vai para a legenda.
   // Devolve false quando a região não tem mais missões (o NPC fala as falas de sempre)
-  talk(npc) {
+  talk(npc, dizer = null) {
     const reg = World.zone.region, q = this.atual(reg), g = game;
-    const say = (txt) => { g.hud.say(npc.name, txt, 4.6, 0, true); npc.talkT = 3.4; g.audio.play('uiMove'); };
+    const say = dizer || ((txt) => { g.hud.say(npc.name, txt, 4.6, 0, true); npc.talkT = 3.4; g.audio.play('uiMove'); });
     if (q && this.pronta(q)) {
       this.S[q.id].st = 'feita';
       const R = q.rec, p = g.player;
@@ -157,12 +159,17 @@ const WorldQuests = {
     this.check();
   },
   // NPCs com missão para dar (!) ou para entregar (?) mostram a marca acima da cabeça
+  // (as missões secundárias e os contratos também: js/mundo/aventuras.js)
   marca(npc) {
-    if (!npc.quest || !World.zone) return '';
-    const reg = World.zone.region, q = this.atual(reg);
-    return q ? (this.pronta(q) ? '?' : '') : this.proxima(reg) ? '!' : '';
+    if (!World.zone) return '';
+    const reg = World.zone.region, q = npc.quest ? this.atual(reg) : null;
+    const m = npc.quest ? (q ? (this.pronta(q) ? '?' : '') : this.proxima(reg) ? '!' : '') : '';
+    if (m === '?') return m;
+    const a = typeof Aventuras !== 'undefined' ? Aventuras.marca(npc) : '';
+    return a === '?' ? a : m || a;
   },
   drawMarks(ctx, t) {
+    if (typeof Aventuras !== 'undefined') Aventuras.drawMarks(ctx, t);
     for (const n of game.npcs) {
       const mk = this.marca(n);
       if (!mk || game.talkTarget === n) continue;
@@ -174,44 +181,5 @@ const WorldQuests = {
       ctx.fillStyle = mk === '?' ? '#7dffb0' : '#ffd47a'; ctx.fillText(mk, q.x, q.y);
       ctx.restore();
     }
-  },
-
-  // Aba MISSÕES da mochila: as 3 de cada região (a região atual primeiro)
-  drawTab(ctx, Ly, t) {
-    const here = World.zone ? World.zone.region : 'carmesin';
-    const regs = [here, ...WORLD_REGIONS.slice().sort((a, b) => a.order - b.order).map((r) => r.id).filter((r) => r !== here)];
-    let y = Ly.top - 8;
-    const colW = (VIEW_W - 72 - 24) / 2;
-    ctx.textBaseline = 'middle';
-    regs.forEach((reg, i) => {
-      const x = 36 + (i === 0 ? 0 : ((i - 1) % 2) * (colW + 24)), R = worldRegion(reg), open = World.regionOpen(reg);
-      if (i === 1) y += 8;
-      ctx.textAlign = 'left';
-      ctx.font = `bold ${i === 0 ? 15 : 12}px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(R.rgb, open ? 1 : 0.5);
-      const D = this.doador(reg);
-      ctx.fillText(`${R.name.toUpperCase()}${open ? '' : ' · 🔒'}${i === 0 ? ` · com ${D.nome} (${D.zona})` : ''}`, x, y);
-      ctx.letterSpacing = '0px';
-      if (i === 0) {
-        this.lista(reg).forEach((q, k) => {
-          const s = this.S[q.id], yy = y + 26 + k * 52, st = !s ? 'nova' : s.st === 'feita' ? 'feita' : this.pronta(q) ? 'pronta' : 'ativa';
-          ctx.fillStyle = st === 'ativa' || st === 'pronta' ? 'rgba(40,60,100,0.6)' : 'rgba(12,20,36,0.8)'; ctx.fillRect(x, yy - 4, VIEW_W - 72, 46);
-          ctx.font = `bold 14px ${FONT_UI}`; ctx.fillStyle = st === 'feita' ? 'rgba(160,175,200,0.7)' : '#ffffff';
-          ctx.fillText(`${st === 'feita' ? '✓' : st === 'pronta' ? '?' : st === 'ativa' ? '▸' : '·'} ${q.name}`, x + 12, yy + 8);
-          ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-          const info = st === 'nova' ? (this.proxima(reg) === q ? `Fale com ${D.nome} para aceitar` : 'Depois da anterior')
-            : st === 'feita' ? 'Concluída' : st === 'pronta' ? `Pronta: volte a ${D.nome}` : `${this.texto(q)} · ${Math.min(this.prog(q), this.meta(q))}/${this.meta(q)}`;
-          ctx.fillText(info, x + 28, yy + 28);
-          ctx.textAlign = 'right'; ctx.fillStyle = '#9fd0ff';
-          ctx.fillText(`${q.rec.cells} células · ${q.rec.xp} XP · relíquia ${WORLD_RARIDADES[q.rec.min].name.toLowerCase()}+`, x + VIEW_W - 84, yy + 8);
-          ctx.textAlign = 'left';
-        });
-        y += 26 + 3 * 52 + 14;
-      } else {
-        const feitas = this.lista(reg).filter((q) => this.S[q.id] && this.S[q.id].st === 'feita').length;
-        ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.8)';
-        ctx.fillText(`${feitas}/3 missões · ${this.atual(reg) ? this.atual(reg).name : feitas === 3 ? 'todas concluídas' : open ? `com ${D.nome}` : 'região bloqueada'}`, x + 2, y + 20);
-        if ((i - 1) % 2 === 1) y += 44;
-      }
-    });
   },
 };

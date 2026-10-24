@@ -1204,6 +1204,7 @@ class Player extends Entity {
   }
 
   onBuffEnd(k) {
+    if (game.world && typeof Oficios !== 'undefined') Oficios.fimBuff(this, k);   // tônico e pele de pedra (js/mundo/oficios.js)
     if (k === 'shield') {
       if (this.shieldHp > 0) game.particles.ring(this.x, this.y, 40, '90,240,210', 0.25, 3);
       this.shieldHp = 0;

@@ -101,16 +101,19 @@ function worldPrepZone(id, z) {
 }
 for (const id in WORLD_ZONES) worldPrepZone(id, WORLD_ZONES[id]);
 const worldZoneAt = (r, c, region = 'carmesin') => Object.values(WORLD_ZONES).find((z) => z.region === region && z.r === r && z.c === c) || null;
-const worldZonesOf = (region) => Object.values(WORLD_ZONES).filter((z) => z.region === region);
+const worldZonesOf = (region) => Object.values(WORLD_ZONES).filter((z) => z.region === region && !z.instancia);   // sem os andares das masmorras
 const WORLD_START = 'mercado';
 // Recursos de coleta dos campos abertos, por bioma (nome, cor, cura ao colher)
+// (mat: o material que vai para a mochila, js/mundo/oficios.js)
 const WORLD_RECURSOS = {
-  floresta: { nome: 'ERVA LUMINOSA', rgb: '150,255,140', cura: 0.1 },
-  lagoa: { nome: 'CRISTAL DA LAGOA', rgb: '120,235,255' },
-  neve: { nome: 'MINÉRIO DE GELO', rgb: '200,230,255' },
-  deserto: { nome: 'FRAGMENTO ENTERRADO', rgb: '255,205,120' },
-  vulcao: { nome: 'OBSIDIANA BRUTA', rgb: '255,120,60' },
+  floresta: { nome: 'ERVA LUMINOSA', rgb: '150,255,140', cura: 0.1, mat: 'erva' },
+  lagoa: { nome: 'CRISTAL DA LAGOA', rgb: '120,235,255', mat: 'cristal' },
+  neve: { nome: 'MINÉRIO DE GELO', rgb: '200,230,255', mat: 'gelo' },
+  deserto: { nome: 'FRAGMENTO ENTERRADO', rgb: '255,205,120', mat: 'fragmento' },
+  vulcao: { nome: 'OBSIDIANA BRUTA', rgb: '255,120,60', mat: 'obsidiana' },
 };
+// Monte de ferro-velho das zonas fechadas (cidade, túneis, laboratório): sucata
+const WORLD_FERRO_VELHO = { nome: 'FERRO-VELHO', rgb: '170,182,204', mat: 'sucata' };
 const WORLD_DIRS = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const WORLD_OPP = { N: 'S', S: 'N', W: 'E', E: 'W' };
 
@@ -140,12 +143,14 @@ class WorldProp extends NPC {
     // Passagem: parar sobre a luz por um instante leva para a zona vizinha
     if (this.kind === 'gate') {
       const p = game.player;
-      if (p && p.state !== 'dead' && dist(p.x, p.y, this.x, this.y) < 30 && !game.fadeCb) {
+      if (p && p.state !== 'dead' && dist(p.x, p.y, this.x, this.y) < 30 && !game.fadeCb && !this.selada()) {
         this.dwell += dt;
-        if (this.dwell > 0.35) { this.dwell = -99; World.go(this.data.to, this.data.dir); }
+        if (this.dwell > 0.35) { this.dwell = -99; World.go(this.data.to, this.data.dir, null, this.data.chegada || null); }
       } else if (this.dwell > 0) this.dwell = 0;
     }
   }
+  // Masmorra: a passagem para o andar de cima fica selada enquanto houver inimigos de pé
+  selada() { return this.kind === 'gate' && this.data.dir === 'N' && typeof Locais !== 'undefined' && Locais.selada(); }
   canTalk() {
     if (this.kind === 'gate') return false;
     if (this.kind === 'chest') return !this.used && (!this.data.secret || dist(game.player.x, game.player.y, this.x, this.y) < 120);
@@ -209,7 +214,8 @@ class WorldProp extends NPC {
     ctx.restore();
     if (this.kind === 'gate' || this.kind === 'portal') {
       const z = WORLD_ZONES[this.data.to];
-      const label = this.kind === 'portal' ? 'PORTAL · VIAGEM RÁPIDA' : `${this.data.dir === 'N' ? '↑' : this.data.dir === 'S' ? '↓' : this.data.dir === 'W' ? '←' : '→'} ${z ? z.name.toUpperCase() : ''}`;
+      const label = this.kind === 'portal' ? 'PORTAL · VIAGEM RÁPIDA' : this.data.rotulo ? this.data.rotulo : this.selada() ? '🔒 SELADA · DERROTE OS INIMIGOS'
+        : `${this.data.dir === 'N' ? '↑' : this.data.dir === 'S' ? '↓' : this.data.dir === 'W' ? '←' : '→'} ${z ? z.name.toUpperCase() : ''}`;
       ctx.save();
       ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '1.5px'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const w = ctx.measureText(label).width + 16;
@@ -259,6 +265,8 @@ const World = {
     this.state = Object.assign(this.fresh(), saved ? saved.world : null);
     if (!this.state.chefes) this.state.chefes = {};
     if (this.state.chefe) this.state.chefes.carmesin = true;   // salvamentos antigos (só Carmesin)
+    Aventuras.validar();   // missões sem definição, passos fora da lista, contratos velhos (sem travas)
+    Dialogo.aberto = false; Eventos.prox = 150;
     this.active = true; g.world = this; g.slot = 0;   // sem espaço da campanha: o mundo salva na chave dele
     g.checkpoint = 0;
     g.counter = new ComboCounter();
@@ -277,7 +285,7 @@ const World = {
 
   // Carrega uma zona; 'from' = lado por onde o herói chega (N, S, W, E) ou null (portal / início);
   // 'along' (0 a 1) = onde, ao longo da borda, ele cruzou (campo aberto: sai em qualquer ponto)
-  loadZone(id, from, along = null) {
+  loadZone(id, from, along = null, chegada = null) {
     const g = game, z = WORLD_ZONES[id];
     this.zone = z; this.state.zona = id;
     g.audio.playMusic({ cathedral: 'nexus_encounter', lab: 'facility', vulcao: 'nexus_encounter', tower: 'nexus_encounter' }[z.theme] || 'vesper');
@@ -294,12 +302,11 @@ const World = {
     const W = g.waves;
     W.def = z; W.roomIndex = Math.min(5, z.lv - 1); W.state = 'world'; W.queue.length = 0;
     g.npcs.length = 0; g.talkTarget = null;
+    // moradores (js/mundo/povo.js): a conversa abre o diálogo com missões, loja, serviços e rumores
     for (const d of z.npcs) {
-      const pt = npcSpot(g.room, d.at[0], d.at[1]), n = new NPC(d, pt.x, pt.y);
-      // mercador: a conversa abre a loja; missão: a conversa dá, lembra ou entrega (js/mundo/*.js)
-      if (d.merchant) { n.merchant = true; n.verb = 'Negociar'; n.talk = function () { NPC.prototype.talk.call(this); WorldInv.abrir('loja', true); }; }
-      if (d.quest) { n.quest = true; n.talk = function () { if (!WorldQuests.talk(this)) NPC.prototype.talk.call(this); }; }
-      g.npcs.push(n);
+      if (d.persona && d.persona.id && Aventuras.oculta(d.persona.id)) continue;   // está sendo escoltado (aparece como escolta)
+      const pt = npcSpot(g.room, d.at[0], d.at[1]);
+      g.npcs.push(new Morador(d, pt.x, pt.y));
     }
     const R = g.room, m = 64;
     const gatePos = { N: [R.w / 2, m], S: [R.w / 2, R.h - m], W: [m, R.h / 2], E: [R.w - m, R.h / 2] };
@@ -313,17 +320,19 @@ const World = {
     if (z.secret) { const pt = spot(z.secret.at); g.npcs.push(new WorldProp('chest', pt.x, pt.y, Object.assign({ key: `${id}:segredo`, secret: true }, z.secret))); }
     if (z.terminal) { const pt = spot(z.terminal.at); g.npcs.push(new WorldProp('terminal', pt.x, pt.y, Object.assign({ key: id }, z.terminal))); }
     // Campo aberto: recursos de coleta em lugares fixos da zona (voltam a crescer a cada dia)
-    const RC = z.aberto && WORLD_RECURSOS[z.theme];
+    // (zonas fechadas fora das cidades: dois montes de ferro-velho com sucata, js/mundo/oficios.js)
+    const RC = z.aberto ? WORLD_RECURSOS[z.theme] : !z.hub && !z.vila ? WORLD_FERRO_VELHO : null;
     if (RC) {
       let h = 7;
       for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
       const rr = mulberry32(h);
-      for (let k = 0; k < 5; k++) { const pt = spot([0.12 + 0.76 * rr(), 0.12 + 0.76 * rr()]); g.npcs.push(new WorldProp('coleta', pt.x, pt.y, Object.assign({ key: `${id}:c${k}` }, RC))); }
+      for (let k = 0; k < (z.aberto ? 5 : 2); k++) { const pt = spot([0.12 + 0.76 * rr(), 0.12 + 0.76 * rr()]); g.npcs.push(new WorldProp('coleta', pt.x, pt.y, Object.assign({ key: `${id}:c${k}` }, RC))); }
     }
     // Acampamentos (o do chefe só volta enquanto ele não foi derrotado)
     this.camps = [];
     for (const c of z.camps || []) {
       if (c.boss && this.bossDone(z.region)) continue;
+      if (!Povo.campoLivre(z, c)) continue;   // vilarejo: as pessoas de lá precisam estar acessíveis
       const pt = spot(c.at), camp = { def: c, enemies: [], awake: false, x: pt.x, y: pt.y };
       for (const type in c.mobs) for (let i = 0; i < c.mobs[type]; i++) {
         const a = rand(0, TAU), r = rand(18, 70);
@@ -352,6 +361,7 @@ const World = {
     const p = g.player, arrive = from ? gatePos[WORLD_OPP[from]] : [R.w / 2, R.h / 2 + 60];
     const inward = from ? { N: [0, 70], S: [0, -70], W: [70, 0], E: [-70, 0] }[WORLD_OPP[from]] : [0, 0];
     p.x = arrive[0] + inward[0]; p.y = arrive[1] + inward[1]; p.z = 0;
+    if (chegada) { const q = npcSpot(R, chegada[0], chegada[1]); p.x = q.x; p.y = q.y + 40; }   // saída de masmorra: ao lado da entrada
     if (from && along !== null) {
       // cruzou a borda num ponto qualquer: entra no mesmo ponto da borda oposta (se der para ficar ali)
       const lado = WORLD_OPP[from], k = clamp(along, 0.06, 0.94);
@@ -362,7 +372,8 @@ const World = {
     p.vx = p.vy = p.kbx = p.kby = 0;
     p.state = 'idle'; p.stateTime = 0; p.attack = null; p.combo.reset();
     g.camera.snap(isoX(p.x, p.y), isoY(p.x, p.y) - 30);
-    g.hud.message(z.name.toUpperCase(), z.sub, 2.2);
+    const dif = z.lv - g.activeProgress().level;   // zona acima do nível do herói: aviso no letreiro
+    g.hud.message(z.name.toUpperCase(), dif >= 4 ? `${z.sub} · PERIGOSA PARA VOCÊ` : z.vila ? `${z.vila.nome.toUpperCase()} · ${z.sub}` : z.sub, 2.2);
     // Descoberta
     if (!this.state.descobertos.includes(id)) {
       this.state.descobertos.push(id);
@@ -371,6 +382,10 @@ const World = {
     }
     if (z.portal && !this.state.portais.includes(id)) { this.state.portais.push(id); g.hud.toast(`Portal ativado · ${z.name}`, '170,120,255'); }
     Campanhas.aoCarregar(id);   // sinal do capítulo da campanha do herói, se for esta zona (js/mundo/campanhas.js)
+    Povo.aoCarregar(z);         // rotinas e quadro de contratos (js/mundo/povo.js)
+    Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
+    Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
+    Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
     this.save();
   },
   // Inimigo (tipo ou variante, js/mundo/variantes.js) no nível da zona: acampamentos e campanhas.
@@ -381,10 +396,10 @@ const World = {
     return e;
   },
   // Vai para outra zona (passagem: 'dir'; portal: dir null)
-  go(id, dir, along = null) {
+  go(id, dir, along = null, chegada = null) {
     if (!WORLD_ZONES[id] || game.fadeCb) return;
     game.audio.play('uiSelect');
-    game.fadeTo(() => { this.loadZone(id, dir, along); game.fadeTarget = 0; });
+    game.fadeTo(() => { this.loadZone(id, dir, along, chegada); game.fadeTarget = 0; });
   },
   // Recursos de coleta: prontos de novo a cada dia do mundo (js/mundo/tempo.js)
   coletaPronta(key) { const C = this.state.coletas || {}; return (C[key] || 0) < (this.state.dia || 1); },
@@ -399,6 +414,7 @@ const World = {
     g.audio.play('soul');
     g.hud.toast(`${d.nome.charAt(0)}${d.nome.slice(1).toLowerCase()} · ${cel} células${d.cura ? ' e vida' : ''}`, d.rgb);
     if (Math.random() < 0.15) WorldInv.ganhar(WorldInv.gerar(z.lv, z.region, 0), prop.x, prop.y);
+    Oficios.aoColetar(d);   // o material do recurso (e o ofício de Coleta)
     this.state.coletados = (this.state.coletados || 0) + 1;
     WorldQuests.check();
     this.save();
@@ -411,6 +427,7 @@ const World = {
     c.awake = true;
     for (const q of c.enemies) { q.dormant = false; game.particles.ring(q.x, q.y, q.radius * 2.2, q.T.glow, 0.35, 4); }
     if (c.def.boss) { game.hud.message(worldRegion(this.zone.region).boss.name, 'CHEFE REGIONAL', 2.6, false, true); game.camera.shake(0.35); game.audio.play('bossRoar'); }
+    else if (c.chefeMissao) { game.hud.message(c.chefeMissao, this.zone.instancia ? 'CHEFE DA MASMORRA' : 'CHEFE OPCIONAL', 2.4, false, true); game.camera.shake(0.3); game.audio.play('bossRoar'); }
     else game.audio.play('spawn');
   },
   update(dt) {
@@ -432,6 +449,8 @@ const World = {
       if (p.state !== 'dead' && dist2(p.x, p.y, c.x, c.y) < R * R) { const e = c.enemies.find((q) => q.alive); if (e) this.wake(e); }
     }
     Campanhas.update(dt);
+    Aventuras.update(dt);   // lugares escondidos e quem volta para casa
+    Eventos.update(dt);     // eventos dinâmicos da região
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }
   },
@@ -442,6 +461,10 @@ const World = {
   onKill(e) {
     WorldInv.onKill(e);       // saque de relíquias (js/mundo/inventario.js)
     WorldQuests.onKill(e);    // missões de abate (js/mundo/missoes.js)
+    Oficios.aoAbater(e);      // materiais (sucata, núcleo, essência)
+    Aventuras.onKill(e);      // missões secundárias e contratos
+    Locais.onKill(e);         // chefe de masmorra, mapa do tesouro
+    Eventos.onKill(e);        // caçador errante
     if (e.worldBoss) {
       const reg = worldRegion(e.worldRegion || 'carmesin');
       this.state.chefes[reg.id] = true;
@@ -450,6 +473,7 @@ const World = {
       const next = WORLD_REGIONS.find((q) => q.order === reg.order + 1);
       game.hud.toast(next ? `Nova região liberada · ${next.name} (mapa: M)` : 'Todas as regiões concluídas', reg.rgb);
       game.gainXP(500 * (reg.order + 1), e.x, e.y);
+      Oficios.ganharRep(reg.id, 150);
       for (let i = 0; i < 8 + reg.order * 2; i++) game.pickups.drop('soul', e.x, e.y, 6 + reg.order * 2);
       WorldQuests.check();
       this.save();
@@ -457,9 +481,9 @@ const World = {
   },
   openChest(prop) {
     const d = prop.data, g = game;
-    const sel = d.boss && !this.bossDone(this.zone.region);
+    const sel = (d.boss && !this.bossDone(this.zone.region)) || (d.masmorra && Locais.chefeVivo());
     if (prop.used || sel) {
-      if (sel) { g.hud.toast(`Selado por ${worldRegion(this.zone.region).boss.name}`, '255,92,122'); g.audio.play('uiDeny'); }
+      if (sel) { g.hud.toast(`Selado por ${d.masmorra ? WORLD_MASMORRAS[d.masmorra].chefe.nome : worldRegion(this.zone.region).boss.name}`, '255,92,122'); g.audio.play('uiDeny'); }
       return;
     }
     this.state.baus.push(d.key);
@@ -489,8 +513,9 @@ const World = {
     const bausAqui = S.baus.filter((k) => zs.some((z) => k.indexOf(z.id + ':') === 0)).length;
     const bz = zs.find((z) => (z.camps || []).some((c) => c.boss));
     const base = this.bossDone(reg.id) ? `${reg.name} concluída` : `Derrote ${reg.boss.name}${bz ? ` em ${bz.name}` : ''}`;
-    const quest = typeof WorldQuests !== 'undefined' ? WorldQuests.line() : '', camp = Campanhas.linha();
-    return `${camp ? `${camp} · ` : ''}${quest || base} · locais ${zs.filter((z) => S.descobertos.includes(z.id)).length}/${zs.length} · baús ${bausAqui}/${baus}`;
+    const quest = typeof WorldQuests !== 'undefined' ? WorldQuests.line() : '', camp = Campanhas.linha(), ev = Eventos.linha(), av = Aventuras.linha();
+    if (this.zone.instancia) { const M = WORLD_MASMORRAS[this.zone.instancia]; return `${ev ? `${ev} · ` : ''}${M.nome}: ${this.zone.ultimo ? (Locais.chefeVivo() ? `derrote ${M.chefe.nome}` : 'vencida! Abra o baú e saia') : Locais.selada() ? 'derrote os inimigos para abrir a passagem' : 'suba pela passagem'}${av ? ` · ${av}` : ''}`; }
+    return `${ev ? `${ev} · ` : ''}${camp ? `${camp} · ` : ''}${av ? `${av} · ` : ''}${quest || base} · locais ${zs.filter((z) => S.descobertos.includes(z.id)).length}/${zs.length} · baús ${bausAqui}/${baus}`;
   },
 
   // Salvamento próprio do mundo (o jogo, o elenco e o estado das zonas)
@@ -528,6 +553,7 @@ const World = {
     const S = this.state, ids = [];
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], seen = S.descobertos.includes(id);
+      if (z.instancia) continue;   // andares de masmorra não entram no mapa
       if (!this.map.travel) { if (seen) ids.push(id); continue; }
       if ((seen && S.portais.includes(id)) || (worldRegion(z.region).hub === id && this.regionOpen(z.region))) ids.push(id);
     }
@@ -565,9 +591,10 @@ const World = {
     const zones = {}, s = 22 * M.zoom;
     // grade de zonas de cada região, centrada na região
     const dims = {};
-    for (const id in WORLD_ZONES) { const z = WORLD_ZONES[id], d = dims[z.region] || (dims[z.region] = [0, 0]); d[0] = Math.max(d[0], z.r); d[1] = Math.max(d[1], z.c); }
+    for (const id in WORLD_ZONES) { const z = WORLD_ZONES[id]; if (z.instancia) continue; const d = dims[z.region] || (dims[z.region] = [0, 0]); d[0] = Math.max(d[0], z.r); d[1] = Math.max(d[1], z.c); }
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], c = pos(worldRegion(z.region).at), d = dims[z.region];
+      if (z.instancia) continue;
       zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.5, y: c.y + (z.r - d[0] / 2) * s * 1.5, s };
     }
     return { x0, y0, mw, mh, pos, zones };
@@ -596,6 +623,7 @@ const World = {
     // Trilhas entre zonas vizinhas (passagens)
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], q = L.zones[id], rgb = worldRegion(z.region).rgb;
+      if (!q) continue;
       for (const dir of ['E', 'S']) {
         const n = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
         if (!n) continue;
@@ -618,8 +646,10 @@ const World = {
       ctx.fillStyle = forte ? '#ffffff' : 'rgba(220,230,245,0.9)'; ctx.fillText(txt, q.x, ty + 0.5);
     };
     // Marcadores das zonas: losango na cor da região; ícone do que há nela
+    const aqui = this.zone && (this.zone.instancia ? WORLD_MASMORRAS[this.zone.instancia].zona : this.zone.id);   // na masmorra: a zona da entrada
     for (const id in WORLD_ZONES) {
-      const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = this.zone && id === this.zone.id;
+      const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = id === aqui;
+      if (!q) continue;
       const rgb = worldRegion(z.region).rgb, reach = seen || list.includes(id), m = q.s * 0.46;
       const chefe = z.camps && z.camps.some((c) => c.boss) && !this.bossDone(z.region);
       if (M.travel && list.includes(id)) { ctx.strokeStyle = `rgba(190,150,255,${0.45 + 0.35 * Math.sin(t * 4)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, m * 1.7, 0, TAU); ctx.stroke(); }
@@ -639,7 +669,7 @@ const World = {
       if (seen && M.zoom >= 1.8 && id !== sel && !here) etiqueta(q, m, z.name, q.s * 1.5 - 6, false);
     }
     // a zona escolhida e a atual: o nome inteiro, por cima de tudo
-    if (this.zone) { const q = L.zones[this.zone.id]; if (q && this.zone.id !== sel) etiqueta(q, q.s * 0.46, this.zone.name, 999, false); }
+    if (aqui) { const q = L.zones[aqui]; if (q && aqui !== sel) etiqueta(q, q.s * 0.46, this.zone.name, 999, false); }
     if (sel && L.zones[sel]) etiqueta(L.zones[sel], L.zones[sel].s * 0.46, WORLD_ZONES[sel].name, 999, true);
     // Capítulo da campanha do herói: ★ na cor dele
     const alvo = Campanhas.zonaAlvo();
@@ -651,6 +681,21 @@ const World = {
       ctx.font = `bold ${Math.round(q.s * 0.8)}px ${FONT_UI}`; ctx.fillStyle = rgba(C.rgb, 1);
       ctx.fillText('★', q.x + q.s * 0.55, q.y - q.s * 0.55);
     }
+    // Missões (◆ dourado; a rastreada maior e pulsando), masmorras (▼), tesouros (✦), rumores (…) e eventos (⚔)
+    const cantos = {};
+    const marca = (zona, icon, rgb, grande) => {
+      const q = L.zones[zona];
+      if (!q) return;
+      const n = cantos[zona] = (cantos[zona] || 0) + 1, a = -Math.PI * 0.25 + n * Math.PI * 0.5, d = q.s * 0.7;
+      const x = q.x + Math.cos(a) * d, y = q.y + Math.sin(a) * d, k = 0.6 + 0.4 * Math.sin(t * 5);
+      if (grande) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; GlowCache.draw(ctx, rgb, x, y, q.s * 1.2, 0.6 * k); ctx.restore(); }
+      ctx.font = `bold ${Math.round(q.s * (grande ? 0.78 : 0.6))}px ${FONT_UI}`;
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(3,7,16,0.9)'; ctx.strokeText(icon, x, y + 1);
+      ctx.fillStyle = rgba(rgb, 1); ctx.fillText(icon, x, y + 1);
+    };
+    for (const A of Aventuras.alvosMapa()) marca(A.zona, '◆', '255,212,122', A.rastreada);
+    for (const A of Locais.marcasMapa()) marca(A.zona, A.icon, A.feito ? '160,150,180' : A.rgb, false);
+    for (const A of Eventos.marcasMapa()) marca(A.zona, A.icon, A.rgb, true);
     // Nomes das regiões, numa faixa sobre cada uma
     for (const r of WORLD_REGIONS) {
       const c = L.pos(r.at), rad = r.r * Math.min(L.mw, L.mh), open = this.regionOpen(r.id), done = this.bossDone(r.id);
@@ -680,13 +725,16 @@ const World = {
     ctx.fillText(M.travel ? 'VIAGEM RÁPIDA' : 'MAPA DO MUNDO', 40, 40);
     ctx.letterSpacing = '0px';
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-    ctx.fillText('⌂ base · ◈ portal · ☠ chefe regional · ★ campanha · ? não descoberto · névoa: região não explorada · ◯ você está aqui', 40, VIEW_H - 40);
+    const legenda = '⌂ base · ◈ portal · ☠ chefe · ★ campanha · ◆ missão · ▼ masmorra · ✦ tesouro · ⚔ evento · ? não descoberto · ◯ você';
+    const dica = M.travel ? 'Enter: viajar · ←/→ escolher · Q/E zoom · Esc fechar' : '←/→ escolher · Q/E zoom · Esc fechar';
+    const duas = ctx.measureText(legenda).width + ctx.measureText(dica).width + 120 > VIEW_W;   // tela estreita: legenda e dica em duas linhas
+    ctx.fillText(legenda, 40, duas ? VIEW_H - 46 : VIEW_H - 40);
     if (sel) {
       const z = WORLD_ZONES[sel], R = worldRegion(z.region);
       ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = '#ffd2dc';
       ctx.fillText(`${R.name.toUpperCase()} · ${z.name.toUpperCase()} · NÍVEL ${z.lv}`, VIEW_W - 40, 40);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-      ctx.fillText(M.travel ? 'Enter: viajar · ←/→ escolher · Q/E zoom · Esc fechar' : '←/→ escolher · Q/E zoom · Esc fechar', VIEW_W - 40, VIEW_H - 40);
+      ctx.fillText(dica, VIEW_W - 40, duas ? VIEW_H - 24 : VIEW_H - 40);
       this.drawMapInfo(ctx, sel, CX + CW - 14, CY + CH - 14);
     }
     ctx.restore();
@@ -706,6 +754,10 @@ const World = {
       if (z.aberto) itens.push('Campo aberto · recursos para colher');
     }
     if (Campanhas.zonaAlvo() === id) { const c = Campanhas.cap(); itens.push(`★ Campanha: ${c.nome}`); }
+    if (z.vila) itens.push(z.vila.nome);
+    for (const A of Aventuras.alvosMapa()) if (A.zona === id) itens.push(`◆ ${A.q.nome}`);
+    for (const A of Locais.marcasMapa()) if (A.zona === id) itens.push(`${A.icon} ${A.nome}${A.feito ? ' (vencida)' : ''}`);
+    for (const A of Eventos.marcasMapa()) if (A.zona === id) itens.push(`⚔ Evento: ${A.nome}`);
     ctx.font = `12px ${FONT_UI}`;
     const linhas = [], W = 320;
     let cur = '';

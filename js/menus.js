@@ -309,317 +309,223 @@ const COMMANDS = [
 const PAD_DIAG = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'back', 'start', 'ls', 'rs', '↑', '↓', '←', '→', '⌂'];
 
 // ---------------------------------------------------------------------------
-// TRANSIÇÃO CINEMATOGRÁFICA: CORTE DE ESPADA ENERGÉTICA SCI-FI (ECLIPSE ZERO)
+// ABERTURA: RISCOS DE TELA E INTERFERÊNCIA (capa → menu principal)
 // ---------------------------------------------------------------------------
-class SwordSlashFx {
+// A capa abre do escuro com sinais fracos de interferência (riscos finos e raros). Ao entrar
+// (tecla, clique, toque ou JOGAR na tela inicial), a imagem sofre uma interferência sombria
+// que cresce aos poucos — riscos horizontais de espessura, comprimento e velocidade
+// diferentes, faixas da imagem deslocadas, blocos de pixels, uma separação de cor discreta
+// (carmesim e azul), grão e linhas de varredura —, com calmarias e picos irregulares, chega a
+// uma ruptura curta (a imagem escurece e rola, sem clarão) e se estabiliza: as faixas passam a
+// mostrar o menu principal até a tela assentar nele. Dura cerca de 2,4 s e não reinicia: um
+// segundo pedido durante a transição é ignorado, e o menu só recebe comandos no fim.
+// Movimento reduzido (preferência do sistema) ou pós-processamento desligado: uma troca
+// suave, sem deslocamentos nem riscos em movimento. Canvas 2D, sem bibliotecas: as duas
+// páginas são desenhadas em telas fora da vista e recortadas em faixas.
+// ---------------------------------------------------------------------------
+class RiscoTelaFx {
   constructor(menus) {
     this.menus = menus;
     this.active = false;
-    this.t = 0;
-    this.duration = 1.35;
-    this.fromPage = 'cover';
-    this.targetPage = 'main';
-    this.sparks = [];
-    this.lightning = [];
-    this.cutP0 = { x: 0, y: 0 };
-    this.cutP1 = { x: 0, y: 0 };
-    this.normal = { x: 0, y: 0 };
-    this.dir = { x: 0, y: 0, len: 1 };
+    this.t = 0; this.dur = 2.4;
+    this.fromPage = 'cover'; this.targetPage = 'main';
+    this.telas = [null, null]; this.ctxs = [null, null];
+    this.riscos = []; this.reduzido = false; this.seed = 1; this.sons = 0;
+    this.grao = null; this.varredura = null;
   }
-
+  // Movimento reduzido: preferência do sistema ou pós-processamento desligado nas configurações
+  static reduzido() {
+    let m = false;
+    try { m = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { /* sem matchMedia */ }
+    return m || (typeof Settings !== 'undefined' && Settings.v.postfx === 0);
+  }
   start(fromPage, targetPage) {
-    this.active = true;
-    this.t = 0;
-    this.fromPage = fromPage || 'cover';
-    this.targetPage = targetPage || 'main';
-    this.sparks = [];
-    this.lightning = [];
-
-    // Linha de corte diagonal (atravessa a tela de ponta a ponta com ângulo estilizado)
-    this.cutP0 = { x: VIEW_W * 1.08, y: VIEW_H * 0.16 };
-    this.cutP1 = { x: -VIEW_W * 0.08, y: VIEW_H * 0.84 };
-
-    const dx = this.cutP1.x - this.cutP0.x;
-    const dy = this.cutP1.y - this.cutP0.y;
-    const len = Math.hypot(dx, dy) || 1;
-    this.dir = { x: dx / len, y: dy / len, len };
-    this.normal = { x: -this.dir.y, y: this.dir.x };
-
-    // Tremor de impacto na câmera
-    if (typeof game !== 'undefined' && game.camera) {
-      game.camera.shake(0.42);
-    }
-
-    // Gera faíscas digitais em alta velocidade explodindo perpendicularmente à lâmina
-    for (let i = 0; i < 70; i++) {
-      const pos = Math.random();
-      const px = this.cutP0.x + dx * pos;
-      const py = this.cutP0.y + dy * pos;
-      const side = Math.random() < 0.5 ? 1 : -1;
-      const speed = rand(220, 800);
-      const spread = rand(-0.4, 0.4);
-      const vx = (this.normal.x * side + this.dir.x * spread) * speed;
-      const vy = (this.normal.y * side + this.dir.y * spread) * speed;
-      const life = rand(0.35, 0.95);
-      const size = rand(2.2, 5.5);
-      const color = Math.random() < 0.3 ? '#ffffff' : Math.random() < 0.7 ? '#00e5ff' : '#4d94ff';
-      this.sparks.push({ x: px, y: py, vx, vy, life, maxLife: life, size, color });
-    }
-
-    // Gera ramificações de raios elétricos
-    this.generateLightning();
+    if (this.active) return;
+    this.active = true; this.t = 0; this.sons = 0;
+    this.fromPage = fromPage || 'cover'; this.targetPage = targetPage || 'main';
+    this.reduzido = RiscoTelaFx.reduzido();
+    this.dur = this.reduzido ? 0.9 : 2.4;
+    this.seed = (Math.random() * 1e6) | 0;
+    // riscos: cada um com altura, espessura, comprimento, velocidade, janela de aparição e tom
+    const r = mulberry32(this.seed);
+    this.riscos = Array.from({ length: 46 }, () => ({
+      y: r(), e: r() < 0.7 ? 0.6 + r() * 1.2 : 1.6 + r() * 3.2, len: 0.08 + Math.pow(r(), 1.6) * 0.9, x: r() * 1.4 - 0.2,
+      v: (r() - 0.5) * (r() < 0.25 ? 2.6 : 0.7), limiar: r(), fase: r() * 10, f: 2 + r() * 9,
+      tom: r() < 0.62 ? 'claro' : r() < 0.6 ? 'escuro' : 'carmim',
+    }));
+    if (this.reduzido && game.audio && game.audio.playSwordSlashSFX) game.audio.playSwordSlashSFX();
   }
-
-  generateLightning() {
-    this.lightning = [];
-    const count = 7;
-    for (let i = 0; i < count; i++) {
-      const p = 0.08 + (i / (count - 1)) * 0.84 + rand(-0.04, 0.04);
-      const rootX = this.cutP0.x + (this.cutP1.x - this.cutP0.x) * p;
-      const rootY = this.cutP0.y + (this.cutP1.y - this.cutP0.y) * p;
-      const side = i % 2 === 0 ? 1 : -1;
-      const branchLen = rand(70, 180);
-      const pts = [{ x: rootX, y: rootY }];
-      const steps = Math.floor(rand(4, 7));
-      for (let s = 1; s <= steps; s++) {
-        const prog = s / steps;
-        const mainX = rootX + this.normal.x * side * branchLen * prog;
-        const mainY = rootY + this.normal.y * side * branchLen * prog;
-        pts.push({ x: mainX + rand(-20, 20), y: mainY + rand(-20, 20) });
-      }
-      this.lightning.push({ pts, life: rand(0.2, 0.55), width: rand(1.8, 3.2) });
-    }
-  }
-
   update(dt) {
     if (!this.active) return;
     this.t += dt;
-
-    // Atualiza partículas de faíscas
-    for (let i = this.sparks.length - 1; i >= 0; i--) {
-      const sp = this.sparks[i];
-      sp.life -= dt;
-      if (sp.life <= 0) {
-        this.sparks.splice(i, 1);
-        continue;
-      }
-      sp.x += sp.vx * dt;
-      sp.y += sp.vy * dt;
-      sp.vx *= 0.93;
-      sp.vy *= 0.93;
+    if (!this.reduzido && game.audio) {
+      // estalos de interferência na subida e o corte (o som de sempre) na ruptura
+      if (this.sons === 0 && this.t > 0.42) { this.sons = 1; game.audio.play('glitch'); }
+      else if (this.sons === 1 && this.t > 0.86) { this.sons = 2; game.audio.play('glitch'); }
+      else if (this.sons === 2 && this.t > 1.1) { this.sons = 3; if (game.audio.playSwordSlashSFX) game.audio.playSwordSlashSFX(); }
     }
-
-    // Disparos secundários de eletricidade durante a fissura inicial
-    if (this.t < 0.45 && Math.random() < 0.35) {
-      this.generateLightning();
-    }
-
-    // Fim da animação
-    if (this.t >= this.duration) {
-      this.active = false;
-      this.menus.go(this.targetPage);
-    }
+    if (this.t >= this.dur) { this.active = false; this.menus.go(this.targetPage); }
   }
 
+  // ------------------------------------------------------------ ritmo
+  // Ruído suave de 0 a 1 (calmarias e picos sem repetir)
+  ruido(x) {
+    const i = Math.floor(x), f = x - i, h = (n) => { const s = Math.sin((n + this.seed * 0.001) * 127.1) * 43758.5453; return s - Math.floor(s); };
+    const u = f * f * (3 - 2 * f);
+    return h(i) * (1 - u) + h(i + 1) * u;
+  }
+  // Intensidade da interferência (0 a 1): sobe com oscilações, rompe, assenta com réplicas
+  intensidade(t) {
+    const sm = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+    if (t < 1.08) {
+      const base = 0.06 + 0.62 * Math.pow(sm(0, 1.08, t), 1.6);
+      const osc = 0.45 + 0.75 * this.ruido(t * 7.3);   // calmarias e picos
+      return clamp(base * osc + (this.ruido(t * 23) > 0.86 ? 0.18 : 0), 0, 0.85);
+    }
+    if (t < 1.42) return 0.9 + 0.1 * this.ruido(t * 40);
+    const d = Math.exp(-(t - 1.42) * 3.1);
+    const replica = Math.exp(-Math.pow((t - 1.78) / 0.05, 2)) * 0.32 + Math.exp(-Math.pow((t - 2.02) / 0.04, 2)) * 0.18;
+    return clamp(d * 0.85 + replica * (0.6 + 0.4 * this.ruido(t * 31)), 0, 1);
+  }
+  // Quanto do menu principal já aparece (0 a 1)
+  mistura(t) { const k = clamp((t - (this.reduzido ? 0.1 : 1.24)) / (this.reduzido ? 0.75 : 0.86), 0, 1); return k * k * (3 - 2 * k); }
+
+  // ------------------------------------------------------------ desenho
+  // Página desenhada numa tela fora da vista (na resolução real), para ser recortada
+  tela(i, page, t) {
+    const s = clamp(game.scale || 1, 0.5, 3), W = Math.ceil(VIEW_W * s), H = Math.ceil(VIEW_H * s);
+    let c = this.telas[i];
+    if (!c || c.width !== W || c.height !== H) { c = this.telas[i] = document.createElement('canvas'); c.width = W; c.height = H; this.ctxs[i] = c.getContext('2d'); }
+    const g = this.ctxs[i];
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    g.setTransform(s, 0, 0, s, 0, 0);
+    this.renderPage(g, page, t);
+    c.s = s;
+    return c;
+  }
   renderPage(ctx, page, t) {
     switch (page) {
       case 'cover': this.menus.drawCover(ctx, t); break;
       case 'start': this.menus.drawStart(ctx, t); break;
-      case 'main': this.menus.drawMain(ctx, t); break;
       default: this.menus.drawMain(ctx, t); break;
     }
   }
-
+  // Tela de grão (ruído) e de linhas de varredura, feitas uma vez
+  texturas() {
+    if (this.grao) return;
+    const n = document.createElement('canvas'); n.width = n.height = 160;
+    const g = n.getContext('2d'), im = g.createImageData(160, 160), r = mulberry32(77);
+    for (let i = 0; i < im.data.length; i += 4) { const v = r() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = r() < 0.5 ? 255 : 0; }
+    g.putImageData(im, 0, 0);
+    this.grao = n;
+    const v = document.createElement('canvas'); v.width = 4; v.height = 3;
+    const gv = v.getContext('2d'); gv.fillStyle = 'rgba(0,0,0,1)'; gv.fillRect(0, 0, 4, 1);
+    this.varredura = v;
+  }
+  // Uma faixa da página (src) desenhada deslocada em x (a sobra volta pelo outro lado, mais escura)
+  faixa(ctx, src, y, h, dx) {
+    const s = src.s, W = VIEW_W;
+    if (h <= 0) return;
+    ctx.drawImage(src, 0, y * s, W * s, h * s, dx, y, W, h);
+    if (Math.abs(dx) > 0.5) {
+      const ox = dx > 0 ? dx - W : dx + W;
+      ctx.drawImage(src, 0, y * s, W * s, h * s, ox, y, W, h);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(dx > 0 ? 0 : W + dx, y, Math.abs(dx), h);   // o pedaço que "voltou" fica apagado
+    }
+  }
   draw(ctx, t) {
     if (!this.active) return;
-
-    // 1) Renderiza a página de destino (MENU PRINCIPAL) no fundo
-    this.renderPage(ctx, this.targetPage, t);
-
-    // 2) Calcula o corte e o afastamento dimensional (split)
-    const slashTravelT = 0.22;
-    const slashProgress = clamp(this.t / slashTravelT, 0, 1);
-
-    const splitStart = 0.12;
-    const splitEnd = 0.68;
-    const splitProgress = clamp((this.t - splitStart) / (splitEnd - splitStart), 0, 1);
-    const easeSplit = Math.sin(splitProgress * Math.PI * 0.5);
-    const splitDist = easeSplit * 36;
-
-    const fadeOutStart = 0.45;
-    const fromAlpha = clamp(1 - (this.t - fadeOutStart) / (this.duration - fadeOutStart), 0, 1);
-
-    if (fromAlpha > 0.01) {
-      const P0 = this.cutP0, P1 = this.cutP1;
-      const nx = this.normal.x, ny = this.normal.y;
-
-      // Metade Superior / Direita:
-      ctx.save();
-      ctx.globalAlpha = fromAlpha;
-      ctx.beginPath();
-      ctx.moveTo(-100, -100);
-      ctx.lineTo(VIEW_W + 100, -100);
-      ctx.lineTo(VIEW_W + 100, P0.y);
-      ctx.lineTo(P0.x, P0.y);
-      ctx.lineTo(P1.x, P1.y);
-      ctx.lineTo(-100, P1.y);
-      ctx.closePath();
-      ctx.clip();
-
-      ctx.translate(nx * splitDist, ny * splitDist);
-      this.renderPage(ctx, this.fromPage, t);
-
-      // Borda tecnológica ao longo da linha de corte
-      ctx.strokeStyle = `rgba(0, 229, 255, ${0.85 * fromAlpha})`;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(P0.x, P0.y);
-      ctx.lineTo(P1.x, P1.y);
-      ctx.stroke();
+    const T = this.t, I = this.reduzido ? 0 : this.intensidade(T), mix = this.mistura(T);
+    const A = mix < 0.999 ? this.tela(0, this.fromPage, t) : null, B = mix > 0.001 ? this.tela(1, this.targetPage, t) : null;
+    ctx.save();
+    // base: a página de origem e a de destino em fusão (na ruptura, a imagem rola um pouco)
+    // o padrão das faixas segura por alguns quadros e muda aos trancos (8 a 22 vezes por segundo:
+    // irregular, sem piscar rápido demais)
+    const r = mulberry32((this.seed + Math.floor(T * (8 + 14 * I) + this.ruido(T * 3.1) * 1.7)) >>> 0);
+    const rola = I > 0.8 ? (r() - 0.5) * 10 * (I - 0.8) * 5 : 0;
+    if (A) { ctx.globalAlpha = 1; ctx.drawImage(A, 0, rola, VIEW_W, VIEW_H); }
+    if (B) { ctx.globalAlpha = mix; ctx.drawImage(B, 0, rola * 0.5, VIEW_W, VIEW_H); }
+    ctx.globalAlpha = 1;
+    if (this.reduzido) {
       ctx.restore();
-
-      // Metade Inferior / Esquerda:
-      ctx.save();
-      ctx.globalAlpha = fromAlpha;
-      ctx.beginPath();
-      ctx.moveTo(-100, VIEW_H + 100);
-      ctx.lineTo(VIEW_W + 100, VIEW_H + 100);
-      ctx.lineTo(VIEW_W + 100, P0.y);
-      ctx.lineTo(P0.x, P0.y);
-      ctx.lineTo(P1.x, P1.y);
-      ctx.lineTo(-100, P1.y);
-      ctx.closePath();
-      ctx.clip();
-
-      ctx.translate(-nx * splitDist, -ny * splitDist);
-      this.renderPage(ctx, this.fromPage, t);
-
-      // Borda tecnológica ao longo da linha de corte
-      ctx.strokeStyle = `rgba(0, 229, 255, ${0.85 * fromAlpha})`;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(P0.x, P0.y);
-      ctx.lineTo(P1.x, P1.y);
-      ctx.stroke();
-      ctx.restore();
+      return;
     }
-
-    // 3) Feixe de energia da lâmina (Laser Blade Slice)
-    const P0 = this.cutP0, P1 = this.cutP1;
-    const curX = P0.x + (P1.x - P0.x) * slashProgress;
-    const curY = P0.y + (P1.y - P0.y) * slashProgress;
-
-    const beamFade = clamp(1 - (this.t - 0.25) / 0.75, 0, 1);
-    if (beamFade > 0) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-
-      // 3.1) Aura externa expansiva
-      ctx.strokeStyle = `rgba(0, 140, 255, ${0.45 * beamFade})`;
-      ctx.lineWidth = 32 * beamFade;
-      ctx.beginPath();
-      ctx.moveTo(P0.x, P0.y);
-      ctx.lineTo(curX, curY);
-      ctx.stroke();
-
-      // 3.2) Bainha de plasma ciano vibrante
-      ctx.strokeStyle = `rgba(0, 240, 255, ${0.92 * beamFade})`;
-      ctx.lineWidth = 12 * beamFade;
-      ctx.shadowColor = '#00e5ff';
-      ctx.shadowBlur = 28;
-      ctx.beginPath();
-      ctx.moveTo(P0.x, P0.y);
-      ctx.lineTo(curX, curY);
-      ctx.stroke();
-
-      // 3.3) Núcleo elétrico superaquecido branco
-      ctx.strokeStyle = `rgba(255, 255, 255, ${1.0 * beamFade})`;
-      ctx.lineWidth = 3.5 * beamFade;
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.moveTo(P0.x, P0.y);
-      ctx.lineTo(curX, curY);
-      ctx.stroke();
-
-      // 3.4) Ponto de impacto frontal da lâmina (Flare frontal)
-      if (slashProgress < 0.99) {
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(curX, curY, 15, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(curX - 40, curY); ctx.lineTo(curX + 40, curY);
-        ctx.moveTo(curX, curY - 40); ctx.lineTo(curX, curY + 40);
-        ctx.stroke();
+    this.texturas();
+    // faixas deslocadas (falha dimensional): finas na maioria, às vezes largas; mostram o menu à medida que ele chega
+    const nf = Math.floor(I * (3 + 11 * r()));
+    for (let k = 0; k < nf; k++) {
+      const y = r() * VIEW_H, h = 1.5 + Math.pow(r(), 2.6) * 70 * I, dx = (r() - 0.5) * 2 * (4 + 90 * Math.pow(I, 1.7));
+      const src = B && r() < mix ? B : A || B;
+      this.faixa(ctx, src, y, h, dx);
+      // separação de cor discreta: um fantasma deslocado e franjas parciais nas bordas de algumas faixas
+      if (I > 0.25 && h > 3 && r() < 0.6) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.08 + 0.16 * I;
+        ctx.drawImage(src, 0, y * src.s, VIEW_W * src.s, h * src.s, dx + 3 + 4 * I, y, VIEW_W, h);
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+        const fx = r() * VIEW_W * 0.6, fw = VIEW_W * (0.2 + r() * 0.7), fa = r();
+        ctx.fillStyle = `rgba(255,40,80,${((0.15 + 0.35 * I) * (0.5 + 0.5 * fa)).toFixed(3)})`; ctx.fillRect(fx, y, fw, 1);
+        ctx.fillStyle = `rgba(80,150,255,${((0.08 + 0.2 * I) * (0.5 + 0.5 * fa)).toFixed(3)})`; ctx.fillRect(fx + 6, y + h - 1, fw * 0.8, 1);
       }
-      ctx.restore();
     }
-
-    // 4) Raios elétricos estalando ao longo do corte (Electric Arcs)
-    const lightningFade = clamp(1 - (this.t - 0.1) / 0.65, 0, 1);
-    if (lightningFade > 0 && this.lightning.length) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      for (const arc of this.lightning) {
-        if (!arc.pts || arc.pts.length < 2) continue;
-        ctx.strokeStyle = `rgba(170, 240, 255, ${0.88 * lightningFade})`;
-        ctx.lineWidth = arc.width * lightningFade;
-        ctx.shadowColor = '#00e5ff';
-        ctx.shadowBlur = 14;
-        ctx.beginPath();
-        ctx.moveTo(arc.pts[0].x, arc.pts[0].y);
-        for (let i = 1; i < arc.pts.length; i++) {
-          ctx.lineTo(arc.pts[i].x, arc.pts[i].y);
-        }
-        ctx.stroke();
+    // blocos de pixels fora do lugar
+    if (I > 0.35) {
+      const nb = Math.floor((I - 0.35) * 26 * r());
+      for (let k = 0; k < nb; k++) {
+        const w = 8 + r() * 70, h = 3 + r() * 14, x = r() * VIEW_W, y = r() * VIEW_H, src = B && r() < mix ? B : A || B, sx = clamp(x + (r() - 0.5) * 120, 0, VIEW_W - w);
+        ctx.drawImage(src, sx * src.s, y * src.s, w * src.s, h * src.s, x, y, w, h);
+        if (r() < 0.3) { ctx.fillStyle = `rgba(90,8,24,${(0.35 * I).toFixed(3)})`; ctx.fillRect(x, y, w, h); }
       }
-      ctx.restore();
     }
-
-    // 5) Faíscas digitais em alta velocidade (Energy Sparks)
-    if (this.sparks.length) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      for (const sp of this.sparks) {
-        const k = sp.life / sp.maxLife;
-        ctx.fillStyle = sp.color;
-        ctx.globalAlpha = k;
-        ctx.shadowColor = sp.color;
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, sp.size * k, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = sp.color;
-        ctx.lineWidth = sp.size * 0.6 * k;
-        ctx.beginPath();
-        ctx.moveTo(sp.x, sp.y);
-        ctx.lineTo(sp.x - sp.vx * 0.025, sp.y - sp.vy * 0.025);
-        ctx.stroke();
-      }
-      ctx.restore();
+    // riscos horizontais: cada um aparece quando a interferência passa do limiar dele
+    for (const q of this.riscos) {
+      const vis = I * (0.55 + 0.45 * this.ruido(T * q.f + q.fase * 13));
+      if (vis < q.limiar * 0.9) continue;
+      const a = clamp((vis - q.limiar * 0.9) * 2.2, 0, 1);
+      const y = (q.y * VIEW_H + Math.sin(T * 3 + q.fase) * 6 * I) % VIEW_H, len = q.len * VIEW_W * (0.6 + 0.6 * I);
+      const x = ((q.x + T * q.v) % 1.4 + 1.4) % 1.4 * VIEW_W - 0.2 * VIEW_W, e = q.e * (0.7 + 0.6 * I);
+      const cor = q.tom === 'claro' ? '225,215,220' : q.tom === 'carmim' ? '255,46,90' : '0,0,0';
+      const gr = ctx.createLinearGradient(x, 0, x + len, 0);
+      const al = (q.tom === 'escuro' ? 0.75 : 0.42) * a;
+      gr.addColorStop(0, `rgba(${cor},0)`); gr.addColorStop(0.15, `rgba(${cor},${al.toFixed(3)})`); gr.addColorStop(0.85, `rgba(${cor},${al.toFixed(3)})`); gr.addColorStop(1, `rgba(${cor},0)`);
+      ctx.globalCompositeOperation = q.tom === 'escuro' ? 'source-over' : 'lighter';
+      ctx.fillStyle = gr; ctx.fillRect(x, y, len, e);
     }
-
-    // 6) Flash holográfico inicial e varredura
-    if (this.t < 0.22) {
-      const flashA = (1 - this.t / 0.22) * 0.45;
-      ctx.save();
-      ctx.fillStyle = `rgba(180, 240, 255, ${flashA.toFixed(3)})`;
-      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-      ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
+    // linhas de varredura e grão
+    ctx.globalAlpha = 0.05 + 0.14 * I;
+    ctx.fillStyle = ctx.createPattern(this.varredura, 'repeat'); ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.globalAlpha = 0.03 + 0.08 * I;
+    const gx = Math.floor(r() * 160), gy = Math.floor(r() * 160);
+    ctx.translate(-gx, -gy); ctx.fillStyle = ctx.createPattern(this.grao, 'repeat'); ctx.fillRect(gx, gy, VIEW_W, VIEW_H); ctx.translate(gx, gy);
+    ctx.globalAlpha = 1;
+    // a ruptura escurece a tela (nada de clarão) e as bordas se fecham
+    const escuro = 0.08 * I + 0.32 * Math.max(0, I - 0.75) / 0.25;
+    ctx.fillStyle = `rgba(4,0,6,${clamp(escuro, 0, 0.42).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    const vg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.35, VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(20,0,8,${(0.2 + 0.4 * I).toFixed(3)})`);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
+  }
+  // Capa: abre do escuro com sinais fracos de interferência; depois, raros riscos isolados
+  ambiente(ctx, t, pageT) {
+    if (this.active || RiscoTelaFx.reduzido()) return;
+    const abertura = clamp(1 - pageT / 1.6, 0, 1), raro = this.ruido(t * 0.9 + 3.3) > 0.88 ? 0.5 : 0;
+    const I = 0.22 * abertura + 0.12 * raro;
+    if (I < 0.02) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const r = mulberry32((Math.floor(t * 12) * 2654435761) >>> 0), n = 1 + Math.floor(r() * 4 * (I / 0.22));
+    for (let k = 0; k < n; k++) {
+      if (r() > I * 3) continue;
+      const y = r() * VIEW_H, len = (0.1 + r() * 0.5) * VIEW_W, x = r() * VIEW_W - len * 0.3, a = (0.12 + r() * 0.2) * Math.min(1, I * 4);
+      const gr = ctx.createLinearGradient(x, 0, x + len, 0);
+      const cor = r() < 0.75 ? '225,215,220' : '255,46,90';
+      gr.addColorStop(0, `rgba(${cor},0)`); gr.addColorStop(0.5, `rgba(${cor},${a.toFixed(3)})`); gr.addColorStop(1, `rgba(${cor},0)`);
+      ctx.fillStyle = gr; ctx.fillRect(x, y, len, r() < 0.8 ? 1 : 2);
     }
-
-    if (this.t > 0.15 && this.t < 0.8) {
-      const scanA = (1 - (this.t - 0.15) / 0.65) * 0.14;
-      ctx.save();
-      ctx.fillStyle = `rgba(0, 229, 255, ${scanA.toFixed(3)})`;
-      const scanY = ((this.t * 1400) % VIEW_H);
-      ctx.fillRect(0, scanY, VIEW_W, 3);
-      ctx.restore();
-    }
+    ctx.restore();
   }
 }
 
@@ -635,14 +541,13 @@ class Menus {
     this.slots = []; this.thumbs = {};
     this.notice = null;
     this.kael = null;
-    this.slash = new SwordSlashFx(this);
+    this.slash = new RiscoTelaFx(this);   // abertura: riscos e interferência até o menu principal
   }
 
-  // Inicia a transição com o SFX de espada e animação de corte
+  // Inicia a transição de interferência (o som do corte toca na ruptura, dentro dela)
   startSlashTransition(targetPage = 'main') {
     if (this.slash && this.slash.active) return;
     game.audio.unlock();
-    if (game.audio && game.audio.playSwordSlashSFX) game.audio.playSwordSlashSFX();
     this.slash.start(this.page, targetPage);
   }
 
@@ -805,8 +710,9 @@ class Menus {
     ctx.letterSpacing = '0px';
     ctx.restore();
 
-    // Abertura com fade do preto
+    // Abertura com fade do preto, com sinais fracos de interferência (e, depois, raros riscos)
     if (this.pageT < 1.2) { ctx.fillStyle = `rgba(0,0,0,${(1 - this.pageT / 1.2).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (this.page === 'cover' && this.slash) this.slash.ambiente(ctx, t, this.pageT);
   }
 
   // Logotipo desenhado (usado se a arte da capa não carregar)
@@ -1510,7 +1416,7 @@ class Menus {
     const x = Math.max(32, Math.min(70, VIEW_W * 0.05)), w = 320;
     const items = [['resume', 'RETOMAR', 'play'], ['skills', 'HABILIDADES', 'tree'], ['chars', t('rosterTitle'), 'people'],
       ['camera', `CÂMERA: ${ThirdView.on ? '3ª PESSOA' : 'ISOMÉTRICA'}`, 'sword'], ['world', game.world ? 'MAPA DO MUNDO' : 'MUNDO ABERTO', 'star'],
-      ...(game.world ? [['bag', 'MOCHILA E MISSÕES', 'people']] : []),
+      ...(game.world ? [['bag', 'MOCHILA E OFÍCIOS', 'people'], ['journal', 'DIÁRIO DE MISSÕES', 'folder']] : []),
       ['settings', 'CONFIGURAÇÕES', 'gear'], ['restart', game.world ? 'VOLTAR AO PORTAL' : 'REINICIAR SETOR', 'restart'], ['menu', 'SAIR PARA O MENU', 'exit'], ['quit', 'SAIR DO JOGO', 'power']];
     const f = this.fitList(items.length, 46, 8, 152, VIEW_H - 60, 96), h = f.h, gap = f.gap, y0 = f.y0 - 22;
     return { panel: { x, y: y0, w: w + 40, h: items.length * (h + gap) + 34 }, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x: x + 20, y: y0 + 22 + i * (h + gap), w, h })) };
@@ -1526,6 +1432,7 @@ class Menus {
       else if (id === 'chars') this.open('char');
       else if (id === 'camera') { ThirdView.toggle(); game.audio.play('uiSelect'); }
       else if (id === 'bag') WorldInv.abrir('mochila', false);
+      else if (id === 'journal') WorldInv.abrir('diario', false);
       else if (id === 'world') {
         if (game.world) { game.state = 'playing'; World.openMap(false); }
         else this.ask('MUNDO ABERTO', 'Ir para o mundo aberto? O progresso da campanha fica salvo e você volta a ele pelo menu (CONTINUAR).',

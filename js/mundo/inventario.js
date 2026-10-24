@@ -11,9 +11,12 @@
 // dia do mundo (js/mundo/tempo.js), e cápsulas de reparo; compra as suas relíquias por 40%
 // do valor. Longe dele, uma relíquia pode ser desmontada por 20%.
 // CÁPSULAS DE REPARO: até 5 na mochila, tecla 5 (ou pela mochila) cura 40% da vida.
-// A tela (tecla B ou pausa → INVENTÁRIO) tem as abas MOCHILA, LOJA (perto do mercador),
-// MISSÕES (js/mundo/missoes.js) e CAMPANHAS (js/mundo/campanhas.js). Tudo fica em
-// World.state.inv (salvamento do mundo).
+// REQUISITO: equipar pede o nível do herói (nível da relíquia − 4). APRIMORAMENTO (ferreiro,
+// js/mundo/oficios.js): +1 a +5, +10% nos atributos por nível.
+// A tela (tecla B, Y abre direto o diário, ou pausa) tem as abas MOCHILA, OFÍCIOS (materiais,
+// consumíveis, ofícios e reputação), DIÁRIO (js/mundo/aventuras.js), CAMPANHAS
+// (js/mundo/campanhas.js) e, aberta por um morador, LOJA (mercador ou curandeiro, com o
+// desconto da reputação), FERREIRO ou ARTESÃO. Tudo fica em World.state (salvamento do mundo).
 // ---------------------------------------------------------------------------
 const WORLD_RARIDADES = [
   { id: 'comum', name: 'Comum', rgb: '200,206,220', k: 1, w: 62, preco: 1 },
@@ -54,8 +57,10 @@ const WorldInv = {
   },
   base(it) { return WORLD_RELIQUIAS.find((b) => b.id === it.b) || WORLD_RELIQUIAS[0]; },
   rar(it) { return WORLD_RARIDADES[it.r] || WORLD_RARIDADES[0]; },
-  nome(it) { return it.unico || `${this.base(it).name} ${WORLD_SUFIXO[it.reg] || ''}`.trim(); },   // única: o prêmio das campanhas
-  valor(it) { return Math.round((12 + it.lv * 3) * this.rar(it).preco); },
+  nome(it) { return `${it.unico || `${this.base(it).name} ${WORLD_SUFIXO[it.reg] || ''}`.trim()}${it.ap ? ` +${it.ap}` : ''}`; },   // única: prêmios
+  valor(it) { return Math.round((12 + it.lv * 3) * this.rar(it).preco * (1 + (it.ap || 0) * 0.25)); },
+  req(it) { return Math.max(1, it.lv - 4); },   // nível do herói para equipar
+  mult(it) { return 1 + (it.ap || 0) * 0.1; },   // aprimoramento do ferreiro
   venda(it) { return Math.max(1, Math.round(this.valor(it) * 0.4)); },
   sucata(it) { return Math.max(1, Math.round(this.valor(it) * 0.2)); },
   item(id) { return this.S.itens.find((q) => q.id === id) || null; },
@@ -116,12 +121,14 @@ const WorldInv = {
   // ------------------------------------------------------- efeito no herói
   // Chamado por Player.recalc no modo mundo
   apply(S) {
-    for (const it of this.equipados()) if (it) for (const k in it.st) WORLD_ATRIB[k].apply(S, it.st[k]);
+    for (const it of this.equipados()) if (it) for (const k in it.st) WORLD_ATRIB[k].apply(S, it.st[k] * this.mult(it));
+    Oficios.apply(S);   // consumíveis ativos (tônico, pele de pedra)
   },
   refazer() { if (game.player) game.player.recalc(false); },
   equipar(id) {
     const S = this.S, it = this.item(id);
     if (!it || S.equip.includes(id)) return false;
+    if (game.activeProgress().level < this.req(it)) { this.aviso(`Requer nível ${this.req(it)}`); return false; }
     // vaga livre; senão, a da mesma base; senão, a de menor valor
     let k = S.equip.indexOf(null);
     if (k < 0) k = S.equip.findIndex((q) => this.item(q).b === it.b);
@@ -136,11 +143,12 @@ const WorldInv = {
     if (k >= 0) { S.equip[k] = null; this.refazer(); }
     S.itens = S.itens.filter((q) => q.id !== id);
   },
-  // Vende (perto do mercador) ou desmonta (longe dele)
+  // Vende (com a loja do mercador aberta) ou desmonta (longe dele)
+  vende() { return !!this.ui.shop && this.ui.loja !== 'curandeiro'; },
   vender(id) {
     const it = this.item(id);
     if (!it) return 0;
-    const v = this.ui.shop ? this.venda(it) : this.sucata(it);
+    const v = this.vende() ? this.venda(it) : this.sucata(it);
     this.remover(id);
     game.stats.soulsBank += v;
     game.audio.play('soul');
@@ -160,7 +168,7 @@ const WorldInv = {
   },
 
   // ---------------------------------------------------------------- mercador
-  precoCapsula() { return 20 + worldRegion(World.zone.region).order * 10; },
+  precoCapsula() { return Oficios.precoCom(20 + worldRegion(World.zone.region).order * 10, World.zone.region); },
   // Estoque da região: 4 relíquias por dia do mundo (sorteio fixo por região e dia)
   estoque() {
     const W = World.state, reg = World.zone.region, dia = W.dia || 1;
@@ -174,8 +182,37 @@ const WorldInv = {
     }
     return L.itens;
   },
+  // Itens além das relíquias: consumíveis, materiais e a insígnia da facção (mercador) ou só
+  // remédios (curandeiro). Preços com o desconto da reputação da região
+  extras() {
+    const reg = World.zone.region, out = [];
+    if (this.ui.loja === 'curandeiro') { for (const k of ['elixir', 'tonico', 'pele']) out.push({ cons: k }); return out; }
+    for (const k of ['elixir', 'tonico', 'pele', 'retorno']) out.push({ cons: k });
+    for (const k of ['sucata', WORLD_MAT_REG[reg] === 'sucata' ? 'erva' : WORLD_MAT_REG[reg]]) out.push({ mat: k });
+    if (Oficios.podeInsignia(reg)) out.push({ insignia: reg });
+    return out;
+  },
+  precoExtra(x) {
+    const reg = World.zone.region;
+    if (x.cons) return Oficios.precoCom(WORLD_CONSUMIVEIS[x.cons].preco + worldRegion(reg).order * 5, reg);
+    if (x.mat) return Oficios.precoCom(WORLD_MATERIAIS[x.mat].preco, reg);
+    return Oficios.precoInsignia(reg);
+  },
+  nomeExtra(x) { return x.cons ? WORLD_CONSUMIVEIS[x.cons].nome : x.mat ? WORLD_MATERIAIS[x.mat].nome : Oficios.insignia(x.insignia).unico; },
   comprar(k) {
-    const g = game, list = this.estoque();
+    const g = game, list = this.ui.loja === 'curandeiro' ? [] : this.estoque();
+    if (k > list.length) {   // consumível, material ou insígnia
+      const x = this.extras()[k - list.length - 1];
+      if (!x) return false;
+      if (x.insignia) { const e = Oficios.comprarInsignia(x.insignia); if (e) return this.aviso(e); g.audio.play('memory'); return this.aviso(`Comprou ${this.nomeExtra(x)}`, true); }
+      if (x.cons && Oficios.cons(x.cons) >= 9) return this.aviso('Você já carrega 9 destes');
+      const v = this.precoExtra(x);
+      if (g.stats.soulsBank < v) return this.aviso(`Faltam ${v - g.stats.soulsBank} células`);
+      g.stats.soulsBank -= v;
+      if (x.cons) Oficios.darCons(x.cons, 1); else Oficios.dar(x.mat, 1, false);
+      g.audio.play('uiSelect');
+      return this.aviso(`Comprou ${this.nomeExtra(x)}`, true);
+    }
     if (k === list.length) {   // cápsula
       const c = this.precoCapsula();
       if (this.S.capsulas >= this.CAPS) return this.aviso('Mochila já tem 5 cápsulas');
@@ -186,7 +223,7 @@ const WorldInv = {
     }
     const it = list[k];
     if (!it) return false;
-    const v = this.valor(it);
+    const v = Oficios.precoCom(this.valor(it), World.zone.region);
     if (g.stats.soulsBank < v) return this.aviso(`Faltam ${v - g.stats.soulsBank} células`);
     if (this.S.itens.length >= this.MAX) return this.aviso('Mochila cheia');
     g.stats.soulsBank -= v;
@@ -202,31 +239,50 @@ const WorldInv = {
   },
 
   // ---------------------------------------------------------------- tela
-  abrir(tab = 'mochila', shop = false) {
+  // loja: 'mercador' ou 'curandeiro'; servico: 'ferreiro' ou 'artesao' (abertos por um morador)
+  abrir(tab = 'mochila', shop = false, loja = null, servico = null) {
     const U = this.ui;
-    U.tab = tab; U.shop = shop; U.sel = 0; U.t = 0; U.msgT = 0;
+    if (tab === 'missoes') tab = 'diario';
+    U.tab = tab; U.shop = shop; U.loja = shop ? loja || 'mercador' : null; U.servico = servico; U.sel = 0; U.t = 0; U.msgT = 0; U.confirma = null;
+    if (tab === 'diario' && !U.cat) U.cat = 'ativas';
     game.state = 'worldinv';
     game.audio.play('uiMove');
   },
   fechar() { game.state = 'playing'; World.save(); game.audio.play('uiMove'); },
-  abas() { return this.ui.shop ? ['mochila', 'loja', 'missoes', 'campanhas'] : ['mochila', 'missoes', 'campanhas']; },
+  abas() {
+    const a = ['mochila', 'oficios', 'diario', 'campanhas'];
+    if (this.ui.shop) a.splice(1, 0, 'loja');
+    if (this.ui.servico) a.splice(1, 0, this.ui.servico);
+    return a;
+  },
   // Itens navegáveis da aba: mochila = 3 vagas + mochila; loja = estoque + cápsula; missões: nada;
   // campanhas: os 5 heróis (js/mundo/campanhas.js)
   lista() {
     const U = this.ui;
     if (U.tab === 'mochila') return [0, 1, 2].map((k) => ({ slot: k })).concat(this.S.itens.map((it) => ({ it })));
-    if (U.tab === 'loja') return this.estoque().map((it, k) => ({ loja: k, it })).concat([{ loja: this.estoque().length, cap: true }]);
+    if (U.tab === 'loja') {
+      const rel = U.loja === 'curandeiro' ? [] : this.estoque().map((it, k) => ({ loja: k, it })), n = rel.length;
+      return rel.concat([{ loja: n, cap: true }], this.extras().map((x, j) => Object.assign({ loja: n + 1 + j }, x)));
+    }
     if (U.tab === 'campanhas') return HERO_CAMPAIGN_ORDER.map((h) => ({ camp: h }));
+    if (U.tab === 'oficios') return Oficios.lista();
+    if (U.tab === 'ferreiro') return Oficios.listaFerreiro();
+    if (U.tab === 'artesao') return Oficios.listaArtesao();
+    if (U.tab === 'diario') return Aventuras.diarioLista(U.cat || 'ativas');
     return [];
   },
   cols() { return this.lay().cols; },
   // Ação principal do item selecionado (Enter, clique duplo ou botão)
   agir(q, alt = false) {
     if (!q) return;
+    const tab = this.ui.tab;
+    if (tab === 'oficios') { Oficios.agir(q, this.vende()); return; }
+    if (tab === 'ferreiro' || tab === 'artesao') { Oficios.agirServico(q); return; }
+    if (tab === 'diario') { Aventuras.agirDiario(q, alt); return; }
     if (q.camp) { Campanhas.comecar(q.camp); return; }
     if (q.slot !== undefined) { if (this.desequipar(q.slot)) game.audio.play('uiSelect'); return; }
     if (q.loja !== undefined) { this.comprar(q.loja); return; }
-    if (alt) { const n = this.nome(q.it), v = this.vender(q.it.id); this.aviso(`${this.ui.shop ? 'Vendeu' : 'Desmontou'} ${n} · +${v} células`, true); return; }
+    if (alt) { const n = this.nome(q.it), v = this.vender(q.it.id); this.aviso(`${this.vende() ? 'Vendeu' : 'Desmontou'} ${n} · +${v} células`, true); return; }
     if (this.S.equip.includes(q.it.id)) { this.desequipar(this.S.equip.indexOf(q.it.id)); game.audio.play('uiSelect'); }
     else if (this.equipar(q.it.id)) game.audio.play('uiSelect');
   },
@@ -242,6 +298,15 @@ const WorldInv = {
       game.audio.play('uiMove');
     }
     const L = this.lista(), cols = this.cols(), mochila = U.tab === 'mochila';
+    if (U.tab === 'diario' && (inp.pressed.left || inp.pressed.right)) {
+      const C = Aventuras.CATS, i = C.indexOf(U.cat || 'ativas');
+      U.cat = C[(i + (inp.pressed.right ? 1 : C.length - 1)) % C.length]; U.sel = 0; U.confirma = null;
+      game.audio.play('uiMove');
+    }
+    if (L.length && U.tab === 'loja' && this.lojaCols(L) > 1 && (inp.pressed.left || inp.pressed.right)) {
+      const per = Math.ceil(L.length / 2);
+      U.sel = clamp(U.sel + (inp.pressed.right ? per : -per), 0, L.length - 1); game.audio.play('uiMove');
+    }
     if (L.length) {
       const mv = (d) => { U.sel = clamp(U.sel + d, 0, L.length - 1); game.audio.play('uiMove'); };
       if (mochila && U.sel < 3) {
@@ -254,6 +319,9 @@ const WorldInv = {
         if (inp.pressed.right) mv(1);
         if (inp.pressed.up) { if (k < cols) { U.sel = 0; game.audio.play('uiMove'); } else mv(-cols); }
         if (inp.pressed.down) mv(cols);
+      } else if (U.tab === 'diario' || U.tab === 'loja') {
+        if (inp.pressed.up) mv(-1);
+        if (inp.pressed.down) mv(1);
       } else {
         if (inp.pressed.up || inp.pressed.left) mv(-1);
         if (inp.pressed.down || inp.pressed.right) mv(1);
@@ -261,6 +329,7 @@ const WorldInv = {
       U.sel = clamp(U.sel, 0, L.length - 1);
       if (inp.pressed.confirm) this.agir(L[U.sel]);
       if (inp.pressed.erase && mochila && L[U.sel] && L[U.sel].it) this.agir(L[U.sel], true);
+      if (inp.pressed.erase && U.tab === 'diario') this.agir(L[U.sel], true);   // abandonar (confirmando)
     }
     // mouse / toque: abas, células e botões de ação
     const m = inp.mouse;
@@ -268,6 +337,7 @@ const WorldInv = {
       for (const r of U.rects) {
         if (m.x < r.x || m.x > r.x + r.w || m.y < r.y || m.y > r.y + r.h) continue;
         if (r.tab) { U.tab = r.tab; U.sel = 0; game.audio.play('uiMove'); }
+        else if (r.cat) { U.cat = r.cat; U.sel = 0; U.confirma = null; game.audio.play('uiMove'); }
         else if (r.btn === 'fechar') this.fechar();
         else if (r.btn === 'capsula') this.usarCapsula();
         else if (r.btn) this.agir(L[U.sel], r.btn === 'alt');
@@ -292,7 +362,8 @@ const WorldInv = {
     let x = 36;
     ctx.font = `bold 15px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
     for (const a of this.abas()) {
-      const label = { mochila: 'MOCHILA', loja: 'LOJA DO MERCADOR', missoes: 'MISSÕES', campanhas: 'CAMPANHAS' }[a], w = ctx.measureText(label).width + 30, on = a === U.tab;
+      const label = { mochila: 'MOCHILA', loja: U.loja === 'curandeiro' ? 'REMÉDIOS' : 'LOJA', oficios: 'OFÍCIOS', diario: 'DIÁRIO', campanhas: 'CAMPANHAS', ferreiro: 'FERREIRO', artesao: 'ARTESÃO' }[a];
+      const w = ctx.measureText(label).width + 30, on = a === U.tab;
       ctx.fillStyle = on ? 'rgba(90,150,255,0.25)' : 'rgba(20,30,50,0.6)'; ctx.fillRect(x, 28, w, 36);
       ctx.strokeStyle = on ? 'rgba(150,205,255,0.9)' : 'rgba(90,120,170,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, 28.5, w - 1, 35);
       ctx.fillStyle = on ? '#ffffff' : 'rgba(200,214,235,0.7)'; ctx.textAlign = 'left'; ctx.fillText(label, x + 15, 47);
@@ -307,7 +378,9 @@ const WorldInv = {
     ctx.strokeStyle = 'rgba(150,205,255,0.6)'; ctx.strokeRect(VIEW_W - 83.5, 28.5, 47, 35);
     ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText('✕', VIEW_W - 60, 47);
     U.rects.push({ btn: 'fechar', x: VIEW_W - 84, y: 28, w: 48, h: 36 });
-    if (U.tab === 'missoes') { if (typeof WorldQuests !== 'undefined') WorldQuests.drawTab(ctx, Ly, t); }
+    if (U.tab === 'diario') Aventuras.drawDiario(ctx, Ly, L, U.sel, t);
+    else if (U.tab === 'oficios') Oficios.draw(ctx, Ly, L, U.sel, this.vende());
+    else if (U.tab === 'ferreiro' || U.tab === 'artesao') Oficios.drawServico(ctx, Ly, L, U.sel, U.tab);
     else if (U.tab === 'campanhas') Campanhas.drawTab(ctx, Ly, U.sel, t);
     else if (U.tab === 'loja') this.drawLoja(ctx, Ly, L, t);
     else this.drawMochila(ctx, Ly, L, t);
@@ -320,10 +393,14 @@ const WorldInv = {
     }
     // dicas
     ctx.font = `12px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(200,214,235,0.75)';
-    const dica = U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${U.shop ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
+    const dica = U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${this.vende() ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
       : U.tab === 'loja' ? 'Enter: comprar · Q/E: abas · Esc: fechar'
         : U.tab === 'campanhas' ? 'Enter: jogar a campanha (troca para o herói dela) · ★ no mapa e no radar · Q/E: abas · Esc: fechar'
-          : 'Fale com quem dá as missões na zona de chegada de cada região · Q/E: abas · Esc: fechar';
+          : U.tab === 'diario' ? '←/→: categoria · Enter: rastrear · Delete: abandonar · ◆ no mapa e na zona · Q/E: abas · Esc: fechar'
+            : U.tab === 'oficios' ? `Enter: usar consumível${this.vende() ? ' / vender material' : ''} · Q/E: abas · Esc: fechar`
+              : U.tab === 'ferreiro' ? 'Enter: aprimorar · materiais na aba OFÍCIOS · Q/E: abas · Esc: fechar'
+                : U.tab === 'artesao' ? 'Enter: criar · a Criação sobe a cada item · Q/E: abas · Esc: fechar'
+                  : 'Q/E: abas · Esc: fechar';
     ctx.fillText(dica, 36, VIEW_H - 22);
     ctx.restore();
   },
@@ -350,9 +427,12 @@ const WorldInv = {
       const R = this.rar(it);
       ctx.font = `bold 18px ${FONT_TITLE}`; ctx.fillStyle = rgba(R.rgb, 1); ctx.fillText(this.nome(it).toUpperCase(), x + 18, y + 24);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-      ctx.fillText(`Relíquia ${R.name.toLowerCase()} · nível ${it.lv} · ${worldRegion(it.reg).name}`, x + 18, y + 46);
+      const req = this.req(it), falta = game.activeProgress().level < req;
+      ctx.fillText(`Relíquia ${R.name.toLowerCase()} (acessório) · nível ${it.lv} · ${worldRegion(it.reg).name}${it.ap ? ` · aprimorada +${it.ap}` : ''}`, x + 18, y + 46);
+      ctx.fillStyle = falta ? '#ff8a9a' : 'rgba(160,200,170,0.85)'; ctx.textAlign = 'right';
+      ctx.fillText(`Requer nível ${req}`, x + w - 18, y + 24); ctx.textAlign = 'left';
       ctx.font = `bold 14px ${FONT_UI}`;
-      Object.keys(it.st).forEach((k, i) => { ctx.fillStyle = i ? 'rgba(200,214,235,0.9)' : '#ffffff'; ctx.fillText(this.fmt(k, it.st[k]), x + 18 + i * 170, y + 74); });
+      Object.keys(it.st).forEach((k, i) => { ctx.fillStyle = i ? 'rgba(200,214,235,0.9)' : '#ffffff'; ctx.fillText(this.fmt(k, it.st[k] * this.mult(it)), x + 18 + i * 170, y + 74); });
     } else if (titulo) { ctx.font = `bold 18px ${FONT_TITLE}`; ctx.fillStyle = '#c8ffe0'; ctx.fillText(titulo, x + 18, y + 24); }
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#9fd0ff';
     ctx.fillText(preco, x + 18, y + 104);
@@ -383,12 +463,12 @@ const WorldInv = {
       if (it) {
         ctx.font = `bold 13px ${FONT_UI}`; ctx.fillStyle = rgba(this.rar(it).rgb, 1); ctx.fillText(this.nome(it), Ly.lx + 76, y + 22);
         ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-        ctx.fillText(Object.keys(it.st).map((q) => this.fmt(q, it.st[q])).join(' · '), Ly.lx + 76, y + 44);
+        ctx.fillText(Object.keys(it.st).map((q) => this.fmt(q, it.st[q] * this.mult(it))).join(' · '), Ly.lx + 76, y + 44);
       } else { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.6)'; ctx.fillText('vaga livre', Ly.lx + 76, y + 32); }
     }
     // total dos bônus
     const tot = {};
-    for (const it of eq) if (it) for (const k in it.st) tot[k] = (tot[k] || 0) + it.st[k];
+    for (const it of eq) if (it) for (const k in it.st) tot[k] = (tot[k] || 0) + it.st[k] * this.mult(it);
     let y = Ly.top + 3 * 74 + 14;
     ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(150,205,255,0.9)'; ctx.fillText('BÔNUS (SÓ NO MUNDO)', Ly.lx, y); ctx.letterSpacing = '0px';
     ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = '#eef3fa';
@@ -417,38 +497,48 @@ const WorldInv = {
     if (q && q.slot !== undefined) this.drawDetalhe(ctx, Ly, it, it ? [['main', 'TIRAR']] : [], it ? `Vale ${this.valor(it)} células` : '');
     else if (it) {
       const on = S.equip.includes(it.id);
-      this.drawDetalhe(ctx, Ly, it, [['main', on ? 'TIRAR' : 'EQUIPAR'], ['alt', U.shop ? `VENDER +${this.venda(it)}` : `DESMONTAR +${this.sucata(it)}`]], `Vale ${this.valor(it)} células`);
+      this.drawDetalhe(ctx, Ly, it, [['main', on ? 'TIRAR' : 'EQUIPAR'], ['alt', this.vende() ? `VENDER +${this.venda(it)}` : `DESMONTAR +${this.sucata(it)}`]], `Vale ${this.valor(it)} células`);
     } else this.drawDetalhe(ctx, Ly, null, [], '');
   },
+  // Loja em uma ou duas colunas (muitos itens: relíquias, cápsula, consumíveis, materiais)
+  lojaCols(L) { return L.length > 6 && VIEW_W >= 900 ? 2 : 1; },
   drawLoja(ctx, Ly, L, t) {
-    const U = this.ui, z = World.zone;
+    const U = this.ui, z = World.zone, reg = z.region, d = Oficios.desconto(reg), cur = U.loja === 'curandeiro';
     ctx.textAlign = 'left'; ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(150,205,255,0.9)';
-    ctx.fillText(`MERCADOR · ${worldRegion(z.region).name.toUpperCase()} · ESTOQUE DO DIA ${World.state.dia || 1}`, Ly.lx, Ly.top - 12);
+    ctx.fillText(`${cur ? 'CURANDEIRO · REMÉDIOS' : `MERCADOR · ${worldRegion(reg).name.toUpperCase()} · ESTOQUE DO DIA ${World.state.dia || 1}`}${d ? ` · REPUTAÇÃO −${Math.round(d * 100)}%` : ''}`, Ly.lx, Ly.top - 12);
     ctx.letterSpacing = '0px';
-    const w = VIEW_W - 72, rh = Math.min(62, (Ly.det - Ly.top - 40) / Math.max(1, L.length) - 8);
+    const cols = this.lojaCols(L), per = Math.ceil(L.length / cols), cw = (VIEW_W - 72 - (cols - 1) * 16) / cols;
+    const rh = Math.max(24, Math.min(62, (Ly.det - Ly.top - 24) / Math.max(1, per) - 8));
     L.forEach((q, i) => {
-      const y = Ly.top + i * (rh + 8), sel = U.sel === i;
-      ctx.fillStyle = sel ? 'rgba(40,70,130,0.6)' : 'rgba(12,20,36,0.85)'; ctx.fillRect(Ly.lx, y, w, rh);
-      ctx.strokeStyle = sel ? '#ffffff' : 'rgba(90,120,170,0.4)'; ctx.lineWidth = sel ? 2 : 1; ctx.strokeRect(Ly.lx + 0.5, y + 0.5, w - 1, rh - 1);
-      U.rects.push({ idx: i, x: Ly.lx, y, w, h: rh });
+      const c = Math.floor(i / per), r = i % per, x = Ly.lx + c * (cw + 16), y = Ly.top + r * (rh + 8), sel = U.sel === i;
+      ctx.fillStyle = sel ? 'rgba(40,70,130,0.6)' : 'rgba(12,20,36,0.85)'; ctx.fillRect(x, y, cw, rh);
+      ctx.strokeStyle = sel ? '#ffffff' : 'rgba(90,120,170,0.4)'; ctx.lineWidth = sel ? 2 : 1; ctx.strokeRect(x + 0.5, y + 0.5, cw - 1, rh - 1);
+      U.rects.push({ idx: i, x, y, w: cw, h: rh });
       ctx.textAlign = 'left';
-      if (q.cap) {
-        ctx.font = `bold 15px ${FONT_UI}`; ctx.fillStyle = '#c8ffe0'; ctx.fillText(`✚ Cápsula de reparo (cura 40%) · você tem ${this.S.capsulas}/${this.CAPS}`, Ly.lx + 16, y + rh / 2);
-        ctx.textAlign = 'right'; ctx.fillStyle = '#9fd0ff'; ctx.fillText(`${this.precoCapsula()} células`, Ly.lx + w - 16, y + rh / 2);
+      const fs = rh < 34 ? 13 : 15;
+      if (q.cap || q.cons || q.mat || q.insignia) {
+        const preco = q.cap ? this.precoCapsula() : this.precoExtra(q), D = q.cons ? WORLD_CONSUMIVEIS[q.cons] : q.mat ? WORLD_MATERIAIS[q.mat] : null;
+        const nome = q.cap ? `✚ Cápsula de reparo (cura 40%) · você tem ${this.S.capsulas}/${this.CAPS}` : q.insignia ? `★ ${this.nomeExtra(q)} · insígnia da facção (única)`
+          : q.cons ? `${D.nome} · ${D.desc} · você tem ${Oficios.cons(q.cons)}` : `${D.icon} ${D.nome} · você tem ${Oficios.mat(q.mat)}`;
+        ctx.font = `bold ${fs}px ${FONT_UI}`; ctx.fillStyle = q.cap ? '#c8ffe0' : q.insignia ? '#ffb860' : D ? rgba(D.rgb, 1) : '#ffffff';
+        ctx.fillText(nome, x + 14, y + rh / 2);
+        ctx.textAlign = 'right'; ctx.fillStyle = game.stats.soulsBank >= preco ? '#9fd0ff' : '#ff8a9a'; ctx.fillText(`${preco}`, x + cw - 14, y + rh / 2);
         return;
       }
       const it = q.it, R = this.rar(it);
-      this.drawCell(ctx, it, Ly.lx + 6, y + 4, rh - 8, false, false);
+      this.drawCell(ctx, it, x + 6, y + 4, rh - 8, false, false);
       ctx.textAlign = 'left';
-      ctx.font = `bold 15px ${FONT_UI}`; ctx.fillStyle = rgba(R.rgb, 1); ctx.fillText(`${this.nome(it)} · ${R.name}`, Ly.lx + rh + 10, y + rh * 0.34);
-      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-      ctx.fillText(Object.keys(it.st).map((k) => this.fmt(k, it.st[k])).join(' · '), Ly.lx + rh + 10, y + rh * 0.7);
-      ctx.textAlign = 'right'; ctx.font = `bold 15px ${FONT_UI}`; ctx.fillStyle = game.stats.soulsBank >= this.valor(it) ? '#9fd0ff' : '#ff8a9a';
-      ctx.fillText(`${this.valor(it)} células`, Ly.lx + w - 16, y + rh / 2);
+      ctx.font = `bold ${fs}px ${FONT_UI}`; ctx.fillStyle = rgba(R.rgb, 1); ctx.fillText(`${this.nome(it)} · ${R.name}`, x + rh + 10, y + rh * (rh < 34 ? 0.5 : 0.34));
+      if (rh >= 34) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)'; ctx.fillText(Object.keys(it.st).map((k) => this.fmt(k, it.st[k])).join(' · '), x + rh + 10, y + rh * 0.7); }
+      const v = Oficios.precoCom(this.valor(it), reg);
+      ctx.textAlign = 'right'; ctx.font = `bold ${fs}px ${FONT_UI}`; ctx.fillStyle = game.stats.soulsBank >= v ? '#9fd0ff' : '#ff8a9a';
+      ctx.fillText(`${v}`, x + cw - 14, y + rh / 2);
     });
-    if (L.length === 1) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Relíquias esgotadas hoje. Volte amanhã (no relógio do mundo).', Ly.lx, Ly.top + rh + 30); }
+    if (!cur && !L.some((q) => q.it)) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Relíquias esgotadas hoje. Volte amanhã (no relógio do mundo).', Ly.lx, Ly.det - 12); }
     const q = L[U.sel];
-    if (q && q.it) this.drawDetalhe(ctx, Ly, q.it, [['main', 'COMPRAR']], `Preço ${this.valor(q.it)} células · você tem ${game.stats.soulsBank}`);
-    else this.drawDetalhe(ctx, Ly, null, q ? [['main', 'COMPRAR']] : [], q ? `Preço ${this.precoCapsula()} células · você tem ${game.stats.soulsBank}` : '', q ? 'CÁPSULA DE REPARO · CURA 40% DA VIDA' : '');
+    if (q && q.it) this.drawDetalhe(ctx, Ly, q.it, [['main', 'COMPRAR']], `Preço ${Oficios.precoCom(this.valor(q.it), reg)} células · você tem ${game.stats.soulsBank}`);
+    else if (q && q.cap) this.drawDetalhe(ctx, Ly, null, [['main', 'COMPRAR']], `Preço ${this.precoCapsula()} células · você tem ${game.stats.soulsBank}`, 'CÁPSULA DE REPARO · CURA 40% DA VIDA');
+    else if (q) this.drawDetalhe(ctx, Ly, null, [['main', 'COMPRAR']], `Preço ${this.precoExtra(q)} células · você tem ${game.stats.soulsBank}${q.mat ? ' · materiais para o artesão e o ferreiro' : ''}`, this.nomeExtra(q).toUpperCase());
+    else this.drawDetalhe(ctx, Ly, null, [], '');
   },
 };

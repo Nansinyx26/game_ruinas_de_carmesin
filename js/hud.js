@@ -235,6 +235,7 @@ class HUD {
     if (b.sync > 0) B.push(['sync', b.sync, '80,230,200', 'Sincronia']);
     if (p.counterT > 0) B.push(['counter', p.counterT, '220,228,240', 'Contra-ataque']);
     if (p.kit) p.kit.hudBuffs(p, B);   // efeitos próprios do personagem (Foco, camuflagem…)
+    if (game.world && typeof Oficios !== 'undefined') Oficios.hudBuffs(p, B);   // consumíveis do mundo aberto
     L.lvlY = L.compact ? 266 : 140;
     L.cellsX = 20; L.cellsY = VIEW_H - 80; L.cellsS = 58;
     // Legenda (caixa e linhas) e altura do letreiro, que sobe para não cobrir a legenda
@@ -729,7 +730,15 @@ class HUD {
         ctx.fillStyle = rgba(n.lightRgb, 1); ctx.fillText('★', b.x, b.y + 0.5);
         continue;
       }
-      if (b.out) continue;
+      // alvos de missão (losango dourado, também na borda), recursos de coleta e tesouros por perto
+      if (n.alvoMissao && !n.feito && !n.sumir && !(n.sub === 'local')) {
+        if (b.out) { this.rimMark(ctx, b, 4.5, '#ffd47a'); continue; }
+        diamondPath(ctx, b.x, b.y, 3.6); ctx.fillStyle = '#ffd47a'; ctx.fill();
+        continue;
+      }
+      if (b.out || n.feito) continue;
+      if ((n.kind === 'tesouro' || n.kind === 'entrada') && !n.visivel()) continue;   // ainda escondidos
+      if ((n.kind === 'coleta' || n.kind === 'evento') && !n.used) { ctx.fillStyle = rgba(n.lightRgb, 0.9); ctx.beginPath(); ctx.arc(b.x, b.y, 2, 0, TAU); ctx.fill(); continue; }
       ctx.fillStyle = 'rgba(255,212,122,0.9)'; ctx.beginPath(); ctx.arc(b.x, b.y, 2.2, 0, TAU); ctx.fill();
     }
     // Fragmento de memória

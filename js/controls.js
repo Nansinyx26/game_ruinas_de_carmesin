@@ -20,6 +20,7 @@ const KEYMAP = {
   swapWeapon: ['KeyQ', 'KeyX'],   // em jogo: troca para a próxima arma liberada do personagem
   camToggle: ['KeyV'], camLeft: ['KeyZ'], camRight: ['KeyC'],   // em jogo: câmera isométrica / 3ª pessoa e girar
   bag: ['KeyB'], capsule: ['Digit5', 'Numpad5'],   // mundo aberto: mochila (relíquias, loja, missões) e cápsula de reparo
+  journal: ['KeyY'],  // mundo aberto: diário de missões
   jump: ['KeyN'], block: ['ShiftLeft', 'ShiftRight'],   // pulo e defesa (segurar): js/heroes/pulo_defesa.js
   respec: ['KeyR'],   // árvore de habilidades: redistribuir os pontos (aperte de novo para confirmar)
   grenade: ['KeyR'],  // em jogo: Granada de Plasma do Kael (js/heroes/granada.js)

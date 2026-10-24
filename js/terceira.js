@@ -363,6 +363,11 @@ const ThirdView = {
       const o = n._o3p || (n._o3p = {});
       o.yaw = n.t * 0.4; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
       place(R3D.queue(this.propModel('coleta:' + n.data.rgb), null, null, o), n);
+    } else if (n.kind === 'quadro' || (n.kind === 'evento' && n.sub !== 'fragmento' && !n.feito)) {
+      // quadro de contratos, estandarte da incursão e carroça da caravana (js/mundo/povo.js, eventos.js)
+      const o = n._o3p || (n._o3p = {});
+      o.yaw = n.kind === 'quadro' ? 0.8 : 0.3; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = n.hitT > 0 ? 0.6 : 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
+      place(R3D.queue(this.propModel(n.kind === 'quadro' ? 'quadro' : n.sub), null, null, o), n);
     }
   },
   propModel(kind) {
@@ -377,6 +382,17 @@ const ThirdView = {
       g.cyl(0, 0, 0, 7 * k, 7 * k, 2, 8, '#1a2030', 0);
       g.cyl(0, 0, 6 * k, 0.3, 4.5 * k, 8 * k, 4, col, 0.9);
       g.cyl(0, 0, 14 * k, 4.5 * k, 0, 16 * k, 4, col, 0.9);
+    } else if (kind === 'quadro') {
+      g.box(0, -14, 20, 3, 3, 40, '#2a2018', 0); g.box(0, 14, 20, 3, 3, 40, '#2a2018', 0);
+      g.box(0, 0, 34, 2, 34, 22, '#3a2c20', 0);
+      g.box(1.2, -8, 34, 0.5, 9, 12, '#e8dcc0', 0.15); g.box(1.2, 3, 35, 0.5, 8, 14, '#e8dcc0', 0.15); g.box(1.2, 12, 33, 0.5, 6, 9, '#e8dcc0', 0.15);
+    } else if (kind === 'estandarte') {
+      g.cyl(0, 0, 0, 1.6, 1.2, 70, 6, '#1a1418', 0);
+      g.box(0, 9, 60, 0.6, 18, 16, '#ff785a', 0.7, { taper: 0.4 });
+    } else if (kind === 'carroca') {
+      g.box(0, 0, 12, 40, 22, 14, '#3a2c20', 0);
+      g.cyl(-20, 0, 19, 12, 12, 40, 8, '#c8b898', 0, { axis: 'x' });
+      for (const [x, y] of [[-14, -12], [14, -12], [-14, 12], [14, 12]]) g.cyl(x, y, 7, 7, 7, 3, 10, '#15110c', 0, { axis: 'y' });
     } else if (kind.startsWith('coleta:')) {
       // recurso de coleta: pontas finas e acesas na cor do bioma
       const col = '#' + kind.slice(7).split(',').map((v) => (+v).toString(16).padStart(2, '0')).join('');
@@ -410,7 +426,11 @@ const ThirdView = {
         if (e.elite && e.state !== 'dying') GlowCache.drawFlat(ctx, '255,180,60', isoX(e.x, e.y), isoY(e.x, e.y), e.radius * 3.4, 0.4 + 0.12 * Math.sin(g.realTime * 5 + e.id));
       }
       // passagens e portal do mundo: o anel no chão e o nome
-      for (const n of g.npcs) if (n.kind === 'gate' || n.kind === 'portal' || n.kind === 'campanha') { n.draw(ctx); n.drawEmissive(ctx); }
+      for (const n of g.npcs) {
+        const k = n.kind;
+        if (k === 'gate' || k === 'portal' || k === 'campanha' || k === 'missao' || k === 'entrada' || k === 'tesouro' || (k === 'evento' && n.sub === 'fragmento')) { n.draw(ctx); n.drawEmissive(ctx); }
+        else if (k === 'quadro' || k === 'evento') n.drawEmissive(ctx);   // brilho e vida da carroça (o modelo vai em 3D)
+      }
       ctx.restore();
       p.drawAura(ctx, g.realTime);
       for (const e of g.enemies) {
