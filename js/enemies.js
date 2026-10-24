@@ -273,7 +273,7 @@ class Enemy extends Entity {
     if (this.elite || this.varNome) {
       ctx.font = `bold 10px ${FONT_TITLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
       ctx.fillStyle = this.elite ? '#ffd47a' : rgba(this.T.glow, 0.95);
-      ctx.fillText(this.elite ? (this.varNome ? `ELITE · ${this.varNome.toUpperCase()}` : 'ELITE') : this.varNome.toUpperCase(), sx, sy - 3);
+      ctx.fillText(this.chefeNome || (this.elite ? (this.varNome ? `ELITE · ${this.varNome.toUpperCase()}` : 'ELITE') : this.varNome.toUpperCase()), sx, sy - 3);   // chefes regionais e das campanhas: o nome
     }
     ctx.globalAlpha = 1;
   }

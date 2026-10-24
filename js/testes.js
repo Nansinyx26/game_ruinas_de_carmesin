@@ -619,6 +619,7 @@ const EclipseTests = {
       this.ok('mundo: zona de Velmora carrega e desenha', !erro && World.zone.id === 'velmora_trilha' && g.enemies.length > 0, erro);
       this.ok('mundo: árvores no lugar dos pilares', g.room.theme.pillar === 'tree' && g.room.pillars.length > 0 && g.room.pillars[0].hw > g.room.pillars[0].r);
       this.campoAberto();
+      this.campanhas();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
@@ -724,6 +725,94 @@ const EclipseTests = {
       this.ok('campo aberto: chega na zona vizinha pelo lado oeste', World.zone.id === viz.id && p.x < 160, `${World.zone.id} x=${Math.round(p.x)}`);
       p.state = s0; p.vx = 0;
     } else this.ok(`${z.id} tem vizinha a leste`, false);
+  },
+
+  // Campanhas dos heróis (chamado de dentro de mundo(), já no modo mundo)
+  campanhas() {
+    const g = game, bgs = ['cells', 'tunnel', 'vesper', 'shadows', 'city', 'tower', 'void', 'lab', 'refuge', 'sword', 'terminal', 'cathedral', 'nexus', 'memory', 'dawn', 'space'];
+    this.igual('campanhas: uma para cada um dos 5 heróis', HERO_CAMPAIGN_ORDER.filter((h) => HERO_CAMPAIGNS[h] && CHARACTERS_BY_ID[h]).length, 5);
+    for (const h of HERO_CAMPAIGN_ORDER) {
+      const C = HERO_CAMPAIGNS[h], zonas = C.caps.map((c) => c.zona);
+      this.igual(`campanha ${h}: 5 capítulos`, C.caps.length, 5);
+      this.ok(`campanha ${h}: zonas existem e são diferentes`, zonas.every((z) => WORLD_ZONES[z]) && new Set(zonas).size === 5, zonas.join(','));
+      const tipos = [];
+      let passosOk = true;
+      for (const c of C.caps) for (const P of c.passos) {
+        const grupos = P.lutar ? [P.lutar] : P.ondas ? P.ondas : P.chefe ? [P.chefe.escolta || {}, { [P.chefe.tipo]: 1 }] : [];
+        for (const G of grupos) for (const t in G) tipos.push(t);
+        if (!(P.achar || P.lutar || P.ondas || P.chefe)) passosOk = false;
+        if (P.achar && !P.achar.every((tx) => typeof tx === 'string' && tx.length > 10)) passosOk = false;
+      }
+      this.ok(`campanha ${h}: passos válidos (pelo menos 2 por capítulo)`, passosOk && C.caps.every((c) => c.passos.length >= 2 && c.chega.length && c.sinal));
+      this.ok(`campanha ${h}: inimigos existem`, tipos.every((t) => ENEMY_TYPES[t] || ENEMY_VARIANTS[t]), tipos.filter((t) => !ENEMY_TYPES[t] && !ENEMY_VARIANTS[t]).join(','));
+      this.ok(`campanha ${h}: clímax no último capítulo (chefe com nome ou defesa de 3 ondas)`, C.caps[4].passos.some((P) => (P.chefe && P.chefe.nome) || (P.ondas && P.ondas.length >= 3)));
+      const pags = [...C.abertura, ...C.final, ...C.caps.filter((c) => c.fim).map((c) => c.fim)];
+      this.ok(`campanha ${h}: páginas com cenário conhecido`, pags.every((pg) => bgs.includes(pg.bg) && pg.title && pg.lines.length), pags.map((pg) => pg.bg).filter((b) => !bgs.includes(b)).join(','));
+      this.ok(`campanha ${h}: relíquia final válida`, WORLD_RELIQUIAS.some((b) => b.id === C.premio.b) && Object.keys(C.premio.st).every((k) => WORLD_ATRIB[k]));
+      const lv = zonas.map((z) => WORLD_ZONES[z].lv);
+      this.ok(`campanha ${h}: capítulos em nível crescente`, lv.every((v, i) => !i || v >= lv[i - 1]), lv.join(','));
+    }
+    // o fluxo: sinal, pistas, luta, conclusão, região aberta, ondas, chefe e a relíquia única
+    const S0 = World.state.campanhas, h0 = RosterManager.active, nv = g.progress.level;
+    World.state.campanhas = {};
+    const passa = (n = 60) => { for (let i = 0; i < n; i++) Campanhas.update(1 / 30); };
+    try {
+      if (RosterManager.active !== 'kael') RosterManager.setActive('kael');
+      World.loadZone('laboratorio', null);
+      this.ok('campanha: sem começar, nada no HUD nem sinal', Campanhas.linha() === '' && !g.npcs.some((n) => n.kind === 'campanha'));
+      World.state.campanhas.kael = { cap: 0, feita: false };
+      World.loadZone('laboratorio', null);
+      const sinal = g.npcs.find((n) => n.kind === 'campanha' && n.sub === 'sinal');
+      this.ok('campanha: o sinal aparece na zona do capítulo', !!sinal && Campanhas.linha().indexOf('investigue') > 0, Campanhas.linha());
+      this.ok('campanha: ★ no objetivo do HUD', World.objective().indexOf('★ A Ala C') === 0, World.objective());
+      sinal.talk();
+      const ach = g.npcs.filter((n) => n.kind === 'campanha' && n.sub === 'achado');
+      this.igual('campanha: a Ala C começa pelas 3 pistas', ach.length, 3);
+      for (const a of ach) a.talk();
+      passa(40);
+      const alvo = Campanhas.ev && Campanhas.ev.alvo;
+      this.ok('campanha: depois das pistas, a segurança da ala (4 inimigos acordados)', alvo && alvo.length === 4 && alvo.every((e) => g.enemies.includes(e) && !e.dormant), alvo && alvo.length);
+      for (const e of alvo || []) e.alive = false;
+      passa(40);
+      this.ok('campanha: capítulo 1 concluído, o 2 em Velmora', World.state.campanhas.kael.cap === 1 && Campanhas.zonaAlvo() === 'velmora_ruinas' && !Campanhas.ev);
+      this.ok('campanha: a página do capítulo vem em seguida', !!Campanhas.pendente && Campanhas.pendente.pages[0].title === 'A ALA C');
+      Campanhas.pendente = null;
+      g.progress.level = 1; World.state.campanhas.kael.cap = 4;
+      this.ok('campanha: o capítulo em Obsidiano abre a região antes do nível', World.regionOpen('obsidiano'));
+      g.progress.level = nv;
+      World.loadZone('obsidiano_fendas', null);
+      g.npcs.find((n) => n.kind === 'campanha' && n.sub === 'sinal').talk();
+      let ondas = 0;
+      for (let k = 0; k < 6 && Campanhas.ev; k++) {
+        const P = Campanhas.ev.c.passos[Campanhas.ev.passo];
+        if (P.chefe) break;
+        ondas++;
+        for (const e of Campanhas.ev.alvo) e.alive = false;
+        passa(70);
+      }
+      const B = Campanhas.ev && Campanhas.ev.alvo[0];
+      this.ok('campanha: 2 ondas e depois o chefe PROTÓTIPO ZERO-1', ondas === 2 && !!B && B.chefeNome === 'PROTÓTIPO ZERO-1' && B.elite && B.campanha, ondas);
+      for (const e of Campanhas.ev ? Campanhas.ev.alvo : []) e.alive = false;
+      passa(40);
+      const rel = WorldInv.S.itens.find((it) => it.unico === 'Coração da Tempestade');
+      this.ok('campanha: concluída com a relíquia lendária única', World.state.campanhas.kael.feita && !!rel && rel.r === 4 && WorldInv.nome(rel) === 'Coração da Tempestade');
+      this.ok('campanha: as páginas finais vêm em seguida', !!Campanhas.pendente && Campanhas.pendente.pages.length === 2);
+      Campanhas.pendente = null;
+      if (rel) WorldInv.remover(rel.id);
+      // o sinal é só do herói da campanha
+      World.state.campanhas.lyra = { cap: 0, feita: false };
+      World.loadZone('portoes', null);
+      this.ok('campanha: sem sinal para outro herói', !g.npcs.some((n) => n.kind === 'campanha'));
+      RosterManager.setActive('lyra'); passa(1);
+      this.ok('campanha: trocando para a Lyra, o sinal dela aparece', g.npcs.some((n) => n.kind === 'campanha' && n.sub === 'sinal'));
+      WorldInv.ui.tab = 'campanhas';
+      this.ok('mochila: aba CAMPANHAS com os 5 heróis', WorldInv.abas().includes('campanhas') && WorldInv.lista().length === 5);
+      WorldInv.ui.tab = 'mochila';
+    } finally {
+      World.state.campanhas = S0 || {};
+      Campanhas.limpar(); Campanhas.pendente = null; g.progress.level = nv;
+      if (RosterManager.active !== h0 && RosterManager.isSelectable(h0)) RosterManager.setActive(h0);
+    }
   },
 
   // ------------------------------------------------- armaduras vestidas em 3D

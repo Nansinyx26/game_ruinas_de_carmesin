@@ -354,6 +354,11 @@ const ThirdView = {
       const o = n._o3p || (n._o3p = {});
       o.yaw = 0; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
       place(R3D.queue(this.propModel('terminal'), null, null, o), n);
+    } else if (n.kind === 'campanha' && !n.used) {
+      // sinal e pistas da campanha do herói: cristal aceso girando (o anel e o nome vão nos efeitos)
+      const o = n._o3p || (n._o3p = {});
+      o.yaw = n.t * 0.8; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
+      place(R3D.queue(this.propModel(`campanha:${n.sub}:${n.lightRgb}`), null, null, o), n);
     } else if (n.kind === 'coleta' && !n.used) {
       const o = n._o3p || (n._o3p = {});
       o.yaw = n.t * 0.4; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
@@ -367,6 +372,11 @@ const ThirdView = {
     if (kind === 'terminal') {
       g.box(0, 0, 18, 10, 10, 36, '#141a22', 0);
       g.box(0, 0, 40, 4, 22, 14, '#5ae6c8', 0.9);
+    } else if (kind.startsWith('campanha:')) {
+      const [, sub, rgb] = kind.split(':'), col = '#' + rgb.split(',').map((v) => (+v).toString(16).padStart(2, '0')).join(''), k = sub === 'sinal' ? 1.6 : 1;
+      g.cyl(0, 0, 0, 7 * k, 7 * k, 2, 8, '#1a2030', 0);
+      g.cyl(0, 0, 6 * k, 0.3, 4.5 * k, 8 * k, 4, col, 0.9);
+      g.cyl(0, 0, 14 * k, 4.5 * k, 0, 16 * k, 4, col, 0.9);
     } else if (kind.startsWith('coleta:')) {
       // recurso de coleta: pontas finas e acesas na cor do bioma
       const col = '#' + kind.slice(7).split(',').map((v) => (+v).toString(16).padStart(2, '0')).join('');
@@ -400,7 +410,7 @@ const ThirdView = {
         if (e.elite && e.state !== 'dying') GlowCache.drawFlat(ctx, '255,180,60', isoX(e.x, e.y), isoY(e.x, e.y), e.radius * 3.4, 0.4 + 0.12 * Math.sin(g.realTime * 5 + e.id));
       }
       // passagens e portal do mundo: o anel no chão e o nome
-      for (const n of g.npcs) if (n.kind === 'gate' || n.kind === 'portal') { n.draw(ctx); n.drawEmissive(ctx); }
+      for (const n of g.npcs) if (n.kind === 'gate' || n.kind === 'portal' || n.kind === 'campanha') { n.draw(ctx); n.drawEmissive(ctx); }
       ctx.restore();
       p.drawAura(ctx, g.realTime);
       for (const e of g.enemies) {

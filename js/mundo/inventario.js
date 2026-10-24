@@ -11,8 +11,9 @@
 // dia do mundo (js/mundo/tempo.js), e cápsulas de reparo; compra as suas relíquias por 40%
 // do valor. Longe dele, uma relíquia pode ser desmontada por 20%.
 // CÁPSULAS DE REPARO: até 5 na mochila, tecla 5 (ou pela mochila) cura 40% da vida.
-// A tela (tecla B ou pausa → INVENTÁRIO) tem as abas MOCHILA, LOJA (perto do mercador) e
-// MISSÕES (js/mundo/missoes.js). Tudo fica em World.state.inv (salvamento do mundo).
+// A tela (tecla B ou pausa → INVENTÁRIO) tem as abas MOCHILA, LOJA (perto do mercador),
+// MISSÕES (js/mundo/missoes.js) e CAMPANHAS (js/mundo/campanhas.js). Tudo fica em
+// World.state.inv (salvamento do mundo).
 // ---------------------------------------------------------------------------
 const WORLD_RARIDADES = [
   { id: 'comum', name: 'Comum', rgb: '200,206,220', k: 1, w: 62, preco: 1 },
@@ -53,7 +54,7 @@ const WorldInv = {
   },
   base(it) { return WORLD_RELIQUIAS.find((b) => b.id === it.b) || WORLD_RELIQUIAS[0]; },
   rar(it) { return WORLD_RARIDADES[it.r] || WORLD_RARIDADES[0]; },
-  nome(it) { return `${this.base(it).name} ${WORLD_SUFIXO[it.reg] || ''}`.trim(); },
+  nome(it) { return it.unico || `${this.base(it).name} ${WORLD_SUFIXO[it.reg] || ''}`.trim(); },   // única: o prêmio das campanhas
   valor(it) { return Math.round((12 + it.lv * 3) * this.rar(it).preco); },
   venda(it) { return Math.max(1, Math.round(this.valor(it) * 0.4)); },
   sucata(it) { return Math.max(1, Math.round(this.valor(it) * 0.2)); },
@@ -208,18 +209,21 @@ const WorldInv = {
     game.audio.play('uiMove');
   },
   fechar() { game.state = 'playing'; World.save(); game.audio.play('uiMove'); },
-  abas() { return this.ui.shop ? ['mochila', 'loja', 'missoes'] : ['mochila', 'missoes']; },
-  // Itens navegáveis da aba: mochila = 3 vagas + mochila; loja = estoque + cápsula; missões: nada
+  abas() { return this.ui.shop ? ['mochila', 'loja', 'missoes', 'campanhas'] : ['mochila', 'missoes', 'campanhas']; },
+  // Itens navegáveis da aba: mochila = 3 vagas + mochila; loja = estoque + cápsula; missões: nada;
+  // campanhas: os 5 heróis (js/mundo/campanhas.js)
   lista() {
     const U = this.ui;
     if (U.tab === 'mochila') return [0, 1, 2].map((k) => ({ slot: k })).concat(this.S.itens.map((it) => ({ it })));
     if (U.tab === 'loja') return this.estoque().map((it, k) => ({ loja: k, it })).concat([{ loja: this.estoque().length, cap: true }]);
+    if (U.tab === 'campanhas') return HERO_CAMPAIGN_ORDER.map((h) => ({ camp: h }));
     return [];
   },
   cols() { return this.lay().cols; },
   // Ação principal do item selecionado (Enter, clique duplo ou botão)
   agir(q, alt = false) {
     if (!q) return;
+    if (q.camp) { Campanhas.comecar(q.camp); return; }
     if (q.slot !== undefined) { if (this.desequipar(q.slot)) game.audio.play('uiSelect'); return; }
     if (q.loja !== undefined) { this.comprar(q.loja); return; }
     if (alt) { const n = this.nome(q.it), v = this.vender(q.it.id); this.aviso(`${this.ui.shop ? 'Vendeu' : 'Desmontou'} ${n} · +${v} células`, true); return; }
@@ -288,7 +292,7 @@ const WorldInv = {
     let x = 36;
     ctx.font = `bold 15px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
     for (const a of this.abas()) {
-      const label = { mochila: 'MOCHILA', loja: 'LOJA DO MERCADOR', missoes: 'MISSÕES' }[a], w = ctx.measureText(label).width + 30, on = a === U.tab;
+      const label = { mochila: 'MOCHILA', loja: 'LOJA DO MERCADOR', missoes: 'MISSÕES', campanhas: 'CAMPANHAS' }[a], w = ctx.measureText(label).width + 30, on = a === U.tab;
       ctx.fillStyle = on ? 'rgba(90,150,255,0.25)' : 'rgba(20,30,50,0.6)'; ctx.fillRect(x, 28, w, 36);
       ctx.strokeStyle = on ? 'rgba(150,205,255,0.9)' : 'rgba(90,120,170,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, 28.5, w - 1, 35);
       ctx.fillStyle = on ? '#ffffff' : 'rgba(200,214,235,0.7)'; ctx.textAlign = 'left'; ctx.fillText(label, x + 15, 47);
@@ -304,6 +308,7 @@ const WorldInv = {
     ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText('✕', VIEW_W - 60, 47);
     U.rects.push({ btn: 'fechar', x: VIEW_W - 84, y: 28, w: 48, h: 36 });
     if (U.tab === 'missoes') { if (typeof WorldQuests !== 'undefined') WorldQuests.drawTab(ctx, Ly, t); }
+    else if (U.tab === 'campanhas') Campanhas.drawTab(ctx, Ly, U.sel, t);
     else if (U.tab === 'loja') this.drawLoja(ctx, Ly, L, t);
     else this.drawMochila(ctx, Ly, L, t);
     // aviso da última ação
@@ -316,7 +321,9 @@ const WorldInv = {
     // dicas
     ctx.font = `12px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(200,214,235,0.75)';
     const dica = U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${U.shop ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
-      : U.tab === 'loja' ? 'Enter: comprar · Q/E: abas · Esc: fechar' : 'Fale com quem dá as missões na zona de chegada de cada região · Q/E: abas · Esc: fechar';
+      : U.tab === 'loja' ? 'Enter: comprar · Q/E: abas · Esc: fechar'
+        : U.tab === 'campanhas' ? 'Enter: jogar a campanha (troca para o herói dela) · ★ no mapa e no radar · Q/E: abas · Esc: fechar'
+          : 'Fale com quem dá as missões na zona de chegada de cada região · Q/E: abas · Esc: fechar';
     ctx.fillText(dica, 36, VIEW_H - 22);
     ctx.restore();
   },

@@ -916,6 +916,7 @@ class Menus {
       ['play', 'JOGAR', 'play'],
       ['world', 'MUNDO ABERTO', 'star'],
       ['world3p', 'MUNDO ABERTO · 3ª PESSOA', 'sword'],
+      ['heroes', 'CAMPANHAS DOS HERÓIS', 'star'],
       ['thirdperson', 'ARENA 3D (TREINO)', 'sword'],
       ['settings', 'CONFIGURAÇÕES', 'gear'],
       ['credits', 'CRÉDITOS', 'star'],
@@ -933,11 +934,17 @@ class Menus {
       else if (id === 'thirdperson') game.startThirdPerson();
       else if (id === 'world') { ThirdView.set(false, true); game.startWorld(); }
       else if (id === 'world3p') { ThirdView.set(true, true); game.startWorld(); }
+      else if (id === 'heroes') this.startCampanhas();
       else if (id === 'settings') this.open('settings');
       else if (id === 'credits') this.open('credits');
       else if (id === 'install') this.installApp();
       else this.askQuit();
     });
+  }
+  // Campanhas dos heróis: o mundo aberto (na câmera escolhida) com a aba CAMPANHAS da mochila aberta
+  startCampanhas() {
+    game.startWorld();
+    WorldInv.abrir('campanhas');
   }
   // Instala o jogo como app (atalho na área de trabalho / tela inicial, tela cheia, sem a barra do navegador)
   installApp() {
@@ -973,6 +980,7 @@ class Menus {
       ['new', 'NOVO JOGO', 'sword'],
       ['world', 'MUNDO ABERTO', 'star'],
       ['world3p', 'MUNDO ABERTO · 3ª PESSOA', 'sword'],
+      ['heroes', 'CAMPANHAS DOS HERÓIS', 'star'],
       ['thirdperson', 'ARENA 3D (TREINO)', 'star'],
       ['load', 'CARREGAR', 'folder'],
       ['settings', 'CONFIGURAÇÕES', 'gear'],
@@ -990,6 +998,7 @@ class Menus {
       else if (id === 'new') this.startNew();
       else if (id === 'world') { ThirdView.set(false, true); game.startWorld(); }
       else if (id === 'world3p') { ThirdView.set(true, true); game.startWorld(); }
+      else if (id === 'heroes') this.startCampanhas();
       else if (id === 'thirdperson') game.startThirdPerson();
       else if (id === 'load') { this.slotMode = 'load'; this.open('load', Math.max(0, SaveSys.last() - 1)); }
       else if (id === 'settings') this.open('settings');

@@ -71,7 +71,7 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | G | Gráficos 3D / 2D |
 | V | Câmera isométrica / **3ª pessoa** (atrás do ombro) |
 | Z / C · botão direito do mouse (arrastar) · roda | Na 3ª pessoa: girar a câmera · aproximar e afastar |
-| M · B · 5 | No mundo aberto: mapa · mochila (relíquias, loja, missões) · cápsula de reparo |
+| M · B · 5 | No mundo aberto: mapa · mochila (relíquias, loja, missões, campanhas) · cápsula de reparo |
 | N | Pulo (no ar: J golpe, L esquiva no ar, K **mergulho** com impacto ao cair) |
 | Shift (segurar) | **Defesa**: de frente só passa 25% do dano e gasta energia; logo que a guarda sobe, **apara** (anula, atordoa e abre o contra-ataque) |
 | F1 | Modo debug (hitboxes; F2 elimina inimigos, F3 enche vida e energia, F4 dá XP) |
@@ -128,7 +128,7 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 
 ## Mundo aberto
 
-Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica) ou **MUNDO ABERTO · 3ª PESSOA**. Na pausa: **CÂMERA** alterna as duas vistas e **MUNDO ABERTO** leva da campanha para o mundo (a campanha fica salva); dentro do mundo, o mesmo item abre o mapa. No toque, o botão **3D** alterna a câmera e arrastar na metade direita gira.
+Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica), **MUNDO ABERTO · 3ª PESSOA** ou **CAMPANHAS DOS HERÓIS** (o mundo com a lista das campanhas aberta). Na pausa: **CÂMERA** alterna as duas vistas e **MUNDO ABERTO** leva da campanha para o mundo (a campanha fica salva); dentro do mundo, o mesmo item abre o mapa. No toque, o botão **3D** alterna a câmera e arrastar na metade direita gira.
 
 **Câmera em 3ª pessoa** (`js/terceira.js`, `ThirdView`): o mesmo jogo (campanha e mundo aberto) visto de trás do ombro, em perspectiva. O motor 3D (`R3D.renderScene`) desenha numa passada a sala montada em 3D a partir da `Room` (piso em ladrilhos, paredes com as aberturas da porta e das passagens, pilares e luminárias), os heróis com armaduras, cabelo e armas, os inimigos, NPCs, baús, coletáveis e sombras, com névoa na cor do tema. Os efeitos 2D (partículas, auras, projéteis, números de dano, barras de vida) usam a projeção da câmera e aparecem no lugar. O movimento é relativo à câmera; parado sem girar, ela volta para trás do herói quando ele anda. O pilar que fica entre a câmera e o herói some. A arena antiga de 3ª pessoa continua no menu como **ARENA 3D (TREINO)**.
 
@@ -144,7 +144,18 @@ Sete regiões **realmente exploráveis** com o mesmo combate, personagens, árvo
 - **Relíquias com raridade** (`js/mundo/inventario.js`): Comum, Incomum, Rara, Épica e Lendária. Cada relíquia tem um atributo principal (dano, vida, energia, crítico, velocidade, defesa ou recarga) e, das raras para cima, atributos extras; o valor cresce com a raridade e com o nível da zona. Até **3 equipadas**, só valem no mundo aberto. Todo baú dá uma (o secreto, rara ou melhor; o do chefe, épica ou melhor), o chefe regional sempre deixa uma e os outros inimigos às vezes (as unidades de elite, que agora aparecem nos acampamentos a partir do nível 6, com mais chance).
 - **Mercador** (na zona de chegada de cada região): vende 4 relíquias da região, renovadas a cada dia do mundo, e cápsulas de reparo; compra as suas relíquias por 40% do valor. Longe dele, uma relíquia pode ser desmontada por 20%. **Cápsulas de reparo**: até 5, tecla **5** cura 40% da vida.
 - **Missões** (`js/mundo/missoes.js`): 3 por região, em sequência, com quem tem **!** sobre a cabeça na zona de chegada (**?** quando há uma para entregar): abates de um tipo de inimigo, unidades de elite, baús, terminais, explorar todas as zonas e o chefe regional. A missão atual aparece no quadro do HUD; a recompensa é em células, experiência e uma relíquia com raridade mínima.
-- **Mochila** (tecla **B**, ou pausa → MOCHILA E MISSÕES): abas MOCHILA (vagas equipadas, bônus somados, cápsulas, grade de relíquias com detalhes), LOJA DO MERCADOR (quando aberta por ele) e MISSÕES (as da região atual e o andamento das outras). Funciona com teclado, controle, mouse e toque.
+- **Mochila** (tecla **B**, ou pausa → MOCHILA E MISSÕES): abas MOCHILA (vagas equipadas, bônus somados, cápsulas, grade de relíquias com detalhes), LOJA DO MERCADOR (quando aberta por ele) MISSÕES (as da região atual e o andamento das outras) e CAMPANHAS (a campanha de cada herói). Funciona com teclado, controle, mouse e toque.
+- **Campanha de cada herói** (`js/mundo/campanhas.js`; menu → **CAMPANHAS DOS HERÓIS** ou mochila → aba CAMPANHAS): cinco histórias de 5 capítulos cada, que atravessam as regiões e só andam jogando com o herói delas (escolher a campanha de outro herói troca para ele). Cada uma abre com páginas de história; cada capítulo fica numa zona, marcada com **★** no mapa, no radar e no quadro de missão. Lá aparece o **sinal** (uma luz na cor do herói): investigar ([E]) começa os passos do capítulo, um depois do outro, com falas do herói: **pistas** para examinar espalhadas pela zona, **grupos** de inimigos, **ondas** em sequência e **chefes** com nome (elite, mais vida, outra cor e escolta). Cada capítulo termina com uma página de história, experiência e células; o capítulo em andamento abre a região dele no mapa (mesmo abaixo do nível; o nível recomendado aparece na aba). O último dá uma **relíquia lendária única**. Sair da zona ou cair recomeça o capítulo.
+
+| Herói | Campanha | Capítulos (zona) | Relíquia final |
+| --- | --- | --- | --- |
+| Kael | Ecos do Projeto ZERO | A Ala C (Laboratório Esquecido) · Servidores Sob as Raízes (Ruínas Engolidas) · A Luz que Chama (Farol Apagado, Vigia do Farol) · O Nome no Rádio (Cavernas de Gelo) · Onde a Tempestade Foi Forjada (Fendas Ardentes, Protótipo ZERO-1) | Coração da Tempestade |
+| Lyra | Longe da Rede | As Muralhas (Portões Partidos) · Rastros (Trilha dos Galhos Mortos) · Os Que Ficaram de Fora (Lago Escuro, Predador de Musgo) · A Travessia (Recife de Vidro) · Família (Cidade Engolida, Caçador de Sucata) | Corda Violeta |
+| Drakos | A Voz da Legião | Ameaça Prioritária (Fendas Rubras) · Listas (Avenida Central) · Os Outros Soldados (Metrô Abandonado) · A Fortaleza (Fortaleza da Vigília, Centurião de Ferro) · O Último Módulo (Forja Antiga, Marechal da Legião) | Placa de Onze Anos |
+| Sera | A Mente de NEXUS | Ouvidos de NEXUS (Torre de Vigia) · Memória Líquida (Ilha dos Cristais) · O Laboratório (Laboratório Corporativo) · O Primeiro Código (Templo Soterrado, Guardião do Código) · Silêncio (Geleira Partida, defesa em 3 ondas) | Drone Silencioso |
+| Orion | Sem Registro | Contrato Antigo (Galerias de Serviço) · Rostos (Mercado Vertical) · A Corporação (Cânion Rubro) · O Laboratório Atrás do Vidro (Ruínas Submersas) · Apagar o Nome (Cratera Viva, A Mão Invisível) | Lâmina Sem Nome |
+
+  As falas das campanhas são só texto (sem dublagem gravada). O andamento fica no salvamento do mundo.
 - **Acampamentos**: os inimigos ficam parados até o herói chegar perto ou um deles ser atingido; aí o grupo inteiro acorda e persegue. Voltam a cada visita (o do chefe não, depois de derrotado).
 - **Baús** (células, experiência, cápsula de reparo), **terminais** com memórias da cidade, um **local secreto** que só aparece de perto, **NPCs** no Mercado e o **chefe regional** (Guardião Carmesim) no Coração Carmesim — o baú dele só abre depois.
 - **Descoberta e viagem rápida**: entrar numa zona pela primeira vez a descobre (experiência); **portais** ativados viram destinos de viagem rápida.
@@ -340,7 +351,8 @@ js/
   world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
   mundo/            regioes.js (as outras seis regiões), tempo.js (WorldTime: dia, noite e clima),
                     inventario.js (WorldInv: relíquias, mochila, mercador), missoes.js (WorldQuests),
-                    variantes.js (ENEMY_VARIANTS, EnemyTraits: as criaturas de cada região)
+                    variantes.js (ENEMY_VARIANTS, EnemyTraits: as criaturas de cada região),
+                    campanhas.js (HERO_CAMPAIGNS, Campanhas: a campanha de cada herói)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)

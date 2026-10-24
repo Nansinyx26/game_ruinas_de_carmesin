@@ -239,7 +239,8 @@ const World = {
     const r = worldRegion(id);
     if (r.open) return true;
     const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
-    return (prev && this.bossDone(prev.id)) || (game.progress && game.progress.level >= r.lv[0]);
+    return (prev && this.bossDone(prev.id)) || (game.progress && game.progress.level >= r.lv[0])
+      || (typeof Campanhas !== 'undefined' && Campanhas.abreRegiao(id));   // capítulo da campanha do herói (js/mundo/campanhas.js)
   },
 
   // Começa o modo (continua do salvamento do mundo, se houver)
@@ -328,9 +329,7 @@ const World = {
         const a = rand(0, TAU), r = rand(18, 70);
         let x = pt.x + Math.cos(a) * r, y = pt.y + Math.sin(a) * r;
         if (!R.canStand(x, y, 20)) { x = pt.x; y = pt.y; }
-        // nível do inimigo limitado (a velocidade cresce com ele); acima do nível 20, mais vida
-        const e = criarInimigo(type, x, y, Math.min(14, W.roomIndex + Math.floor(z.lv / 3)));   // tipo ou variante (js/mundo/variantes.js)
-        if (z.lv > 20) { e.maxHp = e.hp = Math.round(e.hp * (1 + (z.lv - 20) * 0.05)); e.dmg *= 1 + (z.lv - 20) * 0.025; }
+        const e = this.criarNaZona(type, x, y);
         e.dormant = true; e.camp = camp; e.setState('idle');   // já no lugar (sem a animação de surgir)
         camp.enemies.push(e); g.enemies.push(e);
       }
@@ -345,7 +344,7 @@ const World = {
       if (c.boss) {
         const B = worldRegion(z.region).boss;
         const b = camp.enemies.find((e) => e.type === B.type && !e.variante) || camp.enemies.find((e) => e.type === B.type) || camp.enemies[0];
-        b.makeElite(); b.maxHp = b.hp = Math.round(b.maxHp * B.hp); b.worldBoss = true; b.worldRegion = z.region; b.name = B.name;
+        b.makeElite(); b.maxHp = b.hp = Math.round(b.maxHp * B.hp); b.worldBoss = true; b.worldRegion = z.region; b.name = b.chefeNome = B.name;
       }
       this.camps.push(camp);
     }
@@ -371,7 +370,15 @@ const World = {
       WorldQuests.check();
     }
     if (z.portal && !this.state.portais.includes(id)) { this.state.portais.push(id); g.hud.toast(`Portal ativado · ${z.name}`, '170,120,255'); }
+    Campanhas.aoCarregar(id);   // sinal do capítulo da campanha do herói, se for esta zona (js/mundo/campanhas.js)
     this.save();
+  },
+  // Inimigo (tipo ou variante, js/mundo/variantes.js) no nível da zona: acampamentos e campanhas.
+  // Nível limitado (a velocidade cresce com ele); acima do nível 20 da zona, mais vida e dano
+  criarNaZona(tipo, x, y) {
+    const z = this.zone, e = criarInimigo(tipo, x, y, Math.min(14, game.waves.roomIndex + Math.floor(z.lv / 3)));
+    if (z.lv > 20) { e.maxHp = e.hp = Math.round(e.hp * (1 + (z.lv - 20) * 0.05)); e.dmg *= 1 + (z.lv - 20) * 0.025; }
+    return e;
   },
   // Vai para outra zona (passagem: 'dir'; portal: dir null)
   go(id, dir, along = null) {
@@ -424,6 +431,7 @@ const World = {
       if (c.awake) continue;
       if (p.state !== 'dead' && dist2(p.x, p.y, c.x, c.y) < R * R) { const e = c.enemies.find((q) => q.alive); if (e) this.wake(e); }
     }
+    Campanhas.update(dt);
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }
   },
@@ -481,8 +489,8 @@ const World = {
     const bausAqui = S.baus.filter((k) => zs.some((z) => k.indexOf(z.id + ':') === 0)).length;
     const bz = zs.find((z) => (z.camps || []).some((c) => c.boss));
     const base = this.bossDone(reg.id) ? `${reg.name} concluída` : `Derrote ${reg.boss.name}${bz ? ` em ${bz.name}` : ''}`;
-    const quest = typeof WorldQuests !== 'undefined' ? WorldQuests.line() : '';
-    return `${quest || base} · locais ${zs.filter((z) => S.descobertos.includes(z.id)).length}/${zs.length} · baús ${bausAqui}/${baus}`;
+    const quest = typeof WorldQuests !== 'undefined' ? WorldQuests.line() : '', camp = Campanhas.linha();
+    return `${camp ? `${camp} · ` : ''}${quest || base} · locais ${zs.filter((z) => S.descobertos.includes(z.id)).length}/${zs.length} · baús ${bausAqui}/${baus}`;
   },
 
   // Salvamento próprio do mundo (o jogo, o elenco e o estado das zonas)
@@ -614,6 +622,16 @@ const World = {
       ctx.fillText(mark, q.x, q.y + 1);
       if (here) { ctx.strokeStyle = `rgba(120,220,255,${0.6 + 0.4 * Math.sin(t * 6)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, q.s * 0.75, 0, TAU); ctx.stroke(); }
     }
+    // Capítulo da campanha do herói: ★ na cor dele
+    const alvo = Campanhas.zonaAlvo();
+    if (alvo && L.zones[alvo]) {
+      const q = L.zones[alvo], C = Campanhas.def(Campanhas.heroi()), k = 0.6 + 0.4 * Math.sin(t * 4);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      GlowCache.draw(ctx, C.rgb, q.x, q.y, q.s * 1.6, 0.6 * k);
+      ctx.restore();
+      ctx.font = `bold ${Math.round(q.s * 0.8)}px ${FONT_UI}`; ctx.fillStyle = rgba(C.rgb, 1); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('★', q.x + q.s * 0.55, q.y - q.s * 0.55);
+    }
     ctx.restore();
     // Cabeçalho, legenda e destino selecionado
     ctx.save();
@@ -622,7 +640,7 @@ const World = {
     ctx.fillText(M.travel ? 'VIAGEM RÁPIDA' : 'MAPA DO MUNDO', 40, 40);
     ctx.letterSpacing = '0px';
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
-    ctx.fillText('⌂ base · ◈ portal · ☠ chefe regional · ? não descoberto · ◯ você está aqui', 40, VIEW_H - 40);
+    ctx.fillText('⌂ base · ◈ portal · ☠ chefe regional · ★ campanha · ? não descoberto · ◯ você está aqui', 40, VIEW_H - 40);
     if (sel) {
       const z = WORLD_ZONES[sel];
       ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = '#ffd2dc';

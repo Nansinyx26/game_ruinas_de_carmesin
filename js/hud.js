@@ -716,9 +716,17 @@ class HUD {
         ctx.restore();
       }
     }
-    // NPCs (aliados e gravações)
+    // NPCs (aliados e gravações); o sinal e as pistas da campanha do herói em estrela na cor dele
     for (const n of game.npcs) {
       const b = this.radarPos(n.x, n.y);
+      if (n.kind === 'campanha') {
+        if (n.used) continue;
+        this.glowAt(ctx, n.lightRgb, b.x, b.y, 14, 0.7 + 0.3 * Math.sin(t * 5));
+        if (b.out) { this.rimMark(ctx, b, 5, rgba(n.lightRgb, 1)); continue; }
+        ctx.font = `bold 11px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = rgba(n.lightRgb, 1); ctx.fillText('★', b.x, b.y + 0.5);
+        continue;
+      }
       if (b.out) continue;
       ctx.fillStyle = 'rgba(255,212,122,0.9)'; ctx.beginPath(); ctx.arc(b.x, b.y, 2.2, 0, TAU); ctx.fill();
     }
