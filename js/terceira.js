@@ -101,7 +101,8 @@ const ThirdView = {
     let d = this.curDist;
     for (let k = 0; k < 10; k++) {
       const ex = T[0] - fx * d * cp, ey = T[1] - fy * d * cp;
-      if (ex > 16 && ex < R.w - 16 && ey > 16 && ey < R.h - 16) break;
+      const M = (R.margem || 0) - 16;   // campo aberto: a câmera pode sair da borda (não há parede)
+      if (ex > 16 - M && ex < R.w - 16 + M && ey > 16 - M && ey < R.h - 16 + M) break;
       d *= 0.86;
     }
     E[0] = T[0] - fx * d * cp; E[1] = T[1] - fy * d * cp; E[2] = T[2] + d * sp;
@@ -150,9 +151,11 @@ const ThirdView = {
     const rgbHex = (s) => '#' + s.split(',').map((v) => (+v).toString(16).padStart(2, '0')).join('');
     const [fh, fs, fl] = th.floor, [wh, ws] = th.wall;
     const r = mulberry32(R.seed || 1);
-    const floor = new G3();
-    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
-      const l = fl * 0.72 + ((i + j) % 2 ? 1.4 : 0) + r() * 1.2;
+    const floor = new G3(), mg = R.aberto ? Math.round(R.margem / T) : 0;
+    for (let i = -mg; i < n + mg; i++) for (let j = -mg; j < n + mg; j++) {
+      // campo aberto: chão sem xadrez, escurecendo além da borda (até o horizonte)
+      const fora = Math.max(0, -i, -j, i - n + 1, j - n + 1);
+      const l = R.aberto ? (fl * 0.72 + Math.sin(i * 0.7 + j * 0.31) * 1.2 + r() * 0.8) * Math.max(0.3, 1 - fora * 0.17) : fl * 0.72 + ((i + j) % 2 ? 1.4 : 0) + r() * 1.2;
       floor.quad([i * T, j * T, 0], [(i + 1) * T, j * T, 0], [(i + 1) * T, (j + 1) * T, 0], [i * T, (j + 1) * T, 0], hex(fh, fs, l), 0);
     }
     // frestas acesas entre os ladrilhos (cor de destaque), uma a cada duas
@@ -186,10 +189,11 @@ const ThirdView = {
       }
       return root.add(new N3('parede' + name, g));
     };
-    wall('N', 'x', w, -6, true); wall('S', 'x', w, h + 6, true); wall('W', 'y', h, -6, false); wall('E', 'y', h, w + 6, false);
+    if (!R.aberto) { wall('N', 'x', w, -6, true); wall('S', 'x', w, h + 6, true); wall('W', 'y', h, -6, false); wall('E', 'y', h, w + 6, false); }
     // luminárias das paredes do fundo (as mesmas tochas da vista isométrica)
     const lamps = new G3();
     for (const t of R.torches) {
+      if (t.chao) { lamps.cyl(t.x, t.y, 0, 7, 2, 12, 6, trim, 1); continue; }   // lume no chão do campo aberto
       if (t.y === 0) lamps.box(t.x, 1, 104, 18, 6, 26, trim, 1);
       else lamps.box(1, t.y, 104, 6, 18, 26, trim, 1);
     }
@@ -227,7 +231,7 @@ const ThirdView = {
       root.add(new N3('pilar' + i, pil));
     });
     const m = new Model3(root);
-    m.walls = ['N', 'S', 'W', 'E'].map((k) => m.nodes['parede' + k]);
+    m.walls = R.aberto ? [] : ['N', 'S', 'W', 'E'].map((k) => m.nodes['parede' + k]);
     m.pillars = R.pillars.map((q, i) => [q, m.nodes['pilar' + i]]);
     return m;
   },
@@ -259,7 +263,7 @@ const ThirdView = {
     const T = this.tgt;
     const hideNear = (m) => {
       const N = m.walls;
-      N[0].vis = E[1] > 30; N[1].vis = E[1] < R.h - 30; N[2].vis = E[0] > 30; N[3].vis = E[0] < R.w - 30;
+      if (N.length) { N[0].vis = E[1] > 30; N[1].vis = E[1] < R.h - 30; N[2].vis = E[0] > 30; N[3].vis = E[0] < R.w - 30; }
       // pilares cortando a linha câmera → herói (só os altos o bastante para tapar)
       const dx = T[0] - E[0], dy = T[1] - E[1], L2 = dx * dx + dy * dy || 1;
       for (const [q, nd] of m.pillars) {
@@ -294,7 +298,7 @@ const ThirdView = {
     sombra(p, 22);
     p.spr = place(g.queue3(mk, p, o3), p);
     for (const e of g.enemies) {
-      if (e.state === 'spawn' && e.stateTime < e.spawnDur * 0.5) continue;
+      if ((e.state === 'spawn' && e.stateTime < e.spawnDur * 0.5) || e.oculto > 0) continue;   // enterrado: some
       sombra(e, (e.radius || 16) * 1.3);
       e.spr = place(g.queue3(e.isBoss ? 'nexus' : e.type, e, g.opts3(e, e.flash > 0 ? 0.85 : 0)), e);
     }
@@ -350,6 +354,10 @@ const ThirdView = {
       const o = n._o3p || (n._o3p = {});
       o.yaw = 0; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
       place(R3D.queue(this.propModel('terminal'), null, null, o), n);
+    } else if (n.kind === 'coleta' && !n.used) {
+      const o = n._o3p || (n._o3p = {});
+      o.yaw = n.t * 0.4; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
+      place(R3D.queue(this.propModel('coleta:' + n.data.rgb), null, null, o), n);
     }
   },
   propModel(kind) {
@@ -359,6 +367,10 @@ const ThirdView = {
     if (kind === 'terminal') {
       g.box(0, 0, 18, 10, 10, 36, '#141a22', 0);
       g.box(0, 0, 40, 4, 22, 14, '#5ae6c8', 0.9);
+    } else if (kind.startsWith('coleta:')) {
+      // recurso de coleta: pontas finas e acesas na cor do bioma
+      const col = '#' + kind.slice(7).split(',').map((v) => (+v).toString(16).padStart(2, '0')).join('');
+      for (let k = 0; k < 5; k++) { const a = k * 1.26; g.cyl(Math.cos(a) * 3, Math.sin(a) * 3, 0, 2.2, 0, 10 + (k % 2) * 6, 5, col, 0.85); }
     } else {
       g.box(0, 0, 8, 30, 20, 16, '#3a2c22', 0);
       g.box(0, 0, 16.5, 31, 21, 1.4, '#ffbe5a', kind === 'bau' ? 0.8 : 0.1);

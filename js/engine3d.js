@@ -212,7 +212,7 @@ precision mediump float;
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
-uniform vec3 uView; uniform float uPersp; uniform vec4 uFog;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
@@ -223,6 +223,15 @@ void main() {
   vec3 n = normalize(vNor);
   if (dot(n, V) < 0.0) n = -n;
   vec3 col = vCol.rgb; float e = vCol.a;
+  if (uVar.w > 0.0 && e < 0.05) {
+    // variantes dos inimigos do mundo aberto (uVar = cor, intensidade): recolore a carcaça
+    // (o que é pouco saturado e não brilha), clareando junto quando a cor pedida é clara
+    float lum = dot(col, vec3(0.299, 0.587, 0.114));
+    float sat = max(col.r, max(col.g, col.b)) - min(col.r, min(col.g, col.b));
+    float tk = uVar.w * (1.0 - smoothstep(0.12, 0.3, sat));
+    float tl = max(dot(uVar.rgb, vec3(0.299, 0.587, 0.114)), 0.25);
+    col = mix(col, clamp(uVar.rgb * (0.35 + 1.3 * lum / tl), 0.0, 1.0), tk);
+  }
   float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
   if (uHolo > 0.5) {
     // Holograma: só existe na passada emissiva (somado à cena)
@@ -410,7 +419,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uMVP', 'uView', 'uPersp', 'uFog']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uMVP', 'uView', 'uPersp', 'uFog']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -626,6 +635,8 @@ const R3D = {
     gl.uniform3f(L.uRimCol, rc[0], rc[1], rc[2]);
     if (o.ghost) { const gc = o.ghost; gl.uniform4f(L.uGhost, gc[0], gc[1], gc[2], 1); } else gl.uniform4f(L.uGhost, 0, 0, 0, 0);
     if (o.tint) { const tc = o.tint; gl.uniform4f(L.uTint, tc[0], tc[1], tc[2], tc[3]); } else gl.uniform4f(L.uTint, 0, 0, 0, 0);
+    // cor das variantes de inimigos (só no programa de cores por vértice; js/mundo/variantes.js)
+    if (L.uVar) { const vc = o.vart; if (vc) gl.uniform4f(L.uVar, vc[0], vc[1], vc[2], vc[3]); else gl.uniform4f(L.uVar, 0, 0, 0, 0); }
   },
 
   // Cena inteira em perspectiva (câmera em terceira pessoa): os itens enfileirados já trazem a

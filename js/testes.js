@@ -618,10 +618,112 @@ const EclipseTests = {
       try { World.loadZone('velmora_trilha', null); g.renderWorld(g.ctx); WorldTime.drawOverlay(g.ctx); } catch (e) { erro = e.message; }
       this.ok('mundo: zona de Velmora carrega e desenha', !erro && World.zone.id === 'velmora_trilha' && g.enemies.length > 0, erro);
       this.ok('mundo: árvores no lugar dos pilares', g.room.theme.pillar === 'tree' && g.room.pillars.length > 0 && g.room.pillars[0].hw > g.room.pillars[0].r);
+      this.campoAberto();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
     }
+  },
+
+  // Campo aberto e inimigos variados (chamado de dentro de mundo(), já no modo mundo, em Velmora)
+  campoAberto() {
+    const g = game, p = g.player, R = g.room, z = World.zone;
+    this.ok('campo aberto: a trilha de Velmora é aberta, com margem de paisagem', z.aberto && R.aberto && R.margem > 0, R.margem);
+    const deco = R.pillars.filter((q) => q.deco), obst = R.pillars.filter((q) => !q.deco);
+    this.ok('campo aberto: paisagem em volta (fora da área de jogo)', deco.length > 20 && deco.every((q) => q.x < 0 || q.y < 0 || q.x > R.w || q.y > R.h), deco.length);
+    if (deco.length) {
+      // a paisagem nunca colide: mesmo trazida para o meio da área (onde não há obstáculos), não bloqueia
+      const d = deco[0], x0 = d.x, y0 = d.y;
+      d.x = R.w / 2; d.y = R.h / 2;
+      const livre = !R.blocksPoint(d.x, d.y, 4);
+      d.x = x0; d.y = y0;
+      this.ok('campo aberto: a paisagem não bloqueia', livre);
+    }
+    this.ok('campo aberto: obstáculos naturais dentro da área', obst.length > 0 && obst.every((q) => q.x > 0 && q.y > 0 && q.x < R.w && q.y < R.h), obst.length);
+    this.ok('campo aberto: chão dentro do limite de memória (12 Mpx)', R.canvas.width * R.canvas.height <= 12.2e6, `${R.canvas.width}×${R.canvas.height}`);
+    this.ok('campo aberto: um grupo em patrulha', World.camps.some((c) => c.patrulha && c.enemies.every((e) => e.patrulha === c.patrulha)));
+    // coleta: pronta uma vez por dia
+    const cs = g.npcs.filter((n) => n.kind === 'coleta');
+    this.ok('coleta: recursos da região na zona', cs.length >= 3 && cs.every((n) => n.data.nome === WORLD_RECURSOS.floresta.nome), cs.length);
+    if (cs.length) {
+      const c = cs[0], dia = World.state.dia, k = c.data.key;
+      delete (World.state.coletas || {})[k];
+      const n0 = World.state.coletados || 0, pk0 = g.pickups.count;
+      this.ok('coleta: dá para colher', c.canTalk() && World.coletaPronta(k));
+      World.coletar(c);
+      this.ok('coleta: conta, solta células e esgota até o dia seguinte', World.state.coletados === n0 + 1 && !World.coletaPronta(k) && !c.canTalk() && g.pickups.count > pk0);
+      World.state.dia = (dia || 1) + 1;
+      this.ok('coleta: volta no dia seguinte', World.coletaPronta(k));
+      World.state.dia = dia;
+    }
+    // variantes: todas montam sobre um tipo base existente, com nome, cor e traços
+    for (const id in ENEMY_VARIANTS) {
+      const V = ENEMY_VARIANTS[id], e = criarInimigo(id, 100, 100, 5);
+      this.ok(`variante ${id}: ${V.nome} sobre ${V.base}`, e.type === V.base && e.variante === id && e.varNome === V.nome && !!e.tint && e.tracos.length > 0);
+    }
+    this.igual('tipo comum continua o mesmo', criarInimigo('rastejador', 0, 0, 1).variante, undefined);
+    // cada região de fora pede variantes próprias
+    for (const Rg of WORLD_REGIONS) {
+      if (Rg.id === 'carmesin') continue;
+      const vs = new Set();
+      for (const zz of worldZonesOf(Rg.id)) for (const c of zz.camps || []) for (const t in c.mobs) if (ENEMY_VARIANTS[t]) vs.add(t);
+      this.ok(`${Rg.id}: inimigos próprios da região`, vs.size >= 1, [...vs].join(','));
+    }
+    const sala = g.enemies.slice();
+    g.enemies.length = 0;
+    try {
+      // carapaça: de frente perde 60%, pelas costas o golpe inteiro
+      const c = criarInimigo('carangueijo', p.x + 80, p.y, 5); c.setState('idle');
+      const h0 = c.hp; c.facing = Math.PI; c.takeHit({ dmg: 50, kx: 1, ky: 0, kb: 0, stun: 0 }); const frente = h0 - c.hp;
+      c.hp = h0; c.facing = 0; c.takeHit({ dmg: 50, kx: 1, ky: 0, kb: 0, stun: 0 }); const costas = h0 - c.hp;
+      this.ok('carapaça: golpe de frente perde dano', frente < costas && costas > 0, `${frente} / ${costas}`);
+      // divide: ao morrer vira dois filhotes (que não se dividem de novo)
+      const m = criarInimigo('magma', p.x + 120, p.y, 5); g.enemies.push(m); m.setState('idle');
+      m.die({ kx: 1, ky: 0 });
+      const f = g.enemies.filter((e) => e.filhote);
+      this.ok('divide: o Elemental de Magma vira dois menores', f.length === 2 && f.every((e) => !e.tracos.includes('divide') && e.maxHp < m.maxHp), f.length);
+      // explode: aviso de explosão no chão ao morrer
+      const md = criarInimigo('medusa', p.x + 200, p.y, 5); g.enemies.push(md); md.setState('idle');
+      const ne = g.hazards.list.length; md.die({ kx: 1, ky: 0 });
+      this.ok('explode: a Medusa deixa uma explosão ao morrer', g.hazards.list.slice(ne).some((h) => h.kind === 'estouro'));
+      // kamikaze: perto do herói, larga a IA de drone e corre até ele
+      const k = criarInimigo('diabrete', p.x + 200, p.y, 5); k.setState('idle');
+      this.ok('kamikaze: assume o controle perto do herói', EnemyTraits.conduz(k, 1 / 60) && k.vx < 0, k.vx);
+      // veneno não mata; lentidão deixa o herói mais lento
+      const hp0 = p.hp; p.hp = 2; EnemyTraits.efeito(p, 'veneno', 200); EnemyTraits.heroi(p, 2);
+      this.igual('veneno: deixa com 1 de vida, não mata', p.hp, 1);
+      p.venenoT = 0; p.hp = hp0;
+      EnemyTraits.efeito(p, 'congela');
+      this.ok('congela: herói lento', EnemyTraits.lento(p) < 1);
+      p.lentoT = 0;
+      // poça de fogo do rastro: fere quem pisa
+      p.hp = p.maxHp; p.invuln = 0; const a = p.hp;
+      g.hazards.add({ kind: 'poca', x: p.x, y: p.y, r: 40, dur: 2, dmg: 6, rgb: '255,110,40', lento: 0 });
+      for (let i = 0; i < 40; i++) g.hazards.update(1 / 30);
+      this.ok('rastro: a poça de fogo fere quem pisa', p.hp < a, `${a} → ${p.hp}`);
+      // missão de abate de variante: conta a variante pedida, não o tipo base
+      const vq = WorldQuests.lista('velmora').find((q) => q.id === 'vel1'), S0 = WorldQuests.S.vel1;
+      WorldQuests.S.vel1 = { st: 'ativa', prog: 0 };
+      WorldQuests.onKill(criarInimigo('rastejador', 0, 0, 1));
+      WorldQuests.onKill(criarInimigo('lobo_raiz', 0, 0, 1));
+      this.ok('missão: abate de Lobo de Raiz conta, rastejador comum não', vq.alvo === 'lobo_raiz' && WorldQuests.S.vel1.prog === 1 && !!WORLD_ALVO_NOME.lobo_raiz, WorldQuests.S.vel1.prog);
+      if (S0 === undefined) delete WorldQuests.S.vel1; else WorldQuests.S.vel1 = S0;
+    } finally {
+      g.hazards.clear(); p.venenoT = 0; p.lentoT = 0; p.hp = p.maxHp;
+      g.enemies.length = 0; for (const e of sala) g.enemies.push(e);
+    }
+    // passagem pela borda: andando para fora do lado leste, vai para a zona vizinha
+    const viz = worldZoneAt(z.r, z.c + 1, z.region);
+    if (viz) {
+      const s0 = p.state;
+      p.state = 'run'; p.x = R.w - 2; p.y = R.h / 2; p.vx = 200; p.vy = 0;
+      World.update(1 / 60);
+      const cb = g.fadeCb;
+      this.ok('campo aberto: atravessar a borda leste começa a viagem', !!cb);
+      g.fadeCb = null; if (cb) cb();
+      this.ok('campo aberto: chega na zona vizinha pelo lado oeste', World.zone.id === viz.id && p.x < 160, `${World.zone.id} x=${Math.round(p.x)}`);
+      p.state = s0; p.vx = 0;
+    } else this.ok(`${z.id} tem vizinha a leste`, false);
   },
 
   // ------------------------------------------------- armaduras vestidas em 3D

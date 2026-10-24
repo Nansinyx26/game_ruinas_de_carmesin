@@ -1167,7 +1167,7 @@ class Game {
   // Opções reaproveitadas por entidade (sem alocar a cada quadro)
   opts3(e, flash) {
     const o = e._o3 || (e._o3 = {});
-    o.yaw = (typeof e.viewFacing === 'number' ? e.viewFacing : e.facing) || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.tint = null;
+    o.yaw = (typeof e.viewFacing === 'number' ? e.viewFacing : e.facing) || 0; o.flash = flash; o.ghost = null; o.holo = false; o.emi = undefined; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.tint = null; o.vart = null;
     return o;
   }
   queue3(key, e, o) {
@@ -1176,6 +1176,8 @@ class Game {
     const def = MODELS3D[key];
     if (def.opts) Object.assign(o, def.opts(e));
     if (e.elite) o.scale = (o.scale || 1) * 1.18;
+    if (e.escala) o.scale = (o.scale || 1) * e.escala;   // variantes de inimigos (js/mundo/variantes.js): tamanho e cor
+    if (e.tint) o.vart = e.tint;
     return R3D.queue(m, def.pose, e, o);
   }
   // Halos definidos pelo modelo, posicionados pelas âncoras projetadas

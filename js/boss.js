@@ -18,6 +18,18 @@ class HazardSystem {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const h = this.list[i];
       h.t += dt;
+      if (h.kind === 'poca') {
+        // poça de fogo ou gelo (variantes do mundo aberto): fere quem pisa, aos poucos, sem derrubar
+        if (h.t >= h.dur) { this.list.splice(i, 1); continue; }
+        h.tick = (h.tick || 0) - dt;
+        if (h.tick <= 0 && p.state !== 'dead' && p.z < PULO.ALTO && p.invuln <= 0 && dist(h.x, h.y, p.x, p.y) < h.r + p.radius * 0.5) {
+          h.tick = 0.5;
+          p.hp = Math.max(1, p.hp - h.dmg); p.flash = 0.06;
+          game.texts.spawn(p.x, p.y, 54, `-${h.dmg}`, '#ffb46b', 13, 0.5);
+          if (h.lento) EnemyTraits.efeito(p, 'congela');
+        }
+        continue;
+      }
       if (h.kind === 'ring') {
         // Onda de choque expansiva: atinge quem estiver sobre a borda
         const k = h.t / h.dur;
@@ -42,8 +54,8 @@ class HazardSystem {
           game.camera.shake(0.12);
           game.audio.play('thunder', 0.6);
         } else {
-          P_.flash(h.x, h.y, 10, 90, '140,240,255', 0.28);
-          P_.ring(h.x, h.y, h.r * 1.3, '90,220,255', 0.45, 10);
+          P_.flash(h.x, h.y, 10, 90, h.rgb || '140,240,255', 0.28);
+          P_.ring(h.x, h.y, h.r * 1.3, h.rgb || '90,220,255', 0.45, 10);
           P_.debris(h.x, h.y, 12, '70,100,120');
           P_.dust(h.x, h.y, 10, 16, 160);
           P_.embers(h.x, h.y, 0, 10, '120,240,255', h.r * 0.5, 120);
@@ -62,6 +74,15 @@ class HazardSystem {
   draw(ctx, time) {
     for (const h of this.list) {
       const sx = isoX(h.x, h.y), sy = isoY(h.x, h.y);
+      if (h.kind === 'poca') {
+        const a = Math.min(1, h.t * 3, (h.dur - h.t) * 1.5);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        GlowCache.drawFlat(ctx, h.rgb, sx, sy, h.r * 1.6, 0.42 * a);
+        ctx.strokeStyle = rgba(h.rgb, 0.5 * a); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(sx, sy, h.r * ISO_RX, h.r * ISO_RY, 0, 0, TAU); ctx.stroke();
+        ctx.restore();
+        continue;
+      }
       if (h.kind === 'ring') {
         const a = 1 - h.t / h.dur;
         ctx.save();
@@ -76,7 +97,7 @@ class HazardSystem {
         continue;
       }
       if (!h.fired) {
-        drawTelegraph(ctx, { kind: 'circle', x: h.x, y: h.y, r: h.r }, h.t / h.delay, time, h.kind === 'bolt' ? '255,60,120' : '255,46,70');
+        drawTelegraph(ctx, { kind: 'circle', x: h.x, y: h.y, r: h.r }, h.t / Math.max(0.01, h.delay), time, h.kind === 'bolt' ? '255,60,120' : h.rgb || '255,46,70');
         if (h.kind === 'shard') {
           // Painel hexagonal do céu artificial caindo no final do aviso
           const rem = h.delay - h.t;
@@ -96,7 +117,7 @@ class HazardSystem {
             GlowCache.draw(ctx, '120,220,255', sx + z * 0.2, sy - z, 34, 0.7);
             ctx.restore();
           }
-        } else if (h.t / h.delay > 0.6 && Math.random() < 0.3) {
+        } else if (h.kind === 'bolt' && h.t / h.delay > 0.6 && Math.random() < 0.3) {
           // Estática no céu antes do raio
           game.arcs.crackle(h.x, h.y, 300, 1, 50, '150,240,255', 0.06);
         }

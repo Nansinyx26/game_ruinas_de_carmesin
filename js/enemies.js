@@ -66,6 +66,7 @@ class Enemy extends Entity {
       if (this.stateTime >= this.spawnDur) this.setState('idle');
       return;
     }
+    if (this.tracos) EnemyTraits.tick(this, dt);   // variantes do mundo aberto (js/mundo/variantes.js)
 
     // Corpo no ar (lançado): gravidade, quique e queda
     if (this.z > 0 || this.vz > 0) {
@@ -93,10 +94,15 @@ class Enemy extends Entity {
       if (this.stun <= 0 && this.z <= 0) this.afterStun();
     } else if (this.z <= 0) {
       if (this.dormant) {
-        // acampamento do mundo aberto: parado até o herói chegar perto (World.update) ou ser atingido
+        // acampamento do mundo aberto: parado (ou em patrulha) até o herói chegar perto (World.update) ou ser atingido
         if (this.hp < this.maxHp) World.wake(this);
-        const k = Math.exp(-8 * dt); this.vx *= k; this.vy *= k;
-      } else this.think(dt, heroTargetFor(this));   // o jogador, ou uma isca de um herói (js/heroes/kit.js)
+        const P = this.patrulha;
+        if (P) {
+          const q = P.pts[this.pi % P.pts.length], tx = q.x + this.pOff.x, ty = q.y + this.pOff.y;
+          if (dist(this.x, this.y, tx, ty) < 26) this.pi++;
+          this.moveToward(tx, ty, this.speed * 0.35, dt, 300); this.faceToward(tx, ty, dt, 4);
+        } else { const k = Math.exp(-8 * dt); this.vx *= k; this.vy *= k; }
+      } else if (!(this.tracos && EnemyTraits.conduz(this, dt))) this.think(dt, heroTargetFor(this));   // o jogador, ou uma isca de um herói (js/heroes/kit.js)
     }
 
     // Física: knockback com atrito + colisão com paredes e pilares
@@ -150,13 +156,18 @@ class Enemy extends Entity {
       if (!this.dodgeCredited) { this.dodgeCredited = true; game.onPerfectDodge(p); }
       return false;
     }
-    if (p.takeDamage(dmg, this.x, this.y, kb)) { this.hitThisAttack = true; return true; }
+    if (p.takeDamage(dmg, this.x, this.y, kb)) {
+      this.hitThisAttack = true;
+      if (this.tracos) EnemyTraits.acertou(this, p);   // veneno, gelo
+      return true;
+    }
     return false;
   }
 
   takeHit(h) {
     if (!this.canBeHit()) return false;
     this.hp -= h.dmg;
+    this.semDanoT = 0;
     this.flash = 0.11;
     this.hpBar = 2.5;
     const armored = this.superArmor && !h.heavy && !h.breakArmor;
@@ -189,8 +200,10 @@ class Enemy extends Entity {
   }
 
   die(h) {
+    if (this.state === 'dying') return;
     this.interrupt();
     this.hp = 0;
+    if (this.tracos) EnemyTraits.morreu(this);   // explode, divide
     this.setState('dying');
     this.flash = 0.18;
     this.kbx += (h.kx || 0) * 260 / this.mass; this.kby += (h.ky || 0) * 260 / this.mass;
@@ -200,6 +213,7 @@ class Enemy extends Entity {
 
   // ------------------------------------------------------------------ desenho
   draw(ctx) {
+    if (this.oculto > 0) return;   // enterrado (variante que cava)
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z;
     ctx.save();
     let rise = 0;
@@ -256,9 +270,10 @@ class Enemy extends Entity {
     ctx.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 6);
     ctx.fillStyle = this.elite ? '#ffb43a' : '#ff2e55';
     ctx.fillRect(sx - w / 2, sy, w * clamp(this.hp / this.maxHp, 0, 1), 4);
-    if (this.elite) {
+    if (this.elite || this.varNome) {
       ctx.font = `bold 10px ${FONT_TITLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#ffd47a'; ctx.fillText('ELITE', sx, sy - 3);
+      ctx.fillStyle = this.elite ? '#ffd47a' : rgba(this.T.glow, 0.95);
+      ctx.fillText(this.elite ? (this.varNome ? `ELITE · ${this.varNome.toUpperCase()}` : 'ELITE') : this.varNome.toUpperCase(), sx, sy - 3);
     }
     ctx.globalAlpha = 1;
   }
@@ -649,6 +664,7 @@ class Shooter extends Enemy {
       game.projectiles.spawn({
         x: this.x + Math.cos(a) * 16, y: this.y + Math.sin(a) * 16, z: drone ? 40 : 34,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: drone ? 8 : 9, dmg: this.dmg, hostile: true, kind: drone ? 'laser' : 'orb', life: 2.4,
+        efeito: this.projEfeito || null,   // variantes: tiro que deixa lento (js/mundo/variantes.js)
       });
     }
     game.particles.flash(this.x + Math.cos(this.aim) * 16, this.y + Math.sin(this.aim) * 16, 40, 30, drone ? '255,80,80' : '200,120,255', 0.12);

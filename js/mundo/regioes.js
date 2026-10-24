@@ -10,7 +10,7 @@
 (function () {
   // nome, tema da sala, nível; flags: hub (chegada), boss (chefe), portal, terminal (falas)
   const REG = {
-    velmora: { mobs: ['rastejador', 'cacador', 'sacerdote'], zones: [
+    velmora: { mobs: ['lobo_raiz', 'esporo', 'rastejador', 'lobo_raiz', 'cacador'], zones: [
       { id: 'velmora_clareira', name: 'Clareira dos Sinais', theme: 'floresta', lv: 8, hub: true, portal: true },
       { id: 'velmora_trilha', name: 'Trilha dos Galhos Mortos', theme: 'floresta', lv: 9 },
       { id: 'velmora_ruinas', name: 'Ruínas Engolidas', theme: 'floresta', lv: 11, terminal: ['Antes da floresta havia uma estação de pesquisa aqui.', 'As raízes atravessaram os servidores. Ainda dá para ouvi-los zumbir.'] },
@@ -18,7 +18,7 @@
       { id: 'velmora_lago', name: 'Lago Escuro', theme: 'floresta', lv: 13, secret: true },
       { id: 'velmora_coracao', name: 'Coração de Velmora', theme: 'floresta', lv: 15, boss: true },
     ] },
-    lagoa: { mobs: ['drone', 'rastejador', 'sacerdote'], zones: [
+    lagoa: { mobs: ['medusa', 'carangueijo', 'drone', 'medusa', 'sacerdote'], zones: [
       { id: 'lagoa_cais', name: 'Cais Luminoso', theme: 'lagoa', lv: 12, hub: true, portal: true },
       { id: 'lagoa_ilha', name: 'Ilha dos Cristais', theme: 'lagoa', lv: 13 },
       { id: 'lagoa_farol', name: 'Farol Apagado', theme: 'lagoa', lv: 15, terminal: ['O farol guiava os barcos de carga de NEXUS.', 'Desligaram a luz no Dia Zero. Algo embaixo d\'água acendeu outra.'] },
@@ -26,7 +26,7 @@
       { id: 'lagoa_submersa', name: 'Ruínas Submersas', theme: 'lagoa', lv: 18, secret: true },
       { id: 'lagoa_abismo', name: 'Borda do Abismo', theme: 'lagoa', lv: 20, boss: true },
     ] },
-    nexus: { mobs: ['drone', 'legionario', 'cacador', 'sacerdote'], zones: [
+    nexus: { mobs: ['drone', 'atirador', 'legionario', 'cacador', 'atirador', 'sacerdote'], zones: [
       { id: 'nexus_portao', name: 'Portão de Nexus', theme: 'city', lv: 10, hub: true, portal: true },
       { id: 'nexus_avenida', name: 'Avenida Central', theme: 'city', lv: 12 },
       { id: 'nexus_metro', name: 'Metrô Abandonado', theme: 'tunnel', lv: 14, terminal: ['Linha 7: última viagem registrada às 03:11 do Dia Zero.', 'Passageiros a bordo: 412. Passageiros que desceram: 0.'] },
@@ -34,7 +34,7 @@
       { id: 'nexus_laboratorio', name: 'Laboratório Corporativo', theme: 'lab', lv: 17, secret: true },
       { id: 'nexus_cupula', name: 'Cúpula do Arauto', theme: 'tower', lv: 19, boss: true },
     ] },
-    seraph: { mobs: ['rastejador', 'cacador', 'legionario'], zones: [
+    seraph: { mobs: ['escorpiao', 'rastejador', 'escorpiao', 'cacador', 'legionario'], zones: [
       { id: 'seraph_oasis', name: 'Oásis de Seraph', theme: 'deserto', lv: 14, hub: true, portal: true },
       { id: 'seraph_dunas', name: 'Mar de Dunas', theme: 'deserto', lv: 15 },
       { id: 'seraph_canion', name: 'Cânion Rubro', theme: 'deserto', lv: 17 },
@@ -42,7 +42,7 @@
       { id: 'seraph_ruinas', name: 'Cidade Engolida', theme: 'deserto', lv: 21, secret: true },
       { id: 'seraph_tumba', name: 'Tumba do Faraó de Sucata', theme: 'deserto', lv: 23, boss: true },
     ] },
-    asterion: { mobs: ['legionario', 'cacador', 'drone'], zones: [
+    asterion: { mobs: ['lobo_neve', 'golem_gelo', 'lobo_neve', 'legionario', 'drone'], zones: [
       { id: 'asterion_acampamento', name: 'Acampamento da Encosta', theme: 'neve', lv: 18, hub: true, portal: true },
       { id: 'asterion_passo', name: 'Passo Gelado', theme: 'neve', lv: 20 },
       { id: 'asterion_caverna', name: 'Cavernas de Gelo', theme: 'tunnel', lv: 22, terminal: ['Posto de escuta 9: o pico transmite um sinal sem origem.', 'Ele repete um nome a cada 11 minutos. O seu.'] },
@@ -50,7 +50,7 @@
       { id: 'asterion_geleira', name: 'Geleira Partida', theme: 'neve', lv: 25, secret: true },
       { id: 'asterion_pico', name: 'Pico de Asterion', theme: 'neve', lv: 27, boss: true },
     ] },
-    obsidiano: { mobs: ['legionario', 'sacerdote', 'cacador', 'drone'], zones: [
+    obsidiano: { mobs: ['magma', 'diabrete', 'legionario', 'magma', 'diabrete', 'sacerdote'], zones: [
       { id: 'obsidiano_posto', name: 'Posto da Borda', theme: 'vulcao', lv: 25, hub: true, portal: true },
       { id: 'obsidiano_rios', name: 'Rios de Lava', theme: 'vulcao', lv: 28 },
       { id: 'obsidiano_forja', name: 'Forja Antiga', theme: 'vulcao', lv: 31, terminal: ['A forja fundia as armaduras da Legião de Ferro.', 'Drakos esteve aqui. A placa dele ainda está na parede.'] },
@@ -69,6 +69,8 @@
     obsidiano: [['cientista', 'FORJADOR', ['A cratera respira. Dá para sentir no chão.', 'O núcleo de obsidiana alimenta metade das máquinas do mundo.']]],
   };
   // modelos de posição (fração da sala) para acampamentos e baús, um conjunto por coluna
+  // Biomas que viram campo aberto (Room.aberto): maiores, sem paredes, saída por qualquer ponto da borda
+  const ABERTOS = new Set(['floresta', 'neve', 'deserto', 'lagoa', 'vulcao']);
   const CAMP_AT = [[[0.3, 0.3], [0.7, 0.62]], [[0.25, 0.4], [0.7, 0.3], [0.6, 0.75]], [[0.5, 0.35], [0.3, 0.7]]];
   const CHEST_AT = [[0.15, 0.82], [0.88, 0.85], [0.85, 0.15]];
   const SECRET_AT = [[0.92, 0.1], [0.08, 0.9], [0.92, 0.9]];
@@ -79,7 +81,8 @@
     R.zones.forEach((d, i) => {
       const r = Math.floor(i / 3), c = i % 3, lv = d.lv;
       // tamanho do grupo cresce com o nível; o chefe vem com escolta
-      const camps = (d.hub ? [] : CAMP_AT[c]).map((at, k) => {
+      const lugares = d.hub ? [] : ABERTOS.has(d.theme) ? CAMP_AT[c].concat([[0.82, 0.82], [0.18, 0.72]]) : CAMP_AT[c];   // campo aberto: mais grupos
+      const camps = lugares.map((at, k) => {
         const mobs = {}, n = 3 + Math.floor(lv / 10) + (k === 0 ? 1 : 0);
         for (let q = 0; q < n; q++) { const t = M[(q + k + i) % M.length]; mobs[t] = (mobs[t] || 0) + 1; }
         return { at, mobs };
@@ -91,8 +94,10 @@
         camps.unshift({ at: [0.5, 0.35], mobs, boss: true });
       }
       const cells = Math.round(8 + lv * 2.4);
+      const aberto = ABERTOS.has(d.theme);
       const z = {
-        region: reg, r, c, name: d.name, theme: d.theme, tiles: 15 + (i % 3), pillars: d.hub ? 4 : 4 + (i % 2), lv,
+        region: reg, r, c, name: d.name, theme: d.theme, aberto, lv,
+        tiles: aberto ? 20 + (i % 2) : 15 + (i % 3), pillars: aberto ? (d.hub ? 7 : 10 + (i % 3)) : d.hub ? 4 : 4 + (i % 2),
         portal: !!d.portal, hub: !!d.hub, camps,
         chests: [Object.assign({ at: CHEST_AT[c], cells, xp: lv * 8 }, d.hub || i % 2 ? { heal: true } : {}),
           ...(d.boss ? [{ at: [0.5, 0.12], cells: cells * 3, xp: lv * 30, heal: true, boss: true }] : [])],

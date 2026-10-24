@@ -292,6 +292,7 @@ class Player extends Entity {
     if (this.flash > 0) this.flash -= dt;
     if (this.dashBuffer > 0) this.dashBuffer -= dt;
     if (this.jumpBuffer > 0) this.jumpBuffer -= dt;
+    EnemyTraits.heroi(this, dt);   // lentidão e veneno das variantes (js/mundo/variantes.js)
     if (this.specialBuffer > 0) this.specialBuffer -= dt;
     if (this.abBufT > 0) this.abBufT -= dt;
     if (this.blockCounterT > 0) this.blockCounterT -= dt;
@@ -325,7 +326,7 @@ class Player extends Entity {
         }
         let tvx = 0, tvy = 0;
         if (wd) {
-          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1);
+          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this);
           tvx = wd.x * sp; tvy = wd.y * sp;
           this.facing = Math.atan2(wd.y, wd.x);
           this.state = 'run';

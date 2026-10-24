@@ -21,16 +21,16 @@ const WORLD_QUESTS = {
       ini: 'O guardião do Coração não dorme. Enquanto ele estiver lá, a fenda fica aberta.', fim: 'A luz vermelha diminuiu. Pela primeira vez em anos. Siga o mapa: Velmora abriu.' },
   ],
   velmora: [
-    { id: 'vel1', name: 'Pragas entre as Raízes', tipo: 'matar', alvo: 'rastejador', n: 10, rec: { cells: 80, xp: 600, min: 1 },
-      ini: 'Os rastejadores estão comendo as raízes por dentro. Dez a menos já ajudam a floresta.', fim: 'As árvores pararam de gemer à noite. Você ouviu?' },
+    { id: 'vel1', name: 'Pragas entre as Raízes', tipo: 'matar', alvo: 'lobo_raiz', n: 10, rec: { cells: 80, xp: 600, min: 1 },
+      ini: 'Os lobos de raiz caçam em bando e o veneno deles não sai fácil. Dez a menos já ajudam a floresta.', fim: 'As árvores pararam de gemer à noite. Você ouviu?' },
     { id: 'vel2', name: 'Tesouros Engolidos', tipo: 'baus', n: 4, rec: { cells: 100, xp: 700, min: 2 },
       ini: 'A cidade velha deixou caixas por toda parte. Abra quatro antes que as raízes fechem tudo.', fim: 'Isso aqui era de uma escola. Vou guardar.' },
     { id: 'vel3', name: 'A Guardiã das Raízes', tipo: 'chefe', rec: { cells: 180, xp: 1200, min: 2 },
       ini: 'No coração da floresta mora a guardiã. Ela já foi uma de nós.', fim: 'Ela descansa agora. Velmora vai crescer em paz.' },
   ],
   lagoa: [
-    { id: 'lag1', name: 'Drones sobre a Água', tipo: 'matar', alvo: 'drone', n: 10, rec: { cells: 110, xp: 900, min: 1 },
-      ini: 'Os drones assustam os peixes e as pessoas. Derrube dez e a lagoa respira.', fim: 'O céu ficou quieto. Dá para pescar de novo.' },
+    { id: 'lag1', name: 'Medusas sobre a Água', tipo: 'matar', alvo: 'medusa', n: 10, rec: { cells: 110, xp: 900, min: 1 },
+      ini: 'As medusas elétricas explodem quando caem. Derrube dez de longe e a lagoa respira.', fim: 'O céu ficou quieto. Dá para pescar de novo.' },
     { id: 'lag2', name: 'Mapa da Lagoa', tipo: 'explorar', rec: { cells: 130, xp: 1000, min: 2 },
       ini: 'Ninguém mapeou a lagoa depois do Dia Zero. Pise em cada canto dela por mim.', fim: 'Um mapa inteiro. Meu avô ia gostar de ver.' },
     { id: 'lag3', name: 'Sentinela do Abismo', tipo: 'chefe', rec: { cells: 220, xp: 1600, min: 3 },
@@ -45,16 +45,16 @@ const WORLD_QUESTS = {
       ini: 'O Arauto fala com a cidade inteira. Cale essa voz.', fim: 'Silêncio na cidade. Ouço as pessoas pensando de novo.' },
   ],
   seraph: [
-    { id: 'ser1', name: 'Caçadores das Dunas', tipo: 'matar', alvo: 'cacador', n: 10, rec: { cells: 150, xp: 1300, min: 1 },
-      ini: 'Os caçadores seguem as caravanas pela areia. Dez a menos e passamos.', fim: 'A caravana chegou inteira. Primeira vez neste ano.' },
+    { id: 'ser1', name: 'Ferrões na Areia', tipo: 'matar', alvo: 'escorpiao', n: 10, rec: { cells: 150, xp: 1300, min: 1 },
+      ini: 'Os escorpiões de sucata andam debaixo da areia e saem embaixo das caravanas. Dez a menos e passamos.', fim: 'A caravana chegou inteira. Primeira vez neste ano.' },
     { id: 'ser2', name: 'Relíquias da Areia', tipo: 'baus', n: 5, rec: { cells: 180, xp: 1500, min: 2 },
       ini: 'A areia esconde caixas antigas. Abra cinco e veremos o que o deserto engoliu.', fim: 'Equipamento de antes de NEXUS. Isso muda tudo.' },
     { id: 'ser3', name: 'O Faraó de Sucata', tipo: 'chefe', rec: { cells: 300, xp: 2400, min: 3 },
       ini: 'Na tumba vive o Faraó de Sucata, feito do que o deserto não quis.', fim: 'O vento mudou. Seraph é de quem atravessa agora.' },
   ],
   asterion: [
-    { id: 'ast1', name: 'A Vigília', tipo: 'matar', alvo: 'legionario', n: 8, rec: { cells: 180, xp: 1700, min: 2 },
-      ini: 'A fortaleza manda legionários para a encosta. Oito a menos e subimos.', fim: 'A trilha está livre até a fortaleza.' },
+    { id: 'ast1', name: 'Gelo que Anda', tipo: 'matar', alvo: 'golem_gelo', n: 5, rec: { cells: 180, xp: 1700, min: 2 },
+      ini: 'Os golens de gelo fecham o caminho e deixam o chão congelado por onde passam. Cinco a menos e subimos.', fim: 'A trilha está livre até a fortaleza.' },
     { id: 'ast2', name: 'Cume a Cume', tipo: 'explorar', rec: { cells: 210, xp: 1900, min: 2 },
       ini: 'Quero saber o que há em cada passo da montanha. Vá a todos os lugares de Asterion.', fim: 'Você viu o pico de perto. Como é lá em cima?' },
     { id: 'ast3', name: 'Titã do Pico', tipo: 'chefe', rec: { cells: 340, xp: 2800, min: 3 },
@@ -69,7 +69,8 @@ const WORLD_QUESTS = {
       ini: 'O núcleo alimenta metade das máquinas do mundo. Apague-o.', fim: 'As máquinas do mundo inteiro piscaram. Você sentiu?' },
   ],
 };
-const WORLD_ALVO_NOME = { rastejador: 'rastejadores', drone: 'drones', legionario: 'legionários', cacador: 'caçadores', sacerdote: 'sacerdotes' };
+const WORLD_ALVO_NOME = { rastejador: 'rastejadores', drone: 'drones', legionario: 'legionários', cacador: 'caçadores', sacerdote: 'sacerdotes',
+  lobo_raiz: 'lobos de raiz', medusa: 'medusas elétricas', escorpiao: 'escorpiões de sucata', golem_gelo: 'golens de gelo', magma: 'elementais de magma' };
 
 const WorldQuests = {
   get S() { const W = World.state; if (!W.missoes) W.missoes = {}; return W.missoes; },
@@ -149,7 +150,7 @@ const WorldQuests = {
   onKill(e) {
     if (!World.zone) return;
     const q = this.atual(World.zone.region);
-    if (q && (q.tipo === 'matar' && (!q.alvo || e.type === q.alvo) || q.tipo === 'elite' && e.elite)) {
+    if (q && (q.tipo === 'matar' && (!q.alvo || e.type === q.alvo || e.variante === q.alvo) || q.tipo === 'elite' && e.elite)) {
       const s = this.S[q.id];
       if ((s.prog || 0) < q.n) { s.prog = (s.prog || 0) + 1; if (s.prog < q.n && (s.prog % 5 === 0 || q.n - s.prog <= 2)) game.hud.toast(`${q.name} · ${s.prog}/${q.n}`, '255,212,122'); }
     }

@@ -20,6 +20,7 @@ class ProjectileSystem {
     p.life = p.max = o.life || 2; p.pierce = !!o.pierce;
     p.hits.clear(); p.dodgeCredited = false;
     p.bounces = o.bounces || 0; p.jumps = o.jumps || 0;   // Ricochete (Orion): paredes e saltos entre alvos
+    p.efeito = o.efeito || null;                            // tiro de variante que deixa lento (js/mundo/variantes.js)
     p.angle = Math.atan2(p.vy, p.vx);
     return p;
   }
@@ -107,7 +108,10 @@ class ProjectileSystem {
             continue;
           }
           if (typeof AllyFx !== 'undefined' && AllyFx.reflectShot(pl, p)) continue;   // Escudo Refletor (Drakos)
-          if (pl.takeDamage(p.dmg, p.x - p.vx * 0.05, p.y - p.vy * 0.05, 200)) { this.kill(i, true); continue; }
+          if (pl.takeDamage(p.dmg, p.x - p.vx * 0.05, p.y - p.vy * 0.05, 200)) {
+            if (p.efeito && typeof EnemyTraits !== 'undefined') EnemyTraits.efeito(pl, p.efeito);
+            this.kill(i, true); continue;
+          }
         }
       } else {
         for (const e of game.enemies) {

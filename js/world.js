@@ -77,14 +77,14 @@ const WORLD_ZONES = {
     secret: { at: [0.92, 0.1], cells: 40, xp: 150 },
     terminal: { at: [0.5, 0.9], lines: ['A praça era vermelha antes da energia: era o mercado das flores.', 'Agora a cor vem do chão. E o chão pulsa.'] } },
   galerias: { r: 1, c: 2, name: 'Galerias de Serviço', theme: 'tunnel', tiles: 14, pillars: 4, lv: 5, portal: true,
-    camps: [{ at: [0.3, 0.45], mobs: { rastejador: 4 } }, { at: [0.7, 0.35], mobs: { cacador: 2, drone: 1 } }],
+    camps: [{ at: [0.3, 0.45], mobs: { rastejador: 2, enxame: 3 } }, { at: [0.7, 0.35], mobs: { cacador: 2, drone: 1 } }],
     chests: [{ at: [0.88, 0.88], cells: 22, xp: 70, heal: true }] },
   laboratorio: { r: 2, c: 0, name: 'Laboratório Esquecido', theme: 'lab', tiles: 14, pillars: 3, lv: 4,
     camps: [{ at: [0.5, 0.4], mobs: { drone: 2, cacador: 1 } }, { at: [0.25, 0.75], mobs: { rastejador: 3 } }],
     chests: [{ at: [0.85, 0.2], cells: 18, xp: 60 }],
     terminal: { at: [0.15, 0.15], lines: ['Projeto ZERO — ala C. Sujeito estável. Memória: em branco.', 'Nota à mão: "se ele acordar, não diga o nome dele".'] } },
   fendas: { r: 2, c: 1, name: 'Fendas Rubras', theme: 'tunnel', tiles: 16, pillars: 5, lv: 6,
-    camps: [{ at: [0.3, 0.3], mobs: { legionario: 1, rastejador: 2 } }, { at: [0.7, 0.55], mobs: { cacador: 2, sacerdote: 1 } }, { at: [0.4, 0.8], mobs: { drone: 3 } }],
+    camps: [{ at: [0.3, 0.3], mobs: { legionario: 1, rastejador: 2 } }, { at: [0.7, 0.55], mobs: { cacador: 2, sacerdote: 1 } }, { at: [0.4, 0.8], mobs: { drone: 2, enxame: 3 } }],
     chests: [{ at: [0.9, 0.12], cells: 28, xp: 90 }] },
   coracao: { r: 2, c: 2, name: 'Coração Carmesim', theme: 'cathedral', tiles: 17, pillars: 4, lv: 8,
     camps: [{ at: [0.5, 0.35], mobs: { legionario: 1, sacerdote: 2 }, boss: true }, { at: [0.25, 0.72], mobs: { rastejador: 3, drone: 1 } }],
@@ -103,6 +103,14 @@ for (const id in WORLD_ZONES) worldPrepZone(id, WORLD_ZONES[id]);
 const worldZoneAt = (r, c, region = 'carmesin') => Object.values(WORLD_ZONES).find((z) => z.region === region && z.r === r && z.c === c) || null;
 const worldZonesOf = (region) => Object.values(WORLD_ZONES).filter((z) => z.region === region);
 const WORLD_START = 'mercado';
+// Recursos de coleta dos campos abertos, por bioma (nome, cor, cura ao colher)
+const WORLD_RECURSOS = {
+  floresta: { nome: 'ERVA LUMINOSA', rgb: '150,255,140', cura: 0.1 },
+  lagoa: { nome: 'CRISTAL DA LAGOA', rgb: '120,235,255' },
+  neve: { nome: 'MINÉRIO DE GELO', rgb: '200,230,255' },
+  deserto: { nome: 'FRAGMENTO ENTERRADO', rgb: '255,205,120' },
+  vulcao: { nome: 'OBSIDIANA BRUTA', rgb: '255,120,60' },
+};
 const WORLD_DIRS = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const WORLD_OPP = { N: 'S', S: 'N', W: 'E', E: 'W' };
 
@@ -116,12 +124,16 @@ class WorldProp extends NPC {
     this.kind = kind; this.data = data || {};
     this.key = null; this.height = kind === 'gate' || kind === 'portal' ? 6 : 30;
     this.flat = kind === 'gate' || kind === 'portal';   // placas no chão: o herói pisa nelas
-    this.lightRgb = { chest: '255,190,90', gate: '120,200,255', portal: '170,120,255', terminal: '90,230,200' }[kind];
+    this.lightRgb = { chest: '255,190,90', gate: '120,200,255', portal: '170,120,255', terminal: '90,230,200', coleta: (data && data.rgb) || '160,255,170' }[kind];
     this.t = rand(0, 10); this.dwell = 0;
-    this.name = { chest: 'BAÚ', gate: 'PASSAGEM', portal: 'PORTAL', terminal: 'TERMINAL' }[kind];
-    this.verb = { chest: 'Abrir', portal: 'Viajar', terminal: 'Ler' }[kind];   // texto do aviso [E] no HUD
+    this.name = { chest: 'BAÚ', gate: 'PASSAGEM', portal: 'PORTAL', terminal: 'TERMINAL', coleta: (data && data.nome) || 'RECURSO' }[kind];
+    this.verb = { chest: 'Abrir', portal: 'Viajar', terminal: 'Ler', coleta: 'Coletar' }[kind];   // texto do aviso [E] no HUD
+    if (kind === 'coleta') this.height = 18;
   }
-  get used() { return this.kind === 'chest' && World.state.baus.includes(this.data.key); }
+  get used() {
+    if (this.kind === 'coleta') return !World.coletaPronta(this.data.key);
+    return this.kind === 'chest' && World.state.baus.includes(this.data.key);
+  }
   update(dt) {
     this.t += dt;
     if (this.talkT > 0) this.talkT -= dt;
@@ -137,11 +149,13 @@ class WorldProp extends NPC {
   canTalk() {
     if (this.kind === 'gate') return false;
     if (this.kind === 'chest') return !this.used && (!this.data.secret || dist(game.player.x, game.player.y, this.x, this.y) < 120);
+    if (this.kind === 'coleta') return !this.used;
     return true;
   }
   talk() {
     this.talkT = 1.2;
     if (this.kind === 'chest') World.openChest(this);
+    else if (this.kind === 'coleta') World.coletar(this);
     else if (this.kind === 'portal') World.openMap(true);
     else if (this.kind === 'terminal') World.readTerminal(this);
   }
@@ -158,6 +172,15 @@ class WorldProp extends NPC {
       ctx.beginPath(); ctx.moveTo(sx - 16, sy - 6); ctx.lineTo(sx, sy + 2); ctx.lineTo(sx + 16, sy - 6); ctx.lineTo(sx + 16, sy - 20); ctx.lineTo(sx, sy - 12); ctx.lineTo(sx - 16, sy - 20); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.fillStyle = open ? '#2a2420' : '#3a2c22';
       ctx.beginPath(); ctx.moveTo(sx - 16, sy - 20); ctx.lineTo(sx, sy - 12); ctx.lineTo(sx + 16, sy - 20); ctx.lineTo(sx, sy - (open ? 34 : 28)); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (this.kind === 'coleta') {
+      // recurso do campo aberto: tufo ou cristal na cor do bioma (apagado depois de colhido)
+      const rgb = this.lightRgb, on = !this.used;
+      ctx.globalAlpha = on ? 1 : 0.35;
+      for (let k = 0; k < 5; k++) {
+        const a = -Math.PI / 2 + (k - 2) * 0.35, L = 10 + (k % 2 ? 6 : 12);
+        ctx.strokeStyle = rgba(rgb, on ? 0.9 : 0.4); ctx.lineWidth = k % 2 ? 2 : 3;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(a) * L, sy + Math.sin(a) * L * 1.3); ctx.stroke();
+      }
     } else if (this.kind === 'terminal') {
       ctx.fillStyle = '#141a22'; ctx.fillRect(sx - 7, sy - 34, 14, 34);
       ctx.fillStyle = 'rgba(90,230,200,0.75)'; ctx.fillRect(sx - 9, sy - 44, 18, 11);
@@ -179,9 +202,10 @@ class WorldProp extends NPC {
   drawEmissive(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y), rgb = this.lightRgb;
     if (this.kind === 'chest' && (this.used || (this.data.secret && dist(game.player.x, game.player.y, this.x, this.y) > 160))) return;
+    if (this.kind === 'coleta' && this.used) return;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    GlowCache.draw(ctx, rgb, sx, sy - (this.kind === 'chest' ? 16 : this.kind === 'terminal' ? 40 : 4), this.kind === 'portal' ? 70 : 34, 0.35 + 0.1 * Math.sin(this.t * 3));
+    GlowCache.draw(ctx, rgb, sx, sy - (this.kind === 'chest' ? 16 : this.kind === 'terminal' ? 40 : this.kind === 'coleta' ? 10 : 4), this.kind === 'portal' ? 70 : this.kind === 'coleta' ? 22 : 34, 0.35 + 0.1 * Math.sin(this.t * 3));
     ctx.restore();
     if (this.kind === 'gate' || this.kind === 'portal') {
       const z = WORLD_ZONES[this.data.to];
@@ -250,8 +274,9 @@ const World = {
   },
   stop() { this.active = false; this.map.open = false; if (game.world === this) game.world = null; },
 
-  // Carrega uma zona; 'from' = lado por onde o herói chega (N, S, W, E) ou null (portal / início)
-  loadZone(id, from) {
+  // Carrega uma zona; 'from' = lado por onde o herói chega (N, S, W, E) ou null (portal / início);
+  // 'along' (0 a 1) = onde, ao longo da borda, ele cruzou (campo aberto: sai em qualquer ponto)
+  loadZone(id, from, along = null) {
     const g = game, z = WORLD_ZONES[id];
     this.zone = z; this.state.zona = id;
     g.audio.playMusic({ cathedral: 'nexus_encounter', lab: 'facility', vulcao: 'nexus_encounter', tower: 'nexus_encounter' }[z.theme] || 'vesper');
@@ -286,6 +311,14 @@ const World = {
     (z.chests || []).forEach((c, k) => { const pt = spot(c.at); g.npcs.push(new WorldProp('chest', pt.x, pt.y, Object.assign({ key: `${id}:${k}` }, c))); });
     if (z.secret) { const pt = spot(z.secret.at); g.npcs.push(new WorldProp('chest', pt.x, pt.y, Object.assign({ key: `${id}:segredo`, secret: true }, z.secret))); }
     if (z.terminal) { const pt = spot(z.terminal.at); g.npcs.push(new WorldProp('terminal', pt.x, pt.y, Object.assign({ key: id }, z.terminal))); }
+    // Campo aberto: recursos de coleta em lugares fixos da zona (voltam a crescer a cada dia)
+    const RC = z.aberto && WORLD_RECURSOS[z.theme];
+    if (RC) {
+      let h = 7;
+      for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      const rr = mulberry32(h);
+      for (let k = 0; k < 5; k++) { const pt = spot([0.12 + 0.76 * rr(), 0.12 + 0.76 * rr()]); g.npcs.push(new WorldProp('coleta', pt.x, pt.y, Object.assign({ key: `${id}:c${k}` }, RC))); }
+    }
     // Acampamentos (o do chefe só volta enquanto ele não foi derrotado)
     this.camps = [];
     for (const c of z.camps || []) {
@@ -296,16 +329,22 @@ const World = {
         let x = pt.x + Math.cos(a) * r, y = pt.y + Math.sin(a) * r;
         if (!R.canStand(x, y, 20)) { x = pt.x; y = pt.y; }
         // nível do inimigo limitado (a velocidade cresce com ele); acima do nível 20, mais vida
-        const e = createEnemy(type, x, y, Math.min(14, W.roomIndex + Math.floor(z.lv / 3)));
+        const e = criarInimigo(type, x, y, Math.min(14, W.roomIndex + Math.floor(z.lv / 3)));   // tipo ou variante (js/mundo/variantes.js)
         if (z.lv > 20) { e.maxHp = e.hp = Math.round(e.hp * (1 + (z.lv - 20) * 0.05)); e.dmg *= 1 + (z.lv - 20) * 0.025; }
         e.dormant = true; e.camp = camp; e.setState('idle');   // já no lugar (sem a animação de surgir)
         camp.enemies.push(e); g.enemies.push(e);
       }
       // a partir do nível 6, às vezes o primeiro do acampamento é uma unidade de elite
       if (!c.boss && z.lv >= 6 && camp.enemies.length && Math.random() < Math.min(0.5, 0.1 + z.lv * 0.012)) camp.enemies[0].makeElite();
+      // Campo aberto: o primeiro acampamento anda em patrulha entre três pontos da zona
+      if (z.aberto && !c.boss && !this.camps.some((q) => q.patrulha)) {
+        const [fx, fy] = c.at, pts = [pt, spot([clamp(fx + 0.28, 0.12, 0.88), fy]), spot([clamp(fx + 0.14, 0.12, 0.88), clamp(fy + 0.3, 0.12, 0.88)])];
+        camp.patrulha = { pts };
+        for (const e of camp.enemies) { e.patrulha = camp.patrulha; e.pi = 0; e.pOff = { x: e.x - pt.x, y: e.y - pt.y }; }
+      }
       if (c.boss) {
         const B = worldRegion(z.region).boss;
-        const b = camp.enemies.find((e) => e.type === B.type) || camp.enemies[0];
+        const b = camp.enemies.find((e) => e.type === B.type && !e.variante) || camp.enemies.find((e) => e.type === B.type) || camp.enemies[0];
         b.makeElite(); b.maxHp = b.hp = Math.round(b.maxHp * B.hp); b.worldBoss = true; b.worldRegion = z.region; b.name = B.name;
       }
       this.camps.push(camp);
@@ -314,6 +353,13 @@ const World = {
     const p = g.player, arrive = from ? gatePos[WORLD_OPP[from]] : [R.w / 2, R.h / 2 + 60];
     const inward = from ? { N: [0, 70], S: [0, -70], W: [70, 0], E: [-70, 0] }[WORLD_OPP[from]] : [0, 0];
     p.x = arrive[0] + inward[0]; p.y = arrive[1] + inward[1]; p.z = 0;
+    if (from && along !== null) {
+      // cruzou a borda num ponto qualquer: entra no mesmo ponto da borda oposta (se der para ficar ali)
+      const lado = WORLD_OPP[from], k = clamp(along, 0.06, 0.94);
+      const x = lado === 'W' ? 70 : lado === 'E' ? R.w - 70 : k * R.w, y = lado === 'N' ? 70 : lado === 'S' ? R.h - 70 : k * R.h;
+      if (R.canStand(x, y, 22)) { p.x = x; p.y = y; }
+    }
+    p.air = false; p.vz = 0;
     p.vx = p.vy = p.kbx = p.kby = 0;
     p.state = 'idle'; p.stateTime = 0; p.attack = null; p.combo.reset();
     g.camera.snap(isoX(p.x, p.y), isoY(p.x, p.y) - 30);
@@ -328,10 +374,27 @@ const World = {
     this.save();
   },
   // Vai para outra zona (passagem: 'dir'; portal: dir null)
-  go(id, dir) {
+  go(id, dir, along = null) {
     if (!WORLD_ZONES[id] || game.fadeCb) return;
     game.audio.play('uiSelect');
-    game.fadeTo(() => { this.loadZone(id, dir); game.fadeTarget = 0; });
+    game.fadeTo(() => { this.loadZone(id, dir, along); game.fadeTarget = 0; });
+  },
+  // Recursos de coleta: prontos de novo a cada dia do mundo (js/mundo/tempo.js)
+  coletaPronta(key) { const C = this.state.coletas || {}; return (C[key] || 0) < (this.state.dia || 1); },
+  coletar(prop) {
+    const g = game, d = prop.data, z = this.zone, p = g.player;
+    if (!this.coletaPronta(d.key)) return;
+    (this.state.coletas || (this.state.coletas = {}))[d.key] = this.state.dia || 1;
+    const cel = Math.round(4 + z.lv * 1.6);
+    for (let i = 0; i < 3; i++) g.pickups.drop('soul', prop.x, prop.y, Math.round(cel / 3));
+    if (d.cura) p.heal(Math.round(p.maxHp * d.cura));
+    g.particles.sparks(prop.x, prop.y, 12, -Math.PI / 2, 12, d.rgb, 220, Math.PI);
+    g.audio.play('soul');
+    g.hud.toast(`${d.nome.charAt(0)}${d.nome.slice(1).toLowerCase()} · ${cel} células${d.cura ? ' e vida' : ''}`, d.rgb);
+    if (Math.random() < 0.15) WorldInv.ganhar(WorldInv.gerar(z.lv, z.region, 0), prop.x, prop.y);
+    this.state.coletados = (this.state.coletados || 0) + 1;
+    WorldQuests.check();
+    this.save();
   },
 
   // Acampamentos: acordam com o herói perto ou com um deles atingido (Enemy.update chama wake)
@@ -346,7 +409,18 @@ const World = {
   update(dt) {
     const p = game.player, R = 300 * WorldTime.senseMult();   // à noite e com pouca visibilidade, mais de perto (js/mundo/tempo.js)
     WorldTime.update(dt);
+    // Campo aberto: andar para fora por qualquer ponto da borda leva à zona vizinha
+    const z = this.zone, Rm = game.room;
+    if (z && z.aberto && p.state !== 'dead' && !game.fadeCb) {
+      const b = p.radius + 6;
+      let dir = null;
+      if (p.x <= b && p.vx < -20) dir = 'W'; else if (p.x >= Rm.w - b && p.vx > 20) dir = 'E';
+      else if (p.y <= b && p.vy < -20) dir = 'N'; else if (p.y >= Rm.h - b && p.vy > 20) dir = 'S';
+      const nz = dir && worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
+      if (nz) this.go(nz.id, dir, dir === 'N' || dir === 'S' ? p.x / Rm.w : p.y / Rm.h);
+    }
     for (const c of this.camps) {
+      if (c.patrulha && !c.awake) { const e = c.enemies.find((q) => q.alive); if (e) { c.x = e.x; c.y = e.y; } }   // o acampamento anda com a patrulha
       if (c.awake) continue;
       if (p.state !== 'dead' && dist2(p.x, p.y, c.x, c.y) < R * R) { const e = c.enemies.find((q) => q.alive); if (e) this.wake(e); }
     }

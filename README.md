@@ -136,6 +136,9 @@ Sete regiões **realmente exploráveis** com o mesmo combate, personagens, árvo
 
 - **Ruínas de Carmesin** (`js/world.js`): 9 zonas numa grade 3×3 (Mercado Afundado, Portões Partidos, Avenida dos Ecos, Torre de Vigia, Praça Carmesim, Galerias de Serviço, Laboratório Esquecido, Fendas Rubras e Coração Carmesim), cada uma com nível recomendado. **Passagens** acesas nas bordas levam à zona vizinha (pare sobre a luz).
 - **As outras seis regiões** (`js/mundo/regioes.js`), com 6 zonas cada (2×3), na ordem sugerida: **Floresta de Velmora** (níveis 8–16, Guardiã das Raízes), **Lagoa Cristalina** (12–22, Sentinela do Abismo), **Nexus** (10–20, Arauto de Nexus), **Deserto de Seraph** (14–24, Faraó de Sucata), **Montanhas de Asterion** (18–28, Titã do Pico) e **Cratera de Obsidiano** (25–40, Núcleo de Obsidiana). Cada uma tem zona de chegada com portal, mercador e quem dá as missões, acampamentos montados com os inimigos da região, baús, um segredo, terminais e o chefe regional na última zona. Uma região abre com o chefe da anterior derrotado ou quando o herói chega ao nível mínimo dela; a primeira ida é pelo portal (viagem rápida até a chegada). Os biomas têm temas próprios: no lugar das colunas, **árvores** (floresta), **rochas** com neve no topo (montanhas) ou fendas de lava (cratera) e **cristais** acesos (lagoa), também em 3D na 3ª pessoa.
+- **Campo aberto** (`Room.aberto`, `js/rooms.js`): as zonas de bioma (floresta, lagoa, deserto, montanha e cratera) não têm paredes nem porta. O chão continua além da área de jogo numa margem de paisagem (árvores, rochas e cristais que não bloqueiam, trilhas que saem pelas bordas) e **andar para fora por qualquer ponto da borda** leva à zona vizinha, chegando no ponto correspondente do outro lado (sem precisar da passagem acesa). Dentro da área, obstáculos naturais espalhados, lampiões no chão, mais grupos de inimigos (um deles **em patrulha** entre três pontos da zona) e recursos para colher. Na 3ª pessoa o campo aberto também não tem paredes. As zonas de Carmesin, as de Nexus (cidade, metrô, laboratório), o Templo Soterrado de Seraph e as Cavernas de Gelo de Asterion continuam como salas, ligadas pelas passagens.
+- **Coleta** (tecla **E** perto do recurso): cada região tem o seu (Erva Luminosa em Velmora, que também cura; Cristal da Lagoa; Fragmento Enterrado em Seraph; Minério de Gelo em Asterion; Obsidiana Bruta na cratera), 5 por zona aberta. Dá células conforme o nível da zona e às vezes uma relíquia, e volta a crescer no dia seguinte do mundo.
+- **Inimigos variados** (`js/mundo/variantes.js`): cada região tem criaturas próprias, montadas sobre os cinco inimigos do jogo com outra cor, tamanho, atributos e comportamento (ver **Inimigos**). As missões de abate de algumas regiões pedem essas criaturas.
 - **Dia e noite** (`js/mundo/tempo.js`): um dia do mundo dura 10 minutos. O relógio aparece no HUD (no lugar da pontuação); as zonas abertas clareiam de dia, escurecem à noite e ficam alaranjadas no amanhecer e no entardecer (os interiores quase não mudam). À noite os acampamentos demoram mais a notar o herói e os abates dão +20% de experiência.
 - **Clima por região**: chuva, tempestade com raios, neve, nevasca, tempestade de areia, chuva de cinzas, brasas no ar, neblina e vaga-lumes (só à noite), sorteados com peso para cada região e trocados a cada poucos minutos. Pouca visibilidade também reduz a distância em que os acampamentos acordam.
 - **Relíquias com raridade** (`js/mundo/inventario.js`): Comum, Incomum, Rara, Épica e Lendária. Cada relíquia tem um atributo principal (dano, vida, energia, crítico, velocidade, defesa ou recarga) e, das raras para cima, atributos extras; o valor cresce com a raridade e com o nível da zona. Até **3 equipadas**, só valem no mundo aberto. Todo baú dá uma (o secreto, rara ou melhor; o do chefe, épica ou melhor), o chefe regional sempre deixa uma e os outros inimigos às vezes (as unidades de elite, que agora aparecem nos acampamentos a partir do nível 6, com mais chance).
@@ -147,7 +150,7 @@ Sete regiões **realmente exploráveis** com o mesmo combate, personagens, árvo
 - **Descoberta e viagem rápida**: entrar numa zona pela primeira vez a descobre (experiência); **portais** ativados viram destinos de viagem rápida.
 - **Mapa do mundo** (tecla **M**, botão MAPA no toque, ou o portal): as 7 regiões com bioma, faixa de nível, cadeado (e o que abre cada uma) ou ✓ quando o chefe caiu; a grade de zonas de cada região com o que já foi descoberto, portais, o chefe e onde você está. Q/E aproximam e afastam.
 - **Salvamento próprio** (`localStorage`, chave `eclipse_zero_mundo_v1`): nível, árvores, elenco, zonas descobertas, baús, portais, chefes, hora e clima, mochila, estoque do mercador e missões. Não mexe nos 5 espaços da campanha. Ao cair, o herói volta ao último portal.
-- **Limites**: o cenário de cada zona é o gerador de salas da campanha (com os temas, agora também de bioma), sem paredes abertas entre zonas (as passagens fazem a ligação); os inimigos das regiões novas são os mesmos cinco tipos da campanha, mais fortes, e os chefes regionais são versões de elite deles; não há multiplayer (não há servidor; nada de multiplayer simulado).
+- **Limites**: cada zona continua sendo uma área carregada por vez (o campo aberto liga as zonas pelas bordas, mas a vizinha só é carregada na travessia, com um escurecer rápido); as criaturas das regiões usam os modelos 3D dos cinco inimigos da campanha recoloridos e redimensionados, não modelos novos; os chefes regionais são versões de elite deles; não há multiplayer (não há servidor; nada de multiplayer simulado).
 
 ## Menus, salvamentos e configurações
 
@@ -229,6 +232,23 @@ Entre os setores, Kael também escolhe **evoluções** (Fio Monomolecular, Condu
 - **Caçador da Legião**: unidade rápida com investidas de lâmina.
 - **Sacerdote do Eclipse**: fiel do Culto que lança orbes de dados.
 - **Unidades de elite**: versões maiores e mais fortes, com aura dourada, na última onda de cada setor.
+- **Criaturas das regiões** (mundo aberto, `js/mundo/variantes.js`), sobre os mesmos modelos, com cor, tamanho e comportamento próprios:
+
+| Criatura | Onde | Base | Comportamento |
+| --- | --- | --- | --- |
+| Enxame Carmesim | Carmesin | Rastejador | ao morrer, vira dois menores |
+| Lobo de Raiz | Velmora | Rastejador | caça em matilha (mais rápido em grupo); a mordida envenena |
+| Sentinela de Esporos | Velmora | Sacerdote | os orbes deixam lento; regenera quando fica sem apanhar |
+| Medusa Elétrica | Lagoa | Drone | explode ao morrer (aviso no chão antes) |
+| Caranguejo de Cristal | Lagoa | Legionário | carapaça: golpes de frente perdem 60% do dano (vá pelas costas) |
+| Agente Corporativo | Nexus | Caçador | some e reaparece ao lado do herói |
+| Escorpião de Sucata | Seraph | Caçador | ferrão venenoso; entra na areia e sai debaixo do herói com impacto |
+| Lobo das Neves | Asterion | Rastejador | matilha; a mordida congela (deixa lento) |
+| Golem de Gelo | Asterion | Legionário | deixa poças de gelo por onde passa; golpes congelam |
+| Elemental de Magma | Obsidiano | Sacerdote | deixa poças de fogo; ao morrer, vira dois menores |
+| Diabrete de Cinza | Obsidiano | Drone | kamikaze: corre para o herói e explode |
+
+  O veneno tira vida aos poucos mas nunca derruba (deixa com 1); pular passa por cima das poças.
 - **NEXUS**: chefe em três fases. Usa raios do céu artificial e convoca suas defesas, e na fase III o próprio céu desmorona.
 
 Máquinas atingidas por descargas elétricas (Arco Voltaico, Corrente Relâmpago, Campo Magnético…) entram em curto-circuito e ficam atordoadas por mais tempo.
@@ -319,7 +339,8 @@ js/
   quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
   world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
   mundo/            regioes.js (as outras seis regiões), tempo.js (WorldTime: dia, noite e clima),
-                    inventario.js (WorldInv: relíquias, mochila, mercador), missoes.js (WorldQuests)
+                    inventario.js (WorldInv: relíquias, mochila, mercador), missoes.js (WorldQuests),
+                    variantes.js (ENEMY_VARIANTS, EnemyTraits: as criaturas de cada região)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)

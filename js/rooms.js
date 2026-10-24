@@ -103,6 +103,10 @@ class Room {
     this.w = this.h = this.def.tiles * TILE;
     this.seed = 9973 * (index + 1) + Math.floor(Math.random() * 100000);
     this.wallH = 150;
+    // campo aberto (zonas de bioma do mundo, def.aberto): sem paredes nem plataforma; o chão segue
+    // além da borda (a margem) com árvores, rochas ou cristais de paisagem, que não colidem
+    this.aberto = !!this.def.aberto;
+    this.margem = this.aberto ? TILE * 4 : 0;
     this.door = { x: this.w / 2, halfW: 46, open: 0, opening: false };
     this.pillars = [];
     this.torches = [];
@@ -117,6 +121,7 @@ class Room {
 
   generate() {
     const r = mulberry32(this.seed), w = this.w, h = this.h, n = this.def.tiles, th = this.theme;
+    if (this.aberto) { this.generateAberto(r); return; }
     // Luminárias nas duas paredes do fundo (evitando a porta)
     for (let x = TILE * 1.5; x < w - TILE; x += TILE * 3) {
       if (Math.abs(x - this.door.x) < TILE * 1.6) continue;
@@ -175,6 +180,25 @@ class Room {
     }
   }
 
+  // Campo aberto: lumes no chão (fogueiras, cristais, brasas), obstáculos naturais espalhados
+  // (fora do centro, onde se chega, e do meio das bordas, por onde se sai) e a paisagem em volta
+  generateAberto(r) {
+    const w = this.w, h = this.h, M = this.margem;
+    for (let k = 0; k < 4; k++) this.torches.push({ x: w * (0.15 + 0.7 * r()), y: h * (0.15 + 0.7 * r()), ph: r() * 10, chao: true });
+    let tries = 0;
+    while (this.pillars.length < this.def.pillars && tries++ < 500) {
+      const px = TILE + r() * (w - 2 * TILE), py = TILE + r() * (h - 2 * TILE);
+      if (dist(px, py, w / 2, h / 2) < 210) continue;
+      if ((Math.abs(px - w / 2) < 120 && (py < 190 || py > h - 190)) || (Math.abs(py - h / 2) < 120 && (px < 190 || px > w - 190))) continue;
+      if (this.pillars.some((p) => dist(px, py, p.x, p.y) < 150)) continue;
+      this.pillars.push(this.makePillar(r, px, py, r() < 0.6));
+    }
+    const anel = [];
+    for (let x = -M + 40; x < w + M; x += 95 + r() * 55) { anel.push([x, -M * (0.2 + 0.65 * r())]); anel.push([x, h + M * (0.25 + 0.6 * r())]); }
+    for (let y = -M + 40; y < h + M; y += 95 + r() * 55) { anel.push([-M * (0.2 + 0.65 * r()), y]); anel.push([w + M * (0.25 + 0.6 * r()), y]); }
+    for (const [x, y] of anel) { const p = this.makePillar(r, x, y, r() < 0.75); p.deco = true; this.pillars.push(p); }
+  }
+
   makePillar(r, x, y, tall) {
     return { x, y, r: 20 + r() * 6, h: tall ? 130 + r() * 50 : 40 + r() * 40, broken: !tall || r() < 0.4, seed: Math.floor(r() * 1e6), sprite: null, ox: 0, oy: 0 };
   }
@@ -184,7 +208,7 @@ class Room {
     let x = 0, y = 0;
     for (let i = 0; i < 40; i++) {
       x = rand(margin, this.w - margin); y = rand(margin, this.h - margin);
-      if (this.pillars.some((p) => dist(x, y, p.x, p.y) < p.r + 34)) continue;
+      if (this.pillars.some((p) => !p.deco && dist(x, y, p.x, p.y) < p.r + 34)) continue;
       if (avoid && dist(x, y, avoid.x, avoid.y) < minDist) continue;
       break;
     }
@@ -205,6 +229,7 @@ class Room {
       else { e.y = r; hit = true; }
     }
     for (const p of this.pillars) {
+      if (p.deco) continue;   // paisagem além da borda do campo aberto
       const dx = e.x - p.x, dy = e.y - p.y, dd = Math.hypot(dx, dy), min = r + p.r;
       if (dd < min) {
         const nx = dd > 0.001 ? dx / dd : 1, ny = dd > 0.001 ? dy / dd : 0;
@@ -220,7 +245,7 @@ class Room {
 
   blocksPoint(x, y, r) {
     if (x < 0 || y < 0 || x > this.w || y > this.h) return true;
-    for (const p of this.pillars) if (dist2(x, y, p.x, p.y) < (p.r + r) * (p.r + r)) return true;
+    for (const p of this.pillars) if (!p.deco && dist2(x, y, p.x, p.y) < (p.r + r) * (p.r + r)) return true;
     return false;
   }
 
@@ -230,7 +255,8 @@ class Room {
 
   // Contorno da sala na tela isométrica (a escuridão só cobre esta área; o céu fica livre)
   outline() {
-    const w = this.w, h = this.h, H = this.wallH + 40, D = 64;
+    const w = this.w, h = this.h, H = this.wallH + 40, D = 64, M = this.margem;
+    if (this.aberto) return [isoX(-M, h + M), isoY(-M, h + M), isoX(-M, -M), isoY(-M, -M) - 80, isoX(w + M, -M), isoY(w + M, -M), isoX(w + M, h + M), isoY(w + M, h + M) + 40];
     return [
       isoX(0, h), isoY(0, h) + D, isoX(0, h), isoY(0, h) - H, isoX(0, 0), isoY(0, 0) - H,
       isoX(w, 0), isoY(w, 0) - H, isoX(w, 0), isoY(w, 0) + D, isoX(w, h), isoY(w, h) + D,
@@ -239,22 +265,26 @@ class Room {
 
   // ---------------------------------------------------- pré-renderização
   bounds() {
+    const M = this.margem;
+    if (this.aberto) return { minX: -this.h - 2 * M - 40, maxX: this.w + 2 * M + 40, minY: -M - 60, maxY: (this.w + this.h) / 2 + M + 60 };
     return { minX: -this.h - 40, maxX: this.w + 40, minY: -this.wallH - 60, maxY: (this.w + this.h) / 2 + 90 };
   }
 
   render(scale) {
-    this.scale = scale;
     const b = this.bounds();
+    // salas grandes (campo aberto): a imagem do chão fica abaixo de ~12 Mpx (limite dos celulares)
+    scale = Math.min(scale, Math.sqrt(12e6 / ((b.maxX - b.minX) * (b.maxY - b.minY))));
+    this.scale = scale;
     const W = Math.ceil((b.maxX - b.minX) * scale), H = Math.ceil((b.maxY - b.minY) * scale);
     if (!this.canvas) this.canvas = document.createElement('canvas');
     this.canvas.width = W; this.canvas.height = H;
     const ctx = this.canvas.getContext('2d');
     ctx.setTransform(scale, 0, 0, scale, -b.minX * scale, -b.minY * scale);
     const r = mulberry32(this.seed + 17);
-    this.drawLedges(ctx, r);
+    if (!this.aberto) this.drawLedges(ctx, r);
     this.drawFloor(ctx, r);
-    this.drawSigil(ctx);
-    this.drawWalls(ctx, r);
+    if (!this.aberto) this.drawSigil(ctx);
+    if (!this.aberto) this.drawWalls(ctx, r);
     for (const d of this.decals) this.paintDecal(ctx, d);
     for (const p of this.pillars) this.renderPillar(p, scale);
   }
@@ -287,6 +317,7 @@ class Room {
 
   drawFloor(ctx, r) {
     const n = this.def.tiles, th = this.theme, [fh, fs, fl] = th.floor, deco = th.deco;
+    if (this.aberto) { this.drawFloorAberto(ctx, r); return; }
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         const x0 = i * TILE, y0 = j * TILE, x1 = x0 + TILE, y1 = y0 + TILE;
@@ -325,6 +356,35 @@ class Room {
       ctx.beginPath(); ctx.moveTo(isoX(this.w / 2, this.h), isoY(this.w / 2, this.h)); ctx.lineTo(isoX(this.w / 2, 0), isoY(this.w / 2, 0)); ctx.stroke();
       ctx.setLineDash([]);
     }
+  }
+
+  // Chão natural do campo aberto: manchas grandes de cor (sem placas), detalhes do bioma e,
+  // na margem, o chão escurecendo até o horizonte; uma trilha clara liga as saídas ao centro
+  drawFloorAberto(ctx, r) {
+    const n = this.def.tiles, th = this.theme, [fh, fs, fl] = th.floor, m = Math.round(this.margem / TILE);
+    for (let i = -m; i < n + m; i++) {
+      for (let j = -m; j < n + m; j++) {
+        const x0 = i * TILE, y0 = j * TILE, x1 = x0 + TILE, y1 = y0 + TILE;
+        const pts = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => [isoX(x, y), isoY(x, y)]);
+        const fora = Math.max(0, -i, -j, i - n + 1, j - n + 1);          // tiles além da borda
+        const onda = Math.sin(i * 0.7 + j * 0.31) * 0.5 + Math.sin(i * 0.23 - j * 0.57) * 0.5;
+        const l = (fl + onda * 2.2 + r() * 1.6) * Math.max(0.25, 1 - fora * 0.17);
+        ctx.fillStyle = `hsl(${fh + onda * 6 + r() * 4},${fs + r() * 4}%,${l.toFixed(1)}%)`;
+        ctx.beginPath(); ctx.moveTo(pts[0][0] - 0.6, pts[0][1]);
+        for (let k = 1; k < 4; k++) ctx.lineTo(pts[k][0] + (k === 2 ? 0.6 : 0), pts[k][1] + (k === 2 ? 0.6 : 0));
+        ctx.closePath(); ctx.fill();
+        if (fora < 2 && r() < 0.8) this.floorDetail(ctx, r, 'natural', isoX(x0 + TILE / 2, y0 + TILE / 2), isoY(x0 + TILE / 2, y0 + TILE / 2), i, j, pts);
+      }
+    }
+    // trilhas: do centro até o meio de cada borda (onde ficam as passagens)
+    const w = this.w, h = this.h, S = th.speck || ['120,120,120'];
+    ctx.strokeStyle = `rgba(${S[2] || S[0]},0.07)`; ctx.lineCap = 'round'; ctx.lineWidth = 34;
+    for (const [x, y] of [[w / 2, 0], [w / 2, h], [0, h / 2], [w, h / 2]]) {
+      ctx.beginPath(); ctx.moveTo(isoX(w / 2, h / 2), isoY(w / 2, h / 2));
+      const mx = (w / 2 + x) / 2 + (r() - 0.5) * 120, my = (h / 2 + y) / 2 + (r() - 0.5) * 120;
+      ctx.quadraticCurveTo(isoX(mx, my), isoY(mx, my), isoX(x, y), isoY(x, y)); ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
   }
 
   // Detalhes de cada placa do piso conforme o tema
@@ -787,6 +847,7 @@ class Room {
 
   // Comporta blindada: duas folhas que deslizam para os lados ao abrir
   drawDoor(ctx) {
+    if (this.aberto) return;
     const d = this.door, dh = 112;
     const lx = isoX(d.x - d.halfW, 0), ly = isoY(d.x - d.halfW, 0), rx = isoX(d.x + d.halfW, 0), ry = isoY(d.x + d.halfW, 0);
     ctx.save();
@@ -828,6 +889,14 @@ class Room {
     }
     // Luminárias de cada tema
     for (const tc of this.torches) {
+      if (tc.chao) {
+        // lume no chão do campo aberto (fogueira, cristal ou brasa, na cor da luz do tema)
+        const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y), f = 0.8 + 0.2 * Math.sin(time * 9 + tc.ph);
+        GlowCache.drawFlat(ctx, th.lamp, sx, sy, 70 * f, 0.4 * f);
+        GlowCache.draw(ctx, th.lamp, sx, sy - 8, 16 * f, 0.85);
+        GlowCache.draw(ctx, '255,255,255', sx, sy - 8, 4, 0.6);
+        continue;
+      }
       const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y) - 70;
       let f = 0.85 + 0.15 * Math.sin(time * 11 + tc.ph);
       if (th.decor === 'screen') f = 0.35 + 0.65 * Math.max(0, Math.sin(time * 3.2 + tc.ph));   // giroflex de emergência
@@ -876,6 +945,7 @@ class Room {
     }
     // Luz de status da comporta: vermelha fechada, azul aberta
     ctx.globalAlpha = 1;
+    if (this.aberto) { ctx.restore(); return; }
     const d = this.door;
     const mx = isoX(d.x, 0), my = isoY(d.x, 0);
     GlowCache.draw(ctx, d.open > 0 ? '90,200,255' : '255,50,70', mx, my - 130, 16, 0.9);
@@ -889,6 +959,7 @@ class Room {
   addLights(lighting, time) {
     const th = this.theme;
     for (const tc of this.torches) {
+      if (tc.chao) { lighting.add(isoX(tc.x, tc.y), isoY(tc.x, tc.y) - 20, 230 * (0.85 + 0.15 * Math.sin(time * 9 + tc.ph)), 0.7); continue; }
       let f = 0.85 + 0.15 * Math.sin(time * 11 + tc.ph);
       if (th.decor === 'screen') f = 0.55 + 0.45 * Math.max(0, Math.sin(time * 3.2 + tc.ph));
       lighting.add(isoX(tc.x + (tc.x === 0 ? 30 : 0), tc.y + (tc.y === 0 ? 30 : 0)), isoY(tc.x, tc.y) - 40, 210 * f, 0.75);
