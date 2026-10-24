@@ -1,35 +1,46 @@
 'use strict';
 // ECLIPSE ZERO · Mundo aberto (protótipo jogável, fase 2 do plano): regiões, zonas, mapa
 // ---------------------------------------------------------------------------
-// MODO MUNDO ABERTO (menu inicial → MUNDO ABERTO): a região RUÍNAS DE CARMESIN é explorável
-// de verdade — 9 zonas numa grade 3×3, ligadas por PASSAGENS nas bordas (pare sobre a luz
-// para seguir), com ACAMPAMENTOS de inimigos que dormem até o herói chegar perto (ou ser
-// atacado), BAÚS (células, experiência e reparo), TERMINAIS com memórias da cidade, um
-// local SECRETO, PORTAIS de viagem rápida, NPCs no Mercado Afundado e o CHEFE REGIONAL no
-// Coração Carmesim. Entrar numa zona pela primeira vez a DESCOBRE (experiência). O MAPA
-// (tecla M, ou o portal) mostra as 7 regiões do mundo com o nível recomendado e o perigo;
-// as outras seis aparecem bloqueadas até as próximas fases.
+// MODO MUNDO ABERTO (menu inicial → MUNDO ABERTO): 7 regiões exploráveis. As RUÍNAS DE
+// CARMESIN têm 9 zonas numa grade 3×3; as outras seis (js/mundo/regioes.js), 6 zonas em 2×3.
+// As zonas se ligam por PASSAGENS nas bordas (pare sobre a luz para seguir), com
+// ACAMPAMENTOS de inimigos que dormem até o herói chegar perto (ou ser atacado), BAÚS
+// (células, experiência e reparo), TERMINAIS com memórias, um local SECRETO, PORTAIS de
+// viagem rápida, NPCs na zona de chegada e o CHEFE REGIONAL na última zona. Entrar numa zona
+// pela primeira vez a DESCOBRE (experiência). O MAPA (tecla M, ou o portal) mostra as 7
+// regiões com o nível recomendado; uma região abre com o chefe da anterior derrotado ou com
+// o herói no nível mínimo dela, e a primeira ida é pelo portal até a zona de chegada.
 // Tudo reaproveita o jogo: Room (cenário e colisão, com a zona no lugar de ROOM_DEFS),
 // inimigos, combate, NPCs, HUD, árvores e o Player de qualquer personagem. O progresso fica
 // numa chave própria do localStorage (não mexe nos 5 espaços da campanha).
 // ---------------------------------------------------------------------------
 const WORLD_SAVE_KEY = 'eclipse_zero_mundo_v1';
 
-// Regiões do mapa do mundo (at: posição no mapa, de 0 a 1). Só Carmesin tem zonas por enquanto
+// Regiões do mapa do mundo (at: posição no mapa, de 0 a 1). hub: zona de chegada (portal e
+// mercador); boss: o chefe regional (nome e tipo do inimigo); order: a sequência sugerida — uma região
+// abre quando a anterior tem o chefe derrotado ou o herói chega ao nível mínimo dela
+// (World.regionOpen). As zonas de Carmesin estão aqui embaixo; as das outras seis, em js/mundo/regioes.js
 const WORLD_REGIONS = [
   { id: 'carmesin', name: 'Ruínas de Carmesin', biome: 'Zona de Corrupção', lv: [1, 10], rgb: '255,50,90', at: [0.5, 0.45], r: 0.15, open: true,
+    order: 0, hub: 'mercado', boss: { name: 'GUARDIÃO CARMESIM', type: 'legionario', hp: 2 },
     desc: 'Estruturas destruídas, energia vermelha e criaturas corrompidas no coração do mundo.' },
   { id: 'nexus', name: 'Nexus', biome: 'Área Urbana', lv: [10, 20], rgb: '90,200,255', at: [0.74, 0.2], r: 0.12,
+    order: 3, hub: 'nexus_portao', boss: { name: 'ARAUTO DE NEXUS', type: 'legionario', hp: 2.6 },
     desc: 'A metrópole de NEXUS: comerciantes, missões e a torre que vigia tudo.' },
   { id: 'velmora', name: 'Floresta de Velmora', biome: 'Floresta', lv: [8, 16], rgb: '90,220,120', at: [0.2, 0.28], r: 0.13,
+    order: 1, hub: 'velmora_clareira', boss: { name: 'GUARDIÃ DAS RAÍZES', type: 'cacador', hp: 3 },
     desc: 'Vegetação densa, ruínas antigas e caminhos secretos.' },
   { id: 'asterion', name: 'Montanhas de Asterion', biome: 'Montanha', lv: [18, 28], rgb: '210,225,255', at: [0.45, 0.1], r: 0.12,
+    order: 5, hub: 'asterion_acampamento', boss: { name: 'TITÃ DO PICO', type: 'legionario', hp: 3 },
     desc: 'Picos nevados, cavernas, fortalezas e chefes poderosos.' },
   { id: 'seraph', name: 'Deserto de Seraph', biome: 'Deserto', lv: [14, 24], rgb: '240,170,80', at: [0.2, 0.7], r: 0.14,
+    order: 4, hub: 'seraph_oasis', boss: { name: 'FARAÓ DE SUCATA', type: 'legionario', hp: 2.8 },
     desc: 'Dunas, templos soterrados, tempestades e equipamentos raros.' },
   { id: 'lagoa', name: 'Lagoa Cristalina', biome: 'Água / Lago', lv: [12, 22], rgb: '60,225,255', at: [0.78, 0.55], r: 0.12,
+    order: 2, hub: 'lagoa_cais', boss: { name: 'SENTINELA DO ABISMO', type: 'sacerdote', hp: 3.2 },
     desc: 'Águas luminosas, ilhas e ruínas submersas.' },
   { id: 'obsidiano', name: 'Cratera de Obsidiano', biome: 'Vulcânico', lv: [25, 40], rgb: '255,110,40', at: [0.52, 0.8], r: 0.13,
+    order: 6, hub: 'obsidiano_posto', boss: { name: 'NÚCLEO DE OBSIDIANA', type: 'legionario', hp: 3.6 },
     desc: 'Território vulcânico: lava, inimigos de alto nível e eventos mundiais.' },
 ];
 
@@ -79,13 +90,18 @@ const WORLD_ZONES = {
     camps: [{ at: [0.5, 0.35], mobs: { legionario: 1, sacerdote: 2 }, boss: true }, { at: [0.25, 0.72], mobs: { rastejador: 3, drone: 1 } }],
     chests: [{ at: [0.5, 0.12], cells: 60, xp: 250, heal: true, boss: true }] },
 };
-for (const id in WORLD_ZONES) {
-  const z = WORLD_ZONES[id];
-  z.id = id;
-  z.sub = `RUÍNAS DE CARMESIN · NÍVEL RECOMENDADO ${z.lv}`;
+const worldRegion = (id) => WORLD_REGIONS.find((q) => q.id === id) || WORLD_REGIONS[0];
+// Completa uma zona (id, região, subtítulo); as das outras regiões entram por aqui (js/mundo/regioes.js)
+function worldPrepZone(id, z) {
+  WORLD_ZONES[id] = z;
+  z.id = id; z.region = z.region || 'carmesin';
+  z.sub = `${worldRegion(z.region).name.toUpperCase()} · NÍVEL RECOMENDADO ${z.lv}`;
   z.waves = []; z.npcs = z.npcs || [];
+  return z;
 }
-const worldZoneAt = (r, c) => Object.values(WORLD_ZONES).find((z) => z.r === r && z.c === c) || null;
+for (const id in WORLD_ZONES) worldPrepZone(id, WORLD_ZONES[id]);
+const worldZoneAt = (r, c, region = 'carmesin') => Object.values(WORLD_ZONES).find((z) => z.region === region && z.r === r && z.c === c) || null;
+const worldZonesOf = (region) => Object.values(WORLD_ZONES).filter((z) => z.region === region);
 const WORLD_START = 'mercado';
 const WORLD_DIRS = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const WORLD_OPP = { N: 'S', S: 'N', W: 'E', E: 'W' };
@@ -192,7 +208,15 @@ const World = {
   map: { open: false, travel: false, zoom: 1, x: 0.5, y: 0.45, sel: 0, t: 0 },
   saveT: 0,
 
-  fresh() { return { descobertos: [], baus: [], portais: [], terminais: [], chefe: false, zona: WORLD_START }; },
+  fresh() { return { descobertos: [], baus: [], portais: [], terminais: [], chefe: false, chefes: {}, zona: WORLD_START }; },
+  bossDone(region) { const S = this.state; return !!(S.chefes && S.chefes[region]) || (region === 'carmesin' && !!S.chefe); },
+  // A região abre com o chefe da anterior (na ordem sugerida) derrotado ou com o nível mínimo dela
+  regionOpen(id) {
+    const r = worldRegion(id);
+    if (r.open) return true;
+    const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
+    return (prev && this.bossDone(prev.id)) || (game.progress && game.progress.level >= r.lv[0]);
+  },
 
   // Começa o modo (continua do salvamento do mundo, se houver)
   start() {
@@ -208,6 +232,8 @@ const World = {
     PartyProgress.join(RosterManager.active, g.progress.level);
     AllyRadio.reset();
     this.state = Object.assign(this.fresh(), saved ? saved.world : null);
+    if (!this.state.chefes) this.state.chefes = {};
+    if (this.state.chefe) this.state.chefes.carmesin = true;   // salvamentos antigos (só Carmesin)
     this.active = true; g.world = this; g.slot = 0;   // sem espaço da campanha: o mundo salva na chave dele
     g.checkpoint = 0;
     g.counter = new ComboCounter();
@@ -219,7 +245,8 @@ const World = {
     this.loadZone(this.state.zona in WORLD_ZONES ? this.state.zona : WORLD_START, null);
     g.state = 'playing';
     g.fade = 1; g.fadeTarget = 0;
-    g.hud.toast('MUNDO ABERTO · Ruínas de Carmesin — mapa: M', '255,80,110');
+    const reg = worldRegion(this.zone.region);
+    g.hud.toast(`MUNDO ABERTO · ${reg.name} — mapa: M`, reg.rgb);
   },
   stop() { this.active = false; this.map.open = false; if (game.world === this) game.world = null; },
 
@@ -227,7 +254,7 @@ const World = {
   loadZone(id, from) {
     const g = game, z = WORLD_ZONES[id];
     this.zone = z; this.state.zona = id;
-    g.audio.playMusic(z.theme === 'cathedral' ? 'nexus_encounter' : z.theme === 'lab' ? 'facility' : 'vesper');
+    g.audio.playMusic({ cathedral: 'nexus_encounter', lab: 'facility', vulcao: 'nexus_encounter', tower: 'nexus_encounter' }[z.theme] || 'vesper');
     g.enemies.length = 0;
     g.projectiles.clear(); g.pickups.clear(); g.particles.clear();
     g.hazards.clear(); g.trails.clear(); g.texts.clear(); g.arcs.clear();
@@ -245,7 +272,7 @@ const World = {
     const R = g.room, m = 64;
     const gatePos = { N: [R.w / 2, m], S: [R.w / 2, R.h - m], W: [m, R.h / 2], E: [R.w - m, R.h / 2] };
     for (const dir in WORLD_DIRS) {
-      const nz = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1]);
+      const nz = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
       if (nz) g.npcs.push(new WorldProp('gate', gatePos[dir][0], gatePos[dir][1], { to: nz.id, dir }));
     }
     const spot = (at) => npcSpot(R, at[0], at[1]);
@@ -256,19 +283,22 @@ const World = {
     // Acampamentos (o do chefe só volta enquanto ele não foi derrotado)
     this.camps = [];
     for (const c of z.camps || []) {
-      if (c.boss && this.state.chefe) continue;
+      if (c.boss && this.bossDone(z.region)) continue;
       const pt = spot(c.at), camp = { def: c, enemies: [], awake: false, x: pt.x, y: pt.y };
       for (const type in c.mobs) for (let i = 0; i < c.mobs[type]; i++) {
         const a = rand(0, TAU), r = rand(18, 70);
         let x = pt.x + Math.cos(a) * r, y = pt.y + Math.sin(a) * r;
         if (!R.canStand(x, y, 20)) { x = pt.x; y = pt.y; }
-        const e = createEnemy(type, x, y, W.roomIndex + Math.floor(z.lv / 3));
+        // nível do inimigo limitado (a velocidade cresce com ele); acima do nível 20, mais vida
+        const e = createEnemy(type, x, y, Math.min(14, W.roomIndex + Math.floor(z.lv / 3)));
+        if (z.lv > 20) { e.maxHp = e.hp = Math.round(e.hp * (1 + (z.lv - 20) * 0.05)); e.dmg *= 1 + (z.lv - 20) * 0.025; }
         e.dormant = true; e.camp = camp; e.setState('idle');   // já no lugar (sem a animação de surgir)
         camp.enemies.push(e); g.enemies.push(e);
       }
       if (c.boss) {
-        const b = camp.enemies.find((e) => e.type === 'legionario') || camp.enemies[0];
-        b.makeElite(); b.maxHp = b.hp = Math.round(b.maxHp * 2); b.worldBoss = true; b.name = 'GUARDIÃO CARMESIM';
+        const B = worldRegion(z.region).boss;
+        const b = camp.enemies.find((e) => e.type === B.type) || camp.enemies[0];
+        b.makeElite(); b.maxHp = b.hp = Math.round(b.maxHp * B.hp); b.worldBoss = true; b.worldRegion = z.region; b.name = B.name;
       }
       this.camps.push(camp);
     }
@@ -301,7 +331,7 @@ const World = {
     if (!c || c.awake) { e.dormant = false; return; }
     c.awake = true;
     for (const q of c.enemies) { q.dormant = false; game.particles.ring(q.x, q.y, q.radius * 2.2, q.T.glow, 0.35, 4); }
-    if (c.def.boss) { game.hud.message('GUARDIÃO CARMESIM', 'CHEFE REGIONAL', 2.6, false, true); game.camera.shake(0.35); game.audio.play('bossRoar'); }
+    if (c.def.boss) { game.hud.message(worldRegion(this.zone.region).boss.name, 'CHEFE REGIONAL', 2.6, false, true); game.camera.shake(0.35); game.audio.play('bossRoar'); }
     else game.audio.play('spawn');
   },
   update(dt) {
@@ -319,18 +349,22 @@ const World = {
   },
   onKill(e) {
     if (e.worldBoss) {
-      this.state.chefe = true;
-      game.hud.message('CHEFE REGIONAL DERROTADO', 'O CORAÇÃO CARMESIM SE CALA', 3, false, true);
-      game.hud.toast('Ruínas de Carmesin concluídas · as próximas regiões chegam nas próximas fases', '255,80,110');
-      game.gainXP(500, e.x, e.y);
-      for (let i = 0; i < 8; i++) game.pickups.drop('soul', e.x, e.y, 6);
+      const reg = worldRegion(e.worldRegion || 'carmesin');
+      this.state.chefes[reg.id] = true;
+      if (reg.id === 'carmesin') this.state.chefe = true;
+      game.hud.message('CHEFE REGIONAL DERROTADO', `${reg.name.toUpperCase()} CONCLUÍDA`, 3, false, true);
+      const next = WORLD_REGIONS.find((q) => q.order === reg.order + 1);
+      game.hud.toast(next ? `Nova região liberada · ${next.name} (mapa: M)` : 'Todas as regiões concluídas', reg.rgb);
+      game.gainXP(500 * (reg.order + 1), e.x, e.y);
+      for (let i = 0; i < 8 + reg.order * 2; i++) game.pickups.drop('soul', e.x, e.y, 6 + reg.order * 2);
       this.save();
     }
   },
   openChest(prop) {
     const d = prop.data, g = game;
-    if (prop.used || (d.boss && !this.state.chefe)) {
-      if (d.boss && !this.state.chefe) { g.hud.toast('Selado pelo Guardião Carmesim', '255,92,122'); g.audio.play('uiDeny'); }
+    const sel = d.boss && !this.bossDone(this.zone.region);
+    if (prop.used || sel) {
+      if (sel) { g.hud.toast(`Selado por ${worldRegion(this.zone.region).boss.name}`, '255,92,122'); g.audio.play('uiDeny'); }
       return;
     }
     this.state.baus.push(d.key);
@@ -353,10 +387,13 @@ const World = {
   // Textos do quadro de missão do HUD
   kicker() { return `MUNDO · NÍVEL ${this.zone.lv}`; },
   objective() {
-    const S = this.state, tot = Object.keys(WORLD_ZONES).length;
-    const baus = Object.values(WORLD_ZONES).reduce((n, z) => n + (z.chests || []).length + (z.secret ? 1 : 0), 0);
-    const base = S.chefe ? 'Região concluída' : 'Derrote o Guardião Carmesim no Coração Carmesim (sudeste)';
-    return `${base} · locais ${S.descobertos.length}/${tot} · baús ${S.baus.length}/${baus}`;
+    const S = this.state, reg = worldRegion(this.zone.region), zs = worldZonesOf(reg.id);
+    const baus = zs.reduce((n, z) => n + (z.chests || []).length + (z.secret ? 1 : 0), 0);
+    const bausAqui = S.baus.filter((k) => zs.some((z) => k.indexOf(z.id + ':') === 0)).length;
+    const bz = zs.find((z) => (z.camps || []).some((c) => c.boss));
+    const base = this.bossDone(reg.id) ? `${reg.name} concluída` : `Derrote ${reg.boss.name}${bz ? ` em ${bz.name}` : ''}`;
+    const quest = typeof WorldQuests !== 'undefined' ? WorldQuests.line() : '';
+    return `${quest || base} · locais ${zs.filter((z) => S.descobertos.includes(z.id)).length}/${zs.length} · baús ${bausAqui}/${baus}`;
   },
 
   // Salvamento próprio do mundo (o jogo, o elenco e o estado das zonas)
@@ -388,10 +425,16 @@ const World = {
     game.audio.play('uiMove');
   },
   closeMap() { this.map.open = false; game.state = 'playing'; game.audio.play('uiMove'); },
-  // Destinos selecionáveis: zonas descobertas (com portal, se for viagem)
+  // Destinos selecionáveis: zonas descobertas; na viagem, os portais ativados e a zona de chegada
+  // de cada região aberta (a primeira ida a uma região nova é pelo portal)
   mapTargets() {
-    const S = this.state;
-    return Object.keys(WORLD_ZONES).filter((id) => S.descobertos.includes(id) && (!this.map.travel || S.portais.includes(id)));
+    const S = this.state, ids = [];
+    for (const id in WORLD_ZONES) {
+      const z = WORLD_ZONES[id], seen = S.descobertos.includes(id);
+      if (!this.map.travel) { if (seen) ids.push(id); continue; }
+      if ((seen && S.portais.includes(id)) || (worldRegion(z.region).hub === id && this.regionOpen(z.region))) ids.push(id);
+    }
+    return ids;
   },
   updateMap(dt, inp) {
     const M = this.map, list = this.mapTargets();
@@ -417,11 +460,19 @@ const World = {
   },
   mapLayout() {
     const M = this.map, W = VIEW_W, H = VIEW_H, mw = Math.min(W - 80, 1100) * M.zoom, mh = (H - 150) * M.zoom;
-    const reg = WORLD_REGIONS[0], cx = W / 2 - (reg.at[0] - 0.5) * mw * (M.zoom - 1) / M.zoom, cy = 82 + (H - 150) / 2 - (reg.at[1] - 0.5) * mh * (M.zoom - 1) / M.zoom;
+    // com zoom, centra na região onde o herói está
+    const reg = worldRegion(this.zone ? this.zone.region : 'carmesin');
+    const cx = W / 2 - (reg.at[0] - 0.5) * mw * (M.zoom - 1) / M.zoom, cy = 82 + (H - 150) / 2 - (reg.at[1] - 0.5) * mh * (M.zoom - 1) / M.zoom;
     const x0 = cx - mw / 2, y0 = cy - mh / 2;
     const pos = (a) => ({ x: x0 + a[0] * mw, y: y0 + a[1] * mh });
-    const zones = {}, c = pos(reg.at), s = 26 * M.zoom;
-    for (const id in WORLD_ZONES) { const z = WORLD_ZONES[id]; zones[id] = { x: c.x + (z.c - 1) * s * 1.25, y: c.y + (z.r - 1) * s * 1.25, s }; }
+    const zones = {}, s = 22 * M.zoom;
+    // grade de zonas de cada região, centrada na região
+    const dims = {};
+    for (const id in WORLD_ZONES) { const z = WORLD_ZONES[id], d = dims[z.region] || (dims[z.region] = [0, 0]); d[0] = Math.max(d[0], z.r); d[1] = Math.max(d[1], z.c); }
+    for (const id in WORLD_ZONES) {
+      const z = WORLD_ZONES[id], c = pos(worldRegion(z.region).at), d = dims[z.region];
+      zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.25, y: c.y + (z.r - d[0] / 2) * s * 1.25, s };
+    }
     return { x0, y0, mw, mh, pos, zones };
   },
   drawMap(ctx, t) {
@@ -437,36 +488,39 @@ const World = {
     for (const r of WORLD_REGIONS) {
       const c = L.pos(r.at), rad = r.r * Math.min(L.mw, L.mh);
       const g = ctx.createRadialGradient(c.x, c.y, rad * 0.1, c.x, c.y, rad);
-      g.addColorStop(0, rgba(r.rgb, r.open ? 0.42 : 0.16)); g.addColorStop(1, rgba(r.rgb, 0));
+      const open = this.regionOpen(r.id), done = this.bossDone(r.id);
+      g.addColorStop(0, rgba(r.rgb, open ? 0.42 : 0.16)); g.addColorStop(1, rgba(r.rgb, 0));
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, rad, 0, TAU); ctx.fill();
-      ctx.strokeStyle = rgba(r.rgb, r.open ? 0.7 : 0.3); ctx.setLineDash(r.open ? [] : [6, 6]); ctx.lineWidth = 1.5;
+      ctx.strokeStyle = rgba(r.rgb, open ? 0.7 : 0.3); ctx.setLineDash(open ? [] : [6, 6]); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(c.x, c.y, rad * 0.72, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `bold ${Math.round(13 * Math.min(1.4, M.zoom))}px ${FONT_TITLE}`; ctx.fillStyle = r.open ? '#ffffff' : 'rgba(210,220,235,0.7)';
-      const ly = r.open ? c.y - rad * 0.72 - 12 : c.y;
-      ctx.fillText(r.name.toUpperCase(), c.x, ly);
+      ctx.font = `bold ${Math.round(13 * Math.min(1.4, M.zoom))}px ${FONT_TITLE}`; ctx.fillStyle = open ? '#ffffff' : 'rgba(210,220,235,0.7)';
+      const ly = c.y - rad * 0.72 - 12;
+      ctx.fillText(r.name.toUpperCase() + (done ? ' ✓' : ''), c.x, ly);
       ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = rgba(r.rgb, 0.95);
-      ctx.fillText(`${r.biome} · Nv ${r.lv[0]}–${r.lv[1]}${r.open ? '' : ' · 🔒 próxima fase'}`, c.x, ly + 16);
+      const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
+      ctx.fillText(`${r.biome} · Nv ${r.lv[0]}–${r.lv[1]}${open ? '' : ` · 🔒 nível ${r.lv[0]}${prev ? ` ou o chefe de ${prev.name}` : ''}`}`, c.x, ly + 16);
     }
     // Zonas de Carmesin (descobertas, atual, portais) e as passagens entre elas
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], q = L.zones[id];
       for (const dir of ['E', 'S']) {
-        const n = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1]);
+        const n = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
         if (!n) continue;
-        const q2 = L.zones[n.id], seen = S.descobertos.includes(id) || S.descobertos.includes(n.id);
-        ctx.strokeStyle = seen ? 'rgba(255,120,140,0.5)' : 'rgba(255,120,140,0.12)'; ctx.lineWidth = 2;
+        const q2 = L.zones[n.id], seen = S.descobertos.includes(id) || S.descobertos.includes(n.id), rgb = worldRegion(z.region).rgb;
+        ctx.strokeStyle = rgba(rgb, seen ? 0.5 : 0.12); ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q2.x, q2.y); ctx.stroke();
       }
     }
     const sel = list[M.sel];
     for (const id in WORLD_ZONES) {
-      const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = id === this.zone.id;
-      ctx.fillStyle = seen ? 'rgba(40,14,24,0.95)' : 'rgba(12,10,16,0.8)';
+      const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = id === this.zone.id, rgb = worldRegion(z.region).rgb;
+      const reach = seen || list.includes(id);
+      ctx.fillStyle = seen ? 'rgba(18,14,26,0.95)' : 'rgba(12,10,16,0.8)';
       ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
-      ctx.strokeStyle = id === sel ? '#ffffff' : seen ? 'rgba(255,90,120,0.85)' : 'rgba(120,110,130,0.35)'; ctx.lineWidth = id === sel ? 2.5 : 1.2;
+      ctx.strokeStyle = id === sel ? '#ffffff' : reach ? rgba(rgb, 0.85) : 'rgba(120,110,130,0.35)'; ctx.lineWidth = id === sel ? 2.5 : 1.2;
       ctx.strokeRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
-      const mark = !seen ? '?' : z.camps && z.camps.some((c) => c.boss) && !S.chefe ? '☠' : S.portais.includes(id) ? '◈' : z.hub ? '⌂' : '';
+      const mark = !seen ? (reach ? '⌂' : '?') : z.camps && z.camps.some((c) => c.boss) && !this.bossDone(z.region) ? '☠' : S.portais.includes(id) ? '◈' : z.hub ? '⌂' : '';
       ctx.font = `bold ${Math.round(q.s * 0.45)}px ${FONT_UI}`; ctx.fillStyle = seen ? '#ffd2dc' : 'rgba(160,150,170,0.6)';
       ctx.fillText(mark, q.x, q.y + 1);
       if (here) { ctx.strokeStyle = `rgba(120,220,255,${0.6 + 0.4 * Math.sin(t * 6)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, q.s * 0.75, 0, TAU); ctx.stroke(); }
@@ -483,7 +537,7 @@ const World = {
     if (sel) {
       const z = WORLD_ZONES[sel];
       ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT_TITLE}`; ctx.fillStyle = '#ffd2dc';
-      ctx.fillText(`${z.name.toUpperCase()} · NÍVEL ${z.lv}`, VIEW_W - 40, 40);
+      ctx.fillText(`${worldRegion(z.region).name.toUpperCase()} · ${z.name.toUpperCase()} · NÍVEL ${z.lv}`, VIEW_W - 40, 40);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
       ctx.fillText(M.travel ? 'Enter: viajar · ←/→ escolher · Q/E zoom · Esc fechar' : '←/→ escolher · Q/E zoom · Esc fechar', VIEW_W - 40, VIEW_H - 40);
     }

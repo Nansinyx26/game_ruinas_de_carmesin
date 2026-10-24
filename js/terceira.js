@@ -157,7 +157,7 @@ const ThirdView = {
     }
     // frestas acesas entre os ladrilhos (cor de destaque), uma a cada duas
     const acc = rgbHex(th.accent);
-    for (let i = 2; i < n; i += 2) {
+    for (let i = 2; i < n && th.deco !== 'natural'; i += 2) {   // (nos biomas, chão sem ladrilhos acesos)
       floor.quad([i * T - 0.6, 0, 0.12], [i * T + 0.6, 0, 0.12], [i * T + 0.6, h, 0.12], [i * T - 0.6, h, 0.12], hex(fh, fs, fl * 1.4), 0.08);
       floor.quad([0, i * T - 0.6, 0.12], [w, i * T - 0.6, 0.12], [w, i * T + 0.6, 0.12], [0, i * T + 0.6, 0.12], hex(fh, fs, fl * 1.4), 0.08);
     }
@@ -168,7 +168,7 @@ const ThirdView = {
     if (R.def.waves && R.def.waves.length && R.door) gaps.N.push([R.door.x - R.door.halfW, R.door.x + R.door.halfW]);
     if (typeof World !== 'undefined' && World.active && World.zone) {
       for (const dir of ['N', 'S', 'W', 'E']) {
-        const d = WORLD_DIRS[dir], nz = worldZoneAt(World.zone.r + d[0], World.zone.c + d[1]);
+        const d = WORLD_DIRS[dir], nz = worldZoneAt(World.zone.r + d[0], World.zone.c + d[1], World.zone.region);
         if (nz) gaps[dir].push(dir === 'N' || dir === 'S' ? [w / 2 - 70, w / 2 + 70] : [h / 2 - 70, h / 2 + 70]);
       }
     }
@@ -195,12 +195,35 @@ const ThirdView = {
     }
     root.add(new N3('luzes', lamps));
     // pilares (um nó cada: o que fica entre a câmera e o herói some), com a luz do tema no topo dos inteiros
-    const pc = hex(wh, ws * 0.8, 17);
+    const pc = hex(wh, ws * 0.8, 17), kind = th.pillar;
     R.pillars.forEach((q, i) => {
-      const pil = new G3();
-      pil.cyl(q.x, q.y, 0, q.r, q.r * (q.broken ? 0.8 : 0.92), q.h, 10, pc, 0);
-      pil.cyl(q.x, q.y, 0, q.r * 1.12, q.r * 1.08, 8, 10, hex(wh, ws, 10), 0);
-      if (!q.broken) pil.cyl(q.x, q.y, q.h - 10, q.r * 1.02, q.r * 1.02, 3, 10, trim, 0.8, { caps: false });
+      const pil = new G3(), rr = mulberry32(q.seed || i + 1);
+      if (kind === 'tree') {
+        // tronco e copa em tufos (as cores das folhas vêm do tema)
+        const th2 = q.broken ? q.h * 0.35 : q.h * 0.55, cr = q.r * (q.broken ? 1.9 : 2.7), L = th.speck || ['40,90,40', '20,40,18', '90,140,60'];
+        pil.cyl(q.x, q.y, 0, q.r * 0.7, q.r * 0.45, th2 + cr * 0.3, 8, '#3a281b', 0);
+        for (let k = 0; k < 6; k++) {
+          const a = rr() * Math.PI * 2, d = rr() * cr * 0.5, s0 = cr * (0.45 + rr() * 0.25);
+          pil.sphere(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d, th2 + cr * 0.45 + rr() * cr * 0.3, s0, s0, s0 * 0.8, 7, 5, rgbHex(L[k % L.length]), 0);
+        }
+      } else if (kind === 'rock') {
+        // rocha facetada (neve no topo nas montanhas, fendas de lava na cratera)
+        const H = Math.min(q.h * 0.62, 96);
+        pil.cyl(q.x, q.y, 0, q.r * 1.45, q.r * 0.35, H, 6, hex(wh, ws * 0.7, 22), 0, { rot: rr() * 3 });
+        if (th.cap) pil.cyl(q.x, q.y, H * 0.62, q.r * 0.75, q.r * 0.3, H * 0.38 + 1, 6, rgbHex(th.cap), 0.05, { rot: rr() * 3 });
+        if (th.lava) pil.cyl(q.x, q.y, 0, q.r * 1.48, q.r * 1.2, 5, 6, acc, 0.9, { caps: false });
+      } else if (kind === 'crystal') {
+        // cristais: prismas finos e acesos saindo do chão
+        const n = q.broken ? 3 : 5;
+        for (let k = 0; k < n; k++) {
+          const a = (k / n) * Math.PI * 2 + rr(), d = k ? q.r * 0.6 : 0, hh = q.h * (k ? 0.45 + rr() * 0.3 : 1);
+          pil.cyl(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d, 0, q.r * (k ? 0.28 : 0.38), 0, hh, 6, acc, 0.55);
+        }
+      } else {
+        pil.cyl(q.x, q.y, 0, q.r, q.r * (q.broken ? 0.8 : 0.92), q.h, 10, pc, 0);
+        pil.cyl(q.x, q.y, 0, q.r * 1.12, q.r * 1.08, 8, 10, hex(wh, ws, 10), 0);
+        if (!q.broken) pil.cyl(q.x, q.y, q.h - 10, q.r * 1.02, q.r * 1.02, 3, 10, trim, 0.8, { caps: false });
+      }
       root.add(new N3('pilar' + i, pil));
     });
     const m = new Model3(root);

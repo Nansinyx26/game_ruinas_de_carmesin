@@ -18,6 +18,19 @@ const THEMES = {
                sky: 'indoor', decor: 'window', pillar: 'stone', deco: 'stone', ruined: 0.2, cables: 2 },
   tower:     { floor: [205, 16, 11], wall: [205, 16], lamp: '120,255,240', accent: '90,220,255', dark: '2,5,10', darkness: 0.86,
                sky: 'tower', decor: 'holo', pillar: 'pylon', deco: 'circuit', ruined: 0.15, rain: true },
+  // Biomas do mundo aberto (js/mundo/regioes.js): paredes sem letreiros (decor 'none'), no lugar dos
+  // pilares árvores, rochas (cap: neve no topo; lava: fendas acesas) ou cristais, e o chão com
+  // manchas da natureza (deco 'natural', cores em speck)
+  floresta:  { floor: [128, 24, 12], wall: [138, 20], lamp: '140,255,170', accent: '90,220,120', dark: '2,10,4', darkness: 0.78,
+               sky: 'indoor', decor: 'none', pillar: 'tree', deco: 'natural', ruined: 0.1, speck: ['40,90,40', '20,40,18', '90,140,60'] },
+  neve:      { floor: [208, 16, 34], wall: [212, 14], lamp: '200,230,255', accent: '150,210,255', dark: '6,10,18', darkness: 0.62,
+               sky: 'indoor', decor: 'none', pillar: 'rock', deco: 'natural', ruined: 0.08, cap: '235,242,255', speck: ['230,240,255', '150,170,200', '90,110,140'] },
+  deserto:   { floor: [36, 38, 26], wall: [30, 30], lamp: '255,200,120', accent: '255,170,80', dark: '18,10,4', darkness: 0.6,
+               sky: 'indoor', decor: 'none', pillar: 'rock', deco: 'natural', ruined: 0.3, speck: ['200,150,80', '120,80,40', '230,190,120'] },
+  lagoa:     { floor: [192, 34, 15], wall: [196, 26], lamp: '90,230,255', accent: '60,225,255', dark: '2,10,16', darkness: 0.74,
+               sky: 'indoor', decor: 'none', pillar: 'crystal', deco: 'natural', ruined: 0.15, speck: ['40,160,200', '20,80,110', '120,230,255'] },
+  vulcao:    { floor: [12, 28, 9], wall: [8, 24], lamp: '255,110,40', accent: '255,80,20', dark: '18,4,2', darkness: 0.82,
+               sky: 'indoor', decor: 'none', pillar: 'rock', deco: 'natural', ruined: 0.25, lava: true, speck: ['255,90,30', '40,14,10', '120,40,20'] },
 };
 
 const ROOM_DEFS = [
@@ -117,7 +130,7 @@ class Room {
         const nearLamp = this.torches.some((t) => (side === 'R' ? t.y === 0 && Math.abs(t.x - (i + 0.5) * TILE) < TILE * 0.8 : t.x === 0 && Math.abs(t.y - (i + 0.5) * TILE) < TILE * 0.8));
         const prev = this.decor[this.decor.length - 1];
         if (prev && prev.side === side && prev.i === i - 1) continue;   // nunca dois enfeites colados
-        if (nearLamp || r() > (th.decor === 'window' ? 0.32 : 0.24)) continue;
+        if (th.decor === 'none' || nearLamp || r() > (th.decor === 'window' ? 0.32 : 0.24)) continue;
         this.decor.push({ side, i, ph: r() * 10, text: pick(th.decor === 'graffiti' ? GRAFFITI : NEON_WORDS), rgb: NEON_COLORS[(r() * NEON_COLORS.length) | 0], s: r() });
       }
     }
@@ -348,6 +361,18 @@ class Room {
       for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse(cx + (r() - 0.5) * 40, cy + (r() - 0.5) * 16, 5 + r() * 10, 2 + r() * 4, 0, 0, TAU); ctx.fill(); }
     };
     switch (deco) {
+      case 'natural': {
+        // grama, neve, areia, musgo ou cinza: manchas e pedrinhas nas cores do bioma
+        const S = this.theme.speck || ['80,80,80'];
+        if (d < 0.35) stain(S[(r() * S.length) | 0], 0.18);
+        else if (d < 0.5) puddle(S[2] || S[0]);
+        else if (d < 0.62) crack();
+        else if (d < 0.8) {
+          ctx.fillStyle = `rgba(${S[1] || S[0]},0.35)`;
+          for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.arc(cx + (r() - 0.5) * 44, cy + (r() - 0.5) * 18, 1 + r() * 2.2, 0, TAU); ctx.fill(); }
+        }
+        break;
+      }
       case 'lab':
         if (d < 0.25) rivets();
         else if (d < 0.36) grate();
@@ -553,6 +578,7 @@ class Room {
 
   // Sprite pré-renderizado de cada pilar (pilone metálico, concreto ou pedra)
   renderPillar(p, scale) {
+    if (NATURE_PILLARS.includes(this.theme.pillar)) { this.renderNature(p, scale); return; }
     const rx = p.r * ISO_RX, ry = p.r * ISO_RY;
     const Wd = rx * 2 + 16, Hd = p.h + ry * 2 + 40;
     const c = p.sprite || (p.sprite = document.createElement('canvas'));
@@ -628,6 +654,87 @@ class Room {
     if (this.theme.decor === 'neon' && r() < 0.6) {
       g.strokeStyle = `rgba(${pick(NEON_COLORS)},0.4)`; g.lineWidth = 2;
       g.beginPath(); g.moveTo(bx - rx * 0.6, by - 30); g.quadraticCurveTo(bx, by - 46, bx + rx * 0.5, by - 28); g.stroke();
+    }
+  }
+
+  // Árvore, rocha ou cristal no lugar do pilar (biomas do mundo aberto). A colisão continua a do
+  // pilar (o tronco ou a base); p.hw = meia largura do desenho (a copa), para a transparência
+  renderNature(p, scale) {
+    const th = this.theme, kind = th.pillar, r = mulberry32(p.seed), tall = !p.broken;
+    const rx = p.r * ISO_RX, ry = p.r * ISO_RY;
+    const crown = kind === 'tree' ? p.r * (tall ? 2.7 : 1.9) : 0;
+    const hw = kind === 'tree' ? Math.max(rx, crown * 1.1) : rx * (kind === 'rock' ? 1.45 : 1.5);
+    const H = kind === 'rock' ? Math.min(p.h * 0.62, 96) : p.h;
+    const Wd = hw * 2 + 20, Hd = H + crown * 0.6 + ry * 2 + 40;
+    const c = p.sprite || (p.sprite = document.createElement('canvas'));
+    c.width = Math.ceil(Wd * scale); c.height = Math.ceil(Hd * scale);
+    const g = c.getContext('2d');
+    g.setTransform(scale, 0, 0, scale, 0, 0);
+    p.ox = Wd / 2; p.oy = Hd - ry - 6; p.hw = hw;
+    const bx = p.ox, by = p.oy, acc = th.accent, [wh, ws] = th.wall;
+    // sombra no chão
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.beginPath(); g.ellipse(bx + 4, by + 2, hw * 0.9, ry * 1.4 + 3, 0, 0, TAU); g.fill();
+    if (kind === 'tree') {
+      // tronco com raízes e casca, copa em tufos (escura embaixo, com a luz do tema por cima)
+      const top = by - (tall ? H * 0.55 : H * 0.35), tw = rx * 0.55;
+      g.fillStyle = '#1c130d';
+      for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI + 0.3; g.beginPath(); g.ellipse(bx + Math.cos(a) * tw * 1.3, by - 2 + Math.sin(a) * 2, tw * 0.7, 4, a * 0.4, 0, TAU); g.fill(); }
+      const tg = g.createLinearGradient(bx - tw, 0, bx + tw, 0);
+      tg.addColorStop(0, '#140d08'); tg.addColorStop(0.4, '#4a3324'); tg.addColorStop(1, '#100a06');
+      g.fillStyle = tg;
+      g.beginPath(); g.moveTo(bx - tw * 1.15, by); g.lineTo(bx - tw * 0.8, top); g.lineTo(bx + tw * 0.8, top); g.lineTo(bx + tw * 1.15, by); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 1;
+      for (let k = 0; k < 4; k++) { const x = bx + (r() - 0.5) * tw * 1.4; g.beginPath(); g.moveTo(x, by - 4); g.lineTo(x + (r() - 0.5) * 4, top + 6); g.stroke(); }
+      const cy = top - crown * 0.35, leaves = th.speck || ['40,90,40', '20,40,18', '90,140,60'];
+      const blobs = [];
+      for (let k = 0; k < 9; k++) { const a = r() * TAU, d = r() * crown * 0.55; blobs.push([bx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.6 - r() * crown * 0.25, crown * (0.42 + r() * 0.25)]); }
+      blobs.sort((u, v) => u[1] - v[1]);
+      for (const [x, y, rr] of blobs) {
+        const lg = g.createRadialGradient(x - rr * 0.3, y - rr * 0.4, rr * 0.1, x, y, rr);
+        lg.addColorStop(0, `rgba(${leaves[2] || leaves[0]},0.95)`); lg.addColorStop(0.55, `rgba(${leaves[0]},0.95)`); lg.addColorStop(1, `rgba(${leaves[1] || leaves[0]},0.95)`);
+        g.fillStyle = lg; g.beginPath(); g.ellipse(x, y, rr, rr * 0.8, 0, 0, TAU); g.fill();
+      }
+      g.fillStyle = rgba(acc, 0.5);
+      for (let k = 0; k < 7; k++) { g.beginPath(); g.arc(bx + (r() - 0.5) * crown * 1.4, cy + (r() - 0.6) * crown * 0.8, 1 + r() * 1.3, 0, TAU); g.fill(); }
+    } else if (kind === 'rock') {
+      // rocha facetada: pontos ao redor da base subindo a um cume torto, com faces claras e escuras
+      const top = by - H, n = 7, pts = [];
+      for (let k = 0; k < n; k++) { const a = Math.PI + (k / (n - 1)) * Math.PI; pts.push([bx + Math.cos(a) * hw * (0.85 + r() * 0.15), by + Math.sin(a) * ry * 0.3 - (k > 0 && k < n - 1 ? H * (0.35 + r() * 0.3) * Math.sin((k / (n - 1)) * Math.PI) : 0)]); }
+      const peak = [bx + (r() - 0.5) * hw * 0.5, top];
+      const col = (l) => `rgb(${thirdHsl(wh / 360, ws / 100 * 0.7, l).map((v) => Math.round(v * 255)).join(',')})`;   // js/terceira.js
+      g.fillStyle = col(0.16);
+      g.beginPath(); g.moveTo(bx - hw, by); pts.forEach(([x, y]) => g.lineTo(x, y)); g.lineTo(bx + hw, by); g.ellipse(bx, by, hw, ry * 0.9, 0, 0, Math.PI); g.closePath(); g.fill();
+      for (let k = 0; k < n - 1; k++) {
+        const a = pts[k], b = pts[k + 1], lit = k < (n - 1) / 2;
+        g.fillStyle = col(lit ? 0.26 + r() * 0.08 : 0.12 + r() * 0.05);
+        g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(peak[0], peak[1]); g.closePath(); g.fill();
+      }
+      g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1;
+      for (const [x, y] of pts) { g.beginPath(); g.moveTo(x, y); g.lineTo(peak[0], peak[1]); g.stroke(); }
+      if (th.cap) {
+        g.fillStyle = rgba(th.cap, 0.92);
+        g.beginPath(); g.moveTo(peak[0], peak[1]);
+        for (const k of [2, 3, 4]) { const [x, y] = pts[k]; g.lineTo(peak[0] + (x - peak[0]) * 0.45, peak[1] + (y - peak[1]) * 0.45 + r() * 4); }
+        g.closePath(); g.fill();
+      }
+      if (th.lava) {
+        g.strokeStyle = rgba(acc, 0.85); g.lineWidth = 1.6;
+        for (let k = 0; k < 3; k++) { let x = bx + (r() - 0.5) * hw, y = by - 4; g.beginPath(); g.moveTo(x, y); for (let q = 0; q < 4; q++) { x += (r() - 0.5) * 10; y -= H * 0.12; g.lineTo(x, y); } g.stroke(); }
+      }
+    } else {
+      // cristais: prismas finos saindo do chão, translúcidos e acesos na cor do tema
+      const n = tall ? 5 : 3;
+      for (let k = 0; k < n; k++) {
+        const ox = (k - (n - 1) / 2) * rx * 0.55 + (r() - 0.5) * 6, hh = H * (k === (n >> 1) ? 1 : 0.45 + r() * 0.35), lean = (ox / rx) * 0.35, w = rx * (0.28 + r() * 0.12);
+        const x0 = bx + ox, y0 = by - 2, tx = x0 + lean * hh, ty = y0 - hh;
+        const cg = g.createLinearGradient(x0 - w, 0, x0 + w, 0);
+        cg.addColorStop(0, rgba(acc, 0.35)); cg.addColorStop(0.45, rgba('220,250,255', 0.75)); cg.addColorStop(1, rgba(acc, 0.25));
+        g.fillStyle = cg;
+        g.beginPath(); g.moveTo(x0 - w, y0); g.lineTo(tx - w * 0.8, ty + w * 1.4); g.lineTo(tx, ty); g.lineTo(tx + w * 0.8, ty + w * 1.4); g.lineTo(x0 + w, y0); g.closePath(); g.fill();
+        g.strokeStyle = rgba(acc, 0.9); g.lineWidth = 1; g.stroke();
+        g.strokeStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.moveTo(x0, y0); g.lineTo(tx, ty); g.stroke();
+      }
     }
   }
 
@@ -806,6 +913,9 @@ class Room {
   }
 }
 
+// Estilos de pilar que viram natureza (Room.renderNature)
+const NATURE_PILLARS = ['tree', 'rock', 'crystal'];
+
 // Pilar como objeto desenhável na ordenação por profundidade
 function drawPillar(ctx, p, player) {
   if (!p.sprite) return;
@@ -814,7 +924,7 @@ function drawPillar(ctx, p, player) {
   let alpha = 1;
   if (player && player.depth < p.x + p.y) {
     const px = isoX(player.x, player.y), py = isoY(player.x, player.y);
-    if (Math.abs(px - sx) < p.r * ISO_RX + 18 && py < sy + 10 && py > sy - p.h - 40) alpha = 0.38;
+    if (Math.abs(px - sx) < (p.hw || p.r * ISO_RX) + 18 && py < sy + 10 && py > sy - p.h - 40) alpha = 0.38;
   }
   ctx.globalAlpha = alpha;
   ctx.drawImage(p.sprite, sx - p.ox, sy - p.oy, p.sprite.width / game.room.scale, p.sprite.height / game.room.scale);
