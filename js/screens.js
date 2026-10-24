@@ -27,16 +27,20 @@ class Screens {
     const chars = ids.map((id, i) => ({ id, x: cx0 + i * cw + 4, y: 8, w: cw - 8, h: 46 }));
     const keys = { prev: { x: x0 + kw / 2 - 2, y: 31 }, next: { x: cx1 + kw / 2 + 2, y: 31 } };
     // Abas das árvores do personagem mostrado
-    const nt = Math.max(1, skillTreesOf(ui.char).length), tabs = [], tw = W / nt;
-    for (let i = 0; i < nt; i++) tabs.push({ x: x0 + i * tw + 4, y: 92, w: tw - 8, h: 44 });
-    const gy = 146, gh = 512, gw = Math.round(W * 0.56), gx = x0;
+    // compacto: tela baixa (celular deitado, ver Game.resize): abas mais baixas, nós menores e o
+    // passo entre as linhas da árvore pela altura que sobra
+    const compact = VIEW_H < 680;
+    const nt = Math.max(1, skillTreesOf(ui.char).length), tabs = [], tw = W / nt, ty = compact ? 88 : 92, th = compact ? 36 : 44;
+    for (let i = 0; i < nt; i++) tabs.push({ x: x0 + i * tw + 4, y: ty, w: tw - 8, h: th });
+    const gy = ty + th + 10, gh = Math.min(512, VIEW_H - gy - 34), gw = Math.round(W * 0.56), gx = x0;
     const ix = x0 + gw + 14, iw = W - gw - 14;
-    const nodes = {};
-    for (const s of game.treeNodes(ui.tree)) nodes[s.id] = { x: gx + gw * (0.2 + 0.3 * s.col), y: gy + 54 + s.row * 100, r: 28 };
+    const nodes = {}, lista = game.treeNodes(ui.tree), r = compact ? 22 : 28, topo = compact ? 42 : 54;
+    const linhas = Math.max(1, ...lista.map((s) => s.row)), passo = Math.min(100, (gh - topo - (compact ? 2 * r + 8 : r + 30)) / linhas);
+    for (const s of lista) nodes[s.id] = { x: gx + gw * (0.2 + 0.3 * s.col), y: gy + topo + s.row * passo, r };
     const btn = { x: ix + 18, y: gy + gh - 134, w: iw - 36, h: 42 };
     const slots = [];
     for (let k = 0; k < 4; k++) slots.push({ x: ix + 18 + k * 56, y: gy + gh - 64, w: 48, h: 48 });
-    return { W, x0, chars, keys, tabs, gx, gy, gw, gh, ix, iw, nodes, btn, slots, close };
+    return { W, x0, chars, keys, tabs, gx, gy, gw, gh, ix, iw, nodes, btn, slots, close, compact };
   }
 
   skillShape(ctx, kind, x, y, r) {
@@ -303,15 +307,15 @@ class Screens {
       // Níveis (pontos) e nome
       for (let k = 0; k < s.max; k++) {
         ctx.fillStyle = k < lv ? rgba(trgb, 1) : 'rgba(255,255,255,0.14)';
-        ctx.fillRect(n.x - (s.max * 9) / 2 + k * 9 + 1, n.y + n.r + 6, 7, 3);
+        ctx.fillRect(n.x - (s.max * 9) / 2 + k * 9 + 1, n.y + n.r + (L.compact ? 4 : 6), 7, 3);
       }
       ctx.textAlign = 'center';
-      ctx.font = `${sel ? 'bold ' : ''}11px ${FONT_UI}`;
+      ctx.font = `${sel ? 'bold ' : ''}${L.compact ? 10 : 11}px ${FONT_UI}`;
       ctx.fillStyle = state === 'locked' ? 'rgba(150,160,180,0.6)' : state === 'preview' ? '#c9d1de' : '#dfe6f2';
-      ctx.fillText(s.name, n.x, n.y + n.r + 19);
+      ctx.fillText(s.name, n.x, n.y + n.r + (L.compact ? 15 : 19));
       if (state === 'locked' && pr.level < s.lvl) {
-        ctx.font = `bold 10px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,140,150,0.8)';
-        ctx.fillText(`NÍVEL ${s.lvl}`, n.x, n.y + n.r + 32);
+        ctx.font = `bold ${L.compact ? 9 : 10}px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,140,150,0.8)';
+        ctx.fillText(`NÍVEL ${s.lvl}`, n.x, n.y + n.r + (L.compact ? 26 : 32));
       }
     }
     // Confirmação visual do desbloqueio

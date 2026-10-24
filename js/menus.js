@@ -897,10 +897,19 @@ class Menus {
   }
 
   // -------------------------------------------------------- tela inicial
+  // Lista vertical de n itens que cabe entre y0 e 'fim': se faltar altura (tela baixa, ver
+  // Game.resize), sobe até 'topo' e depois encolhe a altura e o espaço dos itens (até 72%)
+  fitList(n, h, gap, y0, fim, topo = y0) {
+    const precisa = (hh, gg) => n * (hh + gg) - gg;
+    if (y0 + precisa(h, gap) > fim) y0 = Math.max(topo, fim - precisa(h, gap));
+    const k = clamp((fim - y0) / precisa(h, gap), 0.72, 1);
+    return { h: Math.floor(h * k), gap: Math.floor(gap * k), y0 };
+  }
+
   layStart() {
     const artW = Math.min(VIEW_W - 340, 780);
-    const w = 300, h = 42, gap = 10, cx = (artW - 80 + VIEW_W) / 2;
-    const x = Math.min(VIEW_W - w - 40, cx - w / 2), y0 = VIEW_H * 0.38;
+    const w = 300, cx = (artW - 80 + VIEW_W) / 2;
+    const x = Math.min(VIEW_W - w - 40, cx - w / 2);
     const items = [
       ['play', 'JOGAR', 'play'],
       ['world', 'MUNDO ABERTO', 'star'],
@@ -911,6 +920,7 @@ class Menus {
       ['quit', 'SAIR', 'power']
     ];
     if (game.installPrompt) items.splice(items.length - 1, 0, ['install', 'INSTALAR APP', 'play']);   // PWA (js/main.js)
+    const { h, gap, y0 } = this.fitList(items.length, 42, 10, VIEW_H * 0.38, VIEW_H - 46, 70);
     return { artW, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x, y: y0 + i * (h + gap), w, h })) };
   }
   updStart(inp) {
@@ -954,7 +964,7 @@ class Menus {
 
   // ------------------------------------------------------- menu principal
   layMain() {
-    const x = Math.max(32, Math.min(80, VIEW_W * 0.05)), y0 = 135, w = 330, h = 46, gap = 9;
+    const x = Math.max(32, Math.min(80, VIEW_W * 0.05)), w = 330;
     const has = SaveSys.exists();
     const items = [
       ['continue', 'CONTINUAR', 'play', !has],
@@ -966,6 +976,7 @@ class Menus {
       ['settings', 'CONFIGURAÇÕES', 'gear'],
       ['quit', 'SAIR', 'exit']
     ];
+    const f = this.fitList(items.length, 46, 9, 155, VIEW_H - 56, 92), h = f.h, gap = f.gap, y0 = f.y0 - 20;
     const rects = items.map(([id, label, icon, disabled], i) => ({ id, label, icon, disabled: !!disabled, x: x + 20, y: y0 + 20 + i * (h + gap), w, h }));
     return { panel: { x, y: y0, w: w + 40, h: items.length * (h + gap) + 30 }, rects };
   }
@@ -1028,7 +1039,8 @@ class Menus {
 
   // -------------------------------------------------------- carregar jogo
   layLoad() {
-    const x = Math.max(28, Math.min(60, VIEW_W * 0.04)), w = Math.min(600, VIEW_W * 0.5), h = 92, gap = 10, y0 = 104;
+    const x = Math.max(28, Math.min(60, VIEW_W * 0.04)), w = Math.min(600, VIEW_W * 0.5);
+    const { h, gap, y0 } = this.fitList(SAVE_SLOTS, 92, 10, 104, VIEW_H - 44, 76);
     const rects = [];
     for (let i = 0; i < SAVE_SLOTS; i++) rects.push({ id: i + 1, x, y: y0 + i * (h + gap), w, h });
     return { rects, artX: x + w + 30 };
@@ -1092,20 +1104,20 @@ class Menus {
     const lx = tx + tw + 18;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = `bold 15px ${FONT_TITLE}`; ctx.fillStyle = sel ? PAL.accentHi : PAL.accent;
-    ctx.fillText(two(i + 1), lx, y + 24);
+    ctx.fillText(two(i + 1), lx, y + h * 0.26);
     if (s) {
       const room = ROOM_DEFS[clamp(s.room | 0, 0, ROOM_DEFS.length - 1)];
       ctx.font = `bold 15px ${FONT_UI}`; ctx.fillStyle = '#eef3fa';
-      ctx.fillText(room.name, lx + 34, y + 24);
+      ctx.fillText(room.name, lx + 34, y + h * 0.26);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(190,205,228,0.8)';
-      ctx.fillText(fmtDate(s.time), lx + 34, y + 46);
+      ctx.fillText(fmtDate(s.time), lx + 34, y + h * 0.5);
       const lv = (s.progress && s.progress.level) | 0, cyc = (s.flags && s.flags.cycle) | 0;
-      ctx.fillText(`Nv. ${lv || 1}   |   ${fmtPlay(s.stats && s.stats.time)}${cyc ? `   |   Ciclo ${cyc + 1}` : ''}`, lx + 34, y + 66);
+      ctx.fillText(`Nv. ${lv || 1}   |   ${fmtPlay(s.stats && s.stats.time)}${cyc ? `   |   Ciclo ${cyc + 1}` : ''}`, lx + 34, y + h * 0.72);
     } else {
       ctx.font = `14px ${FONT_UI}`; ctx.fillStyle = 'rgba(170,185,210,0.6)';
-      ctx.fillText('Vazio', lx + 34, y + 24);
+      ctx.fillText('Vazio', lx + 34, y + h * 0.26);
       ctx.font = `12px ${FONT_UI}`;
-      ctx.fillText('--/--/----  --:--', lx + 34, y + 46);
+      ctx.fillText('--/--/----  --:--', lx + 34, y + h * 0.5);
     }
     ctx.restore();
   }
@@ -1484,11 +1496,12 @@ class Menus {
 
   // ------------------------------------------------------------------ pausa
   layPause() {
-    const x = Math.max(32, Math.min(70, VIEW_W * 0.05)), y0 = 130, w = 320, h = 46, gap = 8;
+    const x = Math.max(32, Math.min(70, VIEW_W * 0.05)), w = 320;
     const items = [['resume', 'RETOMAR', 'play'], ['skills', 'HABILIDADES', 'tree'], ['chars', t('rosterTitle'), 'people'],
       ['camera', `CÂMERA: ${ThirdView.on ? '3ª PESSOA' : 'ISOMÉTRICA'}`, 'sword'], ['world', game.world ? 'MAPA DO MUNDO' : 'MUNDO ABERTO', 'star'],
       ...(game.world ? [['bag', 'MOCHILA E MISSÕES', 'people']] : []),
       ['settings', 'CONFIGURAÇÕES', 'gear'], ['restart', game.world ? 'VOLTAR AO PORTAL' : 'REINICIAR SETOR', 'restart'], ['menu', 'SAIR PARA O MENU', 'exit'], ['quit', 'SAIR DO JOGO', 'power']];
+    const f = this.fitList(items.length, 46, 8, 152, VIEW_H - 60, 96), h = f.h, gap = f.gap, y0 = f.y0 - 22;
     return { panel: { x, y: y0, w: w + 40, h: items.length * (h + gap) + 34 }, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x: x + 20, y: y0 + 22 + i * (h + gap), w, h })) };
   }
   updPause(inp) {

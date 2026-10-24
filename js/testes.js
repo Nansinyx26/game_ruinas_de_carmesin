@@ -41,6 +41,7 @@ const EclipseTests = {
       this.armaduras3d();
       this.aliados();
       this.terceiraPessoa();
+      this.telaBaixa();
       this.mundo();   // por último: troca a partida pelo modo mundo
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -449,6 +450,29 @@ const EclipseTests = {
     this.ok('3ª pessoa: o herói fica no meio da tela', P.vis && Math.abs(P.x - VIEW_W / 2) < VIEW_W * 0.1 && P.y > VIEW_H * 0.25 && P.y < VIEW_H * 0.8, JSON.stringify({ x: Math.round(P.x), y: Math.round(P.y) }));
     this.ok('3ª pessoa: isoX volta ao normal depois dos efeitos', isoX(10, 3) === 7 && isoY(10, 4) === 7);
     ThirdView.set(antes, true);
+  },
+
+  // ------------------------------------------- menus numa tela baixa (celular)
+  telaBaixa() {
+    const W0 = VIEW_W, H0 = VIEW_H, M = game.menu;
+    try {
+      VIEW_W = 1225; VIEW_H = 566;   // 844 × 390 deitado (Game.resize, modo 'menu')
+      const dentro = (rs, fim) => rs.every((r) => r.y >= 0 && r.y + r.h <= fim);
+      this.ok('tela baixa: menu inicial cabe acima das dicas', dentro(M.layStart().rects, VIEW_H - 44));
+      this.ok('tela baixa: menu principal cabe', dentro(M.layMain().rects, VIEW_H - 54));
+      this.ok('tela baixa: os 5 espaços de salvamento cabem', dentro(M.layLoad().rects, VIEW_H - 42));
+      const P = M.layPause();
+      this.ok('tela baixa: pausa cabe', dentro(P.rects, VIEW_H - 58) && P.panel.y + P.panel.h <= VIEW_H - 24, JSON.stringify(P.panel));
+      const R = M.roster, tab = R.tab;
+      R.tab = 0;
+      const L = R.layout(), fimAbil = Math.max(...L.abil.map((r) => r.y + r.h));
+      this.ok('tela baixa: habilidades da ficha acima dos botões', L.compact && fimAbil <= L.info.y + L.info.h && L.info.y + L.info.h <= VIEW_H - 74 - 10, `${fimAbil} / ${L.info.y + L.info.h}`);
+      R.tab = tab;
+      const S = game.screens.skillLayout(), ns = Object.values(S.nodes);
+      this.ok('tela baixa: a árvore inteira cabe no painel', ns.length > 0 && ns.every((n) => n.y + n.r + 30 <= S.gy + S.gh) && S.gy + S.gh <= VIEW_H - 30, `${Math.max(...ns.map((n) => n.y + n.r))} / ${S.gy + S.gh}`);
+    } finally { VIEW_W = W0; VIEW_H = H0; }
+    const S = game.screens.skillLayout();
+    this.ok('tela normal: árvore com o passo de sempre (100)', Object.values(S.nodes).some((n) => n.y === S.gy + 54 + 100), S.gy);
   },
 
   // ------------------------------------------------------------ mundo aberto

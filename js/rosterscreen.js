@@ -708,8 +708,11 @@ class RosterScreen {
   layout() {
     const x0 = Math.round(Math.max(VIEW_W * 0.4, 384));
     const avail = Math.min(VIEW_W - x0 - 36, 700), gap = avail < 600 ? 10 : 12;
-    const cw = Math.floor(Math.min(124, (avail - 4 * gap) / 5)), w = cw * 5 + gap * 4, top = 112;
-    const L = { x0, w, cw, gap, top, artCx: (x0 - 30) / 2 + 30 };
+    // compacto: tela baixa (celular deitado, altura lógica menor que 680; ver Game.resize):
+    // cartões mais baixos e a ficha mais junta, para os botões e as dicas continuarem no rodapé
+    const compact = VIEW_H < 680;
+    const cw = Math.floor(Math.min(124, (avail - 4 * gap) / 5)), w = cw * 5 + gap * 4, top = compact ? 104 : 112;
+    const L = { x0, w, cw, gap, top, compact, artCx: (x0 - 30) / 2 + 30 };
     const capW = 34, tw = (w - capW * 2 - 8) / ROSTER_TABS.length;
     L.capW = capW;
     L.tabs = ROSTER_TABS.map((tb, i) => ({ id: i, x: x0 + capW + 4 + i * tw, y: 64, w: tw - 6, h: 32 }));
@@ -720,11 +723,11 @@ class RosterScreen {
     const b1 = 184, b2 = 150;
     let infoY, infoH;
     if (tab === 'chars') {
-      const ch = Math.round(cw * 1.25);
+      const ch = Math.round(cw * (compact ? 0.8 : 1.25));
       L.cards = CHARACTER_DEFS.map((d, i) => ({ id: i, x: x0 + i * (cw + gap), y: top, w: cw, h: ch }));
-      infoY = top + ch + 16; infoH = by - infoY - 18;
+      infoY = top + ch + (compact ? 12 : 16); infoH = by - infoY - 18;
       const sw = (w - 44) / 4;
-      L.abil = [0, 1, 2, 3].map((k) => ({ id: k, x: x0 + 22 + k * sw, y: infoY + 196, w: sw, h: 98 }));
+      L.abil = [0, 1, 2, 3].map((k) => ({ id: k, x: x0 + 22 + k * sw, y: infoY + (compact ? 160 : 196), w: sw, h: compact ? 84 : 98 }));
     } else if (tab === 'armors') {
       L.prev = { x: x0, y: top, w: 32, h: 30 };
       L.next = { x: x0 + Math.min(330, w * 0.6) - 32, y: top, w: 32, h: 30 };
@@ -739,7 +742,7 @@ class RosterScreen {
       L.totalPages = totalPages;
       L.armorPage = this.armorPage;
       const cardW = Math.floor((w - (cols - 1) * gap) / cols);
-      const ch = Math.round(cardW * 1.28);
+      const ch = Math.round(cardW * (compact ? 0.82 : 1.28));
       const y = top + 38;
       const startIdx = this.armorPage * perPage;
       const pageItems = armList.slice(startIdx, startIdx + perPage);
@@ -1364,15 +1367,16 @@ class RosterScreen {
     // Nome, selo e título
     const chip = { active: [t('active'), true], available: [t('available'), false], locked: [t('locked'), false], soon: [t('comingSoon'), false] }[st];
     this.titleRow(ctx, I, d.name.toUpperCase(), d.title.toUpperCase(), rgb, [chip[0], chip[1], st === 'locked' ? '150,160,180' : rgb], colW);
-    // Lore: até 3 linhas; em telas estreitas a letra diminui um pouco para caber
+    // Lore: até 3 linhas; em telas estreitas a letra diminui um pouco para caber (compacto: mais junto)
+    const C = L.compact, ly = I.y + (C ? 74 : 80);
     ctx.font = `13px ${FONT_UI}`;
     let lore = wrapText(ctx, d.lore, colW), lh = 19;
-    if (lore.length > 3) { ctx.font = `12px ${FONT_UI}`; lore = wrapText(ctx, d.lore, colW); lh = 17; }
-    lore = lore.slice(0, 4);
+    if (lore.length > 3 || C) { ctx.font = `12px ${FONT_UI}`; lore = wrapText(ctx, d.lore, colW); lh = 17; }
+    lore = lore.slice(0, C ? 3 : 4);
     ctx.fillStyle = '#c9d6ea';
-    lore.forEach((ln, k) => ctx.fillText(ln, I.x + 22, I.y + 80 + k * lh));
+    lore.forEach((ln, k) => ctx.fillText(ln, I.x + 22, ly + k * lh));
     // Situação (uma linha): condição de desbloqueio, "em breve" ou o papel no combate
-    const sy = I.y + 80 + lore.length * lh + 6;
+    const sy = ly + lore.length * lh + 6;
     if (st === 'locked' || st === 'soon') {
       drawMenuIcon(ctx, 'lock', I.x + 29, sy, 14, st === 'locked' ? 'rgba(255,150,170,0.95)' : rgba(rgbMix(rgb, 0.35), 1));
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = st === 'locked' ? '#ffb0c0' : rgba(rgbMix(rgb, 0.45), 1);
@@ -1385,7 +1389,7 @@ class RosterScreen {
     // Atributos (rating): barras na cor-tema, animadas ao trocar de personagem
     const sx = I.x + I.w - statW - 22, k0 = Math.min(1, this.selT * 3);
     ROSTER_STATS.forEach(([key, label], k) => {
-      const y = I.y + 26 + k * 28, v = clamp(d.rating[key] || 0, 0, 1);
+      const y = I.y + 26 + k * (C ? 24 : 28), v = clamp(d.rating[key] || 0, 0, 1);
       ctx.font = `bold 10.5px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(200,214,235,0.85)';
       ctx.fillText(t(label), sx, y);
       ctx.letterSpacing = '0px';
@@ -1396,7 +1400,7 @@ class RosterScreen {
       for (let q = 1; q < 10; q++) { ctx.fillStyle = 'rgba(3,8,18,0.7)'; ctx.fillRect(sx + (statW * q) / 10, y + 9, 1, 6); }
     });
     // HABILIDADES: 4 ícones quadrados com o nome
-    const hy = I.y + 176;
+    const hy = I.y + (C ? 144 : 176);
     ctx.fillStyle = rgba(rgb, 0.22); ctx.fillRect(I.x + 22, hy - 6, I.w - 44, 1);
     ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = rgba(rgb, 1);
     ctx.fillText(t('abilities'), I.x + 22, hy + 10);

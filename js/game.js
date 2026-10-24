@@ -111,11 +111,13 @@ class Game {
     // Resolução interna: densidade da tela × escala escolhida nas configurações
     const dpr = Math.min(window.devicePixelRatio || 1, (this.renderScale || 1) > 1 ? 3 : 2) * (this.renderScale || 1);
     const cw = Math.max(320, window.innerWidth), ch = Math.max(240, window.innerHeight);
-    // Em jogo, numa tela baixa (celular deitado): menos altura lógica, e o mundo, o HUD e os botões
-    // crescem juntos (com 720 unidades em 390 px de altura ficava tudo com pouco mais da metade do
-    // tamanho). Os menus seguem com 720 (o layout deles conta com essa altura)
-    this.compactView = this.state === 'playing' && ch < 600;
-    VIEW_H = this.compactView ? Math.round(clamp(ch * 1.25, 480, 720)) : 720;
+    // Numa tela baixa (celular deitado), menos altura lógica: com 720 unidades em 390 px de altura
+    // ficava tudo com pouco mais da metade do tamanho. Em jogo o mundo, o HUD e os botões crescem
+    // juntos (até 480 de altura); os menus e as telas, um pouco menos (até 560, o que os layouts
+    // deles comportam)
+    this.viewMode = this.modoTela();
+    this.compactView = this.viewMode === 'jogo';
+    VIEW_H = this.viewMode === 'jogo' ? Math.round(clamp(ch * 1.25, 480, 720)) : this.viewMode === 'menu' ? Math.round(clamp(ch * 1.45, 560, 720)) : 720;
     VIEW_W = Math.round(clamp((VIEW_H * cw) / ch, 960, 1760));
     this.canvas.width = Math.floor(cw * dpr);
     this.canvas.height = Math.floor(ch * dpr);
@@ -162,9 +164,15 @@ class Game {
     }
   }
 
+  // Altura lógica da tela (ver resize): 'normal' (720), 'jogo' ou 'menu' (telas baixas)
+  modoTela() {
+    if (window.innerHeight >= 600) return 'normal';
+    return this.state === 'playing' ? 'jogo' : 'menu';
+  }
+
   loop(now) {
     // entrou ou saiu do jogo numa tela baixa: refaz a escala (ver resize)
-    if ((this.state === 'playing' && window.innerHeight < 600) !== !!this.compactView) this.resize();
+    if (this.modoTela() !== this.viewMode) this.resize();
     // Limite de FPS (configurações): pula quadros até chegar a hora do próximo
     const lim = Settings.v.fpsLimit;
     if (lim) {
