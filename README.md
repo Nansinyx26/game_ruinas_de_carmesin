@@ -69,6 +69,8 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | ESC | Pausa (menu de pausa) / pular história / voltar nos menus |
 | M | Som liga/desliga |
 | G | Gráficos 3D / 2D |
+| V | Câmera isométrica / **3ª pessoa** (atrás do ombro) |
+| Z / C · botão direito do mouse (arrastar) · roda | Na 3ª pessoa: girar a câmera · aproximar e afastar |
 | F1 | Modo debug (hitboxes; F2 elimina inimigos, F3 enche vida e energia, F4 dá XP) |
 
 Nos menus: setas (ou mouse) navegam, Enter/J confirma, Esc volta, Q/E trocam de aba, Del apaga um salvamento.
@@ -121,7 +123,11 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 
 ## Mundo aberto (protótipo jogável)
 
-Menu inicial → **MUNDO ABERTO**. Primeira etapa do plano de mundo aberto: em vez de uma página bonita, uma região **realmente explorável** com o mesmo combate, personagens, árvores e HUD da campanha.
+Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica) ou **MUNDO ABERTO · 3ª PESSOA**. Na pausa: **CÂMERA** alterna as duas vistas e **MUNDO ABERTO** leva da campanha para o mundo (a campanha fica salva); dentro do mundo, o mesmo item abre o mapa. No toque, o botão **3D** alterna a câmera e arrastar na metade direita gira.
+
+**Câmera em 3ª pessoa** (`js/terceira.js`, `ThirdView`): o mesmo jogo (campanha e mundo aberto) visto de trás do ombro, em perspectiva. O motor 3D (`R3D.renderScene`) desenha numa passada a sala montada em 3D a partir da `Room` (piso em ladrilhos, paredes com as aberturas da porta e das passagens, pilares e luminárias), os heróis com armaduras, cabelo e armas, os inimigos, NPCs, baús, coletáveis e sombras, com névoa na cor do tema. Os efeitos 2D (partículas, auras, projéteis, números de dano, barras de vida) usam a projeção da câmera e aparecem no lugar. O movimento é relativo à câmera; parado sem girar, ela volta para trás do herói quando ele anda. O pilar que fica entre a câmera e o herói some. A arena antiga de 3ª pessoa continua no menu como **ARENA 3D (TREINO)**.
+
+Primeira etapa do plano de mundo aberto: em vez de uma página bonita, uma região **realmente explorável** com o mesmo combate, personagens, árvores e HUD da campanha.
 
 - **Ruínas de Carmesin** (`js/world.js`): 9 zonas numa grade 3×3 (Mercado Afundado, Portões Partidos, Avenida dos Ecos, Torre de Vigia, Praça Carmesim, Galerias de Serviço, Laboratório Esquecido, Fendas Rubras e Coração Carmesim), cada uma com nível recomendado. **Passagens** acesas nas bordas levam à zona vizinha (pare sobre a luz).
 - **Acampamentos**: os inimigos ficam parados até o herói chegar perto ou um deles ser atingido; aí o grupo inteiro acorda e persegue. Voltam a cada visita (o do chefe não, depois de derrotado).
@@ -276,6 +282,7 @@ js/
   config.js         resolução lógica, constantes de física, paleta, fontes, variável global "game"
   utils.js          matemática, projeção isométrica, formas e utilidades
   controls.js       entrada: KEYMAP/PADMAP e a classe Input (teclado, mouse, gamepad, analógico de toque)
+  terceira.js       ThirdView: câmera em 3ª pessoa sobre o jogo (sala em 3D, modelos em perspectiva, efeitos projetados)
   touch.js          TouchControls: analógico e botões de toque (celular/tablet) ligados ao Input
   audio.js          AudioSys: trilha sonora dinâmica (MusicPlayer), narração/dublagem (NarrationPlayer), SFX pré-carregados e efeitos sintetizados (Web Audio API)
   effects.js        GlowCache, partículas, números de dano, rastros da lâmina, raios

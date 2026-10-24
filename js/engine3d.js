@@ -198,13 +198,28 @@ void main() {
   gl_Position = vec4((sx - uRect.x) / uRect.z * 2.0 - 1.0, 1.0 - (sy - uRect.y) / uRect.w * 2.0, -(aPos.x + aPos.y + aPos.z) * uDepth, 1.0);
   vNor = aNor; vCol = aCol; vPos = aPos;
 }`;
+// Perspectiva (câmera em terceira pessoa, js/terceira.js): posições já no mundo, matriz da câmera
+const R3D_VS_P = `
+attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol;
+uniform mat4 uMVP;
+varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
+void main() {
+  gl_Position = uMVP * vec4(aPos, 1.0);
+  vNor = aNor; vCol = aCol; vPos = aPos;
+}`;
 const R3D_FS = `
 precision mediump float;
-varying vec3 vNor; varying vec4 vCol;
+varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog;
+// névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
+float fogK() {
+  if (uPersp < 0.5) return 0.0;
+  return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.85);
+}
 void main() {
-  vec3 V = vec3(0.57735);
+  vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
   if (dot(n, V) < 0.0) n = -n;
   vec3 col = vCol.rgb; float e = vCol.a;
@@ -219,7 +234,7 @@ void main() {
     if (uPass < 0.5) { gl_FragColor = vec4(uGhost.rgb * (0.35 + 0.9 * fres), 1.0); } else { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }
     return;
   }
-  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi, 1.0); return; }
+  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi * (1.0 - fogK()), 1.0); return; }
   float key = max(dot(n, uKeyDir), 0.0);
   float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
   float rim = max(dot(n, uRimDir), 0.0);
@@ -227,6 +242,7 @@ void main() {
   vec3 lit = col * (uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2)) + uRimCol * (rim * 0.55 + fres * 0.35);
   lit += col * e * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
+  lit = mix(lit, uFog.rgb, fogK());
   gl_FragColor = vec4(lit, 1.0);
 }`;
 
@@ -252,8 +268,14 @@ uniform sampler2D uNrm; uniform float uNrmOn; uniform float uPbr;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
 uniform vec4 uGlow; uniform vec4 uTint;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog;
+// névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
+float fogK() {
+  if (uPersp < 0.5) return 0.0;
+  return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.85);
+}
 void main() {
-  vec3 V = vec3(0.57735);
+  vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
   if (dot(n, V) < 0.0) n = -n;
   float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
@@ -334,7 +356,7 @@ void main() {
     if (uPass < 0.5) { gl_FragColor = vec4(uGhost.rgb * (0.35 + 0.9 * fres), 1.0); } else { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }
     return;
   }
-  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi, 1.0); return; }
+  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi * (1.0 - fogK()), 1.0); return; }
   float key = max(dot(n, uKeyDir), 0.0);
   float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
   float rim = max(dot(n, uRimDir), 0.0);
@@ -357,6 +379,7 @@ void main() {
   }
   lit += col * e * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
+  lit = mix(lit, uFog.rgb, fogK());
   gl_FragColor = vec4(lit, 1.0);
 }`;
 
@@ -378,16 +401,16 @@ const R3D = {
         if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
         return s;
       };
-      const link = (fs) => {
+      const link = (fs, vs = R3D_VS) => {
         const p = gl.createProgram();
         // relevo do mapa de material: precisa das derivadas de tela (WebGL 1: extensão)
         if (fs === R3D_FS_TEX) fs = (gl.getExtension('OES_standard_derivatives') ? '#extension GL_OES_standard_derivatives : enable\n#define BUMP 1\n' : '') + fs;
-        gl.attachShader(p, sh(gl.VERTEX_SHADER, R3D_VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+        gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
         gl.linkProgram(p);
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uMVP', 'uView', 'uPersp', 'uFog']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -395,6 +418,8 @@ const R3D = {
       this.progs = [P0];
       // Programa com textura: se falhar, os modelos texturizados não são desenhados (o resto segue igual)
       try { this.progs.push(link(R3D_FS_TEX)); } catch (e) { console.warn('Textura 3D indisponível:', e); }
+      // os mesmos materiais com a câmera em perspectiva (terceira pessoa)
+      try { this.progsP = [link(R3D_FS, R3D_VS_P)]; this.progsP.push(link(R3D_FS_TEX, R3D_VS_P)); } catch (e) { console.warn('Perspectiva 3D indisponível:', e); }
       this.buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
       gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW);
@@ -433,8 +458,13 @@ const R3D = {
     const n = this.used;
     this.used = 0;
     if (!this.active || !n) return;
+    const vo = this.poseAll(n, scale);
+    this.pack(n, scale);
+    this.drawAtlas(n, vo);
+  },
+  // 1) Pose + transformação na CPU, calculando a caixa de cada sprite na tela; devolve o fim dos dados
+  poseAll(n, scale) {
     let vo = 0;
-    // 1) Pose + transformação na CPU, calculando a caixa de cada sprite na tela
     for (let i = 0; i < n; i++) {
       const it = this.items[i], m = it.model, o = it.o;
       m.reset();
@@ -492,9 +522,13 @@ const R3D = {
         const X = w[0] * p[0] + w[1] * p[1] + w[2] * p[2] + w[3], Y = w[4] * p[0] + w[5] * p[1] + w[6] * p[2] + w[7], Z = w[8] * p[0] + w[9] * p[1] + w[10] * p[2] + w[11];
         const q = it.anchors[k] || (it.anchors[k] = { x: 0, y: 0, z: 0 });
         q.x = X - Y; q.y = (X + Y) * 0.5 - Z; q.z = Z;
+        q.wx = X; q.wy = Y;
       }
     }
-    // 2) Empacota as células no atlas (prateleiras); reduz a escala se não couber
+    return vo;
+  },
+  // 2) Empacota as células no atlas (prateleiras); reduz a escala se não couber
+  pack(n, scale) {
     let s = scale;
     for (let tries = 0; tries < 6; tries++) {
       let x = 0, y = 0, rowH = 0, fit = true;
@@ -511,8 +545,10 @@ const R3D = {
       s *= 0.75;
     }
     this.scale = s;
-    // 3) Desenho: passada de cor (metade de cima) e emissiva (metade de baixo)
-    const gl = this.gl;
+  },
+  // 3) Desenho: passada de cor (metade de cima) e emissiva (metade de baixo)
+  drawAtlas(n, vo) {
+    const s = this.scale, gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
     if (this.data.byteLength > this.bufBytes || !this.bufBytes) { gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW); this.bufBytes = this.data.byteLength; }
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data.subarray(0, vo));
@@ -549,34 +585,12 @@ const R3D = {
         if (tex && this.progs.length < 2) continue;   // sem o programa de textura, o modelo não aparece
         const want = tex ? 1 : 0;
         if (want !== cur) { cur = want; L = use(want, pass); }
-        if (tex) {
-          // mapa de material (metal, aspereza, relevo), se o modelo tiver um; texOf cria na unidade ativa,
-          // então as duas texturas são resolvidas antes de ligar cada uma na sua unidade
-          const mt = tex.mat ? (tex.matTex || (tex.matTex = { src: tex.mat })) : null;
-          const nt = tex.nrm ? (tex.nrmTex || (tex.nrmTex = { src: tex.nrm })) : null;
-          const tg = this.texOf(tex), mg = mt ? this.texOf(mt) : null, ng = nt ? this.texOf(nt) : null;
-          const matOn = mg && mg !== this.blankTex, nrmOn = ng && ng !== this.blankTex;
-          if (matOn) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mg); }
-          if (nrmOn) { gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, ng); }
-          gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tg);
-          gl.uniform1f(L.uMatOn, matOn ? 1 : 0); gl.uniform1f(L.uBump, matOn ? tex.bump || 0 : 0);
-          gl.uniform1f(L.uNrmOn, nrmOn ? 1 : 0); gl.uniform1f(L.uPbr, tex.pbr ? 1 : 0);
-          // tex.glow = [r, g, b, ganho]: brilho na cor-tema (sem ele, o azul do Kael)
-          const gw = tex.glow;
-          if (gw) gl.uniform4f(L.uGlow, gw[0], gw[1], gw[2], gw[3]); else gl.uniform4f(L.uGlow, 0, 0, 0, 0);
-        }
         const o = it.o;
         const vy = this.H - (it.cy + (pass ? this.H / 2 : 0)) - it.ch;
         gl.viewport(it.cx, vy, it.cw, it.ch);
         gl.scissor(it.cx, vy, it.cw, it.ch);
         gl.uniform4f(L.uRect, it.minX, it.minY, it.cw / s, it.ch / s);
-        gl.uniform1f(L.uFlash, o.flash || 0);
-        gl.uniform1f(L.uEmi, o.emi !== undefined ? o.emi : 1);
-        gl.uniform1f(L.uHolo, o.holo ? 1 : 0);
-        const rc = o.rim ? hex3(o.rim) : lt.rim;
-        gl.uniform3f(L.uRimCol, rc[0], rc[1], rc[2]);
-        if (o.ghost) { const gc = o.ghost; gl.uniform4f(L.uGhost, gc[0], gc[1], gc[2], 1); } else gl.uniform4f(L.uGhost, 0, 0, 0, 0);
-        if (o.tint) { const tc = o.tint; gl.uniform4f(L.uTint, tc[0], tc[1], tc[2], tc[3]); } else gl.uniform4f(L.uTint, 0, 0, 0, 0);
+        this.itemUniforms(L, it);
         gl.drawArrays(gl.TRIANGLES, it.v0, it.vn);
       }
       gl.disable(gl.SCISSOR_TEST);
@@ -584,6 +598,94 @@ const R3D = {
       gl.enable(gl.SCISSOR_TEST);
     }
     gl.disable(gl.SCISSOR_TEST);
+  },
+  // Textura do modelo e efeitos do item (piscar, emissão, holograma, contraluz, fantasma, armadura)
+  itemUniforms(L, it) {
+    const gl = this.gl, tex = it.model.tex, lt = this.light;
+    if (tex) {
+      // mapa de material (metal, aspereza, relevo), se o modelo tiver um; texOf cria na unidade ativa,
+      // então as duas texturas são resolvidas antes de ligar cada uma na sua unidade
+      const mt = tex.mat ? (tex.matTex || (tex.matTex = { src: tex.mat })) : null;
+      const nt = tex.nrm ? (tex.nrmTex || (tex.nrmTex = { src: tex.nrm })) : null;
+      const tg = this.texOf(tex), mg = mt ? this.texOf(mt) : null, ng = nt ? this.texOf(nt) : null;
+      const matOn = mg && mg !== this.blankTex, nrmOn = ng && ng !== this.blankTex;
+      if (matOn) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mg); }
+      if (nrmOn) { gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, ng); }
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tg);
+      gl.uniform1f(L.uMatOn, matOn ? 1 : 0); gl.uniform1f(L.uBump, matOn ? tex.bump || 0 : 0);
+      gl.uniform1f(L.uNrmOn, nrmOn ? 1 : 0); gl.uniform1f(L.uPbr, tex.pbr ? 1 : 0);
+      // tex.glow = [r, g, b, ganho]: brilho na cor-tema (sem ele, o azul do Kael)
+      const gw = tex.glow;
+      if (gw) gl.uniform4f(L.uGlow, gw[0], gw[1], gw[2], gw[3]); else gl.uniform4f(L.uGlow, 0, 0, 0, 0);
+    }
+    const o = it.o;
+    gl.uniform1f(L.uFlash, o.flash || 0);
+    gl.uniform1f(L.uEmi, o.emi !== undefined ? o.emi : 1);
+    gl.uniform1f(L.uHolo, o.holo ? 1 : 0);
+    const rc = o.rim ? hex3(o.rim) : lt.rim;
+    gl.uniform3f(L.uRimCol, rc[0], rc[1], rc[2]);
+    if (o.ghost) { const gc = o.ghost; gl.uniform4f(L.uGhost, gc[0], gc[1], gc[2], 1); } else gl.uniform4f(L.uGhost, 0, 0, 0, 0);
+    if (o.tint) { const tc = o.tint; gl.uniform4f(L.uTint, tc[0], tc[1], tc[2], tc[3]); } else gl.uniform4f(L.uTint, 0, 0, 0, 0);
+  },
+
+  // Cena inteira em perspectiva (câmera em terceira pessoa): os itens enfileirados já trazem a
+  // posição no mundo na matriz da raiz (o.m). view = { mvp: Float32Array(16) (coluna a coluna),
+  // eye: [x, y, z], key/rim: direções da luz }. Desenha a cor em [0, w]×[0, h] e a emissão logo
+  // abaixo (y de H/2) no canvas do motor; devolve { w, h } (a resolução usada) ou null
+  renderScene(view, W, H) {
+    const n = this.used;
+    this.used = 0;
+    if (!this.active || !n || !this.progsP) return null;
+    const vo = this.poseAll(n, 4);
+    const k = Math.min(1, this.W / W, (this.H / 2) / H), w = Math.floor(W * k), h = Math.floor(H * k);
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+    if (this.data.byteLength > this.bufBytes || !this.bufBytes) { gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW); this.bufBytes = this.data.byteLength; }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data.subarray(0, vo));
+    gl.disable(gl.SCISSOR_TEST);
+    gl.viewport(0, 0, this.W, this.H);
+    gl.clearColor(0, 0, 0, 0); gl.clearDepth(1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+    gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
+    const lt = this.light, key = view.key || this.keyDir, rim = view.rim || this.rimDir;
+    const use = (kk, pass) => {
+      const P = this.progsP[kk], L = P.loc;
+      gl.useProgram(P.p);
+      gl.enableVertexAttribArray(L.aPos); gl.vertexAttribPointer(L.aPos, 3, gl.FLOAT, false, 40, 0);
+      gl.enableVertexAttribArray(L.aNor); gl.vertexAttribPointer(L.aNor, 3, gl.FLOAT, false, 40, 12);
+      gl.enableVertexAttribArray(L.aCol); gl.vertexAttribPointer(L.aCol, 4, gl.FLOAT, false, 40, 24);
+      gl.uniform3fv(L.uKeyDir, key); gl.uniform3fv(L.uRimDir, rim);
+      gl.uniform3fv(L.uAmb, lt.amb); gl.uniform3fv(L.uKeyCol, lt.key);
+      gl.uniformMatrix4fv(L.uMVP, false, view.mvp);
+      gl.uniform3f(L.uView, view.eye[0], view.eye[1], view.eye[2]);
+      gl.uniform1f(L.uPersp, 1);
+      const fg = view.fog || [0, 0, 0, 400];
+      gl.uniform4f(L.uFog, fg[0], fg[1], fg[2], fg[3]);
+      gl.uniform1f(L.uPass, pass);
+      if (L.uTex) gl.uniform1i(L.uTex, 0);
+      if (L.uMat) gl.uniform1i(L.uMat, 1);
+      if (L.uNrm) gl.uniform1i(L.uNrm, 2);
+      return L;
+    };
+    for (let pass = 0; pass < 2; pass++) {
+      // cor em cima (y do canvas 0..h), emissão a partir da metade (H/2..H/2 + h)
+      gl.viewport(0, this.H - h - (pass ? this.H / 2 : 0), w, h);
+      let cur = -1, L = null;
+      for (let i = 0; i < n; i++) {
+        const it = this.items[i];
+        if (!it.vn) continue;
+        const tex = it.model.tex;
+        if (tex && this.progsP.length < 2) continue;
+        const want = tex ? 1 : 0;
+        if (want !== cur) { cur = want; L = use(want, pass); }
+        this.itemUniforms(L, it);
+        gl.drawArrays(gl.TRIANGLES, it.v0, it.vn);
+        it.ok = true;
+      }
+      if (!pass) gl.clear(gl.DEPTH_BUFFER_BIT);
+    }
+    return { w, h };
   },
 
   // Pele (skinning linear na CPU). sk = { bones: [N3], inv: Float32Array(12·ossos) (inversa da

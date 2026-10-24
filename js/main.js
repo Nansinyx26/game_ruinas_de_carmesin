@@ -6,6 +6,7 @@
 function boot() {
   game = new Game();
   window.__game = game;   // acesso pelo console para depuração
+  ThirdView.load();       // a última câmera usada (isométrica ou 3ª pessoa)
 }
 boot();
 

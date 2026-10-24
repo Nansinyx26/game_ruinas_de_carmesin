@@ -27,11 +27,13 @@ const angleLerp = (a, b, t) => a + angleDiff(a, b) * t;
 function approach(v, target, delta) { return v < target ? Math.min(v + delta, target) : Math.max(v - delta, target); }
 
 // Projeção isométrica 2:1 (coordenadas de mundo → coordenadas de tela)
-const isoX = (x, y) => x - y;
-const isoY = (x, y) => (x + y) * 0.5;
+// (let: a câmera em terceira pessoa troca as duas pela projeção dela ao desenhar os efeitos, js/terceira.js)
+let isoX = (x, y) => x - y;
+let isoY = (x, y) => (x + y) * 0.5;
 
 // Converte uma direção de TELA (dx, dy) numa direção de MUNDO normalizada
 function screenToWorldDir(dx, dy, out) {
+  if (typeof ThirdView !== 'undefined' && ThirdView.active()) return ThirdView.inputDir(dx, dy, out);   // relativo à câmera
   const wx = dy + dx * 0.5, wy = dy - dx * 0.5;
   const l = Math.hypot(wx, wy) || 1;
   out.x = wx / l; out.y = wy / l;

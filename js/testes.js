@@ -40,6 +40,7 @@ const EclipseTests = {
       this.pistolaOrion();
       this.armaduras3d();
       this.aliados();
+      this.terceiraPessoa();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -427,6 +428,26 @@ const EclipseTests = {
     for (const id of ['drakos', 'sera', 'orion']) PartyProgress.of(id).skills = {};
     g.enemies.length = 0; g.projectiles.clear(); HeroObjects.clear();
     RosterManager.setActive('kael');
+  },
+
+  // ------------------------------------------------- câmera em terceira pessoa
+  terceiraPessoa() {
+    const antes = ThirdView.on, o = { x: 0, y: 0 };
+    ThirdView.set(true, true);
+    // olhando como a câmera isométrica (para −x −y), o analógico anda igual às duas vistas
+    ThirdView.yaw = -3 * Math.PI / 4;
+    ThirdView.inputDir(1, 0, o);
+    this.ok('3ª pessoa: direita na tela = direita da vista isométrica', Math.abs(o.x - Math.SQRT1_2) < 0.01 && Math.abs(o.y + Math.SQRT1_2) < 0.01, JSON.stringify(o));
+    ThirdView.inputDir(0, -1, o);
+    this.ok('3ª pessoa: para cima = para onde a câmera olha', Math.abs(o.x + Math.SQRT1_2) < 0.01 && Math.abs(o.y + Math.SQRT1_2) < 0.01, JSON.stringify(o));
+    let erro = null;
+    try { game.renderWorld(game.ctx); } catch (e) { erro = e.message; }
+    this.ok('3ª pessoa: desenha a sala, os modelos e os efeitos sem erro', !erro, erro);
+    this.ok('3ª pessoa: a sala virou modelo 3D (piso, 4 paredes, pilares)', !!(ThirdView.roomModel && ThirdView.roomModel.walls.length === 4), ThirdView.roomModel && Object.keys(ThirdView.roomModel.nodes).length);
+    const P = ThirdView.proj(game.player.x, game.player.y, 40);
+    this.ok('3ª pessoa: o herói fica no meio da tela', P.vis && Math.abs(P.x - VIEW_W / 2) < VIEW_W * 0.1 && P.y > VIEW_H * 0.25 && P.y < VIEW_H * 0.8, JSON.stringify({ x: Math.round(P.x), y: Math.round(P.y) }));
+    this.ok('3ª pessoa: isoX volta ao normal depois dos efeitos', isoX(10, 3) === 7 && isoY(10, 4) === 7);
+    ThirdView.set(antes, true);
   },
 
   // ------------------------------------------------- armaduras vestidas em 3D

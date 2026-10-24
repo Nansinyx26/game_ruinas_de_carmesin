@@ -399,6 +399,8 @@ class Game {
     this.lookOff.x += (lk.x * 150 - this.lookOff.x) * lf;
     this.lookOff.y += (lk.y * 110 - this.lookOff.y) * lf;
     this.camera.follow(isoX(lx, ly) + this.lookOff.x, isoY(lx, ly) - 30 + this.lookOff.y, dt);
+    if (inp.pressed.camToggle) ThirdView.toggle();   // V: câmera isométrica / 3ª pessoa (js/terceira.js)
+    ThirdView.update(dt, inp);
 
     if (p.state === 'dead' && p.stateTime > 2.2 && !this.fadeCb) this.fadeTo(() => this.endRun(false));
     if (this.victoryTimer > 0) {
@@ -1285,6 +1287,7 @@ class Game {
   renderWorld(ctx) {
     const p = this.player, cam = this.camera, room = this.room, t = this.time;
     this.glowCount = 0;
+    if (ThirdView.active()) { ThirdView.render(ctx); return; }   // câmera em terceira pessoa
     ctx.fillStyle = PAL.bg;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     this.drawSky(ctx);

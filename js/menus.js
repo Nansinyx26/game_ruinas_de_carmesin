@@ -904,7 +904,8 @@ class Menus {
     const items = [
       ['play', 'JOGAR', 'play'],
       ['world', 'MUNDO ABERTO', 'star'],
-      ['thirdperson', 'MODO 3ª PESSOA (3D)', 'sword'],
+      ['world3p', 'MUNDO ABERTO · 3ª PESSOA', 'sword'],
+      ['thirdperson', 'ARENA 3D (TREINO)', 'sword'],
       ['settings', 'CONFIGURAÇÕES', 'gear'],
       ['credits', 'CRÉDITOS', 'star'],
       ['quit', 'SAIR', 'power']
@@ -918,7 +919,8 @@ class Menus {
     this.navList(inp, L.rects, (id) => {
       if (id === 'play') this.startSlashTransition('main');
       else if (id === 'thirdperson') game.startThirdPerson();
-      else if (id === 'world') game.startWorld();
+      else if (id === 'world') { ThirdView.set(false, true); game.startWorld(); }
+      else if (id === 'world3p') { ThirdView.set(true, true); game.startWorld(); }
       else if (id === 'settings') this.open('settings');
       else if (id === 'credits') this.open('credits');
       else if (id === 'install') this.installApp();
@@ -957,7 +959,9 @@ class Menus {
     const items = [
       ['continue', 'CONTINUAR', 'play', !has],
       ['new', 'NOVO JOGO', 'sword'],
-      ['thirdperson', 'MODO 3ª PESSOA (3D)', 'star'],
+      ['world', 'MUNDO ABERTO', 'star'],
+      ['world3p', 'MUNDO ABERTO · 3ª PESSOA', 'sword'],
+      ['thirdperson', 'ARENA 3D (TREINO)', 'star'],
       ['load', 'CARREGAR', 'folder'],
       ['settings', 'CONFIGURAÇÕES', 'gear'],
       ['quit', 'SAIR', 'exit']
@@ -971,6 +975,8 @@ class Menus {
     this.navList(inp, L.rects, (id) => {
       if (id === 'continue') { const n = SaveSys.last(); game.fadeTo(() => game.continueGame(n)); }
       else if (id === 'new') this.startNew();
+      else if (id === 'world') { ThirdView.set(false, true); game.startWorld(); }
+      else if (id === 'world3p') { ThirdView.set(true, true); game.startWorld(); }
       else if (id === 'thirdperson') game.startThirdPerson();
       else if (id === 'load') { this.slotMode = 'load'; this.open('load', Math.max(0, SaveSys.last() - 1)); }
       else if (id === 'settings') this.open('settings');
@@ -1479,8 +1485,9 @@ class Menus {
   // ------------------------------------------------------------------ pausa
   layPause() {
     const x = Math.max(32, Math.min(70, VIEW_W * 0.05)), y0 = 130, w = 320, h = 46, gap = 8;
-    const items = [['resume', 'RETOMAR', 'play'], ['skills', 'HABILIDADES', 'tree'], ['chars', t('rosterTitle'), 'people'], ['settings', 'CONFIGURAÇÕES', 'gear'],
-      ['restart', 'REINICIAR SETOR', 'restart'], ['menu', 'SAIR PARA O MENU', 'exit'], ['quit', 'SAIR DO JOGO', 'power']];
+    const items = [['resume', 'RETOMAR', 'play'], ['skills', 'HABILIDADES', 'tree'], ['chars', t('rosterTitle'), 'people'],
+      ['camera', `CÂMERA: ${ThirdView.on ? '3ª PESSOA' : 'ISOMÉTRICA'}`, 'sword'], ['world', game.world ? 'MAPA DO MUNDO' : 'MUNDO ABERTO', 'star'],
+      ['settings', 'CONFIGURAÇÕES', 'gear'], ['restart', game.world ? 'VOLTAR AO PORTAL' : 'REINICIAR SETOR', 'restart'], ['menu', 'SAIR PARA O MENU', 'exit'], ['quit', 'SAIR DO JOGO', 'power']];
     return { panel: { x, y: y0, w: w + 40, h: items.length * (h + gap) + 34 }, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x: x + 20, y: y0 + 22 + i * (h + gap), w, h })) };
   }
   updPause(inp) {
@@ -1492,7 +1499,14 @@ class Menus {
       if (id === 'resume') game.resume();
       else if (id === 'skills') game.openSkills('paused');
       else if (id === 'chars') this.open('char');
+      else if (id === 'camera') { ThirdView.toggle(); game.audio.play('uiSelect'); }
+      else if (id === 'world') {
+        if (game.world) { game.state = 'playing'; World.openMap(false); }
+        else this.ask('MUNDO ABERTO', 'Ir para o mundo aberto? O progresso da campanha fica salvo e você volta a ele pelo menu (CONTINUAR).',
+          [['IR', () => game.fadeTo(() => { game.saveGame(); game.startWorld(); })], ['CANCELAR', null]], '255,80,110');
+      }
       else if (id === 'settings') this.open('settings');
+      else if (id === 'restart' && game.world) game.fadeTo(() => World.respawn());
       else if (id === 'restart') this.ask('REINICIAR SETOR', 'Kael volta ao início deste setor. Níveis, habilidades e evoluções são mantidos.',
         [['REINICIAR', () => game.fadeTo(() => game.respawn(false))], ['CANCELAR', null]], '110,190,255');
       else if (id === 'menu') game.fadeTo(() => game.toMenu());

@@ -16,6 +16,7 @@ const TouchControls = {
   on: false,
   input: null,
   stick: { id: null, x0: 0, y0: 0, x: 0, y: 0 },
+  cam: { id: null, x: 0, y: 0 },   // dedo girando a câmera em 3ª pessoa (metade direita, fora dos botões)
   held: new Map(),            // id do toque → botão
   R: 64,                      // raio do analógico (unidades lógicas)
 
@@ -54,6 +55,7 @@ const TouchControls = {
     B.push({ id: 'pause', key: 'Escape', x: 44, y: 178, r: 24, icon: null, label: 'II' });
     B.push({ id: 'tree', key: 'Tab', x: 44, y: 236, r: 24, icon: null, label: 'TAB' });
     if (game.world) B.push({ id: 'map', key: 'KeyM', x: 44, y: 294, r: 24, icon: null, label: 'MAPA' });
+    B.push({ id: 'cam', key: 'KeyV', x: 44, y: game.world ? 352 : 294, r: 24, icon: null, label: typeof ThirdView !== 'undefined' && ThirdView.on ? 'ISO' : '3D' });   // câmera
     const A = game.hud && game.hud.L && game.hud.L.ab;
     if (A && A.d) {
       for (let k = 0; k < 4; k++) B.push({ id: 'ab' + k, key: 'Digit' + (k + 1), x: A.x0 + k * A.gap, y: A.y, r: A.d * 1.25, hud: true });
@@ -80,8 +82,9 @@ const TouchControls = {
     for (const t of e.changedTouches) {
       const p = game.toLogical(t.clientX, t.clientY), b = this.hit(p.x, p.y);
       if (b) { this.held.set(t.identifier, b); this.press(b.key); continue; }
-      const S = this.stick;
+      const S = this.stick, C = this.cam;
       if (S.id === null && p.x < VIEW_W * 0.5) { S.id = t.identifier; S.x0 = S.x = p.x; S.y0 = S.y = p.y; }
+      else if (C.id === null && p.x >= VIEW_W * 0.5 && typeof ThirdView !== 'undefined' && ThirdView.on) { C.id = t.identifier; C.x = p.x; C.y = p.y; }
     }
     this.syncStick();
   },
@@ -89,8 +92,9 @@ const TouchControls = {
     if (!this.active()) return;
     e.preventDefault();
     for (const t of e.changedTouches) {
-      if (t.identifier !== this.stick.id) continue;
       const p = game.toLogical(t.clientX, t.clientY);
+      if (t.identifier === this.cam.id) { ThirdView.mouseDX += (p.x - this.cam.x) * 1.6; ThirdView.mouseDY += (p.y - this.cam.y) * 1.2; this.cam.x = p.x; this.cam.y = p.y; continue; }
+      if (t.identifier !== this.stick.id) continue;
       this.stick.x = p.x; this.stick.y = p.y;
     }
     this.syncStick();
@@ -101,6 +105,7 @@ const TouchControls = {
       const b = this.held.get(t.identifier);
       if (b) { this.release(b.key); this.held.delete(t.identifier); mine = true; }
       if (t.identifier === this.stick.id) { this.stick.id = null; mine = true; }
+      if (t.identifier === this.cam.id) { this.cam.id = null; mine = true; }
     }
     if (mine && e.cancelable) e.preventDefault();
     this.syncStick();
@@ -121,7 +126,7 @@ const TouchControls = {
   releaseAll() {
     for (const b of this.held.values()) this.release(b.key);
     this.held.clear();
-    this.stick.id = null;
+    this.stick.id = null; this.cam.id = null;
     if (this.input) this.input.touchAxes.x = this.input.touchAxes.y = 0;
   },
   // Tela cheia e orientação deitada (o navegador pode recusar: segue normal)
