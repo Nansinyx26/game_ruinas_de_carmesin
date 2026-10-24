@@ -362,19 +362,45 @@ class Room {
   // na margem, o chão escurecendo até o horizonte; uma trilha clara liga as saídas ao centro
   drawFloorAberto(ctx, r) {
     const n = this.def.tiles, th = this.theme, [fh, fs, fl] = th.floor, m = Math.round(this.margem / TILE);
+    // textura do bioma no plano do chão (js/texturas.js) e a cor da terra distante, onde a borda some
+    const pad = typeof TexturasMundo !== 'undefined' ? TexturasMundo.padraoIso(ctx, this.def.theme) : null;
+    const longe = pad && typeof Ambiente3P !== 'undefined' ? Ambiente3P.longeIso(this.def.theme) : null;
+    let varia = null, vg = null;
+    if (pad) {
+      const a = -m * TILE, b = (n + m) * TILE;
+      ctx.fillStyle = pad;
+      ctx.beginPath(); ctx.moveTo(isoX(a, a), isoY(a, a)); ctx.lineTo(isoX(b, a), isoY(b, a)); ctx.lineTo(isoX(b, b), isoY(b, b)); ctx.lineTo(isoX(a, b), isoY(a, b)); ctx.closePath(); ctx.fill();
+      // variação de luz e a borda: um pixel por placa, desenhado no plano com suavização (sem emendas)
+      const N = n + 2 * m;
+      varia = document.createElement('canvas'); varia.width = varia.height = N;
+      vg = varia.getContext('2d');
+    }
     for (let i = -m; i < n + m; i++) {
       for (let j = -m; j < n + m; j++) {
         const x0 = i * TILE, y0 = j * TILE, x1 = x0 + TILE, y1 = y0 + TILE;
         const pts = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => [isoX(x, y), isoY(x, y)]);
         const fora = Math.max(0, -i, -j, i - n + 1, j - n + 1);          // tiles além da borda
         const onda = Math.sin(i * 0.7 + j * 0.31) * 0.5 + Math.sin(i * 0.23 - j * 0.57) * 0.5;
-        const l = (fl + onda * 2.2 + r() * 1.6) * Math.max(0.25, 1 - fora * 0.17);
-        ctx.fillStyle = `hsl(${fh + onda * 6 + r() * 4},${fs + r() * 4}%,${l.toFixed(1)}%)`;
-        ctx.beginPath(); ctx.moveTo(pts[0][0] - 0.6, pts[0][1]);
-        for (let k = 1; k < 4; k++) ctx.lineTo(pts[k][0] + (k === 2 ? 0.6 : 0), pts[k][1] + (k === 2 ? 0.6 : 0));
-        ctx.closePath(); ctx.fill();
-        if (fora < 2 && r() < 0.8) this.floorDetail(ctx, r, 'natural', isoX(x0 + TILE / 2, y0 + TILE / 2), isoY(x0 + TILE / 2, y0 + TILE / 2), i, j, pts);
+        if (vg) {
+          const v = onda * 0.6 + (r() - 0.5) * 0.4;
+          vg.fillStyle = fora && longe ? `rgba(${longe},${Math.min(1, fora * 0.26).toFixed(3)})` : v > 0 ? `rgba(255,248,230,${(v * 0.1).toFixed(3)})` : `rgba(0,0,0,${(-v * 0.2).toFixed(3)})`;
+          vg.fillRect(i + m, j + m, 1, 1);
+        } else {
+          const l = (fl + onda * 2.2 + r() * 1.6) * Math.max(0.25, 1 - fora * 0.17);
+          ctx.fillStyle = `hsl(${fh + onda * 6 + r() * 4},${fs + r() * 4}%,${l.toFixed(1)}%)`;
+          ctx.beginPath(); ctx.moveTo(pts[0][0] - 0.6, pts[0][1]);
+          for (let k = 1; k < 4; k++) ctx.lineTo(pts[k][0] + (k === 2 ? 0.6 : 0), pts[k][1] + (k === 2 ? 0.6 : 0));
+          ctx.closePath(); ctx.fill();
+        }
+        if (fora < 2 && r() < (pad ? 0.3 : 0.8)) this.floorDetail(ctx, r, 'natural', isoX(x0 + TILE / 2, y0 + TILE / 2), isoY(x0 + TILE / 2, y0 + TILE / 2), i, j, pts);
       }
+    }
+    if (varia) {
+      ctx.save();
+      ctx.transform(1, 0.5, -1, 0.5, 0, 0);   // plano do chão (isoX = x − y, isoY = (x + y) / 2)
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(varia, -m * TILE, -m * TILE, (n + 2 * m) * TILE, (n + 2 * m) * TILE);
+      ctx.restore();
     }
     // trilhas: do centro até o meio de cada borda (onde ficam as passagens)
     const w = this.w, h = this.h, S = th.speck || ['120,120,120'];

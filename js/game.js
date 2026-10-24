@@ -1270,6 +1270,8 @@ class Game {
   // Fundo atrás da sala: a cidade sob o céu artificial, o topo da torre ou a escuridão
   drawSky(ctx) {
     const th = this.room.theme, cam = this.camera, t = this.realTime;
+    // mundo aberto, campo aberto: céu da hora e do bioma, relevo e terra ao longe (js/terceira_ambiente.js)
+    if (this.world && th.deco === 'natural' && typeof Ambiente3P !== 'undefined' && Ambiente3P.ceuIso(ctx, this.room, cam, t)) { this.drawSkyFlash(ctx); return; }
     if (th.sky === 'indoor') {
       const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H * 0.35, 40, VIEW_W / 2, VIEW_H * 0.35, VIEW_W * 0.75);
       g.addColorStop(0, rgba(th.lamp, 0.05)); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -1289,7 +1291,10 @@ class Game {
       }
       ctx.restore();
     }
-    // Relâmpago distante
+    this.drawSkyFlash(ctx);
+  }
+  // Relâmpago distante
+  drawSkyFlash(ctx) {
     if (this.skyFlash > 0) {
       ctx.save();
       ctx.fillStyle = `rgba(170,210,255,${(0.18 * this.skyFlash).toFixed(3)})`;

@@ -11,6 +11,11 @@
 // paredes, pilares, luminárias), os modelos e as sombras numa passada só com a câmera; os
 // efeitos 2D do jogo (partículas, auras, projéteis, números de dano, barras de vida) são
 // desenhados com isoX/isoY trocados pela projeção da câmera, então aparecem no lugar certo.
+// Movimento: a câmera segue o herói por uma mola (com antecipação do movimento), balança de
+// leve com os passos, afunda na aterrissagem e abre o campo de visão na esquiva; o corpo do
+// herói inclina para a frente ao correr e para dentro das curvas; poeira nos passos no campo aberto.
+// Ambientação (js/terceira_ambiente.js, Ambiente3P): céu por bioma e hora, horizonte, luz e
+// névoa; chão com textura e relevo no campo aberto (js/texturas.js); detalhes e partículas.
 // ---------------------------------------------------------------------------
 const THIRD_KEY = 'eclipse_zero_camera';
 // HSL (0–1) → [r, g, b] (0–1): as cores dos temas das salas vêm em HSL
@@ -28,6 +33,9 @@ const ThirdView = {
   mvp: new Float32Array(16), V: new Float32Array(16), Pm: new Float32Array(16), focal: 1,
   view: { mvp: null, eye: null, key: [0, 0, 1], rim: [0, 0, 1] },
   room: null, roomModel: null, roomO: { m: M3.make() }, queued: [], P: { x: 0, y: 0, w: 1, k: 1, vis: false },
+  chaoModel: null, chaoO: { m: M3.make(), emi: 1 },
+  // movimento da câmera e do corpo (update)
+  alvo: [0, 0, 0], alvoOk: false, bobF: 0, bob: 0, quedaZ: 0, noAr: false, vzAnt: 0, fovK: 0, inclina: 0, giro: 0, faceAnt: 0, passoN: 0,
 
   // Preferência guardada (a última câmera usada)
   load() { try { this.on = localStorage.getItem(THIRD_KEY) === '3p' && R3D.active; } catch (e) { this.on = false; } if (this.on) this.init(); },
@@ -83,6 +91,37 @@ const ThirdView = {
       if (Math.abs(d) < 2.3) this.yaw += clamp(d, -1, 1) * Math.min(1, sp / 220) * 1.3 * dt;
     }
     this.curDist += (this.dist - this.curDist) * Math.min(1, dt * 6);
+    this.movimento(dt, p, sp);
+    Ambiente3P.update(dt);
+  },
+  // Câmera com mola e o balanço do corpo (ver o cabeçalho)
+  movimento(dt, p, sp) {
+    const A = this.alvo, tx = p.x + (p.vx || 0) * 0.16, ty = p.y + (p.vy || 0) * 0.16;
+    if (!this.alvoOk || dist2(A[0], A[1], p.x, p.y) > 320 * 320) { A[0] = tx; A[1] = ty; A[2] = p.z || 0; this.alvoOk = true; }   // troca de zona: sem mola
+    const kf = 1 - Math.exp(-dt * 9);
+    A[0] += (tx - A[0]) * kf; A[1] += (ty - A[1]) * kf;
+    A[2] += ((p.z || 0) * 0.6 - A[2]) * (1 - Math.exp(-dt * 6));   // no pulo a câmera sobe só um pouco
+    const corre = p.state === 'run' && sp > 40;
+    if (corre) this.bobF += dt * sp / 34;
+    this.bob = corre ? Math.abs(Math.sin(this.bobF)) * 1.6 * Math.min(1, sp / 200) : this.bob * Math.exp(-dt * 8);
+    if (this.noAr && !p.air) this.quedaZ = -Math.min(9, 3 + Math.max(0, -this.vzAnt) * 0.02);   // aterrissagem
+    this.noAr = !!p.air; this.vzAnt = p.vz || 0;
+    this.quedaZ *= Math.exp(-dt * 7);
+    const dash = p.state === 'dash';
+    this.fovK += ((dash ? 1 : 0) - this.fovK) * (1 - Math.exp(-dt * (dash ? 14 : 5)));
+    // inclinação: para a frente com a velocidade, para dentro da curva com o giro do rosto
+    const f = typeof p.facing === 'number' ? p.facing : 0, w = dt > 0 ? angleDiff(this.faceAnt, f) / dt : 0;
+    this.faceAnt = f;
+    const inc = corre ? Math.min(1, sp / 230) * 0.12 : dash ? 0.2 : 0, giro = corre ? clamp(-w * 0.05, -0.16, 0.16) : 0;
+    this.inclina += (inc - this.inclina) * (1 - Math.exp(-dt * 8));
+    this.giro += (giro - this.giro) * (1 - Math.exp(-dt * 8));
+    // poeira dos passos no campo aberto (na cor do chão do bioma)
+    const R = game.room, n = Math.floor(this.bobF / Math.PI);
+    if (corre && sp > 120 && R && R.aberto && n !== this.passoN) {
+      this.passoN = n;
+      const cor = { deserto: '196,160,112', neve: '222,232,246', floresta: '92,84,62', lagoa: '110,140,136', vulcao: '74,62,60' }[R.def.theme] || '90,90,96';
+      game.particles.dust(p.x - Math.cos(f) * 8, p.y - Math.sin(f) * 8, 2, 7, 36, cor);
+    }
   },
   // Direção no mundo para o analógico (dx, dy da tela): para cima = para onde a câmera olha
   inputDir(dx, dy, out) {
@@ -94,8 +133,9 @@ const ThirdView = {
 
   // ------------------------------------------------------------------ câmera
   camera(p, R) {
-    const T = this.tgt, E = this.eye;
-    T[0] = p.x; T[1] = p.y; T[2] = (p.z || 0) + this.tz;
+    const T = this.tgt, E = this.eye, A = this.alvo;
+    if (this.alvoOk) { T[0] = A[0]; T[1] = A[1]; T[2] = A[2] + this.tz + this.bob + this.quedaZ; }
+    else { T[0] = p.x; T[1] = p.y; T[2] = (p.z || 0) + this.tz; }
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch), fx = Math.cos(this.yaw), fy = Math.sin(this.yaw);
     // não atravessa as paredes: aproxima até a câmera caber na sala
     let d = this.curDist;
@@ -118,7 +158,7 @@ const ThirdView = {
     V[1] = u[0]; V[5] = u[1]; V[9] = u[2]; V[13] = -(u[0] * E[0] + u[1] * E[1] + u[2] * E[2]);
     V[2] = -f[0]; V[6] = -f[1]; V[10] = -f[2]; V[14] = f[0] * E[0] + f[1] * E[1] + f[2] * E[2];
     V[3] = 0; V[7] = 0; V[11] = 0; V[15] = 1;
-    const near = 6, far = 6000, F = 1 / Math.tan(this.fov / 2), asp = VIEW_W / VIEW_H, Pm = this.Pm;
+    const near = 6, far = 6000, F = 1 / Math.tan((this.fov + this.fovK * 0.12) / 2), asp = VIEW_W / VIEW_H, Pm = this.Pm;   // a esquiva abre ~7°
     Pm.fill(0);
     Pm[0] = F / asp; Pm[5] = F; Pm[10] = (far + near) / (near - far); Pm[11] = -1; Pm[14] = (2 * far * near) / (near - far);
     this.focal = F;
@@ -152,7 +192,10 @@ const ThirdView = {
     const [fh, fs, fl] = th.floor, [wh, ws] = th.wall;
     const r = mulberry32(R.seed || 1);
     const floor = new G3(), mg = R.aberto ? Math.round(R.margem / T) : 0;
-    for (let i = -mg; i < n + mg; i++) for (let j = -mg; j < n + mg; j++) {
+    // campo aberto com textura (js/texturas.js): o piso vira um modelo à parte (chaoModel)
+    const tipoAmb = Ambiente3P.tipo(R), comTextura = R.aberto && TexturasMundo.tem(tipoAmb) && (typeof Settings === 'undefined' || Settings.v.quality > 0);
+    this.chaoModel = comTextura ? this.chaoTexturizado(R, tipoAmb) : null;
+    if (!this.chaoModel) for (let i = -mg; i < n + mg; i++) for (let j = -mg; j < n + mg; j++) {
       // campo aberto: chão sem xadrez, escurecendo além da borda (até o horizonte)
       const fora = Math.max(0, -i, -j, i - n + 1, j - n + 1);
       const l = R.aberto ? (fl * 0.72 + Math.sin(i * 0.7 + j * 0.31) * 1.2 + r() * 0.8) * Math.max(0.3, 1 - fora * 0.17) : fl * 0.72 + ((i + j) % 2 ? 1.4 : 0) + r() * 1.2;
@@ -165,7 +208,8 @@ const ThirdView = {
       floor.quad([0, i * T - 0.6, 0.12], [w, i * T - 0.6, 0.12], [w, i * T + 0.6, 0.12], [0, i * T + 0.6, 0.12], hex(fh, fs, fl * 1.4), 0.08);
     }
     const root = new N3('sala');
-    root.add(new N3('piso', floor));
+    if (floor.d.length) root.add(new N3('piso', floor));
+    Ambiente3P.decorar(root, R);   // chão até o horizonte e detalhes do bioma (js/terceira_ambiente.js)
     // paredes: segmentos entre as aberturas (porta da campanha no norte; passagens do mundo no meio de cada lado)
     const wallCol = hex(wh, ws, 13), trim = rgbHex(th.lamp), gaps = { N: [], S: [], W: [], E: [] };
     if (R.def.waves && R.def.waves.length && R.door) gaps.N.push([R.door.x - R.door.halfW, R.door.x + R.door.halfW]);
@@ -236,25 +280,37 @@ const ThirdView = {
     return m;
   },
   roomFor(R) {
-    if (this.room !== R) { this.room = R; this.roomModel = this.buildRoom(R); }
+    if (this.room !== R) {
+      if (this.chaoModel && this.chaoModel.tex) R3D.freeTex(this.chaoModel.tex);   // o atlas da sala anterior
+      this.room = R; this.roomModel = this.buildRoom(R);
+    }
     return this.roomModel;
+  },
+  // Piso do campo aberto com o atlas de cor e relevo da sala (programa com textura do motor:
+  // nos vértices, (u, v, 0, emissão) no lugar da cor)
+  chaoTexturizado(R, tipo) {
+    const P = AMB3P[tipo], atl = TexturasMundo.atlas(R, tipo, P && P.chao ? P.chao : '#202028');
+    if (!atl) return null;
+    const g = new G3(), m = atl.m, L = atl.L, N = 6, emi = tipo === 'lagoa' ? 0.35 : 0;
+    const v = (x, y) => [x, y, 0, 0, 0, 1, (x + m) / L, (y + m) / L, 0, emi];
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const x0 = -m + (L * i) / N, y0 = -m + (L * j) / N, x1 = x0 + L / N, y1 = y0 + L / N;
+      for (const q of [v(x0, y0), v(x1, y0), v(x1, y1), v(x0, y0), v(x1, y1), v(x0, y1)]) g.d.push(...q);
+    }
+    const model = new Model3(new N3('chao', g));
+    model.tex = { canvas: atl.cor, mat: atl.alt, pbr: true, bump: 1.6 };
+    return model;
   },
 
   // ------------------------------------------------------------------ desenho do quadro
   render(ctx) {
     const g = game, p = g.player, R = g.room, t = g.time;
     this.camera(p, R);
-    const th = R.theme;
-    // fundo: a cor escura do tema, mais clara no alto (céu ou teto)
-    const bg = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    bg.addColorStop(0, rgba(th.lamp, 0.16)); bg.addColorStop(0.55, rgba(th.dark, 1)); bg.addColorStop(1, '#000');
+    // fundo: céu do bioma e da hora, horizonte e terra distante (ou o teto dos interiores);
+    // a luz e a névoa combinam com ele (js/terceira_ambiente.js)
     ctx.fillStyle = '#02040a'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    const lc = th.lamp.split(',').map((v) => v / 255);
-    const dia = g.world && typeof WorldTime !== 'undefined' ? WorldTime.ambiente(th) : 1;   // mundo aberto: mais escuro à noite
-    R3D.light.amb = [(0.34 + lc[0] * 0.16) * dia, (0.38 + lc[1] * 0.16) * dia, (0.5 + lc[2] * 0.16) * dia];
-    const dk = th.dark.split(',').map((v) => v / 255);
-    this.view.fog = [dk[0] * 1.4 + 0.01, dk[1] * 1.4 + 0.01, dk[2] * 1.4 + 0.015, 300];   // névoa na cor escura do tema
+    const C = Ambiente3P.ceu(ctx, R, g.realTime);
+    this.view.fog = Ambiente3P.luzes(R, C, this.view);
     g.use3D = true;
     const Q = this.queued;
     Q.length = 0;
@@ -275,6 +331,7 @@ const ThirdView = {
     M3.trs(this.roomO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]);
     const ri = R3D.queue(rm, hideNear, null, this.roomO);
     ri.ent = null; Q.push(ri);
+    if (this.chaoModel) { M3.trs(this.chaoO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]); const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi); }
     // modelos (as mesmas chaves e poses da vista isométrica), já no lugar do mundo
     const place = (it, e) => {
       if (!it) return null;
@@ -296,7 +353,9 @@ const ThirdView = {
     const o3 = g.opts3(p, p.flash > 0 ? 0.9 : 0);
     o3.tint = heroArmorTint(p.def.id);
     sombra(p, 22);
-    p.spr = place(g.queue3(mk, p, o3), p);
+    const itP = g.queue3(mk, p, o3);
+    if (itP) { itP.o.pitch = (itP.o.pitch || 0) + this.inclina; itP.o.roll = (itP.o.roll || 0) + this.giro; }   // inclinação do corpo
+    p.spr = place(itP, p);
     for (const e of g.enemies) {
       if ((e.state === 'spawn' && e.stateTime < e.spawnDur * 0.5) || e.oculto > 0) continue;   // enterrado: some
       sombra(e, (e.radius || 16) * 1.3);
@@ -318,12 +377,14 @@ const ThirdView = {
     const W = Math.max(2, Math.round(VIEW_W * g.scale)), H = Math.max(2, Math.round(VIEW_H * g.scale));
     let res = null;
     try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
+    Ambiente3P.fim();   // a luz do sol volta ao padrão (a vista isométrica usa a mesma luz)
     if (res) {
       ctx.drawImage(R3D.canvas, 0, 0, res.w, res.h, 0, 0, VIEW_W, VIEW_H);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       ctx.drawImage(R3D.canvas, 0, R3D.H / 2, res.w, res.h, 0, 0, VIEW_W, VIEW_H);
       ctx.restore();
     }
+    Ambiente3P.desenharAr(ctx, R, g.realTime);   // pólen, poeira, cinzas, cristais de gelo, névoa baixa
     // brilhos dos modelos (espada, olhos, núcleos) pelas âncoras, projetadas
     g.glowCount = 0;
     for (const it of Q) {
@@ -452,6 +513,14 @@ const ThirdView = {
       g.texts.draw(ctx);
     } finally {
       isoX = ix; isoY = iy;
+    }
+    // esquiva: linhas de velocidade nas bordas da tela (com o pós-processamento ligado)
+    if (this.fovK > 0.08 && (typeof Settings === 'undefined' || Settings.v.postfx > 0)) {
+      const r = mulberry32((Math.floor(g.realTime * 30) * 2654435761) >>> 0), cx = VIEW_W / 2, cy = VIEW_H * 0.45;
+      ctx.save(); ctx.strokeStyle = `rgba(200,225,255,${(0.22 * this.fovK).toFixed(3)})`; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let i = 0; i < 26; i++) { const a = r() * TAU, d0 = VIEW_H * (0.42 + r() * 0.1), d1 = d0 + 60 + r() * 120; ctx.moveTo(cx + Math.cos(a) * d0 * 1.6, cy + Math.sin(a) * d0); ctx.lineTo(cx + Math.cos(a) * d1 * 1.6, cy + Math.sin(a) * d1); }
+      ctx.stroke(); ctx.restore();
     }
   },
 };

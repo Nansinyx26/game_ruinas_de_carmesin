@@ -732,6 +732,7 @@ const EclipseTests = {
       this.campanhas();
       this.mapa();
       this.mmo();
+      this.paisagem();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
@@ -1258,6 +1259,72 @@ const EclipseTests = {
     this.ok('pose da armadura sem erro', !erro, erro);
     if (antes === undefined) delete RosterManager.armor.lyra; else RosterManager.armor.lyra = antes;
     this.ok('volta ao modelo de sempre ao trocar', heroModelKey(lyra) !== 'arm_lyra_n1');
+  },
+
+  // Chão com textura e céu do mundo aberto (js/texturas.js, js/terceira_ambiente.js) e o
+  // movimento da câmera em 3ª pessoa (chamado de dentro de mundo(), por último)
+  paisagem() {
+    const g = game, p = g.player, h0 = World.state.hora, BIO = ['floresta', 'deserto', 'neve', 'lagoa', 'vulcao'];
+    for (const tipo of BIO) {
+      const T = TexturasMundo.bioma(tipo), px = T && T.cor.getContext('2d').getImageData(0, 0, T.S, T.S).data;
+      let mn = 1e9, mx = 0;
+      if (px) for (let i = 0; i < px.length; i += 4 * 97) { const l = px[i] + px[i + 1] + px[i + 2]; mn = Math.min(mn, l); mx = Math.max(mx, l); }
+      this.ok(`textura ${tipo}: cor e relevo, com variação, guardada`, T && T.alt && T.S >= 256 && mx - mn > 40 && TexturasMundo.bioma(tipo) === T, T && `${T.S} · ${mn}..${mx}`);
+    }
+    // cada bioma: vista isométrica e 3ª pessoa, de dia, ao entardecer e à noite
+    let erro = null;
+    const semChao = [], key0 = R3D.light.key.slice(), keyMudou = [], ceu = {};
+    try {
+      for (const tipo of BIO) {
+        const z = Object.values(WORLD_ZONES).find((q) => q.theme === tipo && q.aberto && !q.instancia);
+        if (!z) { semChao.push(tipo + ' (sem zona)'); continue; }
+        World.loadZone(z.id, null);
+        for (const h of [12, 18.4, 0]) { World.state.hora = h; g.renderWorld(g.ctx); }
+        ThirdView.set(true, true);
+        for (const h of [12, 18.4, 0]) {
+          World.state.hora = h; g.renderWorld(g.ctx);
+          if (R3D.light.key.some((v, i) => v !== key0[i])) keyMudou.push(`${tipo} ${h}h`);
+        }
+        if (!(ThirdView.chaoModel && ThirdView.chaoModel.tex && ThirdView.chaoModel.tex.canvas)) semChao.push(tipo);
+        if (tipo === 'deserto') {
+          const cv = document.createElement('canvas'), c2 = cv.getContext('2d');
+          cv.width = VIEW_W; cv.height = VIEW_H;
+          for (const h of [12, 0]) { World.state.hora = h; Ambiente3P.ceu(c2, g.room, 0); const d = c2.getImageData(VIEW_W >> 1, 2, 1, 1).data; ceu[h] = d[0] + d[1] + d[2]; }
+        }
+        ThirdView.set(false, true);
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 2).join(' | ') : e.message; }
+    if (ThirdView.on) ThirdView.set(false, true);
+    this.ok('paisagem: os 5 biomas desenham (iso e 3ª pessoa, dia, tarde e noite)', !erro, erro);
+    this.ok('3ª pessoa: chão do campo aberto com textura em todos os biomas', !erro && semChao.length === 0, semChao.join(', '));
+    this.ok('3ª pessoa: a luz do sol volta ao normal depois do quadro', keyMudou.length === 0, keyMudou.join(', '));
+    this.ok('céu: o meio-dia é mais claro que a meia-noite', ceu[12] > ceu[0] + 60, JSON.stringify(ceu));
+    // sem textura na qualidade baixa: o piso de ladrilhos de antes
+    const q0 = Settings.v.quality;
+    Settings.v.quality = 0; ThirdView.room = null;
+    let baixo = null;
+    try { ThirdView.roomFor(g.room); baixo = ThirdView.chaoModel; } catch (e) { baixo = e.message; }
+    Settings.v.quality = q0; ThirdView.room = null;
+    this.ok('qualidade baixa: piso sem textura (ladrilhos)', baixo === null, baixo);
+    // câmera em mola: correndo, o herói inclina para a frente, entra na curva e a câmera balança
+    const sv = { st: p.state, vx: p.vx, vy: p.vy, f: p.facing, air: p.air };
+    ThirdView.set(true, true);
+    p.state = 'run'; p.vx = 220; p.vy = 0; p.air = false; p.facing = 0;
+    let bob = 0;
+    for (let i = 0; i < 60; i++) { ThirdView.movimento(1 / 60, p, 220); bob = Math.max(bob, ThirdView.bob); }
+    this.ok('3ª pessoa: correndo, o herói inclina para a frente', ThirdView.inclina > 0.09, ThirdView.inclina);
+    this.ok('3ª pessoa: a câmera balança com os passos', bob > 1, bob);
+    this.ok('3ª pessoa: a câmera mira à frente do herói (mola)', ThirdView.alvo[0] > p.x + 20, ThirdView.alvo[0] - p.x);
+    for (let i = 0; i < 30; i++) { p.facing += 2 / 60; ThirdView.movimento(1 / 60, p, 220); }
+    this.ok('3ª pessoa: inclina para dentro da curva', ThirdView.giro < -0.05, ThirdView.giro);
+    p.state = 'idle'; p.vx = p.vy = 0;
+    for (let i = 0; i < 60; i++) ThirdView.movimento(1 / 60, p, 0);
+    this.ok('3ª pessoa: parado, volta a ficar reto', Math.abs(ThirdView.inclina) < 0.01 && Math.abs(ThirdView.giro) < 0.01 && ThirdView.bob < 0.05, `${ThirdView.inclina} ${ThirdView.giro} ${ThirdView.bob}`);
+    Ambiente3P.update(1 / 60);
+    this.ok('3ª pessoa: partículas no ar do bioma', Ambiente3P.parts.length > 0 && Ambiente3P.partTipo === 'brasas', `${Ambiente3P.parts.length} ${Ambiente3P.partTipo}`);
+    ThirdView.set(false, true);
+    p.state = sv.st; p.vx = sv.vx; p.vy = sv.vy; p.facing = sv.f; p.air = sv.air;
+    World.state.hora = h0;
   },
 
   // Resultado na tela (canto superior esquerdo), por cima do jogo

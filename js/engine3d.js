@@ -216,7 +216,7 @@ uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
-  return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.85);
+  return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.96);
 }
 void main() {
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
@@ -281,7 +281,7 @@ uniform vec3 uView; uniform float uPersp; uniform vec4 uFog;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
-  return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.85);
+  return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.96);
 }
 void main() {
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
@@ -614,7 +614,7 @@ const R3D = {
     if (tex) {
       // mapa de material (metal, aspereza, relevo), se o modelo tiver um; texOf cria na unidade ativa,
       // então as duas texturas são resolvidas antes de ligar cada uma na sua unidade
-      const mt = tex.mat ? (tex.matTex || (tex.matTex = { src: tex.mat })) : null;
+      const mt = tex.mat ? (tex.matTex || (tex.matTex = typeof tex.mat === 'string' ? { src: tex.mat } : { canvas: tex.mat })) : null;
       const nt = tex.nrm ? (tex.nrmTex || (tex.nrmTex = { src: tex.nrm })) : null;
       const tg = this.texOf(tex), mg = mt ? this.texOf(mt) : null, ng = nt ? this.texOf(nt) : null;
       const matOn = mg && mg !== this.blankTex, nrmOn = ng && ng !== this.blankTex;
@@ -757,11 +757,14 @@ const R3D = {
     return vo;
   },
 
-  // Textura WebGL de um modelo ({ src } com data URI); a provisória vale até a imagem carregar
+  // Textura WebGL de um modelo ({ src } com data URI, ou { canvas } já pintado, como o atlas do
+  // chão da 3ª pessoa); a provisória vale até a imagem carregar
   texOf(tex) {
     if (tex.gl) return tex.gl;
-    if (!tex.img) { tex.img = new Image(); tex.img.src = tex.src; }
-    if (!tex.img.complete || !tex.img.naturalWidth) return this.blankTex;
+    if (tex.canvas) tex.img = tex.canvas;
+    else if (!tex.img) { tex.img = new Image(); tex.img.src = tex.src; }
+    const iw = tex.img.naturalWidth || tex.img.width, ih = tex.img.naturalHeight || tex.img.height;
+    if (!tex.canvas && (!tex.img.complete || !tex.img.naturalWidth)) return this.blankTex;
     const gl = this.gl, t = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
@@ -769,7 +772,7 @@ const R3D = {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     // Lados potência de 2: mipmaps (o Kael pequeno na tela não cintila)
-    const im = tex.img, pot = !(im.naturalWidth & (im.naturalWidth - 1)) && !(im.naturalHeight & (im.naturalHeight - 1));
+    const pot = !(iw & (iw - 1)) && !(ih & (ih - 1));
     if (pot) gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, pot ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
     // Filtragem anisotrópica: a câmera isométrica vê as roupas e placas de viés, e só o mipmap
@@ -782,6 +785,11 @@ const R3D = {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     tex.gl = t;
     return t;
+  },
+  // Libera as texturas WebGL de um modelo que não vai mais ser usado (o atlas da sala anterior)
+  freeTex(tex) {
+    if (!tex || !this.gl) return;
+    for (const t of [tex, tex.matTex, tex.nrmTex]) if (t && t.gl) { this.gl.deleteTexture(t.gl); t.gl = null; }
   },
 
   // Desenha a passada de cor do sprite com os pés em (sx, sy) (coordenadas do mundo isométrico)
