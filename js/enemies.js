@@ -145,6 +145,7 @@ class Enemy extends Entity {
     const p = game.player;
     if (this.hitThisAttack || p.state === 'dead') return false;
     if (!Hitbox.test(shape, this.x, this.y, dir, p.x, p.y, p.radius)) return false;
+    if (p.z > PULO.ALTO + 10 && !this.isBoss) return false;   // golpe baixo: o herói passou por cima
     if (p.state === 'dash' && p.invuln > 0) {
       if (!this.dodgeCredited) { this.dodgeCredited = true; game.onPerfectDodge(p); }
       return false;
@@ -933,6 +934,11 @@ function createEnemy(type, x, y, level) {
 function damagePlayerFrom(src, x, y, dmg, kb) {
   const p = game.player;
   if (p.state === 'dead') return false;
+  // pulo por cima da onda ou do impacto no chão (js/heroes/pulo_defesa.js): vale como esquiva perfeita
+  if (p.z > PULO.ALTO) {
+    if (!src.dodgeCredited) { src.dodgeCredited = true; game.onPerfectDodge(p); }
+    return false;
+  }
   if (p.state === 'dash' && p.invuln > 0) {
     if (!src.dodgeCredited) { src.dodgeCredited = true; game.onPerfectDodge(p); }
     return false;

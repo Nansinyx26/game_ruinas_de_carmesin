@@ -113,6 +113,7 @@ class Player extends Entity {
     this.attack = null;
     this.dashCd = 0; this.dashDirX = 1; this.dashDirY = 0;
     this.dashBuffer = 0; this.specialBuffer = 0;
+    this.air = false; this.vz = 0; this.landT = 0; this.jumpBuffer = 0;   // pulo e aterrissagem (js/heroes/pulo_defesa.js)
     this.invuln = 0;
     this.chargeTime = 0; this.chargeLevel = 0;
     this.specialFired = false;
@@ -200,7 +201,7 @@ class Player extends Entity {
     if (this.wpnFlash > 0) this.wpnFlash -= dt;
     const st = this.state, A = this.wpnAnim;
     if (st === 'dead') return;
-    if (st === 'attack' || st === 'charge' || st === 'special') {
+    if (st === 'attack' || st === 'charge' || st === 'special' || st === 'block' || st === 'plunge') {
       if (!this.wpnOut || A) { this.wpnOut = true; this.wpnAnim = null; this.wpnFlash = 0.22; game.audio.play('draw', 0.7); }
       this.wpnCalm = 0;
       return;
@@ -271,6 +272,7 @@ class Player extends Entity {
     if (input.pressed.light) this.combo.bufferInput('L');
     if (input.pressed.heavy) this.combo.bufferInput('H');
     if (input.pressed.dash) this.dashBuffer = 0.16;
+    if (input.pressed.jump) this.jumpBuffer = 0.14;
     if (input.pressed.special) {
       if (this.canEclipse()) this.specialBuffer = 0.25;
       else this.denyEclipse();
@@ -289,6 +291,7 @@ class Player extends Entity {
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.flash > 0) this.flash -= dt;
     if (this.dashBuffer > 0) this.dashBuffer -= dt;
+    if (this.jumpBuffer > 0) this.jumpBuffer -= dt;
     if (this.specialBuffer > 0) this.specialBuffer -= dt;
     if (this.abBufT > 0) this.abBufT -= dt;
     if (this.blockCounterT > 0) this.blockCounterT -= dt;
@@ -309,6 +312,9 @@ class Player extends Entity {
     if (this.abBufT > 0 && this.isBuffSlot(this.abBuffer) && this.state !== 'dead' && this.state !== 'special') {
       this.abBufT = 0; this.castAbility(this.abBuffer, wd);
     }
+    // Pulo e defesa (js/heroes/pulo_defesa.js): saem do estado livre ou da guarda
+    if (this.jumpBuffer > 0 && this.canJump()) { this.jumpBuffer = 0; this.startJump(); }
+    if (input.held.block && !this.air && (this.state === 'idle' || this.state === 'run') && !this.combo.hasBuffer()) this.startBlock();
 
     switch (this.state) {
       case 'idle':
@@ -319,7 +325,7 @@ class Player extends Entity {
         }
         let tvx = 0, tvy = 0;
         if (wd) {
-          const sp = this.baseSpeed * this.stats.speedMult * mag;
+          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1);
           tvx = wd.x * sp; tvy = wd.y * sp;
           this.facing = Math.atan2(wd.y, wd.x);
           this.state = 'run';
@@ -340,11 +346,20 @@ class Player extends Entity {
           const targetBlend = this.idleNext || this.idleVariant === 'idle_breathing' ? 0.0 : 1.0;
           this.idleBlend = approach(this.idleBlend, targetBlend, dt * 3.5);
         }
-        const acc = 2800 * dt;
+        const acc = (this.air ? 1500 : 2800) * dt;   // no ar, menos aderência
         this.vx = approach(this.vx, tvx, acc);
         this.vy = approach(this.vy, tvy, acc);
         break;
       }
+      case 'block':
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
+        if (this.tryActions(wd)) break;          // golpe, esquiva ou habilidade baixam a guarda
+        this.updateBlock(dt, input, wd, mag);
+        break;
+      case 'plunge':
+        this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
+        this.updatePlunge(dt);
+        break;
       case 'attack':
         this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.updateAttack(dt, input, wd);
@@ -379,18 +394,29 @@ class Player extends Entity {
     this.y += (this.vy + this.kby) * dt;
     game.room.collide(this, true);
     this.moveSpeed = Math.hypot(this.vx, this.vy);
+    this.updateAir(dt);                    // altura do pulo, gravidade e aterrissagem
 
     for (const g of this.ghosts) if (g.life > 0) g.life -= dt;
     this.updateWeapon(dt);
     // Direção em que o corpo é desenhado: gira rápido mas suave (os pés não "pulam" de lado ao
     // virar); em golpes, esquivas e supremas acompanha na hora. Só visual (facing segue igual)
     const vs = this.state;
-    if (typeof this.viewFacing !== 'number' || vs === 'attack' || vs === 'charge' || vs === 'special' || vs === 'dash' || vs === 'dead') this.viewFacing = this.facing;
+    if (typeof this.viewFacing !== 'number' || vs === 'attack' || vs === 'charge' || vs === 'special' || vs === 'dash' || vs === 'dead' || vs === 'plunge') this.viewFacing = this.facing;
     else { const d = angleDiff(this.viewFacing, this.facing), mx = 15 * dt; this.viewFacing += d > mx ? mx : d < -mx ? -mx : d; }
   }
 
   // Ações disponíveis em estado livre: especial, esquiva ou golpe
   tryActions(wd) {
+    if (this.air) {
+      // no ar: esquiva (segura a queda), habilidade, golpe leve ou, no pesado, o mergulho; a
+      // suprema espera o chão
+      if (this.abBufT > 0) { this.abBufT = 0; if (this.castAbility(this.abBuffer, wd)) return true; }
+      if (this.dashBuffer > 0 && this.canDash()) { this.dashBuffer = 0; this.startDash(wd); return true; }
+      const b = this.combo.takeBuffer();
+      if (b === 'H') { this.startPlunge(); return true; }
+      if (b) { this.startAttack(this.resolveInput(b), wd); return true; }
+      return false;
+    }
     if (this.specialBuffer > 0 && this.canEclipse()) { this.specialBuffer = 0; this.startSpecial(); return true; }
     if (this.abBufT > 0) { this.abBufT = 0; if (this.castAbility(this.abBuffer, wd)) return true; }
     if (this.dashBuffer > 0 && this.canDash()) { this.dashBuffer = 0; this.startDash(wd); return true; }
@@ -1010,6 +1036,10 @@ class Player extends Entity {
         return true;
       }
     }
+    // Defesa (js/heroes/pulo_defesa.js): de frente, aparo ou defesa; guarda quebrada deixa passar parte
+    const bl = this.blockHit(dmg, sx, sy);
+    if (bl === 0) return true;
+    if (bl > 0) dmg = bl;
     // Orion: quebra de furtividade ao receber dano
     if (this.buffs.stealth > 0) {
       this.buffs.stealth = 0;

@@ -101,7 +101,7 @@ class ProjectileSystem {
       }
       if (p.hostile) {
         const rr = p.r + pl.radius;
-        if (pl.state !== 'dead' && dist2(p.x, p.y, pl.x, pl.y) < rr * rr) {
+        if (pl.state !== 'dead' && dist2(p.x, p.y, pl.x, pl.y) < rr * rr && pl.z < PULO.ALTO + 14) {   // por cima no pulo
           if (pl.state === 'dash' && pl.invuln > 0) {
             if (!p.dodgeCredited) { p.dodgeCredited = true; game.onPerfectDodge(pl); }
             continue;

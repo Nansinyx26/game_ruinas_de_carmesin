@@ -282,7 +282,8 @@ const ThirdView = {
     };
     const sombra = (e, r) => {
       const o = e._sh3 || (e._sh3 = { m: M3.make() });
-      M3.trs(o.m, [e.x, e.y, 0.25], [0, 0, 0], [r, r, 1]);
+      const k = 1 - Math.min(0.5, (e.z || 0) / 160);   // no ar (pulo, lançado), a sombra encolhe
+      M3.trs(o.m, [e.x, e.y, 0.25], [0, 0, 0], [r * k, r * k, 1]);
       const si = R3D.queue(this.shadowModel(), null, null, o);
       si.ent = null; Q.push(si);
     };

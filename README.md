@@ -72,6 +72,8 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | V | Câmera isométrica / **3ª pessoa** (atrás do ombro) |
 | Z / C · botão direito do mouse (arrastar) · roda | Na 3ª pessoa: girar a câmera · aproximar e afastar |
 | M · B · 5 | No mundo aberto: mapa · mochila (relíquias, loja, missões) · cápsula de reparo |
+| N | Pulo (no ar: J golpe, L esquiva no ar, K **mergulho** com impacto ao cair) |
+| Shift (segurar) | **Defesa**: de frente só passa 25% do dano e gasta energia; logo que a guarda sobe, **apara** (anula, atordoa e abre o contra-ataque) |
 | F1 | Modo debug (hitboxes; F2 elimina inimigos, F3 enche vida e energia, F4 dá XP) |
 
 Nos menus: setas (ou mouse) navegam, Enter/J confirma, Esc volta, Q/E trocam de aba, Del apaga um salvamento.
@@ -84,8 +86,10 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 |---|---|---|
 | Analógico esquerdo / D-pad | Analógico esquerdo / D-pad | Mover (e navegar nos menus) |
 | RT ou X | R2 ou □ | Ataque leve |
-| RB ou Y | R1 ou △ | Ataque pesado (segure para o Impacto Carregado) |
-| B ou A | ○ ou ✕ | Esquiva |
+| Y | △ | Ataque pesado (segure para o Impacto Carregado) |
+| B | ○ | Esquiva |
+| A | ✕ | Pulo (no ar, o pesado é o mergulho) |
+| RB (segurar) | R1 (segurar) | Defesa; logo que a guarda sobe, apara |
 | LT | L2 | Eclipse Absoluto |
 | LB + X / Y / B / A | L1 + □ / △ / ○ / ✕ | Habilidades 1 / 2 / 3 / 4 |
 | X (perto de um NPC) | □ (perto de um NPC) | Conversar (no lugar do ataque leve) |
@@ -310,7 +314,8 @@ js/
   player.js         Player: movimento, golpes, esquiva, habilidades e supremas de todos os
                     personagens, idle dinâmico (variações, cansaço, guarda, vitória), desenho 2D
   heroes/           kit.js (estrutura dos kits de personagem, HERO_WEAPONS, HeroObjects) e
-                    lyra.js (o kit completo da Lyra)
+                    lyra.js (o kit completo da Lyra); pulo_defesa.js (pulo, queda, aterrissagem, mergulho e
+                    defesa com aparo, de todos os heróis)
   quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
   world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
   mundo/            regioes.js (as outras seis regiões), tempo.js (WorldTime: dia, noite e clima),

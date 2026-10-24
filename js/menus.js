@@ -292,8 +292,10 @@ function drawTokens(ctx, tokens, x, y, h, kind, color = '#c9d6ea', measureOnly =
 const COMMANDS = [
   ['Mover', 'WASD · Setas', ['@ls', '·', '@dpad']],
   ['Ataque leve', 'J', ['@rt', '·', '@x']],
-  ['Ataque pesado / Impacto', 'K (segure)', ['@rb', '·', '@y']],
-  ['Esquiva', 'L · Espaço', ['@b', '·', '@a']],
+  ['Ataque pesado / Impacto', 'K (segure)', ['@y']],
+  ['Esquiva', 'L · Espaço', ['@b']],
+  ['Pulo (no ar, pesado = mergulho)', 'N', ['@a']],
+  ['Defesa (segure; na hora certa, apara)', 'Shift', ['@rb']],
   ['Eclipse Absoluto', 'I', ['@lt']],
   ['Habilidades 1–4', '1 2 3 4', ['@lb', '+', '@x', '@y', '@b', '@a']],
   ['Conversar (perto de NPC)', 'E · F', ['@x']],

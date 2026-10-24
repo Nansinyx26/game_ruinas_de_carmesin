@@ -43,14 +43,19 @@ const TouchControls = {
       B.push({ id: 'atk', key: 'KeyJ', x: W - 100, y: H - 158, r: 46, icon: 'sword', label: 'ATAQUE' });
       B.push({ id: 'heavy', key: 'KeyK', x: W - 205, y: H - 135, r: 32, icon: 'burst', label: 'PESADO' });
       B.push({ id: 'dash', key: 'KeyL', x: W - 250, y: H - 205, r: 32, icon: 'dash', label: 'ESQUIVA' });
-      B.push({ id: 'use', key: 'KeyF', x: W - 318, y: H - 150, r: 22, icon: null, label: 'E' });
-      B.push({ id: 'swap', key: 'KeyQ', x: W - 330, y: H - 222, r: 20, icon: null, label: 'ARMA' });
+      // pulo e defesa (segurar) perto do polegar; E e ARMA, de uso raro, um pouco à esquerda
+      B.push({ id: 'jump', key: 'KeyN', x: W - 330, y: H - 222, r: 26, icon: null, label: 'PULO' });
+      B.push({ id: 'block', key: 'ShiftLeft', x: W - 318, y: H - 150, r: 26, icon: null, label: 'DEFESA' });
+      B.push({ id: 'use', key: 'KeyF', x: W - 410, y: H - 150, r: 22, icon: null, label: 'E' });
+      B.push({ id: 'swap', key: 'KeyQ', x: W - 415, y: H - 222, r: 20, icon: null, label: 'ARMA' });
     } else {
       B.push({ id: 'atk', key: 'KeyJ', x: W - 132, y: H - 268, r: 54, icon: 'sword', label: 'ATAQUE' });
       B.push({ id: 'heavy', key: 'KeyK', x: W - 252, y: H - 222, r: 40, icon: 'burst', label: 'PESADO' });
       B.push({ id: 'dash', key: 'KeyL', x: W - 112, y: H - 392, r: 40, icon: 'dash', label: 'ESQUIVA' });
       B.push({ id: 'use', key: 'KeyF', x: W - 232, y: H - 340, r: 28, icon: null, label: 'E' });
       B.push({ id: 'swap', key: 'KeyQ', x: W - 330, y: H - 300, r: 24, icon: null, label: 'ARMA' });
+      B.push({ id: 'jump', key: 'KeyN', x: W - 225, y: H - 418, r: 32, icon: null, label: 'PULO' });
+      B.push({ id: 'block', key: 'ShiftLeft', x: W - 330, y: H - 400, r: 30, icon: null, label: 'DEFESA' });   // segurar
     }
     B.push({ id: 'pause', key: 'Escape', x: 44, y: 178, r: 24, icon: null, label: 'II' });
     B.push({ id: 'tree', key: 'Tab', x: 44, y: 236, r: 24, icon: null, label: 'TAB' });
@@ -172,7 +177,7 @@ const TouchControls = {
         ctx.font = `bold ${b.r > 45 ? 11 : 9}px ${FONT_TITLE}`; ctx.fillStyle = 'rgba(220,232,250,0.85)';
         ctx.fillText(b.label, b.x, b.y + b.r * 0.62);
       } else {
-        ctx.font = `bold ${Math.round(b.r * 0.55)}px ${FONT_TITLE}`; ctx.fillStyle = 'rgba(235,244,255,0.95)';
+        ctx.font = `bold ${Math.round(b.r * (b.label.length > 4 ? 0.36 : 0.55))}px ${FONT_TITLE}`; ctx.fillStyle = 'rgba(235,244,255,0.95)';
         ctx.fillText(b.label, b.x, b.y + 1);
       }
     }

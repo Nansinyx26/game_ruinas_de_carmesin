@@ -43,6 +43,15 @@ const Inspector3D = (() => {
     ['corrida', (p, t) => { p.state = 'run'; p.animTime = t; p.moveSpeed = 235; }],
     ['salto (golpe especial)', (p, t) => { const s = t % 1.4; p.state = 'special'; p.stateTime = s; p.animTime = t; p.z = Math.max(0, Math.sin(Math.min(1, s / 0.9) * Math.PI)) * 26; }],
     ['esquiva', (p, t) => { p.state = 'dash'; p.stateTime = (t % 0.5) * 0.5; p.animTime = t; p.moveSpeed = 800; }],
+    // pulo, queda e aterrissagem (js/heroes/pulo_defesa.js): a física do pulo em ciclo
+    ['pulo, queda e aterrissagem', (p, t) => {
+      const s = t % 1.1, T = 2 * PULO.V0 / PULO.G;
+      p.state = 'idle'; p.animTime = t; p.stateTime = t;
+      if (s < T) { p.z = Math.max(0, PULO.V0 * s - PULO.G * s * s / 2); p.vz = PULO.V0 - PULO.G * s; }
+      else p.landT = Math.max(0, PULO.ATERRA - (s - T));
+    }],
+    ['mergulho', (p, t) => { const s = t % 0.7; p.wpnOut = true; p.state = 'plunge'; p.stateTime = s; p.animTime = t; p.z = Math.max(0, 40 - s * 90); p.vz = -PULO.MERGULHO; }],
+    ['defesa (golpe a cada 1 s)', (p, t) => { p.wpnOut = true; p.state = 'block'; p.stateTime = t % 3; p.animTime = t; p.flash = t % 1 < 0.08 ? 0.06 : 0; }],
     ['ataque leve 1', atk('light1')], ['ataque leve 2', atk('light2')], ['ataque leve 3', atk('light3')],
     ['ataque pesado', atk('heavy')], ['giro', atk('spin')], ['estocada', atk('thrust')], ['impacto', atk('slam')],
     ['gancho', atk('uppercut')], ['carregado', atk('charged')], ['investida', atk('lunge')],
@@ -169,7 +178,7 @@ const Inspector3D = (() => {
     entity() {
       const p = this.ent || (this.ent = new Player(0, 0));
       p.vitrine = true;   // modelo no lugar (a animação de caminhada não sai do lugar): sem trava dos pés
-      p.facing = Math.PI / 4; p.vx = p.vy = 0; p.z = 0; p.flash = 0; p.fury = 40; p.moveSpeed = 0; p.chargeLevel = 0;
+      p.facing = Math.PI / 4; p.vx = p.vy = 0; p.z = 0; p.vz = 0; p.landT = 0; p.flash = 0; p.fury = 40; p.moveSpeed = 0; p.chargeLevel = 0;
       if (p.state !== 'attack') p.attack = null;
       ANIMS[this.anim][1](p, this.t);
       if (p.state !== 'attack') p.attack = null;

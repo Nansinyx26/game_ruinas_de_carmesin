@@ -878,6 +878,51 @@ function buildTempestadeNula(g, k, part, lod) {
     return P;
   }
 
+  // Defesa (js/heroes/pulo_defesa.js): base baixa e a arma atravessada na frente do peito,
+  // nas duas mãos; sobe rápido (a janela do aparo) e treme um pouco a cada golpe defendido
+  function blockPose(P, e) {
+    rest(P, e);
+    const st = num(e.stateTime), up = eoc(cl(st / 0.1, 0, 1)), fl = num(e.flash) > 0 ? 1 : 0;
+    P.hz = HZR - 2.4 * up; P.tp = 0.08 + 0.12 * up; P.hp = 0.04 - 0.06 * up; P.hyw = -0.12 * (1 - up);
+    set3(P.fL, mix(1.4, 3.0, up), mix(-4.6, -6.2, up), 0); set3(P.fR, mix(-1.4, -2.6, up), mix(4.8, 6.0, up), 0);
+    set3(P.hR, mix(P.hR[0], 9.5 - fl * 1.5, up), mix(P.hR[1], 4.5, up), mix(P.hR[2], 39.5, up));
+    set3(P.hL, mix(P.hL[0], 9.0 - fl * 1.5, up), mix(P.hL[1], -1.5, up), mix(P.hL[2], 38.5, up));
+    set3(P.bd, mix(P.bd[0], 0.32, up), mix(P.bd[1], -0.78, up), mix(P.bd[2], 0.54, up));
+    set3(P.bu, mix(0, 0.85, up), 0, mix(1, 0.5, up));
+    P.grip2 = up; P.cB = 0.06 + 0.06 * up; P.flare = 0.08; P.vein = 0.9 + 0.6 * fl; P.rune = 1.3;
+    return P;
+  }
+  // Mergulho: corpo encolhido, a lâmina apontada para baixo nas duas mãos
+  function plungePose(P, e) {
+    rest(P, e);
+    set3(P.hR, 7, 2.5, 33); set3(P.hL, 6.5, -2.0, 32.5);
+    set3(P.bd, 0.25, 0, -0.97); set3(P.bu, 1, 0, 0.2);
+    P.grip2 = 1; P.tp = 0.36; P.hp = 0.2; P.flare = 0.3; P.cB = 0.3; P.vein = 2; P.rune = 2;
+    set3(P.fL, 3.5, -4.4, 9); set3(P.fR, -1.0, 4.6, 6);
+    return P;
+  }
+  // No ar (e.z) e na aterrissagem (e.landT): sobe com as pernas encolhidas, desce com elas
+  // esticando para o chão (o casaco abre) e, ao tocar, dobra os joelhos por um instante
+  function airPose(P, e) {
+    const z = num(e.z), lt = num(e.landT);
+    if (z > 0.5 && e.state !== 'special' && e.state !== 'plunge') {
+      const k = cl(z / 14, 0, 1), vz = num(e.vz), sobe = vz > 0 ? 1 : cl(1 + vz / 420, 0, 1);
+      const enc = k * (0.3 + 0.7 * sobe);
+      P.fL[2] = Math.max(P.fL[2], 10 * enc); P.fR[2] = Math.max(P.fR[2], 6.5 * enc + 2 * k);
+      P.fL[0] += 3 * enc; P.fR[0] -= 1.2 * enc;
+      P.tp += 0.1 * enc; P.hz -= 0.6 * enc;
+      if (e.state !== 'attack' && e.state !== 'block') { P.hR[2] += 5 * k; P.hL[2] += 6 * k; P.hR[1] += 2.5 * k; P.hL[1] -= 3 * k; }
+      P.flare = Math.max(P.flare, 0.1 + 0.22 * (1 - sobe) * k); P.cFl = Math.max(P.cFl, 0.06 * k);
+    }
+    if (lt > 0 && z <= 0.5) {
+      const a = Math.sin(cl(lt / 0.22, 0, 1) * PI * 0.5);   // 1 no toque, voltando a 0
+      P.hz -= 3.4 * a; P.tp += 0.16 * a; P.hp += 0.08 * a;
+      P.fL[0] += 0.8 * a; P.fR[0] -= 0.8 * a;
+      P.flare = Math.max(P.flare, 0.12 * a);
+    }
+    return P;
+  }
+
   function specialPose(P, e) {
     const st = num(e.stateTime);
     const R = rest(PB, e);
@@ -1295,8 +1340,11 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (st === 'dash') P = dashPose(POSE, e);
       else if (st === 'hurt') P = hurtPose(POSE, e);
       else if (st === 'special') P = specialPose(POSE, e);
+      else if (st === 'block') P = blockPose(POSE, e);
+      else if (st === 'plunge') P = plungePose(POSE, e);
       else if (num(e.moveSpeed) > 40) P = runPose(POSE, e);
       else P = rest(POSE, e);
+      airPose(P, e);                       // pulo, queda e aterrissagem (js/heroes/pulo_defesa.js)
       // arma guardada (mão livre) e o gesto de sacar/guardar (js/heroes/armas3d.js)
       const free = typeof WeaponRig !== 'undefined' && WeaponRig.handPose(m, e, P, m.props || KAEL_PROPS);
       plantFeet(P, e);                     // pés presos ao chão (passos em vez de escorregar)

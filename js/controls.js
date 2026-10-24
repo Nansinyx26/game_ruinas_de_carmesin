@@ -20,13 +20,14 @@ const KEYMAP = {
   swapWeapon: ['KeyQ', 'KeyX'],   // em jogo: troca para a próxima arma liberada do personagem
   camToggle: ['KeyV'], camLeft: ['KeyZ'], camRight: ['KeyC'],   // em jogo: câmera isométrica / 3ª pessoa e girar
   bag: ['KeyB'], capsule: ['Digit5', 'Numpad5'],   // mundo aberto: mochila (relíquias, loja, missões) e cápsula de reparo
+  jump: ['KeyN'], block: ['ShiftLeft', 'ShiftRight'],   // pulo e defesa (segurar): js/heroes/pulo_defesa.js
 };
 // Mapeamento padrão da Gamepad API ("standard"), igual em Xbox, PlayStation e GameSir:
 // 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB/L1 5=RB/R1 6=LT/L2 7=RT/R2 8=View/Create 9=Menu/Options
 // 10=L3 11=R3 12-15=D-pad. Habilidades 1–4: segure LB/L1 e aperte X, Y, B ou A.
 const PADMAP = {
   up: [12], down: [13], left: [14], right: [15],
-  light: [7, 2], heavy: [5, 3], dash: [1, 0], special: [6],
+  light: [7, 2], heavy: [3], dash: [1], special: [6], jump: [0], block: [5],   // A pula, RB defende
   skills: [8], tabPrev: [4], tabNext: [5], back: [1], interact: [2],
   pause: [9], confirm: [0], reroll: [2], buyHeal: [3], toTitle: [8], erase: [2],
   charPrev: [6], charNext: [7],   // LT/RT (L2/R2) na árvore de habilidades: trocar de personagem

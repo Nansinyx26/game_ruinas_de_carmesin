@@ -42,6 +42,7 @@ const EclipseTests = {
       this.aliados();
       this.terceiraPessoa();
       this.telaBaixa();
+      this.puloDefesa();
       this.mundo();   // por último: troca a partida pelo modo mundo
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -450,6 +451,68 @@ const EclipseTests = {
     this.ok('3ª pessoa: o herói fica no meio da tela', P.vis && Math.abs(P.x - VIEW_W / 2) < VIEW_W * 0.1 && P.y > VIEW_H * 0.25 && P.y < VIEW_H * 0.8, JSON.stringify({ x: Math.round(P.x), y: Math.round(P.y) }));
     this.ok('3ª pessoa: isoX volta ao normal depois dos efeitos', isoX(10, 3) === 7 && isoY(10, 4) === 7);
     ThirdView.set(antes, true);
+  },
+
+  // --------------------------------------------- pulo, mergulho e defesa
+  puloDefesa() {
+    const g = game, R = g.room;
+    if (RosterManager.active !== 'kael') RosterManager.setActive('kael');
+    const p = g.player;
+    const prep = () => {
+      p.recalc(true); p.fury = p.maxEnergy; p.state = 'idle'; p.attack = null; p.facing = 0; p.invuln = 0;
+      p.air = false; p.z = 0; p.vz = 0; p.landT = 0; p.vx = p.vy = p.kbx = p.kby = 0;
+      for (const [fx, fy] of [[0.4, 0.5], [0.3, 0.5], [0.5, 0.5], [0.4, 0.35], [0.3, 0.65]]) {
+        const x = R.w * fx, y = R.h * fy;
+        if (!R.blocksPoint(x, y, 30) && !R.blocksPoint(x + 60, y, 30) && !R.blocksPoint(x - 60, y, 30)) { p.x = x; p.y = y; break; }
+      }
+      g.enemies.length = 0; g.projectiles.clear(); g.hazards.clear(); g.waves.state = 'cleared';
+    };
+    const passo = (s, inp) => { for (let t = 0; t < s; t += 1 / 60) { p.update(1 / 60, inp || this.entrada()); g.hazards.update(1 / 60); } };
+    // pulo: sobe, cai e aterrissa
+    prep();
+    p.captureInput({ pressed: { jump: true }, held: {} });
+    let alto = 0;
+    for (let t = 0; t < 1.2; t += 1 / 60) { p.update(1 / 60, this.entrada()); alto = Math.max(alto, p.z); }
+    this.ok('pulo: sobe acima de 40 e volta ao chão', alto > 40 && p.z === 0 && !p.air, `${alto.toFixed(1)} / ${p.z}`);
+    // passa por cima de uma onda de choque (conta como esquiva perfeita)
+    prep();
+    const hp0 = p.hp;
+    p.startJump(); passo(0.18);
+    g.hazards.add({ kind: 'ring', x: p.x, y: p.y, r0: 0, r1: 200, w: 30, dur: 0.6, dmg: 30 });
+    passo(0.1);
+    this.ok('pulo: a onda de choque passa por baixo', p.hp === hp0 && p.z > PULO.ALTO, `${p.hp}/${hp0} z ${p.z.toFixed(1)}`);
+    g.hazards.clear(); passo(1);
+    // mergulho: o pesado no ar cai de uma vez e atinge quem está em volta
+    prep();
+    const alvo = createEnemy('rastejador', p.x + 50, p.y, 1); alvo.hp = alvo.maxHp = 5000; alvo.spawnT = 0; alvo.state = 'idle'; g.enemies.push(alvo);
+    p.startJump(); passo(0.25);
+    p.combo.bufferInput('H'); passo(1 / 60);
+    this.igual('mergulho: pesado no ar', p.state, 'plunge');
+    passo(0.6);
+    this.ok('mergulho: impacto fere o inimigo ao lado e volta ao chão', alvo.hp < 5000 && p.z === 0 && p.state === 'idle', `${alvo.hp} ${p.state}`);
+    // defesa: aparo na hora certa, defesa depois, pelas costas passa tudo, sem energia quebra
+    prep();
+    const atk = createEnemy('cacador', p.x + 40, p.y, 1); atk.hp = atk.maxHp = 5000; atk.spawnT = 0; atk.state = 'idle'; g.enemies.push(atk);
+    const guarda = { move: { x: 0, y: 0 }, pressed: {}, held: { block: true }, released: {} };
+    passo(1 / 60, guarda);
+    this.igual('defesa: segurar levanta a guarda', p.state, 'block');
+    let h = p.hp;
+    p.takeDamage(40, atk.x, atk.y);
+    this.ok('defesa: aparo anula o golpe e atordoa o atacante', p.hp === h && atk.state === 'stun' && p.counterT > 0, `${p.hp}/${h} ${atk.state}`);
+    passo(0.5, guarda); p.invuln = 0;
+    h = p.hp; const f0 = p.fury;
+    p.takeDamage(40, atk.x, atk.y);
+    this.ok('defesa: de frente passa só uma parte e gasta energia', p.hp < h && h - p.hp <= Math.ceil(40 * Settings.diff.dmg * 0.25) + 1 && p.fury < f0 && p.state === 'block', `${h - p.hp} ${p.state}`);
+    p.invuln = 0; h = p.hp;
+    p.takeDamage(40, p.x - 40, p.y);
+    this.ok('defesa: pelas costas o golpe passa inteiro', h - p.hp > Math.ceil(40 * Settings.diff.dmg * 0.25) + 1, h - p.hp);
+    prep(); g.enemies.push(atk); atk.x = p.x + 40; atk.y = p.y;
+    passo(0.4, guarda); p.fury = 0; p.invuln = 0; h = p.hp;
+    p.takeDamage(40, atk.x, atk.y);
+    this.ok('defesa: sem energia a guarda quebra', p.state === 'hurt' && p.hp < h, p.state);
+    passo(0.3, this.entrada());
+    this.ok('defesa: soltar baixa a guarda', p.state !== 'block');
+    prep();
   },
 
   // ------------------------------------------- menus numa tela baixa (celular)
