@@ -659,6 +659,13 @@ const R3D = {
     const im = tex.img, pot = !(im.naturalWidth & (im.naturalWidth - 1)) && !(im.naturalHeight & (im.naturalHeight - 1));
     if (pot) gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, pot ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+    // Filtragem anisotrópica: a câmera isométrica vê as roupas e placas de viés, e só o mipmap
+    // borra esses detalhes (até 8×, quando a placa de vídeo oferece)
+    if (pot) {
+      if (this.aniso === undefined) this.aniso = gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic') || null;
+      const A = this.aniso;
+      if (A) gl.texParameterf(gl.TEXTURE_2D, A.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(A.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1));
+    }
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     tex.gl = t;
     return t;

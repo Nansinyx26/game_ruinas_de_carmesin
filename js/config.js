@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 // CONFIGURAÇÃO GERAL
 // ---------------------------------------------------------------------------
-const VIEW_H = 720;              // altura lógica da tela (a largura se adapta à janela)
+let VIEW_H = 720;                // altura lógica da tela: 720, menos em telas baixas (celular deitado: tudo maior); a largura se adapta
 let VIEW_W = 1280;               // largura lógica (recalculada ao redimensionar)
 const TILE = 56;                 // tamanho de um tile em unidades de mundo
 const GRAVITY = 1700;            // gravidade para corpos lançados ao ar
