@@ -21,6 +21,8 @@ const KEYMAP = {
   camToggle: ['KeyV'], camLeft: ['KeyZ'], camRight: ['KeyC'],   // em jogo: câmera isométrica / 3ª pessoa e girar
   bag: ['KeyB'], capsule: ['Digit5', 'Numpad5'],   // mundo aberto: mochila (relíquias, loja, missões) e cápsula de reparo
   jump: ['KeyN'], block: ['ShiftLeft', 'ShiftRight'],   // pulo e defesa (segurar): js/heroes/pulo_defesa.js
+  respec: ['KeyR'],   // árvore de habilidades: redistribuir os pontos (aperte de novo para confirmar)
+  grenade: ['KeyR'],  // em jogo: Granada de Plasma do Kael (js/heroes/granada.js)
 };
 // Mapeamento padrão da Gamepad API ("standard"), igual em Xbox, PlayStation e GameSir:
 // 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB/L1 5=RB/R1 6=LT/L2 7=RT/R2 8=View/Create 9=Menu/Options
@@ -33,6 +35,8 @@ const PADMAP = {
   charPrev: [6], charNext: [7],   // LT/RT (L2/R2) na árvore de habilidades: trocar de personagem
   view3d: [3],
   swapWeapon: [11],     // R3
+  respec: [3],          // Y/△ na árvore de habilidades: redistribuir os pontos
+  grenade: [10],        // L3: Granada de Plasma
 };
 const PAD_LAYER = 4;                                  // LB/L1: modificador das habilidades
 const PAD_LAYER_MAP = { ab1: 2, ab2: 3, ab3: 1, ab4: 0 };   // LB + X, Y, B, A

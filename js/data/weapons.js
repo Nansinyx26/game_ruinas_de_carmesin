@@ -4,7 +4,10 @@
 // ARMAS E EQUIPAMENTOS de cada personagem (owner) — 'all' = qualquer um.
 //   kind: tipo do item (para o ícone e o comportamento quando for implementado)
 //   implemented: false → aparece na lista, ainda sem efeito no jogo
-//   A Armadura Exoesqueleto também aparece nesta lista (ref: ARMOR_DEFS.exoesqueleto).
+//   gadget: true → equipamento levado junto com a arma (não entra na troca Q nem no equipar
+//     do elenco): a Granada de Plasma do Kael (js/heroes/granada.js)
+//   A Armadura Exoesqueleto também aparece nesta lista (ref: ARMOR_DEFS.exoesqueleto); escolhê-la
+//   aqui veste a armadura (js/heroes/exoesqueleto.js).
 //   glb: modelo-fonte (prévia dos menus); no jogo a arma usa a versão reduzida de
 //   js/assets/armas3d.js (tools/importar_arma.py) com os encaixes de js/heroes/armas3d.js.
 // ---------------------------------------------------------------------------
@@ -16,10 +19,10 @@ const WEAPON_DEFS = {
     desc: 'A lendária lâmina que devora a energia de NEXUS.'
   },
   granada_plasma: {
-    owner: 'kael', name: 'Granada de Plasma', kind: 'grenade', implemented: false, stats: { dmg: 70, radius: 120 },
+    owner: 'kael', name: 'Granada de Plasma', kind: 'grenade', implemented: true, gadget: true, stats: { dmg: 40, radius: 120 },
     glb: null,
     png: null,
-    desc: 'Carga de plasma arremessada que explode em área.'
+    desc: 'Carga de plasma (R) que explode em área e deixa as máquinas em curto. 3 cargas.'
   },
   arco_foton: {
     owner: 'lyra', name: 'Arco de Fóton', kind: 'bow', implemented: true, stats: { dmg: 48, range: 680, crit: 0.15 },
@@ -64,7 +67,7 @@ const WEAPON_DEFS = {
     desc: 'Disparador compacto de alta cadência para eliminações cirúrgicas à queima-roupa.'
   },
   exoesqueleto: {
-    owner: 'all', name: 'Exoesqueleto', kind: 'armor', implemented: false, armorRef: 'exoesqueleto', stats: {},
+    owner: 'all', name: 'Exoesqueleto', kind: 'armor', implemented: true, armorRef: 'exoesqueleto', stats: {},
     glb: 'assets/modelos/armaduras/kael/kael_n1.glb',
     png: 'assets/modelos/armaduras/kael/kael_n1.png',
     desc: 'Estrutura reforçada que qualquer personagem pode vestir.'

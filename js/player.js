@@ -162,7 +162,7 @@ class Player extends Entity {
     const id = this.def.id, cur = RosterManager.equippedWeapon(id);
     const list = RosterManager.weaponsFor(id).filter((w) => {
       const d = WEAPON_DEFS[w];
-      return d && d.owner === id && d.implemented !== false && RosterManager.isWeaponUnlocked(w);
+      return d && d.owner === id && d.implemented !== false && !d.gadget && RosterManager.isWeaponUnlocked(w);
     });
     if (list.length < 2) return null;
     return list[(list.indexOf(cur) + 1) % list.length];
@@ -273,6 +273,7 @@ class Player extends Entity {
     if (input.pressed.heavy) this.combo.bufferInput('H');
     if (input.pressed.dash) this.dashBuffer = 0.16;
     if (input.pressed.jump) this.jumpBuffer = 0.14;
+    if (input.pressed.grenade) this.granadaBuffer = 0.2;
     if (input.pressed.special) {
       if (this.canEclipse()) this.specialBuffer = 0.25;
       else this.denyEclipse();
@@ -315,6 +316,13 @@ class Player extends Entity {
     }
     // Pulo e defesa (js/heroes/pulo_defesa.js): saem do estado livre ou da guarda
     if (this.jumpBuffer > 0 && this.canJump()) { this.jumpBuffer = 0; this.startJump(); }
+    // Granada de Plasma (js/heroes/granada.js): fora de golpes, cargas e esquivas
+    Granada.tick(this, dt);
+    if (this.granadaBuffer > 0) {
+      this.granadaBuffer -= dt;
+      const st = this.state;
+      if (st === 'idle' || st === 'run' || st === 'block' || st === 'hurt') { this.granadaBuffer = 0; Granada.lancar(this, wd); }
+    }
     if (input.held.block && !this.air && (this.state === 'idle' || this.state === 'run') && !this.combo.hasBuffer()) this.startBlock();
 
     switch (this.state) {
@@ -1060,6 +1068,7 @@ class Player extends Entity {
     this.hp -= dmg;
     if (this.hp <= 0 && HeroPassives.lethal(this)) this.hp = Math.max(1, this.hp);   // Último de Pé, Segundo Fôlego
     const dx = this.x - sx, dy = this.y - sy, l = Math.hypot(dx, dy) || 1;
+    kb *= 1 - clamp(this.stats.kbResist || 0, 0, 0.9);   // Exoesqueleto: segura parte do empurrão
     this.kbx += (dx / l) * kb; this.kby += (dy / l) * kb;
     this.flash = 0.12;
     this.invuln = 0.75;
@@ -1118,6 +1127,7 @@ class Player extends Entity {
       if (m.cdr) S.cdr = Math.max(0.3, S.cdr + m.cdr);
       if (m.counter) S.counter += m.counter;
       if (m.guardBreak) S.guardBreak += m.guardBreak;
+      if (m.kbResist) S.kbResist += m.kbResist;
     }
     // Modificadores da arma equipada (WEAPON_DEFS e armas especiais 3D)
     const wid = typeof RosterManager !== 'undefined' ? RosterManager.equippedWeapon(this.def.id) : null;

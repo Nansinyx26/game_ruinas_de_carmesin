@@ -48,7 +48,11 @@ const RosterManager = {
     return this.weaponsUnlocked.has(id);
   },
   equippedArmor(charId) { return this.armor[charId] || (this.def(charId) ? this.def(charId).armors[0] : null); },
-  equippedWeapon(charId) { return this.weapon[charId] || (this.def(charId) ? this.def(charId).weapons[0] : null); },
+  equippedWeapon(charId) {
+    // equipamento (gadget) e armadura listada nas armas (armorRef) nunca são a arma da mão (salvamentos antigos)
+    const w = this.weapon[charId], d = w && WEAPON_DEFS[w];
+    return w && !(d && (d.gadget || d.armorRef)) ? w : (this.def(charId) ? this.def(charId).weapons[0] : null);
+  },
   // Armaduras que o personagem pode vestir (as dele e as compartilhadas)
   armorsFor(charId) {
     const d = this.def(charId);
@@ -140,7 +144,7 @@ const RosterManager = {
   },
   equipWeapon(charId, weaponId) {
     const w = WEAPON_DEFS[weaponId];
-    if (!w || !this.def(charId) || !this.isWeaponUnlocked(weaponId)) return false;
+    if (!w || w.gadget || w.armorRef || !this.def(charId) || !this.isWeaponUnlocked(weaponId)) return false;
     if (w.owner !== 'all' && w.owner !== charId) return false;
     this.weapon[charId] = weaponId;
     this.emit('weaponChanged', { charId, weaponId });

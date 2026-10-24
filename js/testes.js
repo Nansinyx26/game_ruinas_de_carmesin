@@ -43,6 +43,7 @@ const EclipseTests = {
       this.terceiraPessoa();
       this.telaBaixa();
       this.puloDefesa();
+      this.pendencias();
       this.mundo();   // por último: troca a partida pelo modo mundo
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -536,6 +537,115 @@ const EclipseTests = {
     } finally { VIEW_W = W0; VIEW_H = H0; }
     const S = game.screens.skillLayout();
     this.ok('tela normal: árvore com o passo de sempre (100)', Object.values(S.nodes).some((n) => n.y === S.gy + 54 + 100), S.gy);
+  },
+
+  // ------------------------------------------------ pendências: pontos, granada, exoesqueleto, dados
+  pendencias() {
+    const g = game;
+    // nós da árvore: os pontos por nível ficam em 'pts' (o 'cost' das ativas é energia)
+    const nos = [...Object.values(SKILLS), ...Object.values(ROSTER_SKILLS)];
+    this.ok('árvore: nenhum nó usa mais o campo cost', nos.every((s) => s.cost === undefined), nos.filter((s) => s.cost !== undefined).map((s) => s.name).join(','));
+    this.ok('árvore: Supremas custam 2 a 4 pontos (pts)', nos.filter((s) => s.pts).length >= 35 && nos.every((s) => skillPts(s) >= 1 && skillPts(s) <= 4));
+    // Fuzil Sombra: o GLB é uma lâmina
+    const fz = WEAPON_DEFS.arma_primaria_orion_3d;
+    this.ok('arma especial do Orion (orion_primaria) é de lâminas, não fuzil', fz && fz.kind === 'blades' && !/fuzil/i.test(fz.name) && fz.stats.hits === 2 && !fz.stats.range, fz && fz.kind);
+    this.ok('nenhuma arma marcada como fuzil', Object.values(WEAPON_DEFS).every((w) => w.kind !== 'rifle'));
+    // redistribuir pontos (Kael: game.progress)
+    const pr = g.progress, salvo = JSON.parse(JSON.stringify(pr.toJSON())), banco = g.stats.soulsBank;
+    try {
+      pr.level = 30; pr.sp = 12; pr.skills = {}; pr.slots = [null, null, null, null]; pr.respecs = 0; g.skillUI.char = 'kael';
+      const livres = Object.keys(SKILLS).filter((id) => !pr.blocker(id)).slice(0, 4);
+      for (const id of livres) g.learnSkill(id);
+      const gasto = pr.spent(), sp0 = pr.sp;
+      this.ok('redistribuir: pontos gastos somados', gasto > 0 && gasto === 12 - sp0, `${gasto} / ${sp0}`);
+      g.skillUI.respecT = 0;
+      this.ok('redistribuir: o 1º aperto só pede confirmação', g.respecSkills() === false && pr.spent() === gasto && g.skillUI.respecT > 0);
+      this.ok('redistribuir: a 1ª é grátis e devolve tudo', g.respecSkills() === true && pr.sp === 12 && pr.spent() === 0 && pr.slots.every((k) => k === null) && pr.respecs === 1 && g.stats.soulsBank === banco);
+      for (const id of livres) g.learnSkill(id);
+      this.igual('redistribuir: a 2ª custa 10 células por ponto', g.respecPrice(pr), pr.spent() * 10);
+      g.stats.soulsBank = 0; g.skillUI.respecT = 0;
+      g.respecSkills(); g.respecSkills();
+      this.ok('redistribuir: sem células, não redistribui', pr.spent() === gasto);
+      g.stats.soulsBank = 10000; g.skillUI.respecT = 0;
+      g.respecSkills(); g.respecSkills();
+      this.ok('redistribuir: pagando, devolve e desconta', pr.spent() === 0 && g.stats.soulsBank === 10000 - gasto * 10, g.stats.soulsBank);
+      const j = pr.toJSON();
+      this.igual('redistribuir: contagem vai para o salvamento', j.respecs, 2);
+    } finally { pr.load(salvo); g.stats.soulsBank = banco; g.player.recalc(); }
+    // granada de plasma (Kael)
+    if (RosterManager.active !== 'kael') RosterManager.setActive('kael');
+    const p = g.player;
+    this.ok('granada: o Kael leva, os outros não', Granada.disponivel(p) && !Granada.disponivel({ def: CHARACTERS_BY_ID.lyra }));
+    this.ok('granada: não entra na troca de arma (Q) nem vira a arma da mão', p.nextWeapon() !== 'granada_plasma' && !RosterManager.equipWeapon('kael', 'granada_plasma') && RosterManager.equippedWeapon('kael') !== 'granada_plasma');
+    const sala = g.enemies.slice();
+    g.enemies.length = 0; HeroObjects.clear();
+    try {
+      p.state = 'idle'; p.granadas = GRANADA.MAX; p.granadaT = 0; p.facing = 0;
+      const e = createEnemy('drone', p.x + 160, p.y, 3); e.setState('idle'); e.camp = null; g.enemies.push(e);
+      const h0 = e.hp;
+      this.ok('granada: arremesso gasta uma carga', Granada.lancar(p, null) && p.granadas === GRANADA.MAX - 1 && HeroObjects.list.some((o) => o instanceof GranadaPlasma));
+      for (let i = 0; i < 40; i++) HeroObjects.update(1 / 30);
+      this.ok('granada: explode, fere e deixa a máquina em curto', e.hp < h0 && !HeroObjects.list.some((o) => o instanceof GranadaPlasma) && (e.stun > 0.8 || !e.alive), `${h0} → ${e.hp}, stun ${e.stun}`);
+      p.granadas = 0;
+      this.ok('granada: sem carga, não arremessa', !Granada.lancar(p, null));
+      Granada.tick(p, GRANADA.RECARGA + 0.01);
+      this.igual('granada: uma carga volta depois da recarga', p.granadas, 1);
+    } finally { g.enemies.length = 0; for (const q of sala) g.enemies.push(q); HeroObjects.clear(); p.granadas = GRANADA.MAX; }
+    // exoesqueleto: armação no modelo de cada herói e metade do empurrão
+    const arm0 = RosterManager.equippedArmor('kael');
+    try {
+      RosterManager.equipArmor('kael', 'exoesqueleto'); p.recalc();
+      this.ok('exoesqueleto: segura metade do empurrão', p.stats.kbResist === 0.5);
+      p.invuln = 0; p.state = 'idle'; p.kbx = p.kby = 0; const hp = p.hp;
+      p.takeDamage(1, p.x - 10, p.y, 400);
+      this.ok('exoesqueleto: empurrão recebido pela metade', Math.abs(Math.hypot(p.kbx, p.kby) - 200) < 1, Math.hypot(p.kbx, p.kby));
+      p.hp = hp; p.invuln = 0; p.state = 'idle';
+      for (const c of ['kael', 'lyra', 'drakos', 'sera', 'orion']) {
+        const M = MODELS3D[heroModelKey(CHARACTERS_BY_ID[c])], m = M.build();
+        const a0 = RosterManager.equippedArmor(c);
+        RosterManager.equipArmor(c, 'exoesqueleto');
+        const e = { def: CHARACTERS_BY_ID[c], x: 0, y: 0, z: 0, state: 'idle', stateTime: 0.5, animTime: 0.5, facing: 0, flash: 0, moveSpeed: 0, wpnOut: true };
+        M.pose(m, e, game.opts3(e, 0));
+        const vis = m.exo ? m.exo.filter((n) => n.vis && n.geo && n.geo.length).length : 0;
+        RosterManager.equipArmor(c, RosterManager.armorsFor(c)[0]);
+        M.pose(m, e, game.opts3(e, 0));
+        const vis2 = m.exo ? m.exo.filter((n) => n.vis).length : -1;
+        this.ok(`exoesqueleto em ${c}: 10 peças vestidas, nenhuma sem ele`, vis === 10 && vis2 === 0, `${vis} / ${vis2}`);
+        if (a0) RosterManager.equipArmor(c, a0);
+      }
+      this.ok('exoesqueleto: sem tingir a roupa', heroArmorTint('kael') === null);
+      this.ok('exoesqueleto na lista de armas: com efeito (não "em desenvolvimento")', WEAPON_DEFS.exoesqueleto.implemented === true);
+      const w0 = RosterManager.weapon.kael;
+      RosterManager.weapon.kael = 'exoesqueleto';   // salvamento antigo que o tinha como arma
+      this.igual('exoesqueleto nunca é a arma da mão', RosterManager.equippedWeapon('kael'), 'tempestade_nula');
+      if (w0 === undefined) delete RosterManager.weapon.kael; else RosterManager.weapon.kael = w0;
+    } finally { if (arm0) RosterManager.equipArmor('kael', arm0); p.recalc(); }
+    // voz sintetizada (opcional): timbre por personagem, dublagem gravada tem preferência
+    const V = VozSintetica, sv = Settings.v.synthVoice, falar = V.falar, enf = V.enfileirar, dub = game.audio.narration.isPlaying;
+    try {
+      this.ok('voz: timbre de cada personagem (rádio inclusive)', V.perfil('LYRA · RÁDIO') === VOZ_PERFIS.LYRA && V.perfil('DRAKOS') === VOZ_PERFIS.DRAKOS && V.perfil('') === VOZ_PERFIS._narrador && V.perfil('COMERCIANTE') === VOZ_PERFIS._padrao);
+      this.ok('voz: desligada por padrão', SETTINGS_DEFAULT.synthVoice === false);
+      Settings.v.synthVoice = false;
+      this.igual('voz: desligada, não fala', V.falar('KAEL', 'Teste da voz.'), null);
+      Settings.v.synthVoice = true;
+      game.audio.narration.isPlaying = () => true;
+      this.igual('voz: com dublagem tocando, fica quieta', V.falar('KAEL', 'Teste da voz.'), null);
+      game.audio.narration.isPlaying = dub;
+      if (V.ok && V.volume() > 0) {
+        const f = V.falar('SERA', 'Teste da voz.');
+        this.ok('voz: ligada, lê a fala com o timbre da personagem', f && f.length === 1 && Math.abs(f[0].pitch - VOZ_PERFIS.SERA.pitch) < 1e-4, JSON.stringify(f));
+        V.parar();
+      }
+      // ganchos: a legenda do HUD e as páginas da história
+      let ouvido = null, pagina = null;
+      V.falar = (q, t) => { ouvido = [q, t]; return null; };
+      V.enfileirar = (l) => { pagina = l; return null; };
+      game.hud.say('ORION', 'Ninguém me vê chegar.', 3, 0, true); game.hud.update(1 / 60);
+      this.ok('voz: a legenda do HUD é lida quando aparece', ouvido && ouvido[0] === 'ORION' && ouvido[1] === 'Ninguém me vê chegar.', JSON.stringify(ouvido));
+      game.story.start([{ bg: 'dawn', kicker: 'T', title: 'T', lines: ['Narração.', ['LYRA', 'Fala.']] }], () => {});
+      this.ok('voz: a página da história sem dublagem é lida (narração e falas)', pagina && pagina.length === 2 && pagina[0][0] === '' && pagina[1][0] === 'LYRA', JSON.stringify(pagina));
+      game.story.stop();
+    } finally { V.falar = falar; V.enfileirar = enf; game.audio.narration.isPlaying = dub; Settings.v.synthVoice = sv; game.hud.sub = null; V.parar(); }
   },
 
   // ------------------------------------------------------------ mundo aberto

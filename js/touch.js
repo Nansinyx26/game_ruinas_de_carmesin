@@ -37,6 +37,7 @@ const TouchControls = {
   // Botões (posições lógicas; o HUD das habilidades é lido de game.hud.L.ab)
   buttons() {
     const B = [], W = VIEW_W, H = VIEW_H;
+    const granada = typeof Granada !== 'undefined' && game.player && Granada.disponivel(game.player);   // só quem leva (o Kael)
     if (H < 640) {
       // tela baixa (celular deitado): tudo na faixa entre o objetivo (canto direito, no alto) e a
       // barra de habilidades; os botões já aparecem maiores na tela
@@ -48,6 +49,7 @@ const TouchControls = {
       B.push({ id: 'block', key: 'ShiftLeft', x: W - 318, y: H - 150, r: 26, icon: null, label: 'DEFESA' });
       B.push({ id: 'use', key: 'KeyF', x: W - 410, y: H - 150, r: 22, icon: null, label: 'E' });
       B.push({ id: 'swap', key: 'KeyQ', x: W - 415, y: H - 222, r: 20, icon: null, label: 'ARMA' });
+      if (granada) B.push({ id: 'grenade', key: 'KeyR', x: W - 492, y: H - 186, r: 20, icon: null, label: 'GRANADA' });
     } else {
       B.push({ id: 'atk', key: 'KeyJ', x: W - 132, y: H - 268, r: 54, icon: 'sword', label: 'ATAQUE' });
       B.push({ id: 'heavy', key: 'KeyK', x: W - 252, y: H - 222, r: 40, icon: 'burst', label: 'PESADO' });
@@ -56,6 +58,7 @@ const TouchControls = {
       B.push({ id: 'swap', key: 'KeyQ', x: W - 330, y: H - 300, r: 24, icon: null, label: 'ARMA' });
       B.push({ id: 'jump', key: 'KeyN', x: W - 225, y: H - 418, r: 32, icon: null, label: 'PULO' });
       B.push({ id: 'block', key: 'ShiftLeft', x: W - 330, y: H - 400, r: 30, icon: null, label: 'DEFESA' });   // segurar
+      if (granada) B.push({ id: 'grenade', key: 'KeyR', x: W - 425, y: H - 350, r: 24, icon: null, label: 'GRANADA' });
     }
     B.push({ id: 'pause', key: 'Escape', x: 44, y: 178, r: 24, icon: null, label: 'II' });
     B.push({ id: 'tree', key: 'Tab', x: 44, y: 236, r: 24, icon: null, label: 'TAB' });

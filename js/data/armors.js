@@ -36,5 +36,7 @@ const ARMOR_DEFS = {
   orion_urbana: { owner: 'orion', name: 'Urbana', visual: { tint: '#2e2e36' }, mods: { crit: 0.05 }, unlock: { type: 'chapter_complete', value: 5 } },
   orion_ancestral: { owner: 'orion', name: 'Ancestral', visual: { tint: '#ff8a1f' }, mods: { dmgMult: 0.1 }, unlock: { type: 'boss_defeated', value: 'nexus' } },
   // Compartilhada
-  exoesqueleto: { owner: 'all', name: 'Exoesqueleto', visual: { tint: '#5a6474' }, mods: { armor: 0.08, hpBonus: 15, speedMult: -0.03 }, unlock: { type: 'chapter_complete', value: 5 } },
+  // Exoesqueleto: a armação aparece em 3D por cima do herói (js/heroes/exoesqueleto.js), sem tingir a roupa;
+  // kbResist: fração do empurrão recebido que ele segura
+  exoesqueleto: { owner: 'all', name: 'Exoesqueleto', visual: { tint: null, exo: true }, mods: { armor: 0.08, hpBonus: 15, speedMult: -0.03, kbResist: 0.5 }, unlock: { type: 'chapter_complete', value: 5 } },
 };

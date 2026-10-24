@@ -84,6 +84,7 @@ const BASE_STATS = {
   power: 1, cdr: 1, hpBonus: 0, energyBonus: 0, regen: 2.5, lightMult: 1, arcBonus: 0,
   thrustMult: 1, spinHits: 3, spinMult: 1, counter: 0, guardBreak: 0, eliteMult: 1,
   critHeal: 0, dodgeEnergy: 0, perfectBonus: 0, dashCharges: 1, voidBig: 0, showBars: 0,
+  kbResist: 0,   // fração do empurrão recebido que o herói segura (Exoesqueleto)
 };
 
 // ---------------------------------------------------------------------------
@@ -187,7 +188,7 @@ class Progress {
   constructor() { this.reset(); }
   reset() {
     this.level = 1; this.xp = 0; this.sp = 2;
-    this.skills = {}; this.slots = [null, null, null, null];
+    this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0;
   }
   lv(id) { return this.skills[id] || 0; }
   get xpNext() { return PROG.xpToNext(this.level); }
@@ -197,7 +198,7 @@ class Progress {
     if (cur >= s.max) return 'Nível máximo';
     if (this.level < s.lvl) return `Requer nível ${s.lvl}`;
     for (const [rid, rl] of s.req) if (this.lv(rid) < rl) return `Requer ${SKILLS[rid].name}${rl > 1 ? ' ' + rl : ''}`;
-    const c = s.cost || 1;
+    const c = skillPts(s);
     if (this.sp < c) return c > 1 ? `Requer ${c} pontos de habilidade` : 'Sem pontos de habilidade';
     return null;
   }
@@ -210,7 +211,7 @@ class Progress {
   learn(id) {
     if (this.blocker(id)) return false;
     this.skills[id] = this.lv(id) + 1;
-    this.sp -= SKILLS[id].cost || 1;
+    this.sp -= skillPts(SKILLS[id]);
     // Ativas recém-desbloqueadas ocupam o primeiro atalho livre
     if (SKILL_ACTIVE(id) && this.skills[id] === 1 && !this.slots.includes(id)) {
       const k = this.slots.indexOf(null);
@@ -225,11 +226,14 @@ class Progress {
     this.slots[k] = id;
     return true;
   }
-  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots }; }
+  // Redistribuição (respec): devolve todos os pontos gastos na árvore e limpa os atalhos
+  spent() { let n = 0; for (const id in this.skills) n += this.skills[id] * skillPts(SKILLS[id]); return n; }
+  respec() { const n = this.spent(); this.skills = {}; this.slots = [null, null, null, null]; this.sp += n; this.respecs++; return n; }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs }; }
   load(o) {
     this.reset();
     if (!o) return;
-    this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0);
+    this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0); this.respecs = Math.max(0, o.respecs | 0);
     for (const id in o.skills || {}) if (SKILLS[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, SKILLS[id].max);
     if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (SKILL_ACTIVE(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
   }
@@ -249,7 +253,7 @@ class CharacterProgress {
   get defs() { return skillsOf(this.charId); }
   reset() {
     this.level = 1; this.xp = 0; this.sp = 0;
-    this.skills = {}; this.slots = [null, null, null, null];
+    this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0;
   }
   lv(id) { return this.skills[id] || 0; }
   get xpNext() { return PROG.xpToNext(this.level); }
@@ -261,7 +265,7 @@ class CharacterProgress {
     if (cur >= s.max) return 'Nível máximo';
     if (this.level < s.lvl) return `Requer nível ${s.lvl}`;
     for (const [rid, rl] of s.req) if (this.lv(rid) < rl) return `Requer ${D[rid].name}${rl > 1 ? ' ' + rl : ''}`;
-    const c = s.cost || 1;
+    const c = skillPts(s);
     if (this.sp < c) return c > 1 ? `Requer ${c} pontos de habilidade` : 'Sem pontos de habilidade';
     return null;
   }
@@ -274,7 +278,7 @@ class CharacterProgress {
   learn(id) {
     if (this.blocker(id)) return false;
     this.skills[id] = this.lv(id) + 1;
-    this.sp -= this.defs[id].cost || 1;
+    this.sp -= skillPts(this.defs[id]);
     // Ativas recém-desbloqueadas ocupam o primeiro atalho livre
     if (this.isActiveSkill(id) && this.skills[id] === 1 && !this.slots.includes(id)) {
       const k = this.slots.indexOf(null);
@@ -290,12 +294,15 @@ class CharacterProgress {
     return true;
   }
   get empty() { return this.level === 1 && !this.xp && !this.sp && !Object.keys(this.skills).length; }
-  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots }; }
+  // Redistribuição (respec): devolve todos os pontos gastos na árvore e limpa os atalhos
+  spent() { const D = this.defs; let n = 0; for (const id in this.skills) n += this.skills[id] * skillPts(D[id]); return n; }
+  respec() { const n = this.spent(); this.skills = {}; this.slots = [null, null, null, null]; this.sp += n; this.respecs++; return n; }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs }; }
   load(o) {
     this.reset();
     if (!o || typeof o !== 'object') return;
     const D = this.defs;
-    this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0);
+    this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0); this.respecs = Math.max(0, o.respecs | 0);
     for (const id in o.skills || {}) if (D[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, D[id].max);
     if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (this.isActiveSkill(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
   }

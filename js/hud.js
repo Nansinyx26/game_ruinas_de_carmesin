@@ -131,6 +131,8 @@ class HUD {
       const before = this.sub.t;
       this.sub.t += dt;
       if (before < 0 && this.sub.t >= 0 && this.sub.who === 'NEXUS') game.audio.play('glitch');
+      // voz sintetizada (opcional, js/voz.js): quando a legenda aparece, se não houver dublagem tocando
+      if (!this.sub.voz && this.sub.t >= 0) { this.sub.voz = true; VozSintetica.falar(this.sub.who, this.sub.text); }
       if (this.sub.t >= this.sub.max) this.sub = null;
     }
     if (this.mem) { this.mem.t += dt; if (this.mem.t >= this.mem.max) this.mem = null; }
@@ -932,9 +934,24 @@ class HUD {
     ctx.fillStyle = st === 'EM COMBATE' ? '#ff8a7a' : out ? rgba(rgb, 0.95) : 'rgba(180,195,215,0.85)';
     ctx.fillText(st, tx, W.y + 31);
     ctx.letterSpacing = '0px';
-    if (p.nextWeapon && p.nextWeapon()) {
-      ctx.font = `10px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,212,230,0.7)';
-      ctx.fillText(game.input.lastDevice === 'pad' ? `${game.input.padLabels.rs} trocar arma` : '[Q] trocar arma', tx, W.y + 47);
+    // troca de arma e Granada de Plasma (js/heroes/granada.js): tecla e cargas (a que volta enche aos poucos)
+    const G = typeof Granada !== 'undefined' ? Granada.hud(p) : null, swap = p.nextWeapon && p.nextWeapon(), pad = game.input.lastDevice === 'pad', PL = game.input.padLabels;
+    let lx = tx;
+    ctx.font = `10px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,212,230,0.7)';
+    if (swap) {
+      const s = pad ? `${PL.rs} ${G ? 'arma' : 'trocar arma'}` : G ? '[Q] arma' : '[Q] trocar arma';
+      ctx.fillText(s, lx, W.y + 47); lx += ctx.measureText(s).width + 8;
+    }
+    if (G) {
+      const s = pad ? PL.ls : '[R]';
+      ctx.fillText(s, lx, W.y + 47); lx += ctx.measureText(s).width + 7;
+      for (let i = 0; i < G.max; i++) {
+        const cx = lx + i * 10, cy = W.y + 47;
+        ctx.strokeStyle = 'rgba(150,200,255,0.75)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, 3.6, 0, TAU); ctx.stroke();
+        if (i < G.n) { ctx.fillStyle = '#9fd0ff'; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, TAU); ctx.fill(); }
+        else if (i === G.n) { ctx.fillStyle = 'rgba(159,208,255,0.55)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, 3, -Math.PI / 2, -Math.PI / 2 + TAU * G.k); ctx.closePath(); ctx.fill(); }
+      }
     }
     // combo em andamento: o que cada botão faz agora
     const seq = p.combo && p.combo.seq;

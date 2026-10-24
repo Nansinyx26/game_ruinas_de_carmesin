@@ -66,6 +66,7 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | Tab / H | Árvore de habilidades |
 | E / F | Conversar com NPCs |
 | Q / X | Trocar de arma (a próxima liberada do personagem: ex. machado ↔ martelo do Drakos) |
+| R | **Granada de Plasma** do Kael (3 cargas, cada uma volta em 8 s) · na árvore de habilidades: **redistribuir os pontos** (aperte de novo para confirmar) |
 | ESC | Pausa (menu de pausa) / pular história / voltar nos menus |
 | M | Som liga/desliga |
 | G | Gráficos 3D / 2D |
@@ -98,6 +99,8 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 | Menu / Start | Options | Pausa |
 | A · B | ✕ · ○ | Confirmar · voltar nos menus (B também pula a história) |
 | LB · RB | L1 · R1 | Trocar de aba nos menus |
+| L3 | L3 | Granada de Plasma (Kael) |
+| Y (na árvore) | △ (na árvore) | Redistribuir os pontos |
 
 - **Conectar:** por USB, ligue o cabo e aperte qualquer botão com a janela do jogo em foco. Por Bluetooth, pareie o controle nas configurações do sistema (Xbox: botão de parear; DualShock 4/DualSense: segure Share/Create + PS; GameSir: modo XInput/Android) e aperte um botão.
 - Ao conectar ou desconectar aparece um aviso discreto no topo da tela. Se o controle desconectar durante a ação, o jogo pausa e toda a entrada do controle é zerada (Kael não continua andando sozinho).
@@ -109,6 +112,10 @@ Funciona com controles Xbox, PlayStation (DualShock 4 e DualSense), GameSir e ge
 ## Elenco de personagens
 
 Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são liberados pela campanha (Orion já começa disponível) e **todos são jogáveis**. Cada um tem atributos, cor-tema, 4 habilidades, armaduras e armas próprias; a Armadura Exoesqueleto serve para todos.
+
+- **Granada de Plasma** (`js/heroes/granada.js`): equipamento do Kael, levado junto com a espada (não entra na troca Q; na aba ARMAS aparece como **SEMPRE EQUIPADA**). Tecla **R** (controle: **L3**; toque: botão **GRANADA**, só com o Kael): arremessa na direção pressionada ou para onde ele olha, com mira assistida no inimigo do cone, até 300 de distância. Voa em arco, pousa, mostra o anel de aviso e explode: dano em área (cresce com o poder do herói e cai com a distância do centro), empurrão para fora e curto-circuito nas máquinas (atordoadas por mais tempo). 3 cargas; cada uma volta em 8 s. O painel da arma no HUD mostra a tecla e as cargas. Funciona na campanha, no mundo aberto e nas duas câmeras. Não tem modelo `.glb` próprio: a granada é desenhada pelo jogo.
+- **Exoesqueleto** (`js/heroes/exoesqueleto.js`): a armadura de todos agora aparece em 3D por cima de qualquer herói — armação de metal escuro com filetes azuis presa ao esqueleto: hastes do lado de fora das coxas, canelas, braços e antebraços, juntas nos quadris, joelhos, cotovelos e tornozelos, punhos, a coluna nas costas com a canga dos ombros e a bateria. As hastes encostam no corpo de cada herói porque as medidas vêm da própria malha. Além de +8% de defesa, +15 de vida e −3% de velocidade, **segura metade do empurrão** recebido. Escolher o Exoesqueleto na aba ARMAS veste a armadura.
+- **Lâminas Sombra**: a arma especial do Orion (nível 55) que estava cadastrada como "Fuzil Sombra" é um par de lâminas, como o `.glb` dela (`orion_primaria.glb`): nome, tipo e atributos corrigidos (o id e os salvamentos continuam os mesmos).
 
 - **Dados** (`js/data/`): `characters.js` (fichas e `devStatus`), `abilities.js`, `armors.js`, `special_armors.js` (armaduras especiais por nível, com `.glb`/`.png`), `weapons.js` (com o `.glb`/`.png` de cada arma), `skilltrees.js` (as 4 árvores de cada personagem) e `strings.js`.
 - **`RosterManager`** (`js/roster.js`): desbloqueados, personagem ativo e armadura de cada um (eventos `characterUnlocked` / `characterChanged` / `armorUnlocked` / `armorChanged`).
@@ -177,11 +184,13 @@ Configurações (salvas no navegador e aplicadas com **APLICAR**; **PADRÃO** re
 |---|---|
 | JOGO | Dificuldade (Narrativa / Normal / Difícil: vida e dano dos inimigos), tremor de tela, números de dano, velocidade do texto |
 | VÍDEO | Janela / tela cheia, resolução interna (50–100%), visual do Kael (3D com a arte oficial ou sprites 2D), inimigos e NPCs em 3D ou 2D, qualidade dos efeitos (partículas), limite de FPS (sem limite / 60 / 30), pós-processamento (vinheta, clarões, interferência), brilho |
-| ÁUDIO | Som liga/desliga, volume geral, efeitos sonoros, ambiente |
+| ÁUDIO | Som liga/desliga, volume geral, música, voz/narração, **voz sintetizada nas falas** (desligada por padrão), efeitos sonoros, ambiente |
 | CONTROLES | Sensibilidade do analógico, zona morta, inverter eixo Y da câmera, vibração + diagnóstico e comandos |
 | IDIOMA | Português (Brasil), tamanho das legendas, falas durante o jogo |
 
 As teclas M (som) e G (3D/2D) também atualizam as configurações salvas.
+
+**Voz sintetizada** (`js/voz.js`, opcional): ligada, lê em voz alta, com a síntese de voz do próprio navegador (`speechSynthesis`, sem biblioteca nem internet), as falas que não têm dublagem gravada — as legendas do HUD (rádio dos aliados, campanhas dos heróis, NPCs, terminais, missões) e as páginas da história. A dublagem gravada sempre tem preferência. Cada personagem tem um timbre próprio (tom e velocidade) sobre a voz em português do aparelho; o volume segue Volume geral × Voz / Narração. A qualidade e o sotaque dependem das vozes instaladas no sistema (sem voz em português, o navegador usa a padrão).
 
 ## HUD (interface durante a ação)
 
@@ -202,7 +211,7 @@ Desempenho: molduras, retrato, planta do radar, losangos e o preenchimento das b
 
 Kael ganha **experiência** derrotando inimigos (elites valem o triplo), liberando setores, recuperando memórias e vencendo NEXUS. Cada nível aumenta vida, energia, dano, poder das habilidades, defesa, velocidade e reduz as recargas, além de dar **pontos de habilidade** (dois a cada cinco níveis).
 
-Cada personagem tem **cinco ramos** (Tab), um por aba, nesta ordem: **Ataque**, **Poderes**, **Defesa e sobrevivência**, **Mobilidade** e **Supremas**. O ramo Supremas (Eclipse, Luz Caçadora, Titã, Núcleo Vyne, Corvo) é igual em estrutura para todos e custa 2 a 4 pontos por nível: suprema mais barata, mais poder, energia nos golpes pesados, **Convergência** (depois de uma habilidade, o próximo golpe é mais forte), Último Fôlego, Ressonância (energia por abate durante a suprema) e Ascensão. Os efeitos ficam em `js/heroes/passivas.js`.
+Cada personagem tem **cinco ramos** (Tab), um por aba, nesta ordem: **Ataque**, **Poderes**, **Defesa e sobrevivência**, **Mobilidade** e **Supremas**. O ramo Supremas (Eclipse, Luz Caçadora, Titã, Núcleo Vyne, Corvo) é igual em estrutura para todos e custa 2 a 4 pontos por nível (campo `pts` do nó; o custo em energia das ativas é outro campo): suprema mais barata, mais poder, energia nos golpes pesados, **Convergência** (depois de uma habilidade, o próximo golpe é mais forte), Último Fôlego, Ressonância (energia por abate durante a suprema) e Ascensão. Os efeitos ficam em `js/heroes/passivas.js`.
 
 **Nós dos aliados com efeito** (`js/heroes/aliados.js`, `AllyFx`): todas as ativas, passivas e técnicas das árvores do Drakos, da Sera e do Orion funcionam.
 - **Drakos.** Ativas: Muralha Viva (atrai os inimigos e −30/40% de dano recebido), Onda do Martelo (onda de choque em linha que empurra) e Grito de Guerra (+20/40% de dano e inimigos perto mais lentos). Passivas: Bloqueio Perfeito (escudo erguido no último instante devolve um empurrão que atordoa), Escudo Refletor (projéteis voltam contra quem atirou) e Sem Freio (3 abates seguidos recarregam a Investida). Técnicas: Varredura (L L H) e Arremesso do Machado (esquiva → H, ida e volta).
@@ -220,6 +229,8 @@ As árvores do Kael (Tab):
 | **Núcleo ZERO** (tecnologia) | Sobrecarga, Drenagem de Energia, Análise de Alvo, Escudo de Energia, Sincronização ZERO |
 
 Passivas funcionam sozinhas, técnicas entram nos combos da espada e as ativas vão para os atalhos 1–4 (com custo de energia e recarga). A energia se regenera devagar e sobe a cada acerto.
+
+**Redistribuir os pontos** (botão **REDISTRIBUIR** no alto da árvore, tecla **R** ou **Y/△** no controle): devolve todos os pontos que o herói mostrado gastou na árvore e limpa os atalhos, para distribuir de novo. O primeiro aperto mostra o que volta e o preço; o segundo, em até 4 s, confirma. A primeira redistribuição de cada herói é grátis; as seguintes custam 10 células por ponto devolvido. A contagem fica no salvamento.
 
 O progresso (nível, XP, habilidades, atalhos, evoluções, memórias e setor atual) é **salvo automaticamente** no navegador. Na tela de título aparecem **Continuar** e **Novo jogo**. Ao cair em combate, Kael volta ao início do setor mantendo a evolução.
 
@@ -305,6 +316,8 @@ No menu inicial, **MODO 3ª PESSOA (3D)** abre a arena de teste em terceira pess
 
 **Testes automatizados**: abra `index.html?testes=1` (por `file://` ou pelo servidor). A suíte (`js/testes.js`, sem bibliotecas) roda dentro do jogo e mostra o resultado no canto da tela e no console: armas GLB (dados, decodificação e — pelo servidor — os arquivos de origem), encaixes de todos os heróis, sacar/guardar, dano único por golpe, combos e os nós que os liberam, árvore (ramos, custos, requisitos, efeitos), salvar/carregar, idle e troca de arma. `window.__testes` guarda o resultado para automação.
 
+**Testes no GitHub** (`.github/workflows/testes.yml`): a cada push e pull request, o GitHub Actions confere a sintaxe dos scripts, roda a suíte do jogo num Chromium sem janela (`tools/testes_navegador.mjs`: sobe um servidor da pasta do projeto, abre `index.html?testes=1` e falha se algum teste falhar ou a página lançar exceção) e as botas dos modelos (`tools/conferir_botas.js`). O Playwright é instalado só no workflow; o jogo continua sem bibliotecas. Para rodar igual na sua máquina: `npm install --no-save playwright && npx playwright install chromium && node tools/testes_navegador.mjs`.
+
 **Armas 3D (GLB)**: os modelos-fonte ficam em `assets/armas/eclipse/` (10–27 MB cada, gerados no Meshy). O jogo usa uma versão reduzida gerada por `python3 tools/importar_arma.py` (1,5–2,8 mil triângulos por arma, com cor, metal e brilho amostrados da textura do GLB) em `js/assets/armas3d.js`, que também abre por `file://`. Para trocar uma arma: substitua o `.glb` e rode o importador; a orientação, a posição da mão e o comprimento de cada arma ficam em `ARMAS` no próprio importador, e os encaixes (mão, costas, coxa) em `BACK` de `js/heroes/armas3d.js`.
 
 ### Celular, tablet e app instalado
@@ -335,6 +348,7 @@ js/
   progression.js    UPGRADES/UpgradeSystem, PROG (curva de XP), SKILLS/SKILL_TREES, Progress
   save.js           SaveSys: 5 espaços de salvamento no localStorage (versão do conteúdo e migração)
   settings.js       SETTINGS_TABS, Settings: opções do jogador e onde cada uma é aplicada
+  voz.js            VozSintetica: voz sintetizada opcional para as falas sem dublagem
   data/             fichas do elenco: characters.js, abilities.js, armors.js, weapons.js, strings.js
   roster.js         RosterManager: desbloqueios, personagem ativo e armaduras
   engine3d.js       motor 3D WebGL próprio (G3, N3, Model3, R3D: pele, materiais, nível de
@@ -346,7 +360,8 @@ js/
                     personagens, idle dinâmico (variações, cansaço, guarda, vitória), desenho 2D
   heroes/           kit.js (estrutura dos kits de personagem, HERO_WEAPONS, HeroObjects) e
                     lyra.js (o kit completo da Lyra); pulo_defesa.js (pulo, queda, aterrissagem, mergulho e
-                    defesa com aparo, de todos os heróis)
+                    defesa com aparo, de todos os heróis); granada.js (Granada de Plasma do Kael);
+                    exoesqueleto.js (ExoRig: a armação 3D do Exoesqueleto em qualquer herói)
   quests.js         LoyaltyQuests: missões de lealdade dos aliados no Refúgio
   world.js          World: mundo aberto (regiões, zonas, acampamentos, baús, portais, mapa M)
   mundo/            regioes.js (as outras seis regiões), tempo.js (WorldTime: dia, noite e clima),

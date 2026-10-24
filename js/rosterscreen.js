@@ -50,6 +50,7 @@ function armorModLines(a) {
   if (m.dmgMult) out.push(t('modDmg', { v: pct(m.dmgMult) }));
   if (m.crit) out.push(t('modCrit', { v: pct(m.crit) }));
   if (m.cdr) out.push(t('modCdr', { v: pct(m.cdr) }));
+  if (m.kbResist) out.push(t('modKb', { v: Math.round(m.kbResist * 100) }));
   return out;
 }
 // Atributos de uma arma em texto
@@ -944,6 +945,17 @@ class RosterScreen {
     if (!RosterManager.isUnlocked(d.id)) { game.audio.play('uiDeny'); this.say(t('charLockedWeapon', { name: d.name })); return; }
     if (!RosterManager.isWeaponUnlocked(wid)) { game.audio.play('uiDeny'); this.say(t('weaponLockedMsg', { cond: RosterManager.describe(w.unlock) })); return; }
     if (w.owner !== 'all' && w.owner !== d.id) { game.audio.play('uiDeny'); this.say(t('weaponsFixed'), '150,190,255'); return; }
+    // equipamento levado junto (granada) e armadura listada aqui (exoesqueleto): não são a arma da mão
+    if (w.gadget) { game.audio.play('uiMove'); this.say(t('weaponGadget', { name: d.name }), hexToRgb(d.color)); return; }
+    if (w.armorRef) {
+      if (RosterManager.equippedArmor(d.id) === w.armorRef) { game.audio.play('uiDeny'); this.say(t('weaponAlready'), '150,190,255'); return; }
+      if (RosterManager.equipArmor(d.id, w.armorRef)) {
+        game.audio.play('uiSelect');
+        this.say(t('armorEquippedMsg2', { armor: w.name, name: d.name }), hexToRgb(d.color));
+        if (this.mode === 'pause') game.saveGame();
+      } else { game.audio.play('uiDeny'); this.say(t('weaponLockedMsg', { cond: RosterManager.describe(ARMOR_DEFS[w.armorRef].unlock) })); }
+      return;
+    }
     if (RosterManager.equippedWeapon(d.id) === wid) { game.audio.play('uiDeny'); this.say(t('weaponAlready'), '150,190,255'); return; }
     if (RosterManager.equipWeapon(d.id, wid)) {
       game.audio.play('uiSelect');
@@ -1666,6 +1678,7 @@ class RosterScreen {
     const statW = clamp(I.w * 0.35, 180, 280), colW = L.box3D ? (L.box3D.x - I.x - 36) : (I.w - statW - 66);
     const chip = !unlocked ? [t('locked').toUpperCase(), false, '180,120,120']
       : !w.implemented ? [t('inDevelopment').toUpperCase(), false, '214,190,150']
+      : w.gadget ? [t('weaponAlways').toUpperCase(), true, '120,230,170']
       : w.owner === RosterManager.active ? [t('weaponInUse').toUpperCase(), true, '120,230,170'] : null;
     this.titleRow(ctx, I, w.name.toUpperCase(), w.owner === 'all' ? t('weaponShared') : t('weaponOf', { name: od ? od.name.toUpperCase() : w.owner }), rgb, chip, colW);
 

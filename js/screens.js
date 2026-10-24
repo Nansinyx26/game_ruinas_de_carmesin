@@ -40,7 +40,9 @@ class Screens {
     const btn = { x: ix + 18, y: gy + gh - 134, w: iw - 36, h: 42 };
     const slots = [];
     for (let k = 0; k < 4; k++) slots.push({ x: ix + 18 + k * 56, y: gy + gh - 64, w: 48, h: 48 });
-    return { W, x0, chars, keys, tabs, gx, gy, gw, gh, ix, iw, nodes, btn, slots, close, compact };
+    // Redistribuir os pontos (Game.respecSkills): no cabeçalho, à esquerda de PONTOS DE HABILIDADE
+    const respec = skillTreeAccess(ui.char).editable ? { x: x0 + W - 34 - 184 - 14 - 170, y: 61, w: 170, h: 26 } : null;
+    return { W, x0, chars, keys, tabs, gx, gy, gw, gh, ix, iw, nodes, btn, slots, close, compact, respec };
   }
 
   skillShape(ctx, kind, x, y, r) {
@@ -126,8 +128,8 @@ class Screens {
     const P = game.input.padLabels;
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,210,225,0.6)';
     ctx.fillText(game.input.lastDevice === 'pad'
-      ? `D-pad navegar · ${P.lb} / ${P.rb} trocar árvore · ${P.lt} / ${P.rt} trocar personagem · ${P.a} desbloquear · ${P.lb} + ${P.x} ${P.y} ${P.b} ${P.a} atalho · ${P.b} voltar`
-      : 'Setas navegar · Q / E trocar árvore · Z / C trocar personagem · J / Enter desbloquear · 1–4 atalho · Tab / Esc voltar · mouse', VIEW_W / 2, VIEW_H - 20);
+      ? `D-pad navegar · ${P.lb} / ${P.rb} trocar árvore · ${P.lt} / ${P.rt} trocar personagem · ${P.a} desbloquear · ${P.lb} + ${P.x} ${P.y} ${P.b} ${P.a} atalho · ${P.y} redistribuir · ${P.b} voltar`
+      : 'Setas navegar · Q / E trocar árvore · Z / C trocar personagem · J / Enter desbloquear · 1–4 atalho · R redistribuir · Tab / Esc voltar · mouse', VIEW_W / 2, VIEW_H - 20);
     ctx.restore();
   }
 
@@ -180,6 +182,18 @@ class Screens {
       ctx.fillText('PONTOS DE HABILIDADE', right - 34, y);
       limit = right - 34 - ctx.measureText('PONTOS DE HABILIDADE').width - 20;
       ctx.letterSpacing = '0px';
+      // botão de redistribuir: aceso quando há pontos gastos; pisca esperando a confirmação
+      const R = L.respec;
+      if (R) {
+        const on = pr.spent() > 0, wait = ui.respecT > 0, k = wait ? 0.6 + 0.4 * Math.sin(time * 10) : 1;
+        ctx.fillStyle = wait ? `rgba(255,190,80,${0.22 * k})` : 'rgba(8,12,22,0.9)'; techPanelPath(ctx, R.x, R.y, R.w, R.h, 6); ctx.fill();
+        ctx.strokeStyle = wait ? `rgba(255,212,122,${0.9 * k})` : on ? 'rgba(255,212,122,0.55)' : 'rgba(120,130,150,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.textAlign = 'center'; ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '1.5px';
+        ctx.fillStyle = on ? '#ffe2a0' : 'rgba(150,160,180,0.6)';
+        ctx.fillText(wait ? 'CONFIRMAR?' : `REDISTRIBUIR · ${game.input.lastDevice === 'pad' ? game.input.padLabels.y : 'R'}`, R.x + R.w / 2, R.y + R.h / 2 + 1);
+        ctx.letterSpacing = '0px';
+        limit = R.x - 14;
+      }
     } else {
       // Selo discreto: árvores só para consulta
       ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
@@ -345,8 +359,8 @@ class Screens {
     ctx.textAlign = 'left';
     let y = L.gy + 26;
     ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(trgb, 0.95);
-    const cost = s.cost || 1;
-    ctx.fillText(`${KIND[s.kind]} · ${SKILL_BRANCHES[tree.branch] || tree.name}${cost > 1 ? ` · ${cost} PONTOS POR NÍVEL` : ''}`, x + 18, y);
+    const pts = skillPts(s);
+    ctx.fillText(`${KIND[s.kind]} · ${SKILL_BRANCHES[tree.branch] || tree.name}${pts > 1 ? ` · ${pts} PONTOS POR NÍVEL` : ''}`, x + 18, y);
     ctx.letterSpacing = '0px';
     y += 30;
     ctx.font = `bold 24px ${FONT_TITLE}`;
@@ -429,7 +443,7 @@ class Screens {
       ctx.textAlign = 'center';
       ctx.font = `bold 14px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
       ctx.fillStyle = why ? 'rgba(180,190,205,0.75)' : '#fff3d6';
-      const pts = (s.cost || 1) > 1 ? `${s.cost} PONTOS` : '1 PONTO';
+      const pts = skillPts(s) > 1 ? `${skillPts(s)} PONTOS` : '1 PONTO';
       const btxt = why ? why.toUpperCase() : lv > 0 ? `[J] APRIMORAR → NÍVEL ${lv + 1} · ${pts}` : `[J] DESBLOQUEAR · ${pts}`;
       ctx.fillText(btxt, b.x + b.w / 2, b.y + b.h / 2 + 1);
       ctx.letterSpacing = '0px';

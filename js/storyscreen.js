@@ -863,6 +863,9 @@ class StoryScreen {
       if (narration) game.audio.narration.play(narration);
       else game.audio.narration.stop();
     }
+    // sem dublagem gravada: a voz sintetizada (opcional, js/voz.js) lê as falas da página
+    VozSintetica.parar();
+    if (pg && !narration && Array.isArray(pg.lines)) VozSintetica.enfileirar(pg.lines.map((l) => (Array.isArray(l) ? [l[0], l[1]] : ['', l])));
   }
   total(pg) { let n = 0; for (const l of pg.lines) n += (Array.isArray(l) ? l[1] : l).length; return n; }
   revealed() { return this.t * 60 * Settings.textRate() >= this.total(this.page); }
@@ -871,6 +874,7 @@ class StoryScreen {
     this.i++;
     if (this.i >= this.pages.length) {
       this.finished = true;
+      VozSintetica.parar();
       if (typeof game !== 'undefined' && game.audio && game.audio.narration) game.audio.narration.stop();
       if (this.onDone) this.onDone();
       return;
@@ -879,6 +883,7 @@ class StoryScreen {
   }
   stop() {
     this.finished = true;
+    VozSintetica.parar();
     if (typeof game !== 'undefined' && game.audio && game.audio.narration) game.audio.narration.stop();
   }
   choose(k) {

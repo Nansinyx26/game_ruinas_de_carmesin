@@ -661,13 +661,15 @@ const SPECIAL_WEAPON_DEFS = {
     stats: { dps: 45, radius: 280, chain: 2 },
     desc: 'Unidade autônoma de suporte aéreo com IA tática de ataque rápido e disparos em cadeia.'
   },
+  // O GLB (orion_primaria) é uma lâmina curva de núcleo incandescente: é um par de lâminas, não um
+  // fuzil (no jogo, a mão segura as Lâminas Duplas v1, js/heroes/armas3d.js)
   arma_primaria_orion_3d: {
-    owner: 'orion', kind: 'rifle', implemented: true, unlockLevel: 55,
-    name: 'Fuzil Sombra',
+    owner: 'orion', kind: 'blades', implemented: true, unlockLevel: 55,
+    name: 'Lâminas Sombra',
     png: `${SPECIAL_WEAPONS_BASE}/orion_primaria.png`,
     glb: `${SPECIAL_WEAPONS_BASE}/orion_primaria.glb`,
-    stats: { dmg: 75, range: 720, crit: 0.28 },
-    desc: 'Armamento balístico silencioso de calibre pesado, otimizado para abates rápidos e precisos.'
+    stats: { dmg: 34, hits: 2, speed: 1.45, crit: 0.28 },
+    desc: 'Par de lâminas de vibração com núcleo incandescente, para sequências rápidas.'
   },
   arma_secundaria_orion_3d: {
     owner: 'orion', kind: 'pistol', implemented: true, unlockLevel: 55,

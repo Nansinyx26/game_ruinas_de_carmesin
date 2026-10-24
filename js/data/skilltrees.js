@@ -367,7 +367,7 @@ const ROSTER_SKILLS = {
 };
 // ---------------------------------------------------------------------------
 // RAMOS DA PROGRESSÃO: cada árvore pertence a um ramo; a tela mostra as árvores nessa ordem.
-// O 5º ramo (Supremas) é igual em estrutura para todos: custa mais pontos (cost) e pede nível
+// O 5º ramo (Supremas) é igual em estrutura para todos: custa mais pontos (pts) e pede nível
 // alto; os efeitos ficam em js/heroes/passivas.js (HERO_PASSIVES, ids <prefixo>_sup_*).
 // ---------------------------------------------------------------------------
 const SKILL_BRANCHES = { ataque: 'ATAQUE', poderes: 'PODERES', defesa: 'DEFESA E SOBREVIVÊNCIA', mobilidade: 'MOBILIDADE', supremas: 'SUPREMAS' };
@@ -375,19 +375,19 @@ const SKILL_BRANCH_ORDER = ['ataque', 'poderes', 'defesa', 'mobilidade', 'suprem
 function supremeNodes(tree, pre) {
   const id = (k) => `${pre}_sup_${k}`;
   return {
-    [id('nucleo')]: { tree, name: 'Núcleo Supremo', kind: 'passiva', icon: 'overload', max: 3, lvl: 10, cost: 2, col: 1, row: 0, req: [],
+    [id('nucleo')]: { tree, name: 'Núcleo Supremo', kind: 'passiva', icon: 'overload', max: 3, lvl: 10, pts: 2, col: 1, row: 0, req: [],
       desc: (l) => `A suprema custa ${6 * l}% menos energia.` },
-    [id('amplificador')]: { tree, name: 'Amplificador', kind: 'passiva', icon: 'burst', max: 3, lvl: 12, cost: 2, col: 0, row: 1, req: [[id('nucleo'), 1]],
+    [id('amplificador')]: { tree, name: 'Amplificador', kind: 'passiva', icon: 'burst', max: 3, lvl: 12, pts: 2, col: 0, row: 1, req: [[id('nucleo'), 1]],
       desc: (l) => `+${8 * l}% de poder: habilidades e a suprema causam mais dano.` },
-    [id('recarga')]: { tree, name: 'Recarga de Combate', kind: 'passiva', icon: 'bolt', max: 3, lvl: 12, cost: 2, col: 2, row: 1, req: [[id('nucleo'), 1]],
+    [id('recarga')]: { tree, name: 'Recarga de Combate', kind: 'passiva', icon: 'bolt', max: 3, lvl: 12, pts: 2, col: 2, row: 1, req: [[id('nucleo'), 1]],
       desc: (l) => `Golpes pesados e finalizações que acertam devolvem ${2 * l} de energia.` },
-    [id('convergencia')]: { tree, name: 'Convergência', kind: 'passiva', icon: 'chain', max: 2, lvl: 15, cost: 2, col: 1, row: 2, req: [[id('amplificador'), 1], [id('recarga'), 1]],
+    [id('convergencia')]: { tree, name: 'Convergência', kind: 'passiva', icon: 'chain', max: 2, lvl: 15, pts: 2, col: 1, row: 2, req: [[id('amplificador'), 1], [id('recarga'), 1]],
       desc: (l) => `Combinação: depois de usar uma habilidade, o próximo golpe em até 2,5 s causa +${25 * l}% de dano.` },
-    [id('folego')]: { tree, name: 'Último Fôlego', kind: 'passiva', icon: 'heart', max: 1, lvl: 18, cost: 3, col: 0, row: 3, req: [[id('convergencia'), 1]],
+    [id('folego')]: { tree, name: 'Último Fôlego', kind: 'passiva', icon: 'heart', max: 1, lvl: 18, pts: 3, col: 0, row: 3, req: [[id('convergencia'), 1]],
       desc: () => 'Uma vez por setor, um golpe fatal deixa o herói com 30% da vida e metade da energia.' },
-    [id('ressonancia')]: { tree, name: 'Ressonância Suprema', kind: 'passiva', icon: 'soul', max: 2, lvl: 18, cost: 2, col: 2, row: 3, req: [[id('convergencia'), 1]],
+    [id('ressonancia')]: { tree, name: 'Ressonância Suprema', kind: 'passiva', icon: 'soul', max: 2, lvl: 18, pts: 2, col: 2, row: 3, req: [[id('convergencia'), 1]],
       desc: (l) => `Cada inimigo derrubado durante a suprema devolve ${8 * l} de energia.` },
-    [id('ascensao')]: { tree, name: 'Ascensão', kind: 'passiva', icon: 'eclipse', max: 1, lvl: 25, cost: 4, col: 1, row: 4, req: [[id('folego'), 1], [id('ressonancia'), 1]],
+    [id('ascensao')]: { tree, name: 'Ascensão', kind: 'passiva', icon: 'eclipse', max: 1, lvl: 25, pts: 4, col: 1, row: 4, req: [[id('folego'), 1], [id('ressonancia'), 1]],
       desc: () => '+10% de dano, 10% menos dano recebido e a suprema custa mais 10% menos.' },
   };
 }
@@ -433,6 +433,9 @@ function skillNodesOf(treeId) {
 }
 // Definição de qualquer habilidade de árvore, de qualquer personagem
 function skillDef(id) { return SKILLS[id] || ROSTER_SKILLS[id] || null; }
+// Pontos de habilidade por nível de um nó (pts; sem o campo, 1). O custo em energia das ativas é
+// outro campo ('energy', ou 'cost' em ABILITY_DEFS): Player.abilityCost
+function skillPts(s) { return (s && s.pts) || 1; }
 function skillIsActive(id) { const s = skillDef(id); return !!s && s.kind === 'ativa'; }
 // Personagens com árvores, na ordem do elenco
 function skillCharacters() { return CHARACTER_DEFS.filter((c) => SKILL_SETS[c.id]).map((c) => c.id); }

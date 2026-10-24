@@ -13,7 +13,7 @@ const SETTINGS_DEFAULT = {
   // Vídeo
   display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, fpsLimit: 0, postfx: 2, brightness: 0,
   // Áudio
-  master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true,
+  master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
   // Controles (gamepad)
   padSens: 100, deadzone: 20, invertY: false, vibration: true,
   // Idioma e legendas
@@ -51,6 +51,7 @@ const SETTINGS_TABS = [
     { key: 'master', label: 'Volume geral', type: 'range', min: 0, max: 100, step: 10, unit: '%' },
     { key: 'music', label: 'Música', type: 'range', min: 0, max: 100, step: 10, unit: '%', hint: 'Volume da trilha sonora oficial.' },
     { key: 'voice', label: 'Voz / Narração', type: 'range', min: 0, max: 100, step: 10, unit: '%', hint: 'Volume da dublagem e narração da história.' },
+    { key: 'synthVoice', label: 'Voz sintetizada nas falas', type: 'bool', hint: 'Lê em voz alta, com a voz do próprio aparelho, as falas e a história que não têm dublagem gravada.' },
     { key: 'sfx', label: 'Efeitos sonoros', type: 'range', min: 0, max: 100, step: 10, unit: '%' },
     { key: 'ambient', label: 'Ambiente', type: 'range', min: 0, max: 100, step: 10, unit: '%' },
   ] },

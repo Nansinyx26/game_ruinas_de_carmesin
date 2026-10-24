@@ -1009,7 +1009,7 @@ class Game {
     if (!skillTreesOf(id).length) id = DEFAULT_CHARACTER;
     if (ui.char === id) return;
     ui.memo[ui.char] = { tree: ui.tree, sel: ui.sel };
-    ui.char = id; ui.fx = null;
+    ui.char = id; ui.fx = null; ui.respecT = 0;
     const m = ui.memo[id], n = skillTreesOf(id).length;
     ui.tree = m && m.tree < n ? m.tree : 0;
     const list = this.treeNodes(ui.tree);
@@ -1052,6 +1052,34 @@ class Game {
     this.audio.play('skill');
     this.saveGame();
   }
+  // Redistribuir os pontos (respec): devolve tudo o que o herói mostrado gastou na árvore e
+  // limpa os atalhos. A primeira de cada herói é grátis; as seguintes custam 10 células por
+  // ponto devolvido. Pede confirmação: o primeiro aperto mostra o preço, o segundo (em 4 s) faz
+  respecPrice(pr) { return pr.respecs > 0 ? pr.spent() * 10 : 0; }
+  respecSkills() {
+    const ui = this.skillUI, acc = skillTreeAccess(ui.char);
+    if (!acc.editable) { this.audio.play('uiDeny'); this.skillMsg(acc.deny); return false; }
+    const pr = PartyProgress.of(ui.char), n = pr.spent(), preco = this.respecPrice(pr);
+    if (!n) { this.audio.play('uiDeny'); this.skillMsg('Nenhum ponto gasto para redistribuir'); return false; }
+    if (!(ui.respecT > 0)) {
+      ui.respecT = 4;
+      this.skillMsg(`Redistribuir: devolve ${n} ${n > 1 ? 'pontos' : 'ponto'}${preco ? ` por ${preco} células` : ' (a primeira é grátis)'} · aperte de novo para confirmar`, '255,212,122');
+      ui.msgT = 4;
+      this.audio.play('uiMove');
+      return false;
+    }
+    ui.respecT = 0;
+    if (preco > this.stats.soulsBank) { this.audio.play('uiDeny'); this.skillMsg(`Faltam ${preco - this.stats.soulsBank} células para redistribuir`); return false; }
+    this.stats.soulsBank -= preco;
+    pr.respec();
+    this.player.recalc();
+    ui.fx = null;
+    this.skillMsg(`${n} ${n > 1 ? 'pontos devolvidos' : 'ponto devolvido'}${preco ? ` · −${preco} células` : ''} · distribua de novo`, '140,255,190');
+    this.audio.play('skill');
+    this.saveGame();
+    if (this.world) this.world.save();
+    return true;
+  }
   bindSkill(id, k) {
     const acc = skillTreeAccess(this.skillUI.char);
     if (!acc.editable) { this.skillMsg(acc.deny); this.audio.play('uiDeny'); return; }
@@ -1065,7 +1093,9 @@ class Game {
     const inp = this.input, ui = this.skillUI;
     if (ui.fx) { ui.fx.t += dt; if (ui.fx.t > 0.9) ui.fx = null; }
     if (ui.msgT > 0) ui.msgT -= dt;
+    if (ui.respecT > 0) ui.respecT -= dt;
     if (inp.pressed.skills || inp.pressed.back) { this.closeSkills(); return; }
+    if (inp.pressed.respec) this.respecSkills();
     if (inp.pressed.charPrev) this.cycleSkillChar(-1);
     if (inp.pressed.charNext) this.cycleSkillChar(1);
     if (inp.pressed.tabPrev) this.setSkillTree(ui.tree - 1);
@@ -1087,6 +1117,7 @@ class Game {
       L.chars.forEach((r) => { if (inR(r) && r.id !== ui.char) this.setSkillChar(r.id); });
       L.tabs.forEach((r, i) => { if (inR(r) && i !== ui.tree) this.setSkillTree(i); });
       if (inR(L.btn)) this.learnSkill(ui.sel);
+      if (L.respec && inR(L.respec)) this.respecSkills();
       if (skillIsActive(ui.sel) && skillTreeAccess(ui.char).editable) L.slots.forEach((r, k) => { if (inR(r)) this.bindSkill(ui.sel, k); });
       if (inR(L.close)) this.closeSkills();
     }
