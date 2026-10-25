@@ -738,6 +738,7 @@ const EclipseTests = {
       this.fabricacao();
       this.cidade();
       this.climaMundo();
+      this.criacao(salvar);   // por último: troca o herói pelo personagem criado e volta ao Kael
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
@@ -1846,6 +1847,192 @@ const EclipseTests = {
     Clima.mudouNivel(0, true);
     World.state.hora = h0;
     if (World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
+  },
+
+  // Criação de personagem (js/criacao/): dados das classes, validação do nome e da aparência,
+  // perfis danificados (reserva), a ficha do herói sobre a base de combate, bônus reais da classe,
+  // modelo com todas as opções, retrato, a tela, e o mundo próprio do personagem (equipamento
+  // inicial, golpe, salvamento por personagem com a posição e a reserva). Não deixa rastro.
+  criacao(salvarMundo) {
+    const g = game, K = PERFIS_CHAVE, ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const grava = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+    const ls0 = ler(K), lsr0 = ler(K + '_reserva'), aviso0 = Perfis.aviso, ativo0 = RosterManager.active;
+    const criados = [];
+    let erro = null;
+    try {
+      // ------------------------------------------------ dados das classes
+      this.igual('criação: 5 classes', PERS_ORDEM.length, 5);
+      for (const c of PERS_ORDEM) {
+        const C = PERS_CLASSES[c];
+        this.ok(`criação: ${c} tem base de combate com árvores`, CHARACTERS_BY_ID[C.base] && SKILL_SETS[C.base] && CHARACTER_DEFS.some((d) => d.id === C.base), C.base);
+        this.ok(`criação: ${c} começa com peças que existem`, C.pecas.length >= 3 && C.pecas.every(([v, f]) => ARS_VAGAS[v] && ARS_FAMILIAS[f]), JSON.stringify(C.pecas));
+        this.ok(`criação: ${c} tem 2+ roupas e cores válidas`, C.roupas.length >= 2 && C.cores.every((k) => k >= 0 && k < persNumOps('corRoupa', c)));
+        this.ok(`criação: ${c} muda algum atributo de verdade`, Object.keys(C.bonus).length > 0);
+      }
+      this.igual('criação: as classes usam bases diferentes', new Set(PERS_ORDEM.map((c) => PERS_CLASSES[c].base)).size, 5);
+      // ------------------------------------------------ perfis: começa vazio
+      grava(K, null); grava(K + '_reserva', null);
+      Perfis.carregar();
+      this.ok('perfis: sem arquivo, conta nova sem personagens', Perfis.lista().length === 0 && /^conta_/.test(Perfis.dados.conta.id) && !Perfis.aviso);
+      // nome
+      const nomes = { '': false, A: false, '  Ana  Lú ': true, "D'Arc-7": true, 'Ç': false, 'Nome Comprido Demais': false, '<script>': false, '-Hífen': false, 'Élan Ñ': true };
+      for (const n in nomes) this.igual(`perfis: nome ${JSON.stringify(n)} ${nomes[n] ? 'aceito' : 'recusado'}`, Perfis.validarNome(n).ok, nomes[n]);
+      this.igual('perfis: espaços extras removidos', Perfis.validarNome('  Ana  Lú ').nome, 'Ana Lú');
+      // aparência: fora das opções volta ao padrão
+      const P = persAparenciaPadrao('mago'), Av = Perfis.validarAparencia({ corpo: 99, pele: -1, cabelo: 2.5, olhos: 'x', barba: 3, roupa: 7 }, 'mago');
+      this.ok('perfis: aparência inválida volta ao padrão (campo a campo)', Av.corpo === P.corpo && Av.pele === P.pele && Av.cabelo === P.cabelo && Av.olhos === P.olhos && Av.barba === 3 && Av.roupa === P.roupa, JSON.stringify(Av));
+      this.ok('perfis: aparência com todos os campos', PERS_CAMPOS.every((k) => Number.isInteger(Av[k])));
+      // criar
+      this.ok('perfis: sem classe válida, recusa', !Perfis.criar('Teste', 'bardo', P).ok);
+      const r1 = Perfis.criar('Ravena', 'assassino', persAparenciaPadrao('assassino'));
+      const r2 = Perfis.criar('ravena', 'mago', P);
+      this.ok('perfis: cria com id único', r1.ok && /^p_[a-z0-9]+$/.test(r1.perfil.id), r1.erro);
+      this.ok('perfis: nome repetido (sem diferença de maiúsculas) recusado', !r2.ok && /Já existe/.test(r2.erro), r2.erro);
+      const r3 = Perfis.criar('Teodoro', 'guardiao', persAparenciaPadrao('guardiao'), null, { ocultarCapacete: true, arma: 'nao_existe' });
+      criados.push(r1.perfil.id, r3.perfil.id);
+      this.ok('perfis: ids diferentes e opções validadas', r3.ok && r3.perfil.id !== r1.perfil.id && r3.perfil.opcoes.ocultarCapacete && r3.perfil.opcoes.arma === null);
+      const ed = Perfis.criar('Teodoro II', 'mago', Object.assign({}, r3.perfil.aparencia, { cabelo: 4 }), r3.perfil.id);
+      this.ok('perfis: editar muda nome e aparência, mas não a classe', ed.ok && ed.perfil.nome === 'Teodoro II' && ed.perfil.classe === 'guardiao' && ed.perfil.aparencia.cabelo === 4 && Perfis.lista().length === 2);
+      Perfis.ativar(r1.perfil.id);
+      this.igual('perfis: personagem ativo', Perfis.ativo() && Perfis.ativo().id, r1.perfil.id);
+      // gravado e relido
+      const salvo = JSON.parse(ler(K));
+      this.ok('perfis: gravados no navegador (conta, personagens, ativo)', salvo.v === 1 && salvo.personagens.length === 2 && salvo.ativo === r1.perfil.id && salvo.conta.id === Perfis.dados.conta.id);
+      this.ok('perfis: versão anterior guardada como reserva', !!ler(K + '_reserva'));
+      // arquivo danificado: usa a reserva; os dois danificados: começa do zero
+      const bom = ler(K);
+      grava(K + '_reserva', bom); grava(K, '{quebrado');
+      Perfis.carregar();
+      this.ok('perfis: arquivo danificado usa a reserva', Perfis.lista().length === 2 && /reserva/.test(Perfis.aviso), Perfis.aviso);
+      grava(K, '[1,2'); grava(K + '_reserva', 'null}');
+      Perfis.carregar();
+      this.ok('perfis: sem reserva válida, começa do zero e avisa', Perfis.lista().length === 0 && /danificados/.test(Perfis.aviso), Perfis.aviso);
+      // entradas ruins dentro de um arquivo válido são descartadas uma a uma
+      const D = JSON.parse(bom);
+      D.personagens.push({ id: 'x', nome: 'Sem Id', classe: 'mago' }, { id: 'p_abc', nome: 'Z', classe: 'mago' }, { id: 'p_def', nome: 'Classe Ruim', classe: 'bardo' }, Object.assign({}, D.personagens[0]), { id: 'p_ghi', nome: 'Valido', classe: 'patrulheiro', aparencia: { corpo: 50 } });
+      D.ativo = 'p_naoexiste';
+      grava(K, JSON.stringify(D));
+      Perfis.carregar();
+      const L = Perfis.lista();
+      this.ok('perfis: entradas inválidas e repetidas descartadas, válidas mantidas', L.length === 3 && L.some((p) => p.id === 'p_ghi' && p.aparencia.corpo === persAparenciaPadrao('patrulheiro').corpo), L.map((p) => p.id).join(','));
+      this.ok('perfis: ativo que não existe vira nenhum', Perfis.ativo() === null);
+      criados.push('p_ghi');
+      // ------------------------------------------------ ficha do herói
+      const id = r1.perfil.id, def = CHARACTERS_BY_ID[id];
+      this.ok('herói criado: ficha registrada (fora dos 5 cartões do elenco)', def && def.criado && !CHARACTER_DEFS.some((d) => d.id === id) && CHARACTER_DEFS.length === 5);
+      this.igual('herói criado: luta com a base da classe (assassino → Orion)', heroBase(id), 'orion');
+      this.ok('herói criado: árvores da base com progresso próprio', SKILL_SETS[id] && SKILL_SETS[id].trees === SKILL_SETS.orion.trees && SKILL_SETS[id].progress === 'party' && PartyProgress.of(id) !== PartyProgress.of('orion'));
+      this.ok('herói criado: modelo 3D próprio', !!MODELS3D[def.model] && heroModelKey(def) === def.model);
+      this.ok('herói criado: armas da base', def.weapons.length > 0 && def.weapons.every((w) => CHARACTERS_BY_ID.orion.weapons.includes(w)));
+      // bônus reais da classe no Player.recalc (com e sem a classe)
+      for (const c of PERS_ORDEM) {
+        const d = Perfis.registrar({ id: 'p_teste' + c, nome: 'Teste', classe: c, aparencia: persAparenciaPadrao(c) });
+        const p1 = new Player(0, 0, d); p1.recalc(true);
+        const cl = d.classe; d.classe = null;
+        const p0 = new Player(0, 0, d); p0.recalc(true);
+        d.classe = cl;
+        const B = PERS_CLASSES[c].bonus, dif = (k) => +(p1.stats[k] - p0.stats[k]).toFixed(4);
+        const ok = (!B.armor || dif('armor') === B.armor) && (!B.crit || dif('crit') === B.crit) && (!B.power || dif('power') === B.power) && (!B.cdr || dif('cdr') === -B.cdr) && (!B.guardBreak || dif('guardBreak') === B.guardBreak) && (!B.magnet || dif('magnet') === B.magnet);
+        this.ok(`classe ${c}: bônus aplicados no herói`, ok, JSON.stringify({ armor: dif('armor'), crit: dif('crit'), power: dif('power'), cdr: dif('cdr'), gb: dif('guardBreak') }));
+        this.ok(`classe ${c}: vida e energia da classe`, p1.maxHp >= PERS_CLASSES[c].stats.hp && p1.maxEnergy >= PERS_CLASSES[c].stats.energy, `${p1.maxHp} ${p1.maxEnergy}`);
+        this.igual(`classe ${c}: kit da base`, p1.kit ? p1.kit.id : null, heroKitOf(CHARACTERS_BY_ID[PERS_CLASSES[c].base]) ? heroKitOf(CHARACTERS_BY_ID[PERS_CLASSES[c].base]).id : null);
+        delete CHARACTERS_BY_ID[d.id]; delete SKILL_SETS[d.id]; delete MODELS3D[d.model];
+      }
+      // ------------------------------------------------ modelo: todas as opções de todos os campos
+      let ruins = [], n = 0;
+      try {
+        for (const c of PERS_ORDEM) for (const k of PERS_CAMPOS) for (let v = 0; v < persNumOps(k, c); v++) {
+          if (c !== 'mago' && k !== 'roupa' && k !== 'corRoupa') continue;   // a aparência é a mesma em todas as classes
+          const A = persAparenciaPadrao(c); A[k] = v;
+          const m = PersonagemModelo.build({ id: 'p_modelo', base: PERS_CLASSES[c].base, classe: c, aparencia: A });
+          n++;
+          if (!(m.nodes.head.geo instanceof Float32Array) || !m.nodes.head.geo.length || !(m.nodes.torso.geo instanceof Float32Array) || !m.medidasPecas) ruins.push(`${c}.${k}=${v}`);
+        }
+      } catch (e) { ruins.push(e.message); }
+      this.ok(`modelo: ${n} combinações montam (corpo, rosto, cabelo, barba, marcas, roupas)`, n > 60 && !ruins.length, ruins.slice(0, 5).join(','));
+      const g1 = PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), { cabelo: 0 }) }).nodes.head.geo.length;
+      const g2 = PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), { cabelo: 5 }) }).nodes.head.geo.length;
+      const h0 = PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), { altura: 0 }) });
+      this.ok('modelo: o cabelo muda a malha da cabeça', g1 !== g2, `${g1} ${g2}`);
+      this.ok('modelo: altura vira escala do modelo', MODELS3D[def.model].opts(null).scale === PersonagemModelo.ALTURA[def.aparencia.altura] && PersonagemModelo.ALTURA[0] < 1 && PersonagemModelo.ALTURA[4] > 1 && !!h0);
+      if (R3D.active) {
+        const ret = PersonagemModelo.retrato(def);
+        this.ok('retrato do HUD: 288×288 com o rosto', ret && ret.width === 288 && heroPortrait(id) === ret);
+      }
+      // ------------------------------------------------ a tela
+      const ent = () => ({ move: { x: 0, y: 0 }, pressed: {}, held: {}, released: {}, look: { x: 0, y: 0 }, mouse: { x: 0, y: 0, clicked: false } });
+      erro = null;
+      try {
+        CriacaoTela.abrir('criar');
+        const U = CriacaoTela.ui;
+        CriacaoTela.draw(g.ctx, 0.1);
+        let i = ent(); i.pressed.down = true; CriacaoTela.update(1 / 60, i);
+        i = ent(); i.pressed.confirm = true; CriacaoTela.update(1 / 60, i);
+        const cl = U.classe;
+        i = ent(); i.pressed.tabNext = true; CriacaoTela.update(1 / 60, i);
+        i = ent(); i.pressed.right = true; CriacaoTela.update(1 / 60, i);
+        this.ok('tela: escolhe a classe e muda a aparência pelo teclado', cl === PERS_ORDEM[1] && U.aba === 'aparencia' && U.A.corpo !== persAparenciaPadrao(cl).corpo, `${cl} ${U.aba}`);
+        for (let z = 0; z < 3; z++) { CriacaoTela.acao('zoom', z); for (const ps of [0, 1, 2, 3, 4]) { CriacaoTela.acao('pose', ps); CriacaoTela.draw(g.ctx, ps * 0.3); } }
+        CriacaoTela.acao('aba', 'equipamento'); CriacaoTela.mudar(0, 1); CriacaoTela.draw(g.ctx, 0.2);
+        CriacaoTela.aleatorio(); CriacaoTela.draw(g.ctx, 0.3);
+        U.nome = 'x'; CriacaoTela.acao('confirmar'); CriacaoTela.parar();
+        this.ok('tela: nome inválido não cria e avisa', Perfis.lista().length === 3 && /letras/.test(U.erro), U.erro);
+        U.modo = 'lista'; CriacaoTela.draw(g.ctx, 0.4);
+        CriacaoTela.fechar();
+        this.ok('tela: fecha sem deixar a ficha da prévia', !CHARACTERS_BY_ID.p_previa && !SKILL_SETS.p_previa && g.state === 'menu');
+      } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+      this.ok('tela de criação: sem exceção (classes, aparência, zoom, poses, equipamento, lista)', !erro, erro);
+      // ------------------------------------------------ o mundo do personagem
+      const kw = ler(WORLD_SAVE_KEY);
+      Perfis.ativar(id);
+      grava(`${WORLD_SAVE_KEY}:${id}`, null);
+      World.start();
+      const p = g.player;
+      this.ok('mundo: o personagem criado entra em campo', p.def.id === id && RosterManager.active === id && p.base === 'orion', p.def.id);
+      this.igual('mundo: salvamento separado por personagem', World.chave(), `${WORLD_SAVE_KEY}:${id}`);
+      const V = Arsenal.vestidos(id);
+      this.ok('mundo: começa com as peças da classe vestidas', PERS_CLASSES.assassino.pecas.every(([v, f]) => V[v] && V[v].fam === f), Object.keys(V).join(','));
+      this.ok('mundo: progresso próprio com os pontos iniciais', g.activeProgress() === PartyProgress.of(id) && g.activeProgress().sp === 2 && g.activeProgress() !== g.progress);
+      this.ok('mundo: o herói da árvore é o personagem criado', skillCharacters()[0] === id && skillTreeAccess(id).editable);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      const e = createEnemy('rastejador', p.x + 50, p.y, 1); e.hp = e.maxHp = 5000; e.spawnT = 0; e.setState('idle'); g.enemies.push(e);
+      p.facing = 0; p.travaAtaque = 0; p.state = 'idle';
+      const hp0 = e.hp, i = this.entrada(); i.pressed.light = true; p.captureInput(i);
+      this.passos(p, 0.8, 1 / 30);
+      this.ok('mundo: o golpe leve da classe acerta', e.hp < hp0, hp0 - e.hp);
+      e.alive = false; g.enemies.length = 0;
+      // moradores: o nome no primeiro encontro
+      const mor = g.npcs.find((n) => n.P && n.P.id && !n.merchant);
+      let fala = '';
+      if (mor) { Povo.conversar(mor); fala = Dialogo.texto; Dialogo.fechar(); g.state = 'playing'; }
+      this.ok('moradores: chamam o personagem criado pelo nome no primeiro encontro', fala.includes(`Você deve ser ${p.def.name}.`), fala || 'sem morador na zona');
+      // salvamento: posição, reserva e arquivo danificado
+      p.x = 700; p.y = 650;
+      salvarMundo.call(World);
+      const s1 = JSON.parse(ler(World.chave()) || 'null');
+      this.ok('mundo: salva a posição do personagem', s1 && s1.world.pos && s1.world.pos.x === 700 && s1.world.pos.y === 650, s1 && JSON.stringify(s1.world.pos));
+      this.igual('mundo: o salvamento do Kael não é tocado', ler(WORLD_SAVE_KEY), kw);
+      salvarMundo.call(World);
+      this.ok('mundo: a versão anterior vira reserva', !!ler(World.chave() + '_reserva'));
+      grava(World.chave(), '{"v":1,"world":');
+      const lido = World.read();
+      this.ok('mundo: salvamento danificado usa a reserva', lido && lido.world.pos.x === 700);
+      World.start();
+      this.ok('mundo: recarregado no mesmo lugar', g.player.def.id === id && Math.round(g.player.x) === 700 && Math.round(g.player.y) === 650, `${g.player.x},${g.player.y}`);
+      // excluir leva o mundo junto
+      Perfis.excluir(id);
+      this.ok('perfis: excluir remove o personagem, a ficha e o mundo dele', !Perfis.obter(id) && !CHARACTERS_BY_ID[id] && !SKILL_SETS[id] && !ler(`${WORLD_SAVE_KEY}:${id}`) && !ler(`${WORLD_SAVE_KEY}:${id}_reserva`));
+    } catch (e2) { erro = e2.stack ? e2.stack.split('\n').slice(0, 3).join(' | ') : e2.message; this.ok('criação: sem exceção', false, erro); }
+    // limpeza: perfis, fichas e salvamentos de teste; volta ao mundo do Kael
+    for (const id of criados) { try { localStorage.removeItem(`${WORLD_SAVE_KEY}:${id}`); localStorage.removeItem(`${WORLD_SAVE_KEY}:${id}_reserva`); } catch (e) {} const d = CHARACTERS_BY_ID[id]; if (d && d.criado) { delete MODELS3D[d.model]; delete CHARACTERS_BY_ID[id]; delete SKILL_SETS[id]; } }
+    grava(K, ls0); grava(K + '_reserva', lsr0);
+    Perfis.carregar(); Perfis.aviso = aviso0;
+    Perfis.dados.ativo = null;   // (só na memória: o jogador continua com o personagem que tinha escolhido)
+    grava(WORLD_SAVE_KEY, null);
+    World.start();
+    if (RosterManager.isSelectable(ativo0)) RosterManager.active = ativo0;
     g.state = 'playing';
   },
 

@@ -17,7 +17,7 @@
 const AllyFx = {
   // nível do nó na árvore do personagem em campo (0 = não aprendido)
   lv(p, id) {
-    if (!p || !p.def || id.indexOf(p.def.id + '_') !== 0) return 0;
+    if (!p || !p.def || id.indexOf(heroBase(p.def.id) + '_') !== 0) return 0;
     const pr = heroProgressOf(p);
     return pr && pr.lv ? pr.lv(id) || 0 : 0;
   },
@@ -201,7 +201,7 @@ const AllyFx = {
       heroInRadius(p.x, p.y, 220, (e) => heroSlow(e, p._gritoLv >= 2 ? 0.2 : 0.1, 0.6));
     }
     // Injeção Estimulante: velocidade e recargas
-    if (p.def.id === 'sera') {
+    if (heroBase(p.def.id) === 'sera') {
       const inj = b.injecao > 0, k = p._injLv >= 2 ? 0.3 : 0.15;
       p.stats.speedMult = (p._baseSpeedMult || p.stats.speedMult) * (inj ? 1 + k : 1);
       if (inj) for (const id in p.cds) if (p.cds[id] > 0) p.cds[id] = Math.max(0, p.cds[id] - dt * (p._injLv >= 2 ? 0.4 : 0.2));

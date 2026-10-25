@@ -31,6 +31,8 @@ const RosterManager = {
   get activeDef() { return this.def(this.active) || this.def(DEFAULT_CHARACTER); },
   isUnlocked(id) {
     if (id === 'kael' || id === 'orion') return true;
+    const d = this.def(id);
+    if (d && d.criado) return true;   // personagem criado pelo jogador (js/criacao/)
     return this.unlocked.has(id);
   },
   // Pode ser escolhido agora? (desbloqueado e já existente no jogo)
@@ -137,7 +139,7 @@ const RosterManager = {
   equipArmor(charId, armorId) {
     const a = ARMOR_DEFS[armorId];
     if (!a || !this.def(charId) || !this.isArmorUnlocked(armorId)) return false;
-    if (a.owner !== 'all' && a.owner !== charId) return false;
+    if (a.owner !== 'all' && a.owner !== heroBase(charId)) return false;
     this.armor[charId] = armorId;
     this.emit('armorChanged', { charId, armorId });
     return true;
@@ -145,7 +147,7 @@ const RosterManager = {
   equipWeapon(charId, weaponId) {
     const w = WEAPON_DEFS[weaponId];
     if (!w || w.gadget || w.armorRef || !this.def(charId) || !this.isWeaponUnlocked(weaponId)) return false;
-    if (w.owner !== 'all' && w.owner !== charId) return false;
+    if (w.owner !== 'all' && w.owner !== heroBase(charId)) return false;
     this.weapon[charId] = weaponId;
     this.emit('weaponChanged', { charId, weaponId });
     return true;
@@ -224,11 +226,11 @@ const RosterManager = {
     for (const id of data.weaponsUnlocked || []) if (WEAPON_DEFS[id]) this.weaponsUnlocked.add(id);
     for (const cid in data.armor || {}) {
       const aid = data.armor[cid], a = ARMOR_DEFS[aid];
-      if (this.def(cid) && a && this.armorsUnlocked.has(aid) && (a.owner === 'all' || a.owner === cid)) this.armor[cid] = aid;
+      if (this.def(cid) && a && this.armorsUnlocked.has(aid) && (a.owner === 'all' || a.owner === heroBase(cid))) this.armor[cid] = aid;
     }
     for (const cid in data.weapon || {}) {
       const wid = data.weapon[cid], w = WEAPON_DEFS[wid];
-      if (this.def(cid) && w && this.weaponsUnlocked.has(wid) && (w.owner === 'all' || w.owner === cid)) this.weapon[cid] = wid;
+      if (this.def(cid) && w && this.weaponsUnlocked.has(wid) && (w.owner === 'all' || w.owner === heroBase(cid))) this.weapon[cid] = wid;
     }
     // O ativo precisa ser escolhível nesta versão do jogo; senão volta ao inicial
     this.active = this.isSelectable(data.active) ? data.active : DEFAULT_CHARACTER;

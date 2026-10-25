@@ -437,8 +437,12 @@ function skillDef(id) { return SKILLS[id] || ROSTER_SKILLS[id] || null; }
 // outro campo ('energy', ou 'cost' em ABILITY_DEFS): Player.abilityCost
 function skillPts(s) { return (s && s.pts) || 1; }
 function skillIsActive(id) { const s = skillDef(id); return !!s && s.kind === 'ativa'; }
-// Personagens com árvores, na ordem do elenco
-function skillCharacters() { return CHARACTER_DEFS.filter((c) => SKILL_SETS[c.id]).map((c) => c.id); }
+// Personagens com árvores, na ordem do elenco (o personagem criado em campo vem primeiro: js/criacao/)
+function skillCharacters() {
+  const ids = CHARACTER_DEFS.filter((c) => SKILL_SETS[c.id]).map((c) => c.id), a = RosterManager.active, d = CHARACTERS_BY_ID[a];
+  if (d && d.criado && SKILL_SETS[a]) ids.unshift(a);
+  return ids;
+}
 function charFirstName(id) { const d = CHARACTERS_BY_ID[id]; return d ? d.name.split(' ')[0] : ''; }
 // Habilidade da ficha (ABILITY_DEFS) que um nó representa: 'ability' nos nós do elenco,
 // 'binding.skill' nas fichas do Kael

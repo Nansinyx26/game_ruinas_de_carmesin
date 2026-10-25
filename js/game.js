@@ -237,6 +237,7 @@ class Game {
       case 'worldmap': World.updateMap(dt, inp); break;   // mapa do mundo aberto (js/world.js)
       case 'worldinv': WorldInv.updateUI(dt, inp); break;   // mochila, loja e missões (js/mundo/inventario.js)
       case 'worlddlg': Dialogo.update(dt, inp); break;       // conversa com os moradores (js/mundo/dialogo.js)
+      case 'criacao': CriacaoTela.update(dt, inp); break;    // criação de personagem (js/criacao/tela.js)
       case 'upgrade': this.updateUpgrade(dt); break;
       case 'gameover':
       case 'victory': this.updateEnd(dt); break;
@@ -1212,6 +1213,8 @@ class Game {
       if (this.thirdPerson) this.thirdPerson.draw(ctx, this.realTime);
     } else if (this.state === 'story') {
       this.story.draw(ctx, this.realTime);
+    } else if (this.state === 'criacao') {
+      CriacaoTela.draw(ctx, this.realTime);
     } else if (this.player && this.room) {
       this.renderWorld(ctx);
       if (this.world) { WorldTime.drawOverlay(ctx); Clima.desenharTela(ctx); }   // dia e noite, clima; calor, visibilidade e o frio e o calor extremos

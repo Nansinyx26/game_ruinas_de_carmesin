@@ -134,6 +134,65 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **Idle de cada herói**: Drakos com respiração pesada e tensão (punhos, pescoço), Lyra ajustando o arco e levando a mão às flechas, Orion em vigilância e base baixa com as mãos nas lâminas, Kael com a mão no cabo da espada guardada (pronto para sacar). As variações dependem do estado da arma e trocam passando pelo repouso (sem salto de pose).
 - **Coreografias novas** (`ATTACKS`, `CHARACTER_COMBOS` em `js/combat.js`): Kael — Sentença do Eclipse (J J J K, salto e golpe com onda de choque) e Revés do Horizonte (K J, vira e corta o que está atrás); Drakos — o 3º golpe usa a arma das costas (machado ↔ martelo), Queda do Titã (J J J K) e Retaliação (J até 1 s depois de bloquear com o Escudo de Energia); Orion — 2º golpe com a lâmina esquerda, Corte em X (K K, as duas lâminas) e Salto do Corvo (J J J K, salto mortal). As finalizações e a retaliação são liberadas por nós da árvore. Cada inimigo toma um acerto por golpe (os giratórios, até o `multiHit` deles).
 
+## Criação de personagem
+
+**Tela inicial** ou **Menu principal → PERSONAGENS · CRIAR** (`js/criacao/`). O jogador cria o próprio herói e joga o mundo aberto com ele, na vista isométrica e na 3ª pessoa. O mundo original do Kael e da história continua igual e separado.
+
+- **Lista de personagens**: os personagens da conta, com classe e nível salvo. Dá para jogar (isométrica ou 3ª pessoa), editar a aparência, excluir (com confirmação; o mundo dele vai junto), criar um novo ou voltar ao mundo original do Kael.
+- **Tela de criação**: o personagem aparece no centro em **3D de verdade**, desenhado pelo próprio motor do jogo em perspectiva, sobre um altar de runas, com luz, sombra e brasas no ar.
+  - **Girar**: arraste com o mouse ou o dedo, ou use Z / C e os botões.
+  - **Aproximar**: roda do mouse, + / − ou os botões (corpo inteiro, busto, rosto).
+  - **Poses**: parado, guarda, vitória, correndo e o golpe da arma da classe.
+  - **Painéis**: CLASSE, APARÊNCIA e EQUIPAMENTO (Q/E trocam de aba). À direita ficam o **nome**, os números reais da classe, as habilidades e a câmera inicial (isométrica ou 3ª pessoa).
+  - **ALEATÓRIO** sorteia a aparência. Tudo muda na hora no modelo.
+- **Nome**: de 2 a 16 caracteres (letras com acento, números, espaço, hífen ou apóstrofo), sem repetir outro personagem da conta. Recusado, aparece o motivo.
+- **Aparência** (13 opções, todas desenhadas no modelo; `PERS_APAR` em `js/criacao/dados.js`):
+  - **Corpo e altura**: 4 tipos de corpo (esguio, atlético, robusto, curvilíneo: ombros, quadril, braços e pernas) e 5 alturas (de 92% a 108%).
+  - **Rosto**: 8 tons de pele e 4 formatos de rosto. Olhos em 6 cores; os **arcanos** brilham. Sobrancelhas em 4 opções.
+  - **Cabelo e barba**: 8 cabelos (raspado, curto, topete, longo, rabo de cavalo, moicano, tranças, coque) em 8 cores; 5 barbas.
+  - **Marcas**: cicatrizes, tatuagem, runas acesas ou pintura de guerra.
+  - **Roupa**: 3 roupas por classe, com cor da roupa e cor dos detalhes.
+- **Equipamento**: escolher a arma principal entre as da classe, ver as peças iniciais vestidas na prévia e esconder o capacete.
+
+### Classes
+
+Cada classe luta com o conjunto de combate de um herói do jogo: golpes, combos, poderes, suprema, arma 3D e as 5 árvores de habilidades. O progresso é próprio do personagem. Por cima disso a classe tem vida, energia, velocidade e bônus próprios, aplicados de verdade no `Player.recalc`.
+
+| Classe | Luta como | Vida · Energia · Velocidade | Bônus da classe | Começa vestindo |
+|---|---|---|---|---|
+| Guerreiro | Drakos (machado e martelo, escudo, investida, retaliação) | 150 · 90 · 210 | +6% defesa, +15% quebra de guarda | peitoral e ombreiras de placas, botas de couro |
+| Mago | Sera (bastão neural, drone, pulsos, campo de força) | 90 · 135 · 228 | +10% poder das habilidades, −8% recarga | capa e botas do Viajante, amuleto de cristal |
+| Assassino | Orion (lâminas duplas, furtividade, golpe pelas costas, pistola) | 82 · 100 · 268 | +6% crítico | capuz, luvas e botas de couro |
+| Patrulheiro | Lyra (kit completo: arco de fóton, armadilhas, iscas, chuva de flechas, gancho) | 92 · 110 · 250 | +4% crítico, alcance maior para coletar | capa do Viajante, calças e botas de couro |
+| Guardião Arcano | Kael (Tempestade Nula, técnicas, granada, Eclipse Absoluto) | 115 · 115 · 232 | +3% defesa, +6% poder | peitoral de couro, ombreiras de cristal, capa |
+
+### No jogo
+
+- **Mundo próprio**: confirmar a criação começa um mundo novo só daquele personagem, no Mercado Afundado, com as peças iniciais da classe vestidas no **Arsenal** e 2 pontos de habilidade.
+- **Personagem ativo**: o último escolhido na lista continua ativo, e **MUNDO ABERTO** no menu volta para o mundo dele. Para jogar com o Kael, escolha **Mundo original do Kael** na lista.
+- **Retrato e árvores**: o HUD mostra o rosto do próprio modelo (com a aparência escolhida). Na árvore de habilidades (Tab), ele é a primeira aba.
+- **Visual**: o modelo usa as peças de armadura vestidas, o clima na roupa (molhado, neve, geada), as poses de combate e as armas da classe, nas duas câmeras.
+- **Moradores**: no primeiro encontro chamam o personagem pelo nome e comentam a classe; às vezes voltam a comentar depois.
+- **O resto vale como para os heróis do elenco**: missões, contratos, ofícios, cidade, fabricação e campanha das regiões.
+- **Salvamento** (no navegador):
+  - **Perfis**: `eclipse_zero_perfis_v1` guarda a conta e os personagens; a versão anterior fica em `_reserva`.
+  - **Mundo de cada personagem**: `eclipse_zero_mundo_v1:<id>`, com a posição em que ele estava; também tem reserva.
+  - **Validação**: na leitura, tudo é validado. Um arquivo danificado usa a reserva, e o jogo avisa. Entradas inválidas são descartadas uma a uma (nome, classe, id e cada campo da aparência, que volta ao padrão se vier fora das opções).
+  - **Excluir** um personagem apaga o mundo dele.
+- **Pronto para servidor (sem rede)**:
+  - **Ids**: cada personagem tem um id único (`p_…`) e a conta tem o dela (`conta_…`).
+  - **Repositório**: `Perfis` (`lista`, `obter`, `criar`, `excluir`, `ativar`, `carregar`, `salvar`) é o único lugar que lê e grava; trocar o `localStorage` por chamadas a um servidor muda só esse objeto.
+  - **Camadas**: dados e regras (`dados.js`), modelo 3D (`modelo.js`) e tela (`tela.js`) ficam separados.
+  - **Não há multijogador**: nada é enviado pela rede.
+- **Desempenho**: o modelo de cada personagem é montado uma vez (e refeito só quando a aparência muda). O retrato é desenhado uma vez e guardado. A prévia da tela usa o mesmo motor e as mesmas malhas do jogo.
+
+### Limites
+
+- **Corpo**: o corpo é feito de partes rígidas presas ao esqueleto do Kael. Os tipos de corpo mudam as proporções das partes; não há malha contínua deformável (sem *morph targets*) nem controles deslizantes livres.
+- **Rosto**: tem poucos polígonos, no estilo dos modelos procedurais do jogo.
+- **Classe**: não muda depois de criada (as árvores e o equipamento são dela).
+- **Animações e campanha**: as animações e os golpes são os do herói da base da classe. O personagem criado não entra na campanha da história nem nas missões de lealdade e campanhas dos heróis do elenco: ele joga o mundo aberto.
+
 ## Mundo aberto
 
 Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica), **MUNDO ABERTO · 3ª PESSOA** ou **CAMPANHAS DOS HERÓIS** (o mundo com a lista das campanhas aberta). Na pausa: **CÂMERA** alterna as duas vistas e **MUNDO ABERTO** leva da campanha para o mundo (a campanha fica salva); dentro do mundo, o mesmo item abre o mapa. No toque, o botão **3D** alterna a câmera e arrastar na metade direita gira.
@@ -437,6 +496,10 @@ js/
                     poças, neve, pegadas, neblina, fogueiras, temperatura do corpo, roupa molhada,
                     moradores no abrigo e o som do clima)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
+  criacao/          criação de personagem: dados.js (PERS_CLASSES, PERS_APAR, PersClasse, Perfis,
+                    PersCriacao: classes, aparência, validação, perfis locais e equipamento inicial),
+                    modelo.js (PersonagemModelo: o modelo 3D paramétrico no esqueleto do Kael e o
+                    retrato do HUD), tela.js (CriacaoTela: a tela de criação e a lista de personagens)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
   kaelart.js        KaelArt: desenha o Kael com os sprites da arte oficial (quadro por estado)
                     — opção "Sprites 2D" e o modo sem WebGL
@@ -508,6 +571,7 @@ Cada arquivo começa com `'use strict';`, como o script original.
 | Elementos do HUD | `js/hud.js`: posições em `HUD.layout()` e `HUDV` (bloco de vida/energia), áreas ocupadas em `HUD.buildZones()`, desenho estático em `HUD.layer()` |
 | Menus, pausa, créditos, versão | `js/menus.js` (`CREDITS`, `GAME_VERSION`, `CHARACTERS` no topo do arquivo) |
 | Personagem, habilidade, armadura ou arma do elenco | `js/data/characters.js`, `abilities.js`, `armors.js`, `weapons.js` (`RosterManager.validate()` avisa no console se uma referência estiver errada) |
+| Classe do personagem criado (base, atributos, bônus, peças iniciais, falas) ou opção de aparência | `PERS_CLASSES` e `PERS_APAR` em `js/criacao/dados.js` (o desenho de cada opção em `js/criacao/modelo.js`) |
 | Condição de desbloqueio | campo `unlock` da ficha (`always`, `chapter_complete`, `boss_defeated`, `quest_complete`, `flag`) |
 | Nova opção de configuração | `SETTINGS_DEFAULT` e `SETTINGS_TABS` em `js/settings.js` (+ o efeito em `Settings.apply()` ou onde a opção é lida) |
 | Telas de evolução, árvore e finais | `js/screens.js` (desenho) e `js/game.js` (estado e entrada) |
@@ -529,7 +593,7 @@ Para manter o projeto organizado, coloque código novo no arquivo da responsabil
 
 ### Dependências
 
-Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, sons e os demais modelos 3D são gerados por código. As imagens são a arte da capa (`js/assets/capa.js`) e a arte oficial do Kael (`js/assets/kael_sprites.js`, `js/assets/kael_arte.js` e a malha/texturas 3D em `js/assets/kael3d.js`, convertidas de `assets/modelos/kael_meshy.glb`), todas embutidas no JavaScript. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde).
+Nenhuma. Não há bibliotecas, CDNs, fontes externas nem arquivos de áudio: cenários, sons e os demais modelos 3D são gerados por código. As imagens são a arte da capa (`js/assets/capa.js`) e a arte oficial do Kael (`js/assets/kael_sprites.js`, `js/assets/kael_arte.js` e a malha/texturas 3D em `js/assets/kael3d.js`, convertidas de `assets/modelos/kael_meshy.glb`), todas embutidas no JavaScript. Os dados ficam no `localStorage` do navegador: `eclipse_zero_save_v1_slot1` … `_slot5` (salvamentos), `eclipse_zero_settings_v1` (configurações), `eclipse_zero_last_slot` e `eclipse_zero_best` (recorde), `eclipse_zero_mundo_v1` (mundo aberto do Kael), `eclipse_zero_perfis_v1` (personagens criados) e `eclipse_zero_mundo_v1:<id>` (mundo de cada personagem criado), com as cópias `_reserva`.
 
 ### Versão de arquivo único
 

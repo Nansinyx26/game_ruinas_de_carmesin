@@ -245,7 +245,8 @@ const World = {
     const r = worldRegion(id);
     if (r.open) return true;
     const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
-    return (prev && this.bossDone(prev.id)) || (game.progress && game.progress.level >= r.lv[0])
+    const nv = game.progress ? Math.max(game.progress.level, game.activeProgress ? game.activeProgress().level : 0) : 0;   // o herói em campo também conta (o personagem criado)
+    return (prev && this.bossDone(prev.id)) || nv >= r.lv[0]
       || (typeof Campanhas !== 'undefined' && Campanhas.abreRegiao(id));   // capítulo da campanha do herói (js/mundo/campanhas.js)
   },
 
@@ -259,6 +260,9 @@ const World = {
     g.newRoster = null;
     // Modo livre: no primeiro acesso, todos os personagens jogáveis ficam liberados para explorar
     if (!saved) for (const c of CHARACTER_DEFS) if (c.devStatus !== 'coming_soon') RosterManager.unlock(c.id, true);
+    // personagem criado pelo jogador (js/criacao/): é ele quem entra no mundo (o mundo é só dele)
+    const perf = typeof Perfis !== 'undefined' ? Perfis.ativo() : null;
+    if (perf && CHARACTERS_BY_ID[perf.id]) { RosterManager.unlock(perf.id, true); RosterManager.active = perf.id; }
     PartyProgress.load(saved && saved.game ? saved.game.party : null);
     PartyProgress.join(RosterManager.active, g.progress.level);
     AllyRadio.reset();
@@ -272,10 +276,15 @@ const World = {
     g.counter = new ComboCounter();
     g.player = new Player(0, 0);
     g.player.recalc(true);
+    if (perf && !saved) PersCriacao.equiparInicial(perf);   // equipamento inicial da classe (na mochila e vestido)
     g.hud.reset();
     g.victoryTimer = 0; g.ending = null; g.lostMemory = false; g.glitchT = 0;
     g.timeScale = 1; g.slowTimer = 0; g.hitStop = 0;
+    const P = this.state.pos;   // (lido antes: carregar a zona salva o mundo com a posição de chegada)
     this.loadZone(this.state.zona in WORLD_ZONES ? this.state.zona : WORLD_START, null);
+    // volta ao ponto onde o herói estava ao salvar (se ainda dá para ficar ali)
+    const pl = g.player;
+    if (P && P.zona === this.zone.id && g.room.canStand(P.x, P.y, pl.radius + 2)) { pl.x = P.x; pl.y = P.y; g.camera.snap(isoX(pl.x, pl.y), isoY(pl.x, pl.y) - 30); }
     g.state = 'playing';
     g.fade = 1; g.fadeTarget = 0;
     const reg = worldRegion(this.zone.region);
@@ -520,12 +529,27 @@ const World = {
   },
 
   // Salvamento próprio do mundo (o jogo, o elenco e o estado das zonas)
+  // Chave do salvamento: o mundo de sempre ou o do personagem criado em uso (um mundo por personagem)
+  chave() { const p = typeof Perfis !== 'undefined' ? Perfis.ativo() : null; return p ? `${WORLD_SAVE_KEY}:${p.id}` : WORLD_SAVE_KEY; },
   save() {
     if (!this.active || !game.player) return;
-    try { localStorage.setItem(WORLD_SAVE_KEY, JSON.stringify({ v: 1, game: game.makeSave(), world: this.state })); } catch (e) { console.warn('Mundo: não foi possível salvar', e.message); }
+    const p = game.player;
+    if (this.zone && !this.zone.instancia) this.state.pos = { zona: this.zone.id, x: Math.round(p.x), y: Math.round(p.y) };   // posição no mundo
+    const k = this.chave();
+    try {
+      const txt = JSON.stringify({ v: 1, game: game.makeSave(), world: this.state });
+      const ant = localStorage.getItem(k);
+      if (ant) localStorage.setItem(k + '_reserva', ant);   // a versão anterior fica de reserva
+      localStorage.setItem(k, txt);
+    } catch (e) { console.warn('Mundo: não foi possível salvar', e.message); }
   },
+  // Lê o salvamento; corrompido (JSON inválido ou sem o formato), tenta a reserva
   read() {
-    try { const s = JSON.parse(localStorage.getItem(WORLD_SAVE_KEY) || 'null'); return s && s.v === 1 ? s : null; } catch (e) { return null; }
+    const k = this.chave(), ler = (kk) => { try { const s = JSON.parse(localStorage.getItem(kk) || 'null'); return s && s.v === 1 && s.world && typeof s.world === 'object' ? s : null; } catch (e) { return undefined; } };
+    const s = ler(k);
+    if (s) return s;
+    if (s === undefined || localStorage.getItem(k)) { const r = ler(k + '_reserva'); if (r) { console.warn('Mundo: salvamento danificado, usando a reserva'); return r; } }
+    return null;
   },
   // Morte no mundo: volta ao último portal com a vida cheia (os acampamentos voltam)
   respawn() {

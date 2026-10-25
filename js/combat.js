@@ -621,16 +621,17 @@ class ComboSystem {
     return ok ? b : null;
   }
   isUnlocked(id) {
-    const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
+    const P = typeof game !== 'undefined' && game.player && game.player.def ? game.player : null;
+    const ident = P ? P.def.id : 'kael', charId = heroBase(ident);   // a classe do personagem criado luta como a base
     if (charId !== 'kael') {
       // combos novos dos aliados: liberados pelo nó da árvore (ALLY_COMBO_SKILLS)
-      const ak = ALLY_COMBO_SKILLS[id], pr = ak && typeof PartyProgress !== 'undefined' ? PartyProgress.of(charId) : null;
+      const ak = ALLY_COMBO_SKILLS[id], pr = ak && typeof PartyProgress !== 'undefined' ? PartyProgress.of(ident) : null;
       return !ak || !!(pr && pr.lv(ak) > 0);
     }
     const req = COMBO_REQUIRES[id];
     if (req && !this.unlocked.has(req)) return false;
-    const sk = COMBO_SKILLS[id];
-    return !sk || !game || !game.progress || game.progress.lv(sk) > 0;
+    const sk = COMBO_SKILLS[id], pr = P && typeof heroProgressOf !== 'undefined' ? heroProgressOf(P) : game && game.progress;
+    return !sk || !pr || pr.lv(sk) > 0;
   }
 
   // Golpe da sequência s no estilo: a técnica da árvore, se aprendida, ou o da tabela
@@ -643,7 +644,7 @@ class ComboSystem {
 
   // Decide qual golpe executar para o input, considerando a cadeia em andamento
   resolve(type) {
-    const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? game.player.def.id : 'kael';
+    const charId = (typeof game !== 'undefined' && game.player && game.player.def) ? heroBase(game.player.def.id) : 'kael';
     // estilo pela arma equipada (ex.: o Orion com a pistola atira em vez de cortar)
     const style = game.player && game.player.combatStyle ? game.player.combatStyle() : charId;
     const table = CHARACTER_COMBOS[style] || CHARACTER_COMBOS[charId] || COMBO_TABLE;

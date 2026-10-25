@@ -76,3 +76,6 @@ const CHARACTER_DEFS = [
 const CHARACTERS_BY_ID = {};
 for (const c of CHARACTER_DEFS) CHARACTERS_BY_ID[c.id] = c;
 const DEFAULT_CHARACTER = 'kael';
+// Base de combate de um personagem: quem o jogador cria (js/criacao/) luta com o kit, as árvores,
+// os golpes e as armas de um dos cinco (a classe); os cinco são a própria base
+function heroBase(id) { const d = CHARACTERS_BY_ID[id]; return (d && d.base) || id; }

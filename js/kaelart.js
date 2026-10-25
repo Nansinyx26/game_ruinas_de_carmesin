@@ -137,6 +137,8 @@ function kaelPortraitReady(k) { const im = KAEL_PORTRAIT[k]; return !!(im && im.
 // personagem, HUD e árvore de habilidades. Devolve a imagem quando já carregou (ou null)
 const HERO_PORTRAIT = {};
 function heroPortrait(id) {
+  const cd = typeof CHARACTERS_BY_ID !== 'undefined' && CHARACTERS_BY_ID[id];
+  if (cd && cd.criado) return typeof PersonagemModelo !== 'undefined' ? PersonagemModelo.retrato(cd) : null;   // personagem criado: o rosto do próprio modelo
   if (typeof RETRATOS === 'undefined' || !RETRATOS[id]) return null;
   let im = HERO_PORTRAIT[id];
   if (!im) { im = HERO_PORTRAIT[id] = new Image(); im.src = RETRATOS[id]; }

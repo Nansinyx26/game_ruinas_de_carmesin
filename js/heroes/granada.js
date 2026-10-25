@@ -19,7 +19,7 @@ const Granada = {
     if (!p || !p.def || typeof RosterManager === 'undefined') return false;
     return RosterManager.weaponsFor(p.def.id).some((w) => {
       const d = WEAPON_DEFS[w];
-      return d && d.gadget && d.kind === 'grenade' && d.owner === p.def.id && RosterManager.isWeaponUnlocked(w);
+      return d && d.gadget && d.kind === 'grenade' && d.owner === heroBase(p.def.id) && RosterManager.isWeaponUnlocked(w);
     });
   },
   // Cargas (cheias na primeira vez) e a recarga, uma de cada vez (Player.update)

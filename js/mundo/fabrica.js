@@ -141,7 +141,7 @@ const Fabrica = {
   // ---------------------------------------------------------------- armas (bancada)
   armas(h = Arsenal.heroi()) {
     if (typeof RosterManager === 'undefined') return [];
-    return RosterManager.weaponsFor(h).filter((w) => { const d = WEAPON_DEFS[w]; return d && d.owner === h && d.implemented !== false && !d.gadget && RosterManager.isWeaponUnlocked(w); });
+    return RosterManager.weaponsFor(h).filter((w) => { const d = WEAPON_DEFS[w]; return d && d.owner === heroBase(h) && d.implemented !== false && !d.gadget && RosterManager.isWeaponUnlocked(w); });
   },
   nivelArma(w) { return Arsenal.S.armas[w] || 0; },
   custoArma(w) {

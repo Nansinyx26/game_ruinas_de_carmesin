@@ -152,8 +152,8 @@ class Player extends Entity {
   // Estilo de combate pela arma equipada: o Orion com uma pistola (kind 'pistol') usa os tiros de
   // CHARACTER_COMBOS.orion_pistol; os outros, os golpes de sempre do personagem
   combatStyle() {
-    if (this.def.id !== 'orion' || typeof RosterManager === 'undefined') return this.def.id;
-    const w = WEAPON_DEFS[RosterManager.equippedWeapon('orion')];
+    if (this.base !== 'orion' || typeof RosterManager === 'undefined') return this.base;
+    const w = WEAPON_DEFS[RosterManager.equippedWeapon(this.def.id)];
     return w && w.kind === 'pistol' ? 'orion_pistol' : 'orion';
   }
   // Próxima arma do personagem (liberada e com efeito no jogo), na ordem da ficha; null se não há outra
@@ -162,7 +162,7 @@ class Player extends Entity {
     const id = this.def.id, cur = RosterManager.equippedWeapon(id);
     const list = RosterManager.weaponsFor(id).filter((w) => {
       const d = WEAPON_DEFS[w];
-      return d && d.owner === id && d.implemented !== false && !d.gadget && RosterManager.isWeaponUnlocked(w);
+      return d && d.owner === heroBase(id) && d.implemented !== false && !d.gadget && RosterManager.isWeaponUnlocked(w);
     });
     if (list.length < 2) return null;
     return list[(list.indexOf(cur) + 1) % list.length];
@@ -240,7 +240,7 @@ class Player extends Entity {
 
   // Escolhe próxima animação de idle baseada no perfil do personagem
   pickNextIdleVariant() {
-    const prof = CHARACTER_IDLE_PROFILES[this.def.id] || CHARACTER_IDLE_PROFILES.kael;
+    const prof = CHARACTER_IDLE_PROFILES[this.def.id] || CHARACTER_IDLE_PROFILES[this.base] || CHARACTER_IDLE_PROFILES.kael;
     // só as que fazem sentido agora (arma na mão ou nas costas)
     const out = this.wpnOut !== false;
     const list = prof.variants.filter((v) => !v.req || (v.req === 'out') === out);
@@ -266,6 +266,8 @@ class Player extends Entity {
   }
 
   get dashing() { return this.state === 'dash'; }
+  // Base de combate (a classe do personagem criado; os cinco são a própria base)
+  get base() { return heroBase(this.def.id); }
 
   // Captura inputs TODO frame (inclusive durante o hit stop) para o buffer de combos
   captureInput(input) {
@@ -459,16 +461,16 @@ class Player extends Entity {
 
   // Golpe do input: a retaliação depois de um bloqueio (ATTACKS.<id>_counter) vem antes do combo
   resolveInput(b) {
-    if (this.blockCounterT > 0 && b === 'L' && ATTACKS[this.def.id + '_counter'] && this.combo.isUnlocked(this.def.id + '_counter')) {
+    if (this.blockCounterT > 0 && b === 'L' && ATTACKS[this.base + '_counter'] && this.combo.isUnlocked(this.base + '_counter')) {
       this.blockCounterT = 0; this.combo.seq = 'L';
-      return this.def.id + '_counter';
+      return this.base + '_counter';
     }
     return this.combo.resolve(b);
   }
 
   // Assistência de mira: corrige levemente a direção para o inimigo mais próximo no cone
   aimAssist(dir, def) {
-    const isRanged = this.def.id === 'lyra' || this.def.id === 'sera' || !!def.aimPose;
+    const isRanged = this.base === 'lyra' || this.base === 'sera' || !!def.aimPose;
     const s = def.shape;
     const baseRange = (s.range || s.length || s.radius || 90);
     const range = isRanged ? Math.max(380, baseRange * 2.5) : baseRange * 1.7;
@@ -654,7 +656,7 @@ class Player extends Entity {
     if (d.counter) {                               // retaliação depois do bloqueio (nível 2: +25%)
       crit = true;
       const pr = heroProgressOf(this);
-      if (pr && pr.lv(this.def.id + '_retaliacao') > 1) dmg *= 1.25;
+      if (pr && pr.lv(this.base + '_retaliacao') > 1) dmg *= 1.25;
     }
     // Contra-ataque: o golpe logo após uma esquiva perfeita é crítico e mais forte
     if (this.counterT > 0 && S.counter > 0) {
@@ -662,7 +664,7 @@ class Player extends Entity {
       game.texts.spawn(e.x, e.y, (e.height || 40) + 26, 'CONTRA-ATAQUE', '#e3d6ff', 15, 0.8);
     }
     // Orion: bônus por atacar pelas costas (backstab) e emboscada furtiva
-    if (this.def.id === 'orion') {
+    if (this.base === 'orion') {
       const eFacing = e.facing !== undefined ? e.facing : Math.atan2(this.y - e.y, this.x - e.x);
       const hitAngle = Math.atan2(e.y - this.y, e.x - this.x);
       const angleDiffBack = Math.abs(angleDiff(eFacing, hitAngle));
@@ -807,10 +809,10 @@ class Player extends Entity {
       const level = clamp(this.chargeTime / 0.95, 0, 1);
       this.combo.seq = '';
       const chargedId = this.combatStyle() === 'orion_pistol' ? 'orion_pistol_charged' :
-                        this.def.id === 'lyra' ? 'lyra_charged' :
-                        this.def.id === 'drakos' ? 'drakos_charged' :
-                        this.def.id === 'sera' ? 'sera_charged' :
-                        this.def.id === 'orion' ? 'orion_charged' : 'charged';
+                        this.base === 'lyra' ? 'lyra_charged' :
+                        this.base === 'drakos' ? 'drakos_charged' :
+                        this.base === 'sera' ? 'sera_charged' :
+                        this.base === 'orion' ? 'orion_charged' : 'charged';
       this.startAttack(chargedId, null, level);
     }
   }
@@ -858,10 +860,10 @@ class Player extends Entity {
     this.invuln = Math.max(this.invuln, 1.25);
     this.vx = this.vy = 0;
     if (this.attack && this.attack.trail) this.attack.trail.release();
-    const ultName = this.def.id === 'lyra' ? 'FOCO DE BATALHA' :
-                    this.def.id === 'drakos' ? 'ZONA DE IMPACTO' :
-                    this.def.id === 'sera' ? 'CURA DE EMERGÊNCIA' :
-                    this.def.id === 'orion' ? 'DANÇA DAS SOMBRAS' : 'ECLIPSE ABSOLUTO';
+    const ultName = this.base === 'lyra' ? 'FOCO DE BATALHA' :
+                    this.base === 'drakos' ? 'ZONA DE IMPACTO' :
+                    this.base === 'sera' ? 'CURA DE EMERGÊNCIA' :
+                    this.base === 'orion' ? 'DANÇA DAS SOMBRAS' : 'ECLIPSE ABSOLUTO';
     game.hud.comboName(ultName, true);
     game.audio.play('specialCharge');
     game.camera.zoomPunch(0.05);
@@ -888,16 +890,17 @@ class Player extends Entity {
   // (raios em todos os inimigos próximos, lâminas radiais e limpeza de projéteis)
   // — mas desperta algo adormecido dentro de Kael
   fireSpecial() {
-    if (this.def.id === 'lyra') this.fireLyraUltimate();
-    else if (this.def.id === 'drakos') this.fireDrakosUltimate();
-    else if (this.def.id === 'sera') this.fireSeraUltimate();
-    else if (this.def.id === 'orion') this.fireOrionUltimate();
+    const b = this.base;
+    if (b === 'lyra') this.fireLyraUltimate();
+    else if (b === 'drakos') this.fireDrakosUltimate();
+    else if (b === 'sera') this.fireSeraUltimate();
+    else if (b === 'orion') this.fireOrionUltimate();
     else this.fireKaelUltimate();
   }
 
   // Especial Kael: "Eclipse Absoluto"
   fireKaelUltimate() {
-    const lv = Math.max(1, game.progress.lv('eclipse_absoluto'));
+    const lv = Math.max(1, heroProgressOf(this).lv('eclipse_absoluto'));
     const R = 270 + 30 * (lv - 1), base = (85 + 35 * (lv - 1)) * this.stats.power * (this.buffs.overload > 0 ? this.overloadMult : 1);
     for (const e of game.enemies) {
       if (!e.canBeHit()) continue;
@@ -1179,6 +1182,7 @@ class Player extends Entity {
       if (ws.stun) S.guardBreak += ws.stun * 0.2;
       if (ws.chain) S.chain += ws.chain * 0.15;
     }
+    if (this.def.classe && typeof PersClasse !== 'undefined') PersClasse.aplicar(this.def.classe, S);   // classe do personagem criado (js/criacao/dados.js)
     if (game.world && typeof WorldInv !== 'undefined') WorldInv.apply(S);   // relíquias equipadas (só no mundo aberto)
     HeroPassives.apply(this, S, pr);   // efeitos das passivas das árvores (js/heroes/passivas.js)
     S.armor = Math.min(0.75, S.armor);
@@ -1195,7 +1199,7 @@ class Player extends Entity {
   canDash() { return this.dashStock >= 1 && this.dashGap <= 0; }
   canEclipse() {
     if (this.kit) return this.kit.canUltimate(this);
-    if (this.def.id === DEFAULT_CHARACTER) return game.progress.lv('eclipse_absoluto') > 0 && this.fury >= this.ultCost();
+    if (this.base === DEFAULT_CHARACTER) return heroProgressOf(this).lv('eclipse_absoluto') > 0 && this.fury >= this.ultCost();
     return this.fury >= this.ultCost();
   }
   // Energia da suprema: 100; quem tem energia máxima menor (o Drakos começa com 90) usa a barra cheia
@@ -1205,11 +1209,11 @@ class Player extends Entity {
     return m === 1 ? base : Math.round(base * m);
   }
   // Nível da suprema do personagem (Kael: Eclipse Absoluto; os aliados sem kit: sempre 1)
-  ultLevel() { return this.kit ? this.kit.ultLevel(this) : this.def.id === DEFAULT_CHARACTER ? game.progress.lv('eclipse_absoluto') : 1; }
+  ultLevel() { return this.kit ? this.kit.ultLevel(this) : this.base === DEFAULT_CHARACTER ? heroProgressOf(this).lv('eclipse_absoluto') : 1; }
   denyEclipse() {
     if (this.kit) { this.kit.denyUltimate(this); return; }
-    if (this.def.id !== DEFAULT_CHARACTER) game.hud.toast(`${heroUltInfo(this).name} bloqueado · Energia insuficiente (${this.ultCost()})`, '255,92,122');
-    else if (!game.progress.lv('eclipse_absoluto')) game.hud.toast(`Eclipse Absoluto bloqueado · Árvore Elétrica (nível ${SKILLS.eclipse_absoluto.lvl})`, '255,92,122');
+    if (this.base !== DEFAULT_CHARACTER) game.hud.toast(`${heroUltInfo(this).name} bloqueado · Energia insuficiente (${this.ultCost()})`, '255,92,122');
+    else if (!heroProgressOf(this).lv('eclipse_absoluto')) game.hud.toast(`Eclipse Absoluto bloqueado · Árvore Elétrica (nível ${SKILLS.eclipse_absoluto.lvl})`, '255,92,122');
     game.hud.furyDenied();
     game.audio.play('uiDeny');
   }
@@ -1439,7 +1443,7 @@ class Player extends Entity {
 
   // Arco Voltaico: projéteis elétricos perfurantes
   fireVolt(dir) {
-    const lv = game.progress.lv('arco_voltaico') || 1, n = lv >= 3 ? 3 : 1;
+    const lv = heroProgressOf(this).lv('arco_voltaico') || 1, n = lv >= 3 ? 3 : 1;
     const dmg = Math.round((26 + 10 * lv) * this.stats.power);
     for (let i = 0; i < n; i++) {
       const a = dir + (i - (n - 1) / 2) * 0.24;

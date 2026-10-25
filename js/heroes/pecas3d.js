@@ -26,6 +26,7 @@ const PecasRig = (function () {
   const MED = new WeakMap();
   function pct(a, q) { if (!a.length) return 0; return a[Math.min(a.length - 1, Math.max(0, Math.floor(a.length * q)))]; }
   function medidas(m) {
+    if (m.medidasPecas) return m.medidasPecas;   // modelo paramétrico (personagem criado): as medidas vêm da aparência
     const S0 = m.skins && m.skins[0];
     if (!S0) return null;
     if (MED.has(S0.pos)) return MED.get(S0.pos);

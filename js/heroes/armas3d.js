@@ -88,7 +88,7 @@ const WeaponRig = (function () {
   const DEFAULT = { kael: 'tempestade_nula', lyra: 'arco_foton', drakos: 'lanca_plasma', sera: 'orbe_controle', orion: 'laminas_duplas' };
   function visualOf(charId) {
     const wid = typeof RosterManager !== 'undefined' ? RosterManager.equippedWeapon(charId) : null;
-    return VISUAL[wid] || VISUAL[DEFAULT[charId]] || null;
+    return VISUAL[wid] || VISUAL[DEFAULT[heroBase(charId)]] || null;
   }
 
   // ------------------------------------------------------------ encaixes nas costas
@@ -196,7 +196,7 @@ const WeaponRig = (function () {
     // principal: na mão (direita → nó 'sword'; segunda → mão esquerda) ou nas costas
     for (let i = 0; i < main.length; i++) {
       const id = main[i];
-      if (W.id === 'lyra') {                                     // o arco é o nó lyraBow (lyra.js)
+      if (heroBase(W.id) === 'lyra') {                           // o arco é o nó lyraBow (lyra.js)
         if (!out && BACK[id]) { const nd = n['wBack' + b++]; setMesh(m, nd, id); placeBack(nd, BACK[id], K, t); }
         continue;
       }
@@ -227,7 +227,7 @@ const WeaponRig = (function () {
   function grabs(charId) {
     const V = visualOf(charId);
     if (!V || !V.main) return null;
-    if (charId === 'lyra') return { L: V.main[0] };
+    if (heroBase(charId) === 'lyra') return { L: V.main[0] };
     return { R: V.main[0], L: V.main[1] || null };
   }
   const TMx = typeof M3 !== 'undefined' ? M3.make() : null;
@@ -246,7 +246,7 @@ const WeaponRig = (function () {
     if (isOut(e) && !A) return false;
     const G = grabs(W.id);
     if (!G) return false;
-    const lyra = W.id === 'lyra';
+    const lyra = heroBase(W.id) === 'lyra';
     // mão direita livre: espelho da esquerda (fase oposta na corrida)
     const free = !isOut(e) && !busy;
     if (free) {
@@ -294,9 +294,10 @@ const WeaponRig = (function () {
     if (!V) return;
     const c = (info && info.glow) || '120,170,255';
     const t = num(e.animTime);
+    const cb = heroBase(charId);
     if (isOut(e)) {
-      if (charId === 'kael' || charId === 'lyra') {                // Kael e Lyra têm os próprios halos
-        if (num(e.wpnFlash) > 0) add(charId === 'kael' ? 'swordMid' : 'bowGrip', 16, c, 0.5 * num(e.wpnFlash) / 0.22);
+      if (cb === 'kael' || cb === 'lyra') {                        // Kael e Lyra têm os próprios halos
+        if (num(e.wpnFlash) > 0) add(cb === 'kael' ? 'swordMid' : 'bowGrip', 16, c, 0.5 * num(e.wpnFlash) / 0.22);
         return;
       }
       const st = e && e.state, hot = st === 'attack' || st === 'charge' || st === 'special';

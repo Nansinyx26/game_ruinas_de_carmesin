@@ -33,7 +33,7 @@ const HERO_KITS = {};
 const HERO_WEAPONS = (window.HERO_WEAPONS = window.HERO_WEAPONS || {});
 
 // Kit do personagem de uma ficha (null = Kael, que usa o código original do Player)
-function heroKitOf(def) { return (def && def.id !== DEFAULT_CHARACTER && HERO_KITS[def.id]) || null; }
+function heroKitOf(def) { const b = def && (def.base || def.id); return (b && b !== DEFAULT_CHARACTER && HERO_KITS[b]) || null; }
 // Progresso do personagem do Player: o do kit, o do aliado (PartyProgress, com nível e árvores
 // próprios, onde a experiência dele já entra) ou, para o Kael, o game.progress de sempre
 function heroProgressOf(p) {
@@ -49,17 +49,19 @@ const HERO_ULT_INFO = {
   sera: ['Cura de Emergência', 'CURA', 'heal'], orion: ['Dança das Sombras', 'SOMBRA', 'shadowStrike'],
 };
 function heroUltInfo(p) {
-  if (!p.kit && p.def.id !== DEFAULT_CHARACTER) {
-    const u = HERO_ULT_INFO[p.def.id] || ['Suprema', 'SUPREMA', 'eclipse'];
+  const b = heroBase(p.def.id);
+  if (!p.kit && b !== DEFAULT_CHARACTER) {
+    const u = HERO_ULT_INFO[b] || ['Suprema', 'SUPREMA', 'eclipse'];
     return { learned: true, lvl: 1, name: u[0], icon: u[2], label: u[1], rgb: hexToRgb(p.def.color) };
   }
-  if (!p.kit) return { learned: game.progress.lv('eclipse_absoluto') > 0, lvl: SKILLS.eclipse_absoluto.lvl, name: 'Eclipse Absoluto', icon: 'eclipse', label: 'ECLIPSE', rgb: null };
+  if (!p.kit) return { learned: heroProgressOf(p).lv('eclipse_absoluto') > 0, lvl: SKILLS.eclipse_absoluto.lvl, name: 'Eclipse Absoluto', icon: 'eclipse', label: 'ECLIPSE', rgb: null };
   const k = p.kit, s = skillDef(k.ult);
   return { learned: k.ultLevel(p) > 0, lvl: s ? s.lvl : 1, name: s ? s.name : 'Suprema', icon: k.ultIcon || (s && s.icon) || 'eclipse', label: k.ultLabel || 'SUPREMA', rgb: k.rgb };
 }
 // Chave do modelo 3D em uso: a armadura especial equipada vestida em 3D (js/heroes/armaduras3d.js,
 // assim que a malha dela carrega), senão o texturizado, se existir. semArmadura: o modelo de sempre
 function heroModelKey(def, semArmadura) {
+  if (def && def.criado && MODELS3D[def.model]) return def.model;   // personagem criado: sempre o corpo dele (js/criacao/modelo.js)
   const ak = !semArmadura && def && typeof ArmorModels !== 'undefined' ? ArmorModels.keyFor(def.id) : null;
   if (ak) return ak;
   const k0 = (def && def.model) || 'kael';

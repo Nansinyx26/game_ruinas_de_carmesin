@@ -504,7 +504,7 @@ class HUD {
     this.blit(ctx, this.layer('vit-moldura', V.right + 4, V.bottom + 2, (g) => this.paintVitalsFrame(g)), 0, 0);
     // Retrato do personagem ativo
     const face = p.def.art === 'kael' ? kaelPortraitReady('face') : !!heroPortrait(p.def.id), S = 2 * V.pr + 24;
-    this.blit(ctx, this.layer(`retrato-${p.def.id}-${face ? 1 : 0}-${rgb}`, S, S, (g) => this.paintPortrait(g, S, rgb, face, p.def.id)), V.px - S / 2, V.py - S / 2);
+    this.blit(ctx, this.layer(`retrato-${p.def.id}${p.def.ver ? ':' + p.def.ver : ''}-${face ? 1 : 0}-${rgb}`, S, S, (g) => this.paintPortrait(g, S, rgb, face, p.def.id)), V.px - S / 2, V.py - S / 2);
     if (p.canEclipse()) this.glowAt(ctx, rgb, V.px, V.py, V.pr * 1.75, 0.32 + 0.16 * Math.sin(this.time * 6));
     const low = p.hp / p.maxHp < 0.3;
     const red = Math.max(low ? 0.16 + 0.12 * Math.sin(this.time * 9) : 0, this.hurtT * 1.1);
@@ -969,9 +969,9 @@ class HUD {
     // combo em andamento: o que cada botão faz agora
     const seq = p.combo && p.combo.seq;
     if (seq && seq !== 'D' && p.state !== 'dead') {
-      const T = CHARACTER_COMBOS[p.def.id] || COMBO_TABLE, nx = [];
+      const T = CHARACTER_COMBOS[heroBase(p.def.id)] || COMBO_TABLE, nx = [];
       for (const b of ['L', 'H']) {
-        const id = p.combo.pick ? p.combo.pick(p.combatStyle ? p.combatStyle() : p.def.id, seq + b) : T[seq + b];
+        const id = p.combo.pick ? p.combo.pick(p.combatStyle ? p.combatStyle() : heroBase(p.def.id), seq + b) : T[seq + b];
         if (id && p.combo.isUnlocked(id) && ATTACKS[id]) nx.push(`${b === 'L' ? 'J' : 'K'} → ${(ATTACKS[id].name || (b === 'L' ? 'golpe leve' : 'golpe pesado')).toLowerCase()}`);
       }
       if (nx.length) {
@@ -1004,7 +1004,7 @@ class HUD {
     const keys = ['x', 'y', 'b', 'a'];
     for (let k = 0; k < 4; k++) {
       const info = p.abilityInfo(k);
-      const slotId = info ? info.id : game.progress.slots[k];
+      const slotId = info ? info.id : heroProgressOf(p).slots[k];
       this.abilitySlot(ctx, A.x0 + k * A.gap, A.y, A.d, slotId, pad ? keys[k] : String(k + 1), k, p, hot);
     }
     this.eclipseSlot(ctx, A.eX, A.eY, A.D, pad ? 'lt' : 'I', p, A.y + A.d + 4);

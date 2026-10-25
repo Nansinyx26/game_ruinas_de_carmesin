@@ -822,6 +822,7 @@ class Menus {
       ['play', 'JOGAR', 'play'],
       ['world', 'MUNDO ABERTO', 'star'],
       ['world3p', 'MUNDO ABERTO · 3ª PESSOA', 'sword'],
+      ['chars', 'PERSONAGENS · CRIAR', 'star'],
       ['heroes', 'CAMPANHAS DOS HERÓIS', 'star'],
       ['thirdperson', 'ARENA 3D (TREINO)', 'sword'],
       ['settings', 'CONFIGURAÇÕES', 'gear'],
@@ -840,6 +841,7 @@ class Menus {
       else if (id === 'thirdperson') game.startThirdPerson();
       else if (id === 'world') { ThirdView.set(false, true); game.startWorld(); }
       else if (id === 'world3p') { ThirdView.set(true, true); game.startWorld(); }
+      else if (id === 'chars') CriacaoTela.abrir();   // criação de personagem (js/criacao/tela.js)
       else if (id === 'heroes') this.startCampanhas();
       else if (id === 'settings') this.open('settings');
       else if (id === 'credits') this.open('credits');
@@ -886,6 +888,7 @@ class Menus {
       ['new', 'NOVO JOGO', 'sword'],
       ['world', 'MUNDO ABERTO', 'star'],
       ['world3p', 'MUNDO ABERTO · 3ª PESSOA', 'sword'],
+      ['chars', 'PERSONAGENS · CRIAR', 'star'],
       ['heroes', 'CAMPANHAS DOS HERÓIS', 'star'],
       ['thirdperson', 'ARENA 3D (TREINO)', 'star'],
       ['load', 'CARREGAR', 'folder'],
@@ -904,6 +907,7 @@ class Menus {
       else if (id === 'new') this.startNew();
       else if (id === 'world') { ThirdView.set(false, true); game.startWorld(); }
       else if (id === 'world3p') { ThirdView.set(true, true); game.startWorld(); }
+      else if (id === 'chars') CriacaoTela.abrir();
       else if (id === 'heroes') this.startCampanhas();
       else if (id === 'thirdperson') game.startThirdPerson();
       else if (id === 'load') { this.slotMode = 'load'; this.open('load', Math.max(0, SaveSys.last() - 1)); }
