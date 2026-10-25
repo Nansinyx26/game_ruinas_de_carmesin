@@ -386,9 +386,14 @@ const EclipseTests = {
     e = inimigo(p, 'drone', 150);
     lanca(p, 'sera_sentinela'); passo(p, 1.0);
     this.ok('Sentinela Fixa: a torreta atira', e.hp < 5000, e.hp);
+    e.kbx = e.kby = 0;   // (os tiros da Sentinela também empurram: aqui conta só o Pulso)
     const x0 = e.x; lanca(p, 'sera_pulso');
-    for (let t = 0; t < 0.3; t += 1 / 60) e.update(1 / 60);   // o empurrão anda no update do inimigo
-    this.ok('Pulso Repulsor: empurra o inimigo', e.x > x0 + 10, `${x0} → ${e.x}`);
+    // impulso para longe do herói; o empurrão anda no update do inimigo e conta o maior afastamento
+    // (a sala muda a cada partida: num pilar logo atrás ele quica e volta)
+    const kb = e.kbx;
+    let xMax = e.x;
+    for (let t = 0; t < 0.3; t += 1 / 60) { e.update(1 / 60); xMax = Math.max(xMax, e.x); }
+    this.ok('Pulso Repulsor: empurra o inimigo', kb > 200 && xMax > x0 + 5, `impulso ${Math.round(kb)} · ${x0} → ${xMax}`);
     e = inimigo(p, 'drone', 120);
     lanca(p, 'sera_apagao');
     this.ok('Apagão: o drone cai (atordoado)', e.stun > 0, e.stun);
