@@ -212,7 +212,7 @@ precision mediump float;
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
-uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar; uniform vec4 uWet;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
@@ -222,7 +222,7 @@ void main() {
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
   if (dot(n, V) < 0.0) n = -n;
-  vec3 col = vCol.rgb; float e = vCol.a;
+  vec3 col = vCol.rgb; float e = vCol.a; float wetSp = 0.0;
   if (uVar.w > 0.0 && e < 0.05) {
     // variantes dos inimigos do mundo aberto (uVar = cor, intensidade): recolore a carcaça
     // (o que é pouco saturado e não brilha), clareando junto quando a cor pedida é clara
@@ -244,11 +244,19 @@ void main() {
     return;
   }
   if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi * (1.0 - fogK()), 1.0); return; }
+  if (e < 0.05 && uWet.x + uWet.y + uWet.z > 0.0) {
+    // clima no corpo (uWet = molhado, neve assentada, geada): molhado escurece e brilha; a neve
+    // fica no que olha para cima; a geada clareia e azula as bordas
+    col *= 1.0 - 0.3 * uWet.x; wetSp = uWet.x;
+    col = mix(col, vec3(0.93, 0.95, 1.0), uWet.y * smoothstep(0.3, 0.75, n.z));
+    col = mix(col, vec3(0.78, 0.88, 1.0), uWet.z * (0.15 + 0.6 * fres));
+  }
   float key = max(dot(n, uKeyDir), 0.0);
   float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
   float rim = max(dot(n, uRimDir), 0.0);
   float up = n.z * 0.5 + 0.5;
   vec3 lit = col * (uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2)) + uRimCol * (rim * 0.55 + fres * 0.35);
+  if (wetSp > 0.0) lit += uKeyCol * pow(max(dot(n, normalize(uKeyDir + V)), 0.0), 40.0) * 0.5 * wetSp * key;
   lit += col * e * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
   lit = mix(lit, uFog.rgb, fogK());
@@ -276,7 +284,7 @@ uniform sampler2D uTex; uniform sampler2D uMat; uniform float uMatOn; uniform fl
 uniform sampler2D uNrm; uniform float uNrmOn; uniform float uPbr;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
-uniform vec4 uGlow; uniform vec4 uTint;
+uniform vec4 uGlow; uniform vec4 uTint; uniform vec4 uWet;
 uniform vec3 uView; uniform float uPersp; uniform vec4 uFog;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
@@ -366,6 +374,17 @@ void main() {
     return;
   }
   if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi * (1.0 - fogK()), 1.0); return; }
+  if (e < 0.05 && uWet.x + uWet.y + uWet.z > 0.0) {
+    // clima no corpo (uWet = molhado, neve assentada, geada; js/mundo/clima.js). Molhado: tecido e
+    // cabelo escurecem mais, couro menos, metal quase nada; tudo ganha brilho liso (aspereza baixa).
+    // Neve: assenta no que olha para cima (ombros, capuz, braços). Geada: clareia e azula as bordas
+    float absorve = mat > 0.5 ? (mat < 1.5 ? 0.06 : mat < 2.5 ? 0.25 : mat < 3.5 ? 0.45 : mat < 4.5 ? 0.42 : 0.12) : 0.32;
+    col *= 1.0 - absorve * uWet.x;
+    rough = mix(rough, 0.16, uWet.x * 0.85);
+    specK = max(specK, uWet.x * 0.9);
+    col = mix(col, vec3(0.93, 0.95, 1.0), uWet.y * smoothstep(0.3, 0.75, n.z));
+    col = mix(col, vec3(0.78, 0.88, 1.0), uWet.z * (0.12 + 0.55 * fres));
+  }
   float key = max(dot(n, uKeyDir), 0.0);
   float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
   float rim = max(dot(n, uRimDir), 0.0);
@@ -419,7 +438,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uMVP', 'uView', 'uPersp', 'uFog']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -686,6 +705,8 @@ const R3D = {
     if (o.tint) { const tc = o.tint; gl.uniform4f(L.uTint, tc[0], tc[1], tc[2], tc[3]); } else gl.uniform4f(L.uTint, 0, 0, 0, 0);
     // cor das variantes de inimigos (só no programa de cores por vértice; js/mundo/variantes.js)
     if (L.uVar) { const vc = o.vart; if (vc) gl.uniform4f(L.uVar, vc[0], vc[1], vc[2], vc[3]); else gl.uniform4f(L.uVar, 0, 0, 0, 0); }
+    // clima no corpo: molhado, neve assentada e geada (js/mundo/clima.js, Clima.roupa)
+    if (L.uWet) { const w = o.clima; if (w) gl.uniform4f(L.uWet, w[0], w[1], w[2], 0); else gl.uniform4f(L.uWet, 0, 0, 0, 0); }
   },
 
   // Cena inteira em perspectiva (câmera em terceira pessoa): os itens enfileirados já trazem a

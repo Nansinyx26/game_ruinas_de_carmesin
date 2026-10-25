@@ -234,6 +234,7 @@ class Player extends Entity {
       }
     }
     if (this.fatigue > 0.65) this.tired = true; else if (this.fatigue < 0.25) this.tired = false;
+    if (game.world && typeof Clima !== 'undefined' && Clima.nivel() >= 2) return 'idle_tired';   // calor: ofegante, curvado
     return this.tired ? 'idle_tired' : null;
   }
 

@@ -11,7 +11,7 @@ const SETTINGS_DEFAULT = {
   // Jogo
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
-  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, fpsLimit: 0, postfx: 2, brightness: 0,
+  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, fpsLimit: 0, postfx: 2, brightness: 0,
   // Áudio
   master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
   // Controles (gamepad)
@@ -42,6 +42,7 @@ const SETTINGS_TABS = [
     { key: 'kaelLook', label: 'Visual do Kael', type: 'choice', values: ['3d', 'art'], names: ['3D com a arte oficial', 'Sprites 2D da arte'], hint: '3D: modelo com a textura das vistas oficiais. Sprites: os quadros da folha de personagem.' },
     { key: 'gfx3d', label: 'Inimigos e NPCs em 3D', type: 'bool', hint: 'Modelos 3D (WebGL) ou desenho 2D. Tecla G alterna durante o jogo.' },
     { key: 'quality', label: 'Qualidade dos efeitos', type: 'choice', values: [0, 1, 2], names: ['Baixa', 'Média', 'Alta'], hint: 'Quantidade de partículas, faíscas e fumaça.' },
+    { key: 'clima', label: 'Efeitos de clima', type: 'choice', values: [0, 1, 2], names: ['Leves', 'Médios', 'Completos'], hint: 'Poças, pegadas, neve e bancos de neblina desenhados, gotas no chão e o ar tremendo no calor. O efeito no jogo (frio, calor, roupa molhada) é o mesmo em todos.' },
     { key: 'fpsLimit', label: 'Limite de FPS', type: 'choice', values: [0, 60, 30], names: ['Sem limite', '60', '30'] },
     { key: 'postfx', label: 'Pós-processamento', type: 'choice', values: [0, 1, 2], names: ['Desligado', 'Reduzido', 'Completo'], hint: 'Vinheta, clarões e interferência digital na tela.' },
     { key: 'brightness', label: 'Brilho', type: 'range', min: -30, max: 30, step: 5, unit: '' },

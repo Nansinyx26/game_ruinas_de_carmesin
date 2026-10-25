@@ -126,6 +126,7 @@ const WorldInv = {
     for (const it of this.equipados()) if (it) for (const k in it.st) WORLD_ATRIB[k].apply(S, it.st[k] * this.mult(it));
     Oficios.apply(S);   // consumíveis ativos (tônico, pele de pedra)
     Arsenal.apply(S);   // peças vestidas e a arma aprimorada (js/mundo/arsenal.js)
+    Clima.apply(S);     // frio e calor no corpo, roupa encharcada (js/mundo/clima.js)
   },
   refazer() { if (game.player) game.player.recalc(false); },
   equipar(id) {

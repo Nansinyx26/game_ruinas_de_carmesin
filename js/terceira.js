@@ -313,6 +313,7 @@ const ThirdView = {
     ctx.fillStyle = '#02040a'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     const C = Ambiente3P.ceu(ctx, R, g.realTime);
     this.view.fog = Ambiente3P.luzes(R, C, this.view);
+    if (g.world && World.zone) Clima.nevoa3P(this.view.fog);   // neblina densa, nevasca e areia fecham a visão
     g.use3D = true;
     const Q = this.queued;
     Q.length = 0;
@@ -369,6 +370,7 @@ const ThirdView = {
       sombra(n, 16);
       n.spr = place(g.queue3(n.key, n, g.opts3(n, 0)), n);
     }
+    if (g.world && World.zone) Clima.fila3P(Q);   // poças, neve no chão e fogueiras (js/mundo/clima.js)
     let cells = 0;
     for (let i = 0; i < g.pickups.count; i++) {
       const it = g.pickups.items[i];
@@ -502,7 +504,7 @@ const ThirdView = {
       ctx.restore();
       p.drawAura(ctx, g.realTime);
       g.drawDanoDir(ctx);
-      if (g.world) Cidade.desenhar(ctx);   // coluna de luz do teletransporte
+      if (g.world) { Cidade.desenhar(ctx); Clima.desenharAr(ctx); }   // teletransporte; neblina, pegadas, vapor e fogueiras
       for (const e of g.enemies) {
         if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
         if (e.state === 'spawn') g.drawSpawnSigil(ctx, e);

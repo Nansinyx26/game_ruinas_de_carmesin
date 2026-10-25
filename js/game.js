@@ -354,6 +354,7 @@ class Game {
       if (Cidade.clique(inp.mouse)) inp.mouse.clicked = false;   // botão AURORA do HUD
       this.canalizando = !this.fadeCb && Cidade.update(dt, inp);   // teletransporte (T): o herói se concentra parado
       this.world.update(dt);
+      Clima.update(dt);   // chão, corpo, moradores e som do clima (js/mundo/clima.js)
     } else this.canalizando = false;
     if (this.debug) {
       if (inp.pressed.debugXp) this.gainXP(400, p.x, p.y);
@@ -1213,7 +1214,7 @@ class Game {
       this.story.draw(ctx, this.realTime);
     } else if (this.player && this.room) {
       this.renderWorld(ctx);
-      if (this.world) WorldTime.drawOverlay(ctx);   // dia e noite, clima (js/mundo/tempo.js)
+      if (this.world) { WorldTime.drawOverlay(ctx); Clima.desenharTela(ctx); }   // dia e noite, clima; calor, visibilidade e o frio e o calor extremos
       this.renderScreenFx(ctx);
       if (this.state === 'playing') { this.hud.draw(ctx); TouchControls.draw(ctx); }   // botões de toque (celular)
       if (this.state === 'paused') this.menu.draw(ctx, this.realTime);
@@ -1258,6 +1259,8 @@ class Game {
     if (e.elite) o.scale = (o.scale || 1) * 1.18;
     if (e.escala) o.scale = (o.scale || 1) * e.escala;   // variantes de inimigos (js/mundo/variantes.js): tamanho e cor
     if (e.tint) o.vart = e.tint;
+    // clima no corpo (molhado, neve, geada) e o tremor de frio (js/mundo/clima.js)
+    if (this.world && World.zone) { o.clima = Clima.roupa(e); Clima.tremor(e, o); } else o.clima = null;
     // recuo do inimigo atingido: o corpo tomba um pouco na direção do golpe e volta (Enemy.takeHit)
     if (e.recuoT > 0 && e.recuoDur) {
       const u = 1 - e.recuoT / e.recuoDur, env = u < 0.2 ? u / 0.2 : (1 - u) / 0.8, amt = 0.3 * (e.recuoK || 0) * env, rel = e.recuoA - (o.yaw || 0);
@@ -1403,6 +1406,7 @@ class Game {
     cam.apply(ctx);
     room.drawBackground(ctx);
     room.drawDoor(ctx);
+    if (this.world) Clima.desenharChao(ctx);   // poças, neve acumulada, pegadas e respingos (js/mundo/clima.js)
     p.drawShadow(ctx);
     for (const e of this.enemies) if (e.state !== 'spawn') e.drawShadow(ctx);
     for (const n of this.npcs) if (!n.holo) n.drawShadow(ctx);
@@ -1427,6 +1431,7 @@ class Game {
     const flick = Math.sin(this.realTime * 9) * 6 + Math.sin(this.realTime * 23) * 3;
     L.add(isoX(p.x, p.y), isoY(p.x, p.y) - 30, (p.state === 'special' ? 620 : 470) + flick, 1);
     room.addLights(L, this.realTime);
+    if (this.world) Clima.luzes(L);   // fogueiras
     for (const n of this.npcs) if (n.lightRgb) L.add(isoX(n.x, n.y), isoY(n.x, n.y) - 30, n.holo ? 150 : 95, 0.5);
     this.projectiles.addLights(L);
     HeroObjects.addLights(L);
@@ -1453,7 +1458,7 @@ class Game {
     ctx.restore();
     p.drawAura(ctx, this.realTime);
     this.drawDanoDir(ctx);
-    if (this.world) Cidade.desenhar(ctx);   // coluna de luz do teletransporte
+    if (this.world) { Cidade.desenhar(ctx); Clima.desenharAr(ctx); }   // teletransporte; neblina, vapor e fogueiras
     for (const e of this.enemies) {
       if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
       if (e.state === 'spawn') this.drawSpawnSigil(ctx, e);

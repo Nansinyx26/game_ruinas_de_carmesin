@@ -737,6 +737,7 @@ const EclipseTests = {
       this.arsenal();
       this.fabricacao();
       this.cidade();
+      this.climaMundo();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
@@ -1693,6 +1694,8 @@ const EclipseTests = {
       WorldInv.fechar();
       // armeiro: estoque do dia (peças e planos) e a compra
       g.activeProgress().level = 14; g.stats.soulsBank = 100000;
+      const rec0 = Arsenal.S.receitas.slice();
+      Arsenal.S.receitas = Arsenal.S.receitas.filter((r) => r !== 'fam:deserto');   // (baús e chefes dos outros testes podem ter ensinado os planos)
       WorldInv.abrir('loja', true, 'armeiro');
       const L = WorldInv.lista(), pc = L.find((q) => q.peca !== undefined), n0 = Arsenal.S.itens.length + Arsenal.S.armazem.itens.length;
       this.ok('armeiro: tem peças e planos à venda', !!pc && L.some((q) => q.plano), L.length);
@@ -1700,6 +1703,7 @@ const EclipseTests = {
       WorldInv.comprar(pc.loja);
       this.ok('armeiro: compra a peça pelo preço', g.stats.soulsBank === 100000 - v && Arsenal.S.itens.length + Arsenal.S.armazem.itens.length === n0 + 1);
       WorldInv.fechar();
+      Arsenal.S.receitas = rec0;
       // descanso: até de manhã, vida cheia
       World.state.hora = 22; p.hp = 5;
       Cidade.descansar();
@@ -1716,6 +1720,131 @@ const EclipseTests = {
     this.ok('cidade: sem exceção', !erro, erro);
     Cidade.tp = null; Cidade.chegada = null;
     World.state.hora = h0; g.stats.soulsBank = b0; g.activeProgress().level = lv0;
+    if (World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
+  },
+
+  // Clima dinâmico (js/mundo/tempo.js e js/mundo/clima.js): intensidade e transição, temperatura
+  // do ar e do corpo, roupa molhada e proteção das peças, chão (poças, neve, pegadas), abrigo dos
+  // moradores, fogueira, efeitos nos atributos, shader e desenho
+  climaMundo() {
+    const g = game, p = g.player, A = Arsenal, z0 = World.zone.id, h0 = World.state.hora, vest0 = JSON.stringify(A.S.vest), c0 = JSON.parse(JSON.stringify(Clima.corpo));
+    const simula = (seg, dt = 0.1) => { for (let t = 0; t < seg; t += dt) { WorldTime.update(dt); Clima.update(dt); } };
+    let erro = null;
+    try {
+      World.loadZone('velmora_trilha', null);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      A.S.vest[A.heroi()] = {}; A.refazer();
+      const reg = World.zone.region;
+      // intensidade e nome; troca gradual
+      WorldTime.definir('chuva', reg, false, 0.3);
+      this.igual('clima: chuva fraca pela intensidade', WorldTime.nome(), 'CHUVA FRACA');
+      WorldTime.definir('chuva', reg, false, 0.7);
+      this.igual('clima: chuva moderada', WorldTime.nome(), 'CHUVA MODERADA');
+      WorldTime.trocar('neblina');
+      WorldTime.update(1);
+      this.ok('clima: a troca é gradual (a chuva enfraquece antes de sumir)', WorldTime.clima() === 'chuva' && WorldTime.intensidade() < 0.7 && WorldTime.intensidade() > 0, WorldTime.intensidade());
+      for (let i = 0; i < 40; i++) WorldTime.update(0.5);
+      this.ok('clima: depois de sumir, o próximo cresce do zero', WorldTime.clima() === 'neblina' && WorldTime.intensidade() > 0, `${WorldTime.clima()} ${WorldTime.intensidade()}`);
+      // temperatura do ar
+      World.state.hora = 13; const dia = Clima.tempAr(); World.state.hora = 1; const noite = Clima.tempAr();
+      this.ok('clima: a noite é mais fria que o dia', noite < dia - 4, `${dia} / ${noite}`);
+      // chuva: o chão junta água, o herói se molha; a aura do Eclipse repele
+      World.state.hora = 14;
+      WorldTime.definir('tempestade', reg, false, 1);
+      const C = Clima.chao(); C.agua = 0; Clima.corpo.molhado = 0;
+      p.x = g.room.w / 2; p.y = g.room.h / 2;
+      if (Clima.abrigado(p.x, p.y) > 0.3) { p.x = g.room.w * 0.3; p.y = g.room.h * 0.7; }
+      simula(30);
+      this.ok('chuva: poças crescem no chão', C.agua > 0.4, C.agua);
+      this.ok('chuva: a roupa do herói molha', Clima.corpo.molhado > 0.3, Clima.corpo.molhado);
+      const w = Clima.roupa(p);
+      this.ok('chuva: o shader recebe a roupa molhada', !!w && w[0] > 0.2, w);
+      if (R3D.ok) this.ok('shader: uniforme uWet nos dois programas', R3D.progs.every((P) => P.loc.uWet !== null));
+      this.ok('chuva: morador comenta o tempo', /chuva|Garoa|raios|Encharcado/.test(Clima.comentario()), Clima.comentario());
+      Clima.corpo.molhado = 0;
+      const lv0 = g.activeProgress().level;
+      g.activeProgress().level = 30;
+      A.equipar(A.guardar(A.gerar('peitoral', 'eclipse', 0, 30), true).id);
+      simula(10);
+      g.activeProgress().level = lv0;
+      this.ok('chuva: a aura do conjunto Eclipse não deixa molhar', Clima.corpo.molhado < 0.02, Clima.corpo.molhado);
+      A.S.vest[A.heroi()] = {}; A.refazer();
+      // parou de chover: o chão seca
+      WorldTime.definir('limpo', reg, false, 1);
+      const ag = C.agua; simula(60);
+      this.ok('sol: as poças secam', C.agua < ag, `${ag} → ${C.agua}`);
+      // frio: nevasca nas montanhas, de noite, com a roupa de sempre
+      World.loadZone('asterion_acampamento', null);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      World.state.hora = 23; WorldTime.update(0.01);
+      WorldTime.definir('nevasca', 'asterion', false, 1);
+      Clima.descansar(); Clima.corpo.molhado = 0;
+      const v0 = p.stats.speedMult;
+      simula(120);
+      const nFrio = Clima.nivel();
+      this.ok('frio: nevasca sem roupa de frio leva a CONGELANDO ou pior', nFrio <= -3, `${nFrio} ${Clima.corpo.temp}`);
+      this.ok('frio: o estado tira velocidade de verdade', p.stats.speedMult < v0, `${v0} → ${p.stats.speedMult}`);
+      this.ok('neve: acumula no chão e nos ombros', Clima.chao().neve > 0.3 && Clima.corpo.neve > 0.3, `${Clima.chao().neve} ${Clima.corpo.neve}`);
+      this.ok('frio: geada na roupa', Clima.corpo.geada > 0.1, Clima.corpo.geada);
+      // pegadas na neve
+      Clima.pegadas.length = 0; p.vx = 150; p.vy = 0; p.air = false;
+      for (let i = 0; i < 20; i++) Clima.pisadas(0.05, p, Clima.chao());
+      p.vx = 0;
+      this.ok('neve: o herói deixa pegadas', Clima.pegadas.length >= 2 && Clima.pegadas[0].tipo === 'neve', Clima.pegadas.length);
+      // proteção: conjunto de Inverno + cachecol + chá + fogueira aquecem
+      const sens0 = Clima.sens;
+      for (const sl of ['capacete', 'peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas', 'capa']) A.equipar(A.guardar(A.gerar(sl, 'inverno', 0, 30), true).id);
+      p.buffs.cha = 300;
+      Clima.acenderFogueira(p.x + 40, p.y);
+      this.ok('fogueira: aquece quem está perto', Clima.calorDe(p.x, p.y) > 10, Clima.calorDe(p.x, p.y));
+      simula(90);
+      this.ok('frio: roupas de inverno, chá e fogueira melhoram o estado', Clima.nivel() > nFrio && Clima.sens > sens0 + 15, `${nFrio} → ${Clima.nivel()} · ${sens0.toFixed(1)} → ${Clima.sens.toFixed(1)}`);
+      p.buffs.cha = 0; A.S.vest[A.heroi()] = {}; A.refazer();
+      // extremo: a vida cai devagar, mas nunca até a morte só pelo clima
+      Clima.fogueiras.length = 0; Clima.corpo.temp = 33; p.hp = 5;
+      Clima.update(0.01);
+      const nHipo = Clima.nivel();
+      simula(6);
+      this.ok('hipotermia: tira vida até 1, nunca mata sozinha', nHipo === -4 && p.hp >= 1 && p.hp < 5, `${nHipo} ${p.hp}`);
+      // calor: deserto ao meio-dia na onda de calor; refresco ajuda
+      World.loadZone('seraph_oasis', null);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      World.state.hora = 13; WorldTime.update(0.01);
+      WorldTime.definir('calor', 'seraph', false, 1);
+      Clima.descansar();
+      simula(120);
+      const nCalor = Clima.nivel();
+      this.ok('calor: onda de calor no deserto deixa COM CALOR ou pior', nCalor >= 2, `${nCalor} ${Clima.corpo.temp}`);
+      p.buffs.refresco = 300; simula(90);
+      this.ok('calor: o refresco gelado alivia', Clima.nivel() < nCalor || Clima.corpo.temp < 38.5, `${nCalor} → ${Clima.nivel()}`);
+      p.buffs.refresco = 0;
+      // moradores procuram abrigo na chuva forte (cidade: debaixo dos toldos)
+      World.loadZone(CIDADE_ID, null);
+      World.state.hora = 12; WorldTime.update(0.01);
+      WorldTime.definir('tempestade', 'nexus', false, 1);
+      const mor = g.npcs.find((n) => n instanceof Morador && Clima.abrigado(n.x, n.y) < 0.6);
+      const ab = mor && Clima.alvoAbrigo(mor);
+      this.ok('chuva forte: o morador no aberto escolhe um abrigo sob os toldos', !!ab && Clima.abrigado(ab.x, ab.y) >= 0.6, ab && JSON.stringify(ab));
+      if (mor && ab) { for (let i = 0; i < 400 && Clima.abrigado(mor.x, mor.y) < 0.6; i++) { mor.talkT = 0; mor.update(0.1); } this.ok('chuva forte: e chega lá', Clima.abrigado(mor.x, mor.y) >= 0.6, `${mor.x|0},${mor.y|0}`); }
+      // desenho em todas as vistas e o termômetro
+      let e2 = null;
+      try {
+        Clima.chao().agua = 0.8; Clima.chao().neve = 0.5; Clima.acenderFogueira(p.x, p.y + 60);
+        g.renderWorld(g.ctx); WorldTime.drawOverlay(g.ctx); Clima.desenharTela(g.ctx); Clima.desenharHud(g.ctx, 112, 126);
+        if (ThirdView.ok !== false) { ThirdView.set(true, true); g.renderWorld(g.ctx); Clima.desenharTela(g.ctx); ThirdView.set(false, true); }
+      } catch (e) { e2 = e.stack ? e.stack.split('\n').slice(0, 2).join(' | ') : e.message; }
+      this.ok('clima: desenha (chão, ar, tela, HUD, isométrica e 3ª pessoa)', !e2, e2);
+      this.ok('configurações: efeitos de clima (leves, médios, completos)', SETTINGS_TABS.some((T) => T.opts.some((o) => o.key === 'clima')) && Clima.qual().pegadas > 0);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('clima: sem exceção', !erro, erro);
+    Object.assign(Clima.corpo, c0); Clima.fogueiras.length = 0;
+    A.S.vest = JSON.parse(vest0); p.buffs.cha = 0; p.buffs.refresco = 0;
+    Clima.mudouNivel(0, true);
+    World.state.hora = h0;
     if (World.zone.id !== z0) World.loadZone(z0, null);
     g.state = 'playing';
   },

@@ -21,7 +21,7 @@
 // mapa (M) mostra a planta da cidade com os distritos quando o herói está nela.
 // ---------------------------------------------------------------------------
 const CIDADE_ID = 'aurora';
-THEMES.aurora = { floor: [218, 12, 19], wall: [220, 14], lamp: '255,196,120', accent: '255,180,90', dark: '10,8,18', darkness: 0.55,
+THEMES.aurora = { floor: [218, 12, 19], wall: [220, 14], lamp: '255,196,120', accent: '255,180,90', dark: '10,8,18', darkness: 0.55, aberto: 0.8,
   sky: 'indoor', decor: 'none', pillar: 'concrete', deco: 'stone', ruined: 0.02 };
 // Prédios das fachadas. lado N: encostado na parede de cima (frente para +y); W: na da esquerda
 // (frente para +x); a..b: trecho da parede (fração); h: altura; est: a estação na porta

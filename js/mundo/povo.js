@@ -214,6 +214,7 @@ class Morador extends NPC {
     this.merchant = !!def.merchant; this.quest = !!def.quest;
     this.verb = 'Conversar';
     this.casaXY = null; this.rotaXY = null; this.ri = 0; this.espera = rand(1, 4); this.andando = false;
+    this.origem = { x, y };   // onde fica (volta para cá depois do abrigo)
   }
   // Pontos da rotina na sala (frações → posições livres)
   preparar(R) {
@@ -245,7 +246,10 @@ class Morador extends NPC {
   }
   // Rotina: de dia percorre os pontos (com pausas); à noite vai para casa. Para perto do herói
   andar(dt, p) {
-    if (!this.rotaXY && !this.casaXY) return false;
+    // tempo ruim (chuva forte, nevasca, areia, sol a pino no calor): corre para o abrigo e espera
+    const ab = typeof Clima !== 'undefined' && World.zone ? Clima.alvoAbrigo(this) : null;
+    if (ab) return this.irPara(ab, dt, 70);
+    if (!this.rotaXY && !this.casaXY) return this.origem && dist2(this.x, this.y, this.origem.x, this.origem.y) > 64 ? this.irPara(this.origem, dt, 38) : false;
     if (dist2(p.x, p.y, this.x, this.y) < 120 * 120) return false;
     const noite = typeof WorldTime !== 'undefined' && WorldTime.noite();
     const alvo = noite && this.casaXY ? this.casaXY : this.rotaXY ? this.rotaXY[this.ri % this.rotaXY.length] : null;
@@ -259,6 +263,16 @@ class Morador extends NPC {
     }
     const v = 38 * dt, nx = this.x + (dx / d) * Math.min(v, d), ny = this.y + (dy / d) * Math.min(v, d);
     if (game.room && !game.room.canStand(nx, ny, 12)) { this.ri++; return false; }
+    this.x = nx; this.y = ny;
+    this.facing = angleLerp(this.facing, Math.atan2(dy, dx), 1 - Math.exp(-8 * dt)); this.baseFacing = this.facing;
+    return true;
+  }
+  // Vai até um ponto (abrigo do clima, ou de volta ao lugar); false quando chegou ou não dá
+  irPara(alvo, dt, vel) {
+    const dx = alvo.x - this.x, dy = alvo.y - this.y, d = Math.hypot(dx, dy);
+    if (d < 6) return false;
+    const v = vel * dt, nx = this.x + (dx / d) * Math.min(v, d), ny = this.y + (dy / d) * Math.min(v, d);
+    if (game.room && !game.room.canStand(nx, ny, 12)) return false;
     this.x = nx; this.y = ny;
     this.facing = angleLerp(this.facing, Math.atan2(dy, dx), 1 - Math.exp(-8 * dt)); this.baseFacing = this.facing;
     return true;
@@ -322,6 +336,8 @@ const Povo = {
       if (WorldTime.noite() && Math.random() < 0.4) ola = `${ola} …E já é noite. Cuidado lá fora.`;
     } else ola = pick(npc.lines.length ? npc.lines : ['…']);
     if (npc.merchant && !P) ola = WORLD_MERCADOR_FALAS[World.zone.region] || ola;
+    const tempo = !primeira && Math.random() < 0.7 ? Clima.comentario() : '';   // o tempo e o estado do herói (js/mundo/clima.js)
+    if (tempo) ola = `${ola} ${tempo}`;
     const prioritaria = Aventuras.aoFalar(npc);   // passo de missão que pede esta conversa (entregar, achar, escoltar)
     Dialogo.abrir(npc, prioritaria || ola, [], npc.papel);
     this.raiz(npc, prioritaria || ola);

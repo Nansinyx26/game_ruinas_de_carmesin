@@ -281,7 +281,7 @@ const World = {
     const reg = worldRegion(this.zone.region);
     g.hud.toast(`MUNDO ABERTO · ${reg.name} — mapa: M`, reg.rgb);
   },
-  stop() { this.active = false; this.map.open = false; if (game.world === this) game.world = null; },
+  stop() { this.active = false; this.map.open = false; if (game.world === this) game.world = null; Clima.silenciar(); },
 
   // Carrega uma zona; 'from' = lado por onde o herói chega (N, S, W, E) ou null (portal / início);
   // 'along' (0 a 1) = onde, ao longo da borda, ele cruzou (campo aberto: sai em qualquer ponto)
@@ -384,6 +384,7 @@ const World = {
     Campanhas.aoCarregar(id);   // sinal do capítulo da campanha do herói, se for esta zona (js/mundo/campanhas.js)
     Povo.aoCarregar(z);         // rotinas e quadro de contratos (js/mundo/povo.js)
     Cidade.aoCarregar(z);       // estações, bancas, monumento e portões da cidade principal (js/mundo/cidade.js)
+    Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
     Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
     Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
@@ -533,6 +534,7 @@ const World = {
     g.player = new Player(0, 0); g.player.recalc(true);
     g.hud.reset();
     g.timeScale = 1; g.slowTimer = 0; g.hitStop = 0;
+    Clima.descansar();   // volta com o corpo seco e na temperatura normal
     this.loadZone(last, null);
     g.state = 'playing'; g.fade = 1; g.fadeTarget = 0;
   },
