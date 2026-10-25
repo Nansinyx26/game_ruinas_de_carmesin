@@ -141,10 +141,10 @@ const EnemyTraits = {
   efeito(p, tipo, base = 10) {
     if (tipo === 'veneno') {
       if (!(p.venenoT > 0)) game.texts.spawn(p.x, p.y, 70, 'ENVENENADO', '#a8ff7a', 14, 0.8);
-      p.venenoT = 4; p.venenoDps = Math.max(2, base * 0.18);
+      p.venenoT = 4; p.venenoDps = Math.max(2, base * 0.18) * (1 - (p.stats.resVeneno || 0));   // peças com resistência (js/mundo/arsenal.js)
     } else {
       if (!(p.lentoT > 0)) game.texts.spawn(p.x, p.y, 70, tipo === 'congela' ? 'CONGELANDO' : 'LENTO', '#bfe6ff', 14, 0.8);
-      p.lentoT = Math.max(p.lentoT || 0, tipo === 'congela' ? 2.2 : 1.6);
+      p.lentoT = Math.max(p.lentoT || 0, (tipo === 'congela' ? 2.2 : 1.6) * (1 - (p.stats.resGelo || 0)));
     }
   },
   morreu(e) {

@@ -108,7 +108,8 @@ class ProjectileSystem {
             continue;
           }
           if (typeof AllyFx !== 'undefined' && AllyFx.reflectShot(pl, p)) continue;   // Escudo Refletor (Drakos)
-          if (pl.takeDamage(p.dmg, p.x - p.vx * 0.05, p.y - p.vy * 0.05, 200)) {
+          const dmg = p.kind === 'laser' ? p.dmg * (1 - (pl.stats.resEletrico || 0)) : p.dmg;   // laser: resistência elétrica das peças
+          if (pl.takeDamage(dmg, p.x - p.vx * 0.05, p.y - p.vy * 0.05, 200)) {
             if (p.efeito && typeof EnemyTraits !== 'undefined') EnemyTraits.efeito(pl, p.efeito);
             this.kill(i, true); continue;
           }

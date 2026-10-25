@@ -24,8 +24,9 @@ class HazardSystem {
         h.tick = (h.tick || 0) - dt;
         if (h.tick <= 0 && p.state !== 'dead' && p.z < PULO.ALTO && p.invuln <= 0 && dist(h.x, h.y, p.x, p.y) < h.r + p.radius * 0.5) {
           h.tick = 0.5;
-          p.hp = Math.max(1, p.hp - h.dmg); p.flash = 0.06;
-          game.texts.spawn(p.x, p.y, 54, `-${h.dmg}`, '#ffb46b', 13, 0.5);
+          const dmg = Math.max(1, Math.round(h.dmg * (1 - ((h.lento ? p.stats.resGelo : p.stats.resFogo) || 0))));   // resistência das peças (js/mundo/arsenal.js)
+          p.hp = Math.max(1, p.hp - dmg); p.flash = 0.06;
+          game.texts.spawn(p.x, p.y, 54, `-${dmg}`, '#ffb46b', 13, 0.5);
           if (h.lento) EnemyTraits.efeito(p, 'congela');
         }
         continue;

@@ -110,11 +110,13 @@ const WorldInv = {
   onKill(e) {
     const z = World.zone;
     if (!z) return;
+    Arsenal.onKill(e);   // peças da armadura modular (js/mundo/arsenal.js)
     if (e.worldBoss) this.ganhar(this.gerar(z.lv + 2, z.region, 3, 0.5), e.x, e.y);
     else if (Math.random() < (e.elite ? 0.3 : 0.05)) this.ganhar(this.gerar(z.lv, z.region, 0, e.elite ? 0.4 : 0), e.x, e.y);
   },
   onChest(d, x, y) {
     const z = World.zone;
+    Arsenal.onChest(d); Fabrica.onChest(d);   // peças, materiais e planos (js/mundo/fabrica.js)
     this.ganhar(this.gerar(z.lv, z.region, d.boss ? 3 : d.secret ? 2 : 0, d.boss || d.secret ? 0.4 : 0.15), x, y);
   },
 
@@ -123,6 +125,7 @@ const WorldInv = {
   apply(S) {
     for (const it of this.equipados()) if (it) for (const k in it.st) WORLD_ATRIB[k].apply(S, it.st[k] * this.mult(it));
     Oficios.apply(S);   // consumíveis ativos (tônico, pele de pedra)
+    Arsenal.apply(S);   // peças vestidas e a arma aprimorada (js/mundo/arsenal.js)
   },
   refazer() { if (game.player) game.player.recalc(false); },
   equipar(id) {
@@ -187,8 +190,11 @@ const WorldInv = {
   extras() {
     const reg = World.zone.region, out = [];
     if (this.ui.loja === 'curandeiro') { for (const k of ['elixir', 'tonico', 'pele']) out.push({ cons: k }); return out; }
+    if (this.ui.loja === 'armeiro') return Arsenal.lojaArmeiro();   // peças e planos (Armaria da cidade, js/mundo/arsenal.js)
     for (const k of ['elixir', 'tonico', 'pele', 'retorno']) out.push({ cons: k });
-    for (const k of ['sucata', WORLD_MAT_REG[reg] === 'sucata' ? 'erva' : WORLD_MAT_REG[reg]]) out.push({ mat: k });
+    // na cidade, o mercado tem o material das oficinas
+    const mats = World.zone && World.zone.cidade ? ['ferro', 'tecido', 'couro', 'engrenagem'] : ['sucata', WORLD_MAT_REG[reg] === 'sucata' ? 'erva' : WORLD_MAT_REG[reg]];
+    for (const k of mats) out.push({ mat: k });
     if (Oficios.podeInsignia(reg)) out.push({ insignia: reg });
     return out;
   },
@@ -196,14 +202,30 @@ const WorldInv = {
     const reg = World.zone.region;
     if (x.cons) return Oficios.precoCom(WORLD_CONSUMIVEIS[x.cons].preco + worldRegion(reg).order * 5, reg);
     if (x.mat) return Oficios.precoCom(WORLD_MATERIAIS[x.mat].preco, reg);
+    if (x.peca !== undefined) return Oficios.precoCom(Arsenal.valor(Arsenal.S.loja.itens[x.peca]), reg);
+    if (x.plano) return Arsenal.precoPlano(x.plano);
     return Oficios.precoInsignia(reg);
   },
-  nomeExtra(x) { return x.cons ? WORLD_CONSUMIVEIS[x.cons].nome : x.mat ? WORLD_MATERIAIS[x.mat].nome : Oficios.insignia(x.insignia).unico; },
+  nomeExtra(x) {
+    if (x.peca !== undefined) return Arsenal.nome(Arsenal.S.loja.itens[x.peca]);
+    if (x.plano) return `Plano ${ARS_FAMILIAS[x.plano].nome}`;
+    return x.cons ? WORLD_CONSUMIVEIS[x.cons].nome : x.mat ? WORLD_MATERIAIS[x.mat].nome : Oficios.insignia(x.insignia).unico;
+  },
+  // Lojas sem relíquias nem cápsulas: curandeiro (remédios) e armeiro (peças e planos)
+  semReliquias() { return this.ui.loja === 'curandeiro' || this.ui.loja === 'armeiro'; },
   comprar(k) {
-    const g = game, list = this.ui.loja === 'curandeiro' ? [] : this.estoque();
-    if (k > list.length) {   // consumível, material ou insígnia
+    const g = game, list = this.semReliquias() ? [] : this.estoque();
+    if (k > list.length) {   // consumível, material, insígnia, peça ou plano
       const x = this.extras()[k - list.length - 1];
       if (!x) return false;
+      if (x.peca !== undefined || x.plano) {
+        const v = this.precoExtra(x), nome = this.nomeExtra(x);
+        if (g.stats.soulsBank < v) return this.aviso(`Faltam ${v - g.stats.soulsBank} células`);
+        g.stats.soulsBank -= v;
+        if (x.plano) Fabrica.aprender(x.plano, 'Armaria'); else Arsenal.comprarPeca(x.peca);
+        g.audio.play('memory');
+        return this.aviso(`Comprou ${nome}`, true);
+      }
       if (x.insignia) { const e = Oficios.comprarInsignia(x.insignia); if (e) return this.aviso(e); g.audio.play('memory'); return this.aviso(`Comprou ${this.nomeExtra(x)}`, true); }
       if (x.cons && Oficios.cons(x.cons) >= 9) return this.aviso('Você já carrega 9 destes');
       const v = this.precoExtra(x);
@@ -244,23 +266,27 @@ const WorldInv = {
     const U = this.ui;
     if (tab === 'missoes') tab = 'diario';
     U.tab = tab; U.shop = shop; U.loja = shop ? loja || 'mercador' : null; U.servico = servico; U.sel = 0; U.t = 0; U.msgT = 0; U.confirma = null;
+    Fabrica.ui.cat = 0; Fabrica.ui.digitando = false;
     if (tab === 'diario' && !U.cat) U.cat = 'ativas';
     game.state = 'worldinv';
     game.audio.play('uiMove');
   },
   fechar() { game.state = 'playing'; World.save(); game.audio.play('uiMove'); },
   abas() {
-    const a = ['mochila', 'oficios', 'diario', 'campanhas'];
+    const a = ['mochila', 'equipamento', 'itens', 'oficios', 'diario', 'campanhas'], sv = this.ui.servico;
     if (this.ui.shop) a.splice(1, 0, 'loja');
-    if (this.ui.servico) a.splice(1, 0, this.ui.servico);
+    if (sv) a.splice(1, 0, sv === 'armazem' ? 'armazem' : FAB_ESTACOES[sv] ? 'fabrica' : sv);
     return a;
   },
+  // Abas dos módulos novos: EQUIPAMENTO (js/mundo/arsenal.js), INVENTÁRIO, estações e ARMAZÉM (js/mundo/fabrica.js)
+  abaModulo(tab) { return tab === 'equipamento' || tab === 'itens' || tab === 'fabrica' || tab === 'armazem'; },
   // Itens navegáveis da aba: mochila = 3 vagas + mochila; loja = estoque + cápsula; missões: nada;
   // campanhas: os 5 heróis (js/mundo/campanhas.js)
   lista() {
     const U = this.ui;
     if (U.tab === 'mochila') return [0, 1, 2].map((k) => ({ slot: k })).concat(this.S.itens.map((it) => ({ it })));
     if (U.tab === 'loja') {
+      if (U.loja === 'armeiro') return this.extras().map((x, j) => Object.assign({ loja: j + 1 }, x));
       const rel = U.loja === 'curandeiro' ? [] : this.estoque().map((it, k) => ({ loja: k, it })), n = rel.length;
       return rel.concat([{ loja: n, cap: true }], this.extras().map((x, j) => Object.assign({ loja: n + 1 + j }, x)));
     }
@@ -294,8 +320,20 @@ const WorldInv = {
     const abas = this.abas();
     if (inp.pressed.tabPrev || inp.pressed.tabNext) {
       const i = abas.indexOf(U.tab), n = abas.length;
-      U.tab = abas[(i + (inp.pressed.tabNext ? 1 : n - 1)) % n]; U.sel = 0;
+      U.tab = abas[(i + (inp.pressed.tabNext ? 1 : n - 1)) % n]; U.sel = 0; Fabrica.ui.cat = 0;
       game.audio.play('uiMove');
+    }
+    if (this.abaModulo(U.tab)) {
+      if (U.tab === 'equipamento') Arsenal.updateUI(dt, inp); else Fabrica.updateUI(U.tab, dt, inp);
+      const m = inp.mouse;
+      if (m.clicked) for (const r of U.rects) {
+        if (m.x < r.x || m.x > r.x + r.w || m.y < r.y || m.y > r.y + r.h) continue;
+        if (r.tab) { U.tab = r.tab; U.sel = 0; Fabrica.ui.cat = 0; game.audio.play('uiMove'); }
+        else if (r.btn === 'fechar') this.fechar();
+        else if (U.tab === 'equipamento') Arsenal.clique(r); else Fabrica.clique(U.tab, r);
+        break;
+      }
+      return;
     }
     const L = this.lista(), cols = this.cols(), mochila = U.tab === 'mochila';
     if (U.tab === 'diario' && (inp.pressed.left || inp.pressed.right)) {
@@ -362,7 +400,8 @@ const WorldInv = {
     let x = 36;
     ctx.font = `bold 15px ${FONT_TITLE}`; ctx.letterSpacing = '3px';
     for (const a of this.abas()) {
-      const label = { mochila: 'MOCHILA', loja: U.loja === 'curandeiro' ? 'REMÉDIOS' : 'LOJA', oficios: 'OFÍCIOS', diario: 'DIÁRIO', campanhas: 'CAMPANHAS', ferreiro: 'FERREIRO', artesao: 'ARTESÃO' }[a];
+      const label = { mochila: 'RELÍQUIAS', loja: U.loja === 'curandeiro' ? 'REMÉDIOS' : U.loja === 'armeiro' ? 'ARMARIA' : 'LOJA', oficios: 'OFÍCIOS', diario: 'DIÁRIO', campanhas: 'CAMPANHAS', ferreiro: 'FERREIRO', artesao: 'ARTESÃO',
+        equipamento: 'EQUIPAMENTO', itens: 'INVENTÁRIO', armazem: 'ARMAZÉM', fabrica: FAB_ESTACOES[U.servico] ? FAB_ESTACOES[U.servico].nome.split(' ')[0].toUpperCase() : 'OFICINA' }[a];
       const w = ctx.measureText(label).width + 30, on = a === U.tab;
       ctx.fillStyle = on ? 'rgba(90,150,255,0.25)' : 'rgba(20,30,50,0.6)'; ctx.fillRect(x, 28, w, 36);
       ctx.strokeStyle = on ? 'rgba(150,205,255,0.9)' : 'rgba(90,120,170,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, 28.5, w - 1, 35);
@@ -378,7 +417,9 @@ const WorldInv = {
     ctx.strokeStyle = 'rgba(150,205,255,0.6)'; ctx.strokeRect(VIEW_W - 83.5, 28.5, 47, 35);
     ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText('✕', VIEW_W - 60, 47);
     U.rects.push({ btn: 'fechar', x: VIEW_W - 84, y: 28, w: 48, h: 36 });
-    if (U.tab === 'diario') Aventuras.drawDiario(ctx, Ly, L, U.sel, t);
+    if (U.tab === 'equipamento') Arsenal.draw(ctx, Ly, t);
+    else if (this.abaModulo(U.tab)) Fabrica.draw(U.tab, ctx, Ly, t);
+    else if (U.tab === 'diario') Aventuras.drawDiario(ctx, Ly, L, U.sel, t);
     else if (U.tab === 'oficios') Oficios.draw(ctx, Ly, L, U.sel, this.vende());
     else if (U.tab === 'ferreiro' || U.tab === 'artesao') Oficios.drawServico(ctx, Ly, L, U.sel, U.tab);
     else if (U.tab === 'campanhas') Campanhas.drawTab(ctx, Ly, U.sel, t);
@@ -393,7 +434,7 @@ const WorldInv = {
     }
     // dicas
     ctx.font = `12px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(200,214,235,0.75)';
-    const dica = U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${this.vende() ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
+    const dica = U.tab === 'equipamento' ? Arsenal.dica() : this.abaModulo(U.tab) ? Fabrica.dica(U.tab) : U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${this.vende() ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
       : U.tab === 'loja' ? 'Enter: comprar · Q/E: abas · Esc: fechar'
         : U.tab === 'campanhas' ? 'Enter: jogar a campanha (troca para o herói dela) · ★ no mapa e no radar · Q/E: abas · Esc: fechar'
           : U.tab === 'diario' ? '←/→: categoria · Enter: rastrear · Delete: abandonar · ◆ no mapa e na zona · Q/E: abas · Esc: fechar'
@@ -503,9 +544,9 @@ const WorldInv = {
   // Loja em uma ou duas colunas (muitos itens: relíquias, cápsula, consumíveis, materiais)
   lojaCols(L) { return L.length > 6 && VIEW_W >= 900 ? 2 : 1; },
   drawLoja(ctx, Ly, L, t) {
-    const U = this.ui, z = World.zone, reg = z.region, d = Oficios.desconto(reg), cur = U.loja === 'curandeiro';
+    const U = this.ui, z = World.zone, reg = z.region, d = Oficios.desconto(reg), cur = U.loja === 'curandeiro', arm = U.loja === 'armeiro';
     ctx.textAlign = 'left'; ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(150,205,255,0.9)';
-    ctx.fillText(`${cur ? 'CURANDEIRO · REMÉDIOS' : `MERCADOR · ${worldRegion(reg).name.toUpperCase()} · ESTOQUE DO DIA ${World.state.dia || 1}`}${d ? ` · REPUTAÇÃO −${Math.round(d * 100)}%` : ''}`, Ly.lx, Ly.top - 12);
+    ctx.fillText(`${cur ? 'CURANDEIRO · REMÉDIOS' : arm ? `ARMEIRO · PEÇAS E PLANOS · ESTOQUE DO DIA ${World.state.dia || 1}` : `MERCADOR · ${worldRegion(reg).name.toUpperCase()} · ESTOQUE DO DIA ${World.state.dia || 1}`}${d ? ` · REPUTAÇÃO −${Math.round(d * 100)}%` : ''}`, Ly.lx, Ly.top - 12);
     ctx.letterSpacing = '0px';
     const cols = this.lojaCols(L), per = Math.ceil(L.length / cols), cw = (VIEW_W - 72 - (cols - 1) * 16) / cols;
     const rh = Math.max(24, Math.min(62, (Ly.det - Ly.top - 24) / Math.max(1, per) - 8));
@@ -516,6 +557,16 @@ const WorldInv = {
       U.rects.push({ idx: i, x, y, w: cw, h: rh });
       ctx.textAlign = 'left';
       const fs = rh < 34 ? 13 : 15;
+      if (q.peca !== undefined || q.plano) {
+        // armeiro: peça (com a raridade e os atributos) ou plano de família
+        const preco = this.precoExtra(q), it = q.peca !== undefined ? Arsenal.S.loja.itens[q.peca] : null, R = it ? Arsenal.rar(it) : null;
+        ctx.font = `bold ${fs}px ${FONT_UI}`; ctx.fillStyle = it ? rgba(R.rgb, 1) : '#ffd08a';
+        const nome = it ? `${this.nomeExtra(q)} · ${R.name} · ${ARS_VAGAS[it.slot].nome}` : `📜 ${this.nomeExtra(q)} · as ${ARS_ORDEM.length} peças da família na forja`;
+        ctx.fillText(nome, x + 14, y + rh * (rh >= 34 && it ? 0.34 : 0.5));
+        if (it && rh >= 34) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)'; ctx.fillText(Arsenal.resumo(it), x + 14, y + rh * 0.7); }
+        ctx.textAlign = 'right'; ctx.font = `bold ${fs}px ${FONT_UI}`; ctx.fillStyle = game.stats.soulsBank >= preco ? '#9fd0ff' : '#ff8a9a'; ctx.fillText(`${preco}`, x + cw - 14, y + rh / 2);
+        return;
+      }
       if (q.cap || q.cons || q.mat || q.insignia) {
         const preco = q.cap ? this.precoCapsula() : this.precoExtra(q), D = q.cons ? WORLD_CONSUMIVEIS[q.cons] : q.mat ? WORLD_MATERIAIS[q.mat] : null;
         const nome = q.cap ? `✚ Cápsula de reparo (cura 40%) · você tem ${this.S.capsulas}/${this.CAPS}` : q.insignia ? `★ ${this.nomeExtra(q)} · insígnia da facção (única)`
@@ -534,9 +585,12 @@ const WorldInv = {
       ctx.textAlign = 'right'; ctx.font = `bold ${fs}px ${FONT_UI}`; ctx.fillStyle = game.stats.soulsBank >= v ? '#9fd0ff' : '#ff8a9a';
       ctx.fillText(`${v}`, x + cw - 14, y + rh / 2);
     });
-    if (!cur && !L.some((q) => q.it)) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Relíquias esgotadas hoje. Volte amanhã (no relógio do mundo).', Ly.lx, Ly.det - 12); }
+    if (arm && !L.length) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Estoque vendido hoje. Volte amanhã (no relógio do mundo).', Ly.lx, Ly.det - 12); }
+    if (!cur && !arm && !L.some((q) => q.it)) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Relíquias esgotadas hoje. Volte amanhã (no relógio do mundo).', Ly.lx, Ly.det - 12); }
     const q = L[U.sel];
     if (q && q.it) this.drawDetalhe(ctx, Ly, q.it, [['main', 'COMPRAR']], `Preço ${Oficios.precoCom(this.valor(q.it), reg)} células · você tem ${game.stats.soulsBank}`);
+    else if (q && q.peca !== undefined) { const it = Arsenal.S.loja.itens[q.peca]; this.drawDetalhe(ctx, Ly, null, [['main', 'COMPRAR']], `Preço ${this.precoExtra(q)} células · você tem ${game.stats.soulsBank} · requer nível ${Arsenal.req(it)} · ▲▼ comparado à peça vestida`, `${this.nomeExtra(q).toUpperCase()} · ${Arsenal.rar(it).name.toUpperCase()}`); }
+    else if (q && q.plano) this.drawDetalhe(ctx, Ly, null, [['main', 'COMPRAR']], `Preço ${this.precoExtra(q)} células · você tem ${game.stats.soulsBank} · a Mestra Brasa forja com ele`, `PLANO ${ARS_FAMILIAS[q.plano].nome.toUpperCase()}`);
     else if (q && q.cap) this.drawDetalhe(ctx, Ly, null, [['main', 'COMPRAR']], `Preço ${this.precoCapsula()} células · você tem ${game.stats.soulsBank}`, 'CÁPSULA DE REPARO · CURA 40% DA VIDA');
     else if (q) this.drawDetalhe(ctx, Ly, null, [['main', 'COMPRAR']], `Preço ${this.precoExtra(q)} células · você tem ${game.stats.soulsBank}${q.mat ? ' · materiais para o artesão e o ferreiro' : ''}`, this.nomeExtra(q).toUpperCase());
     else this.drawDetalhe(ctx, Ly, null, [], '');

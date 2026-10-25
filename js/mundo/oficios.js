@@ -23,6 +23,22 @@ const WORLD_MATERIAIS = {
   obsidiana: { nome: 'Obsidiana Bruta', icon: '⬟', rgb: '255,120,60', preco: 15, desc: 'Vidro vulcânico da Cratera de Obsidiano.' },
   nucleo: { nome: 'Núcleo Instável', icon: '◉', rgb: '255,96,130', preco: 22, desc: 'Coração de uma unidade de elite.' },
   essencia: { nome: 'Essência Carmesim', icon: '✦', rgb: '255,60,96', preco: 45, desc: 'Energia pura dos chefes e das masmorras.' },
+  // materiais da fabricação (js/mundo/fabrica.js)
+  ferro: { nome: 'Minério de Ferro', icon: '◼', rgb: '190,196,210', preco: 6, desc: 'Metal bruto dos montes de ferro-velho e das máquinas.' },
+  tecido: { nome: 'Tecido Resistente', icon: '▦', rgb: '214,196,160', preco: 5, desc: 'Lona e fibra das ruínas e dos baús; base das roupas.' },
+  couro: { nome: 'Couro Curtido', icon: '◒', rgb: '190,130,80', preco: 7, desc: 'Das criaturas abatidas (não das máquinas).' },
+  engrenagem: { nome: 'Componente Mecânico', icon: '✲', rgb: '150,190,220', preco: 11, desc: 'Engrenagens e servos inteiros das máquinas.' },
+  circuito: { nome: 'Tecnologia Antiga', icon: '⌗', rgb: '120,255,200', preco: 24, desc: 'Placas de antes do Dia Zero: terminais, baús e ruínas.' },
+  amostra: { nome: 'Amostra Desconhecida', icon: '?', rgb: '220,160,255', preco: 18, desc: 'Ninguém sabe o que é. O pesquisador da Aurora identifica.' },
+};
+// Raridade de cada material (cor da borda; quanto mais raro, mais difícil de achar)
+const WORLD_MAT_RARIDADE = { sucata: 0, erva: 0, ferro: 0, tecido: 0, couro: 0, cristal: 1, fragmento: 1, gelo: 1, engrenagem: 1, obsidiana: 2, circuito: 2, amostra: 2, nucleo: 3, essencia: 4 };
+// Onde achar (texto da mochila)
+const WORLD_MAT_FONTE = {
+  sucata: 'máquinas abatidas, montes de ferro-velho', erva: 'coleta em Velmora', cristal: 'coleta na Lagoa', fragmento: 'coleta em Seraph',
+  gelo: 'coleta em Asterion', obsidiana: 'coleta na Cratera', nucleo: 'elites e chefes', essencia: 'chefes, masmorras, coleta experiente',
+  ferro: 'montes de ferro-velho, mercado da Aurora', tecido: 'baús, mercado da Aurora', couro: 'criaturas abatidas, mercado da Aurora',
+  engrenagem: 'máquinas abatidas, ferro-velho', circuito: 'baús, terminais, chefes', amostra: 'elites e baús',
 };
 // Material do recurso de coleta de cada bioma e o material típico de cada região
 const WORLD_MAT_TEMA = { floresta: 'erva', lagoa: 'cristal', deserto: 'fragmento', neve: 'gelo', vulcao: 'obsidiana' };
@@ -32,6 +48,10 @@ const WORLD_CONSUMIVEIS = {
   pele: { nome: 'Poção Pele de Pedra', icon: 'shield', rgb: '170,205,255', preco: 45, dur: 60, desc: '+15% de defesa por 60 s' },
   elixir: { nome: 'Elixir de Energia', icon: 'bolt', rgb: '120,200,255', preco: 35, desc: 'Enche a energia na hora' },
   retorno: { nome: 'Pedra de Retorno', icon: 'teleport', rgb: '170,120,255', preco: 70, desc: 'Abre a viagem rápida de qualquer lugar' },
+  // contra o clima (js/mundo/clima.js)
+  cha: { nome: 'Chá Quente', icon: 'flame', rgb: '255,170,90', preco: 30, dur: 150, desc: 'Aquece o corpo por 150 s' },
+  refresco: { nome: 'Refresco Gelado', icon: 'bolt', rgb: '140,220,255', preco: 30, dur: 150, desc: 'Refresca o corpo por 150 s' },
+  fogueira: { nome: 'Fogueira Portátil', icon: 'flame', rgb: '255,140,60', preco: 55, desc: 'Acende uma fogueira por 90 s: aquece e seca a roupa' },
 };
 // Receitas do artesão ('regional': o material da região onde se cria)
 const WORLD_RECEITAS = [
@@ -41,6 +61,9 @@ const WORLD_RECEITAS = [
   { id: 'pele', nome: 'Poção Pele de Pedra', nivel: 2, mat: { gelo: 2, sucata: 2 }, desc: WORLD_CONSUMIVEIS.pele.desc },
   { id: 'retorno', nome: 'Pedra de Retorno', nivel: 3, mat: { fragmento: 2, nucleo: 1 }, desc: WORLD_CONSUMIVEIS.retorno.desc },
   { id: 'reliquia', nome: 'Relíquia forjada', nivel: 4, mat: { regional: 4, nucleo: 2, essencia: 1 }, desc: 'Relíquia rara ou melhor da região; a Criação melhora a raridade' },
+  { id: 'cha', nome: 'Chá Quente', nivel: 1, mat: { erva: 2, gelo: 1 }, desc: 'Aquece o corpo por 150 s' },
+  { id: 'refresco', nome: 'Refresco Gelado', nivel: 1, mat: { erva: 1, cristal: 1 }, desc: 'Refresca o corpo por 150 s' },
+  { id: 'fogueira', nome: 'Fogueira Portátil', nivel: 2, mat: { sucata: 2, tecido: 1, obsidiana: 1 }, desc: 'Fogueira por 90 s: aquece e seca a roupa' },
 ];
 // Facções (uma por região) e os níveis de reputação (desconto com o mercador da região)
 const WORLD_FACCOES = {
@@ -108,17 +131,22 @@ const Oficios = {
   // Recurso de coleta colhido: o material do bioma (mais com o ofício) e às vezes essência
   aoColetar(d) {
     const k = d.mat || WORLD_MAT_TEMA[World.zone.theme] || 'sucata', nv = this.nivel('coleta');
-    const n = 1 + Math.floor(nv / 3);
+    const n = 1 + Math.floor(nv / 3) + (typeof Arsenal !== 'undefined' ? Arsenal.S.ferramenta || 0 : 0);   // ferramenta de coleta (engenharia)
     this.dar(k, n);
+    if (k === 'sucata') { if (Math.random() < 0.5) this.dar('ferro', 1); if (Math.random() < 0.2) this.dar('engrenagem', 1); }
     if (nv >= 5 && Math.random() < 0.05 + nv * 0.01) this.dar('essencia', 1);
     this.ganharXp('coleta', 12);
   },
   // Saque de materiais: sucata dos inimigos comuns, núcleo das elites, essência dos chefes
   aoAbater(e) {
-    if (e.worldBoss) { this.dar('essencia', 2); this.dar('nucleo', 2); return; }
+    if (e.worldBoss) { this.dar('essencia', 2); this.dar('nucleo', 2); this.dar('circuito', 1); return; }
     if (e.chefeNome) { this.dar('essencia', 1); return; }
     if (e.elite && Math.random() < 0.4) this.dar('nucleo', 1);
     else if (Math.random() < 0.18) this.dar('sucata', 1, false);
+    // fabricação: máquinas soltam componentes; criaturas, couro; elites, às vezes uma amostra
+    if (e.T && e.T.mech) { if (Math.random() < 0.1) this.dar('engrenagem', 1, false); }
+    else if (Math.random() < 0.16) this.dar('couro', 1, false);
+    if (e.elite && Math.random() < 0.15) this.dar('amostra', 1);
   },
 
   // ------------------------------------------------------------ reputação
@@ -148,6 +176,8 @@ const Oficios = {
     if (k === 'elixir' && p.fury >= p.maxEnergy) { game.hud.toast('Energia já está cheia', '200,214,235'); return false; }
     this.S.cons[k]--;
     if (k === 'tonico' || k === 'pele') { p.buffs[k] = C.dur; p.recalc(false); }
+    else if (k === 'cha' || k === 'refresco') { p.buffs[k] = C.dur; if (k === 'cha') p.buffs.refresco = 0; else p.buffs.cha = 0; }
+    else if (k === 'fogueira') { if (game.state === 'worldinv') game.state = 'playing'; if (typeof Clima !== 'undefined') Clima.acenderFogueira(p.x + Math.cos(p.facing) * 40, p.y + Math.sin(p.facing) * 40, 90); }
     else if (k === 'elixir') p.fury = p.maxEnergy;
     else if (k === 'retorno') { if (game.state === 'worldinv') game.state = 'playing'; World.openMap(true); }
     game.particles.ring(p.x, p.y, 44, C.rgb, 0.5, 4);
@@ -166,6 +196,8 @@ const Oficios = {
   hudBuffs(p, B) {
     if (p.buffs.tonico > 0) B.push(['flame', p.buffs.tonico, WORLD_CONSUMIVEIS.tonico.rgb, 'Tônico']);
     if (p.buffs.pele > 0) B.push(['shield', p.buffs.pele, WORLD_CONSUMIVEIS.pele.rgb, 'Pele de Pedra']);
+    if (p.buffs.cha > 0) B.push(['flame', p.buffs.cha, WORLD_CONSUMIVEIS.cha.rgb, 'Chá Quente']);
+    if (p.buffs.refresco > 0) B.push(['bolt', p.buffs.refresco, WORLD_CONSUMIVEIS.refresco.rgb, 'Refresco']);
   },
 
   // ------------------------------------------------------------ serviços
@@ -285,7 +317,8 @@ const Oficios = {
     const titulo = (t, x, y) => { ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(150,205,255,0.9)'; ctx.fillText(t, x, y); ctx.letterSpacing = '0px'; };
     // consumíveis e materiais (coluna da esquerda, em duas subcolunas)
     titulo('CONSUMÍVEIS', x0, top - 12);
-    const rh = clamp((Ly.det - top - 44) / 8.6 - 4, 18, 34);
+    const nC = Object.keys(WORLD_CONSUMIVEIS).length, nM = Math.ceil(Object.keys(WORLD_MATERIAIS).length / 2);
+    const rh = clamp((Ly.det - top - 44) / (nC + nM + 0.6) - 4, 15, 34);
     L.forEach((q, i) => {
       const isC = !!q.cons, k = isC ? q.cons : q.mat, D = isC ? WORLD_CONSUMIVEIS[k] : WORLD_MATERIAIS[k];
       const idx = isC ? i : i - Object.keys(WORLD_CONSUMIVEIS).length;

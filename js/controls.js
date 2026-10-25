@@ -24,6 +24,7 @@ const KEYMAP = {
   jump: ['KeyN'], block: ['ShiftLeft', 'ShiftRight'],   // pulo e defesa (segurar): js/heroes/pulo_defesa.js
   respec: ['KeyR'],   // árvore de habilidades: redistribuir os pontos (aperte de novo para confirmar)
   grenade: ['KeyR'],  // em jogo: Granada de Plasma do Kael (js/heroes/granada.js)
+  teleporte: ['KeyT'],   // mundo aberto: teletransporte para a cidade principal (js/mundo/cidade.js)
 };
 // Mapeamento padrão da Gamepad API ("standard"), igual em Xbox, PlayStation e GameSir:
 // 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB/L1 5=RB/R1 6=LT/L2 7=RT/R2 8=View/Create 9=Menu/Options

@@ -210,6 +210,7 @@ const ThirdView = {
     const root = new N3('sala');
     if (floor.d.length) root.add(new N3('piso', floor));
     Ambiente3P.decorar(root, R);   // chão até o horizonte e detalhes do bioma (js/terceira_ambiente.js)
+    if (R.cidade) Cidade.modelo3D(root, R);   // prédios dos distritos e a torre da Aurora (js/mundo/cidade.js)
     // paredes: segmentos entre as aberturas (porta da campanha no norte; passagens do mundo no meio de cada lado)
     const wallCol = hex(wh, ws, 13), trim = rgbHex(th.lamp), gaps = { N: [], S: [], W: [], E: [] };
     if (R.def.waves && R.def.waves.length && R.door) gaps.N.push([R.door.x - R.door.halfW, R.door.x + R.door.halfW]);
@@ -238,6 +239,7 @@ const ThirdView = {
     const lamps = new G3();
     for (const t of R.torches) {
       if (t.chao) { lamps.cyl(t.x, t.y, 0, 7, 2, 12, 6, trim, 1); continue; }   // lume no chão do campo aberto
+      if (t.poste) { lamps.cyl(t.x, t.y, 0, 2.6, 2, 62, 6, '#24262e', 0); lamps.box(t.x, t.y, 64, 12, 12, 5, trim, 1); continue; }   // poste da cidade
       if (t.y === 0) lamps.box(t.x, 1, 104, 18, 6, 26, trim, 1);
       else lamps.box(1, t.y, 104, 6, 18, 26, trim, 1);
     }
@@ -424,6 +426,11 @@ const ThirdView = {
       const o = n._o3p || (n._o3p = {});
       o.yaw = n.t * 0.4; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
       place(R3D.queue(this.propModel('coleta:' + n.data.rgb), null, null, o), n);
+    } else if (n.modelo3D) {
+      // estações, monumento e bancas da cidade (js/mundo/cidade.js): de frente para a rua
+      const o = n._o3p || (n._o3p = {}), B = n.data && n.data.predio;
+      o.yaw = B && B.lado === 'W' ? -Math.PI / 2 : 0; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
+      place(R3D.queue(n.modelo3D(), null, null, o), n);
     } else if (n.kind === 'quadro' || (n.kind === 'evento' && n.sub !== 'fragmento' && !n.feito)) {
       // quadro de contratos, estandarte da incursão e carroça da caravana (js/mundo/povo.js, eventos.js)
       const o = n._o3p || (n._o3p = {});
@@ -495,6 +502,7 @@ const ThirdView = {
       ctx.restore();
       p.drawAura(ctx, g.realTime);
       g.drawDanoDir(ctx);
+      if (g.world) Cidade.desenhar(ctx);   // coluna de luz do teletransporte
       for (const e of g.enemies) {
         if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
         if (e.state === 'spawn') g.drawSpawnSigil(ctx, e);

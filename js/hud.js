@@ -182,6 +182,7 @@ class HUD {
     this.drawCells(ctx, L);
     this.drawAbilities(ctx, p, L);
     this.drawWeapon(ctx, p, L);
+    if (game.world) Cidade.desenharBotao(ctx, L);   // botão AURORA (teletransporte), acima da arma
     this.drawBuffs(ctx, L);
     this.drawBossBar(ctx, L);
     this.drawCombo(ctx, L);
@@ -261,6 +262,7 @@ class HUD {
     if (c.count >= 2 || c.dropped || this.tier) this.zone('R', VIEW_W - 250, L.comboY - 70, VIEW_W, L.comboY + 112);
     this.zone('R', L.ab.left, L.ab.top - 34 - this.buffs.length * 24, VIEW_W, VIEW_H);
     if (L.wp) this.zone('R', L.wp.x - 6, L.wp.y - 6, L.ab.left, VIEW_H);
+    if (L.wp && game.world) this.zone('R', L.wp.x + L.wp.w - 76, L.wp.y - 66, L.wp.x + L.wp.w + 4, L.wp.y);   // botão AURORA
     this.zone('L', 0, L.cellsY - 18, L.cellsX + L.cellsS + 10, VIEW_H);
     if (this.savedT > 0) this.zone('L', 0, VIEW_H - 40, 260, VIEW_H);
   }

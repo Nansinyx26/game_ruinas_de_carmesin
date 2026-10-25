@@ -349,6 +349,7 @@ const Povo = {
     Dialogo.mostrar(texto, o.slice(0, 9));
   },
   servico(npc, s, o, volta) {
+    if (Cidade.servico(npc, s, o, volta)) return;   // estações e serviços da cidade principal (js/mundo/cidade.js)
     const reg = World.zone.region, d = Oficios.desconto(reg);
     const extra = d ? ` (−${Math.round(d * 100)}% pela reputação)` : '';
     if (s === 'loja') o.push({ id: 'loja', tag: '$', txt: `Ver mercadorias${extra}`, fn: () => { Dialogo.fechar(); WorldInv.abrir('loja', true, 'mercador'); } });

@@ -102,7 +102,9 @@ class Room {
     this.theme = THEMES[this.def.theme];
     this.w = this.h = this.def.tiles * TILE;
     this.seed = 9973 * (index + 1) + Math.floor(Math.random() * 100000);
-    this.wallH = 150;
+    // cidade principal (js/mundo/cidade.js): muralha alta atrás das fachadas dos distritos
+    this.cidade = !!this.def.cidade;
+    this.wallH = this.cidade ? 330 : 150;
     // campo aberto (zonas de bioma do mundo, def.aberto): sem paredes nem plataforma; o chão segue
     // além da borda (a margem) com árvores, rochas ou cristais de paisagem, que não colidem
     this.aberto = !!this.def.aberto;
@@ -128,6 +130,7 @@ class Room {
       this.torches.push({ x, y: 0, ph: r() * 10 });
     }
     for (let y = TILE * 1.5; y < h - TILE; y += TILE * 3) this.torches.push({ x: 0, y, ph: r() * 10 });
+    if (this.cidade) this.torches = Cidade.postes(this);   // na cidade, postes de rua no lugar das luminárias
     // Enfeites das paredes (telas, letreiros neon, vitrais, painéis holográficos)
     for (const side of ['L', 'R']) {
       for (let i = 0; i < n; i++) {
@@ -228,6 +231,11 @@ class Room {
       if (inDoor) e.x = clamp(e.x, d.x - d.halfW + r, d.x + d.halfW - r);   // atravessando a porta
       else { e.y = r; hit = true; }
     }
+    if (this.cidade) {   // fachadas dos distritos ao longo das duas paredes do fundo
+      const m = CIDADE_RECUO + r;
+      if (e.x < m) { e.x = m; hit = true; }
+      if (e.y < m) { e.y = m; hit = true; }
+    }
     for (const p of this.pillars) {
       if (p.deco) continue;   // paisagem além da borda do campo aberto
       const dx = e.x - p.x, dy = e.y - p.y, dd = Math.hypot(dx, dy), min = r + p.r;
@@ -245,6 +253,7 @@ class Room {
 
   blocksPoint(x, y, r) {
     if (x < 0 || y < 0 || x > this.w || y > this.h) return true;
+    if (this.cidade && (x < CIDADE_RECUO + r || y < CIDADE_RECUO + r)) return true;
     for (const p of this.pillars) if (!p.deco && dist2(x, y, p.x, p.y) < (p.r + r) * (p.r + r)) return true;
     return false;
   }
@@ -323,6 +332,7 @@ class Room {
     this.drawFloor(ctx, r);
     if (!this.aberto) this.drawSigil(ctx);
     if (!this.aberto) this.drawWalls(ctx, r);
+    if (this.cidade) Cidade.desenharFundo(ctx, this);   // praça, ruas e as fachadas dos distritos
     for (const d of this.decals) this.paintDecal(ctx, d);
     for (const p of this.pillars) this.renderPillar(p, scale);
   }
@@ -694,6 +704,7 @@ class Room {
     ctx.restore();
     // Suportes das luminárias
     for (const tc of this.torches) {
+      if (tc.chao || tc.poste) continue;
       const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y) - 64;
       ctx.fillStyle = '#14171d'; ctx.fillRect(sx - 3, sy, 6, 14);
       ctx.fillStyle = '#3a404c'; ctx.fillRect(sx - 6, sy - 3, 12, 5);
@@ -961,6 +972,14 @@ class Room {
         GlowCache.draw(ctx, '255,255,255', sx, sy - 8, 4, 0.6);
         continue;
       }
+      if (tc.poste) {
+        // poste de rua da cidade: a lâmpada no alto e o círculo de luz no chão
+        const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y), f = 0.92 + 0.08 * Math.sin(time * 5 + tc.ph);
+        GlowCache.drawFlat(ctx, th.lamp, sx, sy, 90, 0.3 * f);
+        GlowCache.draw(ctx, th.lamp, sx, sy - 66, 26 * f, 0.7);
+        GlowCache.draw(ctx, '255,255,255', sx, sy - 66, 4, 0.7);
+        continue;
+      }
       const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y) - 70;
       let f = 0.85 + 0.15 * Math.sin(time * 11 + tc.ph);
       if (th.decor === 'screen') f = 0.35 + 0.65 * Math.max(0, Math.sin(time * 3.2 + tc.ph));   // giroflex de emergência
@@ -1009,7 +1028,8 @@ class Room {
     }
     // Luz de status da comporta: vermelha fechada, azul aberta
     ctx.globalAlpha = 1;
-    if (this.aberto) { ctx.restore(); return; }
+    if (this.cidade) Cidade.desenharLuzes(ctx, this, time);   // janelas, portas, letreiros e o farol
+    if (this.aberto || this.cidade) { ctx.restore(); return; }
     const d = this.door;
     const mx = isoX(d.x, 0), my = isoY(d.x, 0);
     GlowCache.draw(ctx, d.open > 0 ? '90,200,255' : '255,50,70', mx, my - 130, 16, 0.9);
@@ -1024,6 +1044,7 @@ class Room {
     const th = this.theme;
     for (const tc of this.torches) {
       if (tc.chao) { lighting.add(isoX(tc.x, tc.y), isoY(tc.x, tc.y) - 20, 230 * (0.85 + 0.15 * Math.sin(time * 9 + tc.ph)), 0.7); continue; }
+      if (tc.poste) { lighting.add(isoX(tc.x, tc.y), isoY(tc.x, tc.y) - 40, 240, 0.72); continue; }
       let f = 0.85 + 0.15 * Math.sin(time * 11 + tc.ph);
       if (th.decor === 'screen') f = 0.55 + 0.45 * Math.max(0, Math.sin(time * 3.2 + tc.ph));
       lighting.add(isoX(tc.x + (tc.x === 0 ? 30 : 0), tc.y + (tc.y === 0 ? 30 : 0)), isoY(tc.x, tc.y) - 40, 210 * f, 0.75);
@@ -1034,6 +1055,7 @@ class Room {
       lighting.add(isoX(x, y), isoY(x, y) - 60, 130, 0.45);
     }
     if (this.door.open > 0) lighting.add(isoX(this.door.x, 20), isoY(this.door.x, 20) - 40, 260, 0.8 * this.door.open);
+    if (this.cidade) Cidade.luzes(lighting, this);   // a luz que sai das portas dos distritos
   }
 
   drawDebug(ctx) {

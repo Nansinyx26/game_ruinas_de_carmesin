@@ -157,6 +157,7 @@ const WeaponRig = (function () {
     if (m.nodes.wHandL) m.anchor('wHandLTip', 'wHandL', [20, 0, 0]);
     if (m.nodes.wDrone) m.anchor('wDrone', 'wDrone', [0, 0, 0]);
     if (typeof ExoRig !== 'undefined') ExoRig.install(m);   // armação do Exoesqueleto (js/heroes/exoesqueleto.js)
+    if (typeof PecasRig !== 'undefined') PecasRig.install(m);   // peças da armadura modular (js/heroes/pecas3d.js)
     return true;
   }
   // Põe a malha no nó (troca só a geometria, sem criar nada)
@@ -180,6 +181,7 @@ const WeaponRig = (function () {
     const W = m && m.wr;
     if (!W) return;
     if (typeof ExoRig !== 'undefined') ExoRig.pose(m, e, W.id);
+    if (typeof PecasRig !== 'undefined') PecasRig.pose(m, e, W.id);
     const n = m.nodes, K = m.props, t = num(e && e.animTime);
     const V = visualOf(W.id);
     for (const k of ['wHandR', 'wHandL', 'wBack0', 'wBack1', 'wBack2', 'wHip', 'wDrone']) if (n[k]) n[k].vis = false;

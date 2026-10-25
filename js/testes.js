@@ -652,7 +652,7 @@ const EclipseTests = {
   mundo() {
     // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
     this.igual('mundo: 7 regiões', WORLD_REGIONS.length, 7);
-    this.igual('mundo: 45 zonas no mapa (9 de Carmesin + 6 × 6)', Object.values(WORLD_ZONES).filter((z) => !z.instancia).length, 45);
+    this.igual('mundo: 45 zonas das regiões no mapa (9 de Carmesin + 6 × 6)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 45);
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
@@ -734,6 +734,9 @@ const EclipseTests = {
       this.mmo();
       this.paisagem();
       this.combateMundo();
+      this.arsenal();
+      this.fabricacao();
+      this.cidade();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
@@ -751,7 +754,8 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador'].includes(sv))));
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js)
+    this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
     this.ok('povo: rumores revelam masmorras, tesouros e zonas que existem', rv.length >= 10 && rv.every((r) => (r.masmorra && WORLD_MASMORRAS[r.masmorra]) || (r.tesouro && WORLD_TESOUROS[r.tesouro]) || (r.zona && WORLD_ZONES[r.zona])), rv.length);
@@ -1525,6 +1529,195 @@ const EclipseTests = {
     World.camps = camps0; Eventos.prox = prox0; World.state.hora = h0;
     g.enemies.length = 0; for (const e of sala) g.enemies.push(e);
     p.x = sv.x; p.y = sv.y; p.hp = sv.hp; p.state = 'idle'; p.invuln = 0; p.vx = p.vy = 0; p.travaAtaque = 0;
+  },
+
+  // Armadura modular (js/mundo/arsenal.js, js/heroes/pecas3d.js): vagas, atributos, requisitos,
+  // peso, resistências, uma peça por corpo, peças no modelo 3D e a economia (vender < fabricar)
+  arsenal() {
+    const g = game, p = g.player, A = Arsenal, lv0 = g.activeProgress().level, vest0 = JSON.stringify(A.S.vest);
+    let erro = null;
+    try {
+      this.igual('arsenal: 9 vagas (capacete, peitoral, 2 ombreiras, luvas, calças, botas, capa, acessório)', ARS_ORDEM.length, 9);
+      const rara = A.gerar('peitoral', 'placas', 2, 20), ecl = A.gerar('botas', 'eclipse', 0, 30);
+      this.ok('arsenal: peça rara tem um bônus secundário', Object.keys(rara.st).filter((k) => ['dano', 'critico', 'energia', 'recarga'].includes(k)).length === 1, JSON.stringify(rara.st));
+      this.igual('arsenal: conjunto Eclipse nasce na raridade especial', ecl.r, ARS_ECLIPSE);
+      g.activeProgress().level = 30;
+      A.S.vest[A.heroi()] = {};
+      A.refazer();
+      const def0 = p.stats.armor, hp0 = p.maxHp, sp0 = p.stats.speedMult;
+      const it = A.guardar(A.gerar('peitoral', 'placas', 0, 20), true);
+      this.igual('arsenal: vestir a peça', A.equipar(it.id), '');
+      this.ok('arsenal: o peitoral soma defesa e vida', p.stats.armor > def0 && p.maxHp > hp0, `${def0}→${p.stats.armor} · ${hp0}→${p.maxHp}`);
+      A.tirar('peitoral');
+      this.ok('arsenal: tirar volta a defesa', Math.abs(p.stats.armor - def0) < 1e-9 && p.maxHp === hp0);
+      g.activeProgress().level = 1;
+      const alto = A.guardar(A.gerar('botas', 'placas', 0, 20), true);
+      this.ok('arsenal: nível baixo não veste peça de nível alto', /Requer nível/.test(A.equipar(alto.id)));
+      g.activeProgress().level = 30;
+      // uma peça, um corpo: vestir no Kael e depois na Lyra tira do Kael
+      A.equipar(it.id, 'kael'); A.equipar(it.id, 'lyra');
+      this.ok('arsenal: uma peça veste um herói por vez', !A.vestido(it.id, 'kael') && A.vestido(it.id, 'lyra') === 'peitoral');
+      delete A.S.vest.lyra;
+      // peso acima da carga deixa mais lento; resistência ao frio do conjunto de Inverno
+      for (const s of ['capacete', 'peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas']) A.equipar(A.guardar(A.gerar(s, 'placas', 0, 20), true).id);
+      this.ok('arsenal: placas inteiras pesam e tiram velocidade', p.stats.peso > p.stats.carga && p.stats.speedMult < sp0, `${p.stats.peso} / ${p.stats.carga} · ${sp0}→${p.stats.speedMult}`);
+      A.equipar(A.guardar(A.gerar('capa', 'inverno', 0, 20), true).id);
+      this.ok('arsenal: capa de Inverno dá resistência ao gelo', (p.stats.resGelo || 0) > 0, p.stats.resGelo);
+      const P = A.protecao();
+      this.ok('arsenal: proteção do conjunto contra o clima (isolamento, água, vento)', P.isola > 0 && P.agua > 0 && P.vento > 0, JSON.stringify(P));
+      // peças no modelo 3D do herói (vestidas aparecem, sem peça somem)
+      const M = g.model3(heroModelKey(CHARACTERS_BY_ID.kael));
+      this.ok('arsenal: o modelo do Kael tem as peças instaladas', M && M.nodes.pc_peitoral_torso && M.nodes.pc_capa && M.nodes.pc_botas_footL, M && Object.keys(M.nodes).filter((k) => k.startsWith('pc_')).length);
+      // economia: vender (mesmo raro) paga menos do que o material custa com o maior desconto
+      let lucro = null;
+      for (const fam in ARS_FAMILIAS) for (const s of ARS_ORDEM) { const q = A.gerar(s, fam, 4, 20); if (A.venda(q) >= A.valorBase(s, fam) * 0.8) lucro = `${fam}/${s}`; }
+      this.ok('arsenal: nenhuma peça vende por mais do que o material custa', !lucro, lucro);
+      // desmontar devolve parte do material
+      const ferro0 = Oficios.mat('ferro'), dm = A.guardar(A.gerar('luvas', 'placas', 0, 20), true);
+      A.vender(dm.id);
+      this.ok('arsenal: desmontar devolve parte do ferro', Oficios.mat('ferro') > ferro0 && !A.item(dm.id));
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('arsenal: sem exceção', !erro, erro);
+    A.S.vest = JSON.parse(vest0); g.activeProgress().level = lv0; A.refazer();
+  },
+
+  // Fabricação (js/mundo/fabrica.js): estações, receitas com requisitos, planos, aprimoramentos,
+  // armazém e o inventário por categorias
+  fabricacao() {
+    const g = game, F = Fabrica, A = Arsenal, lv0 = g.activeProgress().level, b0 = g.stats.soulsBank, rec0 = A.S.receitas.slice();
+    let erro = null;
+    try {
+      this.igual('fabricação: 5 estações', Object.keys(FAB_ESTACOES).length, 5);
+      for (const est in FAB_ESTACOES) if (est !== 'armas') this.ok(`fabricação: ${est} tem receitas`, F.daEstacao(est).length > 0);
+      this.ok('fabricação: a bancada de armas aprimora as armas do herói', F.armas().length > 0 && !!F.entArma(F.armas()[0]).acoes);
+      this.ok('fabricação: a forja faz as 8 peças de corpo de cada família', Object.keys(ARS_FAMILIAS).every((f) => ARS_ORDEM.filter((s) => s !== 'acessorio').every((s) => F.receita(`p_${f}_${s}`) && F.receita(`p_${f}_${s}`).est === 'forja')));
+      g.activeProgress().level = 30; g.stats.soulsBank = 100000;
+      for (const k in WORLD_MATERIAIS) Oficios.S.mat[k] = 0;
+      const R = F.receita('p_viajante_botas');
+      this.ok('fabricação: sem material, o motivo aparece', /^Faltam/.test(F.pode(R)), F.pode(R));
+      for (const k in R.mat) Oficios.S.mat[k] = R.mat[k];
+      const n0 = A.S.itens.length + A.S.armazem.itens.length;
+      this.igual('fabricação: com o material, fabrica', F.fabricar(R.id), '');
+      this.ok('fabricação: gasta exatamente o material e entrega a peça', Object.keys(R.mat).every((k) => Oficios.mat(k) === 0) && A.S.itens.length + A.S.armazem.itens.length === n0 + 1);
+      // planos: sem o plano, a receita fica trancada; aprender abre
+      A.S.receitas = A.S.receitas.filter((r) => r !== 'fam:placas');
+      const Rp = F.receita('p_placas_peitoral');
+      this.ok('fabricação: placas pede o plano', /plano/.test(F.pode(Rp)), F.pode(Rp));
+      F.aprender('placas', 'teste');
+      this.ok('fabricação: plano aprendido libera a receita', F.conhece(Rp) && !/plano/.test(F.pode(Rp)));
+      // aprimorar peça (+1: 10% a mais) e arma (+6% de dano)
+      const pc = A.guardar(A.gerar('peitoral', 'placas', 0, 20), true), C = F.custoPeca(pc);
+      for (const k in C.mat) Oficios.S.mat[k] = C.mat[k];
+      this.igual('fabricação: aprimorar a peça', F.aprimorarPeca(pc.id), '');
+      this.ok('fabricação: peça +1 rende 10% a mais', pc.ap === 1 && Math.abs(A.mult(pc) - 1.1) < 1e-9);
+      const w = F.armas()[0];
+      if (w) {
+        const Ca = F.custoArma(w), d0 = g.player.stats.dmgMult;
+        for (const k in Ca.mat) Oficios.S.mat[k] = Ca.mat[k];
+        this.igual('fabricação: aprimorar a arma na bancada', F.aprimorarArma(w), '');
+        this.ok('fabricação: arma +1 dá +6% de dano', Math.abs(g.player.stats.dmgMult - d0 - 0.06) < 1e-9, g.player.stats.dmgMult - d0);
+        A.S.armas[w] = 0; A.refazer();
+      } else this.ok('fabricação: o herói tem arma para aprimorar', false);
+      // armazém: material e peça vão e voltam
+      Oficios.S.mat.couro = 5;
+      F.guardarMat('couro', 3);
+      this.ok('armazém: guarda material', Oficios.mat('couro') === 2 && A.S.armazem.mat.couro >= 3);
+      F.retirarMat('couro', 3);
+      this.igual('armazém: retira material', Oficios.mat('couro'), 5);
+      this.igual('armazém: guarda peça (fora do corpo)', F.guardarPeca(pc.id), '');
+      this.ok('armazém: a peça sai da mochila e volta', !A.item(pc.id) && F.retirarPeca(pc.id) === '' && !!A.item(pc.id));
+      // inventário: categorias e item de missão protegido
+      this.igual('inventário: 8 categorias', F.CATS_INV.length, 8);
+      const out = []; F.entradasInv('pecas', out);
+      this.ok('inventário: a categoria PEÇAS lista as peças', out.length > 0 && out.every((e) => /Peça/.test(e.sub)));
+      const rec = []; F.entradasInv('receitas', rec);
+      this.ok('inventário: a categoria RECEITAS lista todas as receitas', rec.length === F.receitas().length);
+      // pesquisador: estuda e reconstrói um plano novo
+      A.S.receitas = A.S.receitas.filter((r) => r !== 'fam:inverno');
+      Object.assign(Oficios.S.mat, F.CUSTO_PESQUISA);
+      this.igual('pesquisador: estuda o material raro', F.pesquisar(), '');
+      this.ok('pesquisador: um plano novo aprendido', F.sabePlano('inverno'));
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('fabricação: sem exceção', !erro, erro);
+    A.S.receitas = rec0; g.activeProgress().level = lv0; g.stats.soulsBank = b0;
+  },
+
+  // Cidade principal (js/mundo/cidade.js): zona, distritos, moradores e serviços, colisão das
+  // fachadas, portões, mapa, armeiro, descanso e o teletransporte (canalizar, cancelar, chegar)
+  cidade() {
+    const g = game, p = g.player, z0 = World.zone.id, h0 = World.state.hora, b0 = g.stats.soulsBank, lv0 = g.activeProgress().level;
+    const ent = (mx = 0) => ({ move: { x: mx, y: 0 }, pressed: {}, held: {}, released: {}, look: { x: 0, y: 0 } });
+    let erro = null;
+    try {
+      const Z = WORLD_ZONES[CIDADE_ID];
+      this.ok('cidade: zona própria, fora da grade das regiões', Z && Z.cidade && !worldZonesOf('nexus').includes(Z));
+      World.map.travel = true; const viag = World.mapTargets().includes(CIDADE_ID);
+      World.map.travel = false; const mapa = World.mapTargets().includes(CIDADE_ID);
+      this.ok('cidade: sempre no mapa e na viagem rápida', viag && mapa);
+      // teletransporte: de uma zona qualquer, canaliza e chega na praça
+      World.loadZone('mercado', null);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      this.igual('teletransporte: pode fora de combate', Cidade.pode(), '');
+      Cidade.teleportar();
+      Cidade.update(0.3, ent(1));
+      this.ok('teletransporte: andar interrompe', !Cidade.tp);
+      const brig = createEnemy('rastejador', p.x + 300, p.y, 1); brig.setState('idle'); g.enemies.push(brig);
+      this.ok('teletransporte: com inimigo acordado, não dá', /inimigos/.test(Cidade.pode()));
+      brig.alive = false; g.enemies.length = 0;
+      Cidade.teleportar();
+      let canal = 0;
+      for (let i = 0; i < 20 && Cidade.tp; i++) { if (Cidade.update(0.1, ent())) canal++; }
+      this.ok('teletransporte: canaliza parado ~1,2 s', canal >= 11 && !Cidade.tp, canal);
+      if (g.fadeCb) { const cb = g.fadeCb; g.fadeCb = null; cb(); }
+      this.ok('teletransporte: chega no Refúgio da Aurora', World.zone.id === CIDADE_ID && Cidade.aqui());
+      // distritos: 8 estações, monumento, bancas, 7 portões e os 11 moradores
+      const props = g.npcs.filter((n) => n instanceof CidadeProp), est = props.filter((n) => n.kind === 'estacao').map((n) => n.data.est);
+      this.ok('cidade: estações de todos os distritos', ['forja', 'armas', 'laboratorio', 'engenharia', 'guilda', 'missoes', 'armazem', 'cama'].every((e) => est.includes(e)), est.join(','));
+      this.igual('cidade: um portão por região', g.npcs.filter((n) => n instanceof PortaoCidade).length, WORLD_REGIONS.length);
+      const mor = g.npcs.filter((n) => n instanceof Morador);
+      this.igual('cidade: 11 moradores', mor.length, CIDADE_POVO.length);
+      // fachadas sólidas: ninguém entra no fundo dos prédios
+      const R = g.room; p.x = 40; p.y = 300; R.collide(p, true);
+      this.ok('cidade: as fachadas bloqueiam (colisão)', p.x >= CIDADE_RECUO && R.blocksPoint(60, 600, 10) && !R.blocksPoint(600, 600, 10));
+      // serviços: cada estação nas conversas
+      const opc = (nome) => { const n = mor.find((m) => m.name === nome); Povo.conversar(n); const ids = Dialogo.opcoes.map((o) => o.id); Dialogo.fechar(); return ids; };
+      this.ok('cidade: ferreira abre a forja', opc('MESTRA BRASA').includes('forja'));
+      this.ok('cidade: armeiro vende peças e planos', opc('DANTE').includes('armeiro') && opc('DANTE').includes('armas'));
+      this.ok('cidade: engenheira tem laboratório e engenharia', opc('ÍRIS').includes('laboratorio') && opc('ÍRIS').includes('engenharia'));
+      this.ok('cidade: alquimista e curandeira', opc('MÃE ANA').includes('alquimia') && opc('MÃE ANA').includes('curar'));
+      this.ok('cidade: armazenista, estalajadeira, guilda e missões', opc('BERTA').includes('armazem') && opc('LIA').includes('descansar') && opc('VERIDIANA').some((i) => i.startsWith('guilda_')) && opc('CAIO').includes('painel'));
+      const forja = props.find((n) => n.data.est === 'forja');
+      forja.talk();
+      this.ok('cidade: a forja abre a aba de fabricação', g.state === 'worldinv' && WorldInv.ui.tab === 'fabrica' && WorldInv.ui.servico === 'forja');
+      WorldInv.fechar();
+      // armeiro: estoque do dia (peças e planos) e a compra
+      g.activeProgress().level = 14; g.stats.soulsBank = 100000;
+      WorldInv.abrir('loja', true, 'armeiro');
+      const L = WorldInv.lista(), pc = L.find((q) => q.peca !== undefined), n0 = Arsenal.S.itens.length + Arsenal.S.armazem.itens.length;
+      this.ok('armeiro: tem peças e planos à venda', !!pc && L.some((q) => q.plano), L.length);
+      const v = WorldInv.precoExtra(pc);
+      WorldInv.comprar(pc.loja);
+      this.ok('armeiro: compra a peça pelo preço', g.stats.soulsBank === 100000 - v && Arsenal.S.itens.length + Arsenal.S.armazem.itens.length === n0 + 1);
+      WorldInv.fechar();
+      // descanso: até de manhã, vida cheia
+      World.state.hora = 22; p.hp = 5;
+      Cidade.descansar();
+      this.ok('alojamento: descansa até as 7 h com a vida cheia', World.state.hora === 7 && p.hp === p.maxHp);
+      // portão fechado para região bloqueada e desenho (vista isométrica, 3ª pessoa e planta)
+      g.activeProgress().level = 1;
+      const fechado = g.npcs.find((n) => n instanceof PortaoCidade && n.selada());
+      this.ok('cidade: portão da região bloqueada fica fechado', !!fechado);
+      let e2 = null;
+      try { g.renderWorld(g.ctx); ThirdView.buildRoom(R); for (const n of props) n.modelo3D(); Cidade.desenharPlanta(g.ctx, 20, 20, 300, 240); Cidade.desenharBotao(g.ctx, g.hud.L); World.openMap(false); World.drawMap(g.ctx, 1); World.closeMap(); } catch (e) { e2 = e.message; }
+      this.ok('cidade: desenha (isométrica, 3ª pessoa, planta, botão e mapa)', !e2, e2);
+      this.ok('cidade: já na cidade, o teletransporte avisa', /já está/.test(Cidade.pode()));
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('cidade: sem exceção', !erro, erro);
+    Cidade.tp = null; Cidade.chegada = null;
+    World.state.hora = h0; g.stats.soulsBank = b0; g.activeProgress().level = lv0;
+    if (World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
   },
 
   // Resultado na tela (canto superior esquerdo), por cima do jogo

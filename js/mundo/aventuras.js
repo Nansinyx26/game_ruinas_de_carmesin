@@ -443,6 +443,7 @@ const Aventuras = {
     if (k >= 0 && q.escolha && q.escolha.opcoes[k]) this.pagar(q, q.escolha.opcoes[k].rec || {});
     game.hud.message('MISSÃO CONCLUÍDA', q.nome.toUpperCase(), 2.6, false, true);
     game.audio.play('upgrade');
+    Fabrica.aoConcluirMissao(q);   // às vezes ensina um plano (js/mundo/fabrica.js)
     this.limparZona(q.id);
     WorldQuests.check();
     World.save();

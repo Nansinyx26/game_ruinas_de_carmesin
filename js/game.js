@@ -351,8 +351,10 @@ class Game {
       if (inp.pressed.bag && !this.fadeCb && p.state !== 'dead') { WorldInv.abrir('mochila', false); return; }   // relíquias, missões
       if (inp.pressed.journal && !this.fadeCb && p.state !== 'dead') { WorldInv.abrir('diario', false); return; }   // diário de missões
       if (inp.pressed.capsule && p.state !== 'dead') WorldInv.usarCapsula();
+      if (Cidade.clique(inp.mouse)) inp.mouse.clicked = false;   // botão AURORA do HUD
+      this.canalizando = !this.fadeCb && Cidade.update(dt, inp);   // teletransporte (T): o herói se concentra parado
       this.world.update(dt);
-    }
+    } else this.canalizando = false;
     if (this.debug) {
       if (inp.pressed.debugXp) this.gainXP(400, p.x, p.y);
       if (inp.pressed.debugKill) {
@@ -388,7 +390,7 @@ class Game {
 
     // O kit pode deixar o herói no tempo real durante a câmera lenta (Kael: sempre sdt)
     const pdt = p.kit ? p.kit.timeStep(p, dt, sdt) : sdt;
-    p.update(pdt, this.fadeCb ? this.nullInput : inp);
+    p.update(pdt, this.fadeCb || this.canalizando ? this.nullInput : inp);
     for (const e of this.enemies) e.update(sdt);
     for (const n of this.npcs) n.update(sdt);
     this.separate();
@@ -1451,6 +1453,7 @@ class Game {
     ctx.restore();
     p.drawAura(ctx, this.realTime);
     this.drawDanoDir(ctx);
+    if (this.world) Cidade.desenhar(ctx);   // coluna de luz do teletransporte
     for (const e of this.enemies) {
       if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
       if (e.state === 'spawn') this.drawSpawnSigil(ctx, e);

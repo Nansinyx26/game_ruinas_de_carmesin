@@ -69,6 +69,8 @@ const TouchControls = {
       for (let k = 0; k < 4; k++) B.push({ id: 'ab' + k, key: 'Digit' + (k + 1), x: A.x0 + k * A.gap, y: A.y, r: A.d * 1.25, hud: true });
       if (A.eX) B.push({ id: 'ult', key: 'KeyI', x: A.eX, y: A.eY, r: (A.D || A.d) * 1.15, hud: true });
     }
+    const T = game.world && typeof Cidade !== 'undefined' && Cidade.botao;   // teletransporte (desenhado pelo HUD)
+    if (T) B.push({ id: 'aurora', key: 'KeyT', x: T.cx, y: T.cy, r: T.r, hud: true });
     return B;
   },
   hit(x, y) {
