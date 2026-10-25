@@ -692,6 +692,7 @@ const LYRA_KIT = registerHeroKit({
     if (p.dashBuffer > 0 && p.canDash() && !d.pull && (a.t < tW || a.t >= tA)) {
       p.dashBuffer = 0; p.endAttack(); p.z = 0; p.startDash(wd); return;
     }
+    if (!d.pull && p.andandoSai(a, d, tA, wd)) { p.z = 0; return; }   // fim da recuperação: andar já sai do golpe
     if (a.t >= tEnd) { p.endAttack(); p.z = 0; p.state = 'idle'; }
   },
 

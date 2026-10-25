@@ -223,6 +223,10 @@ class Game {
     if (this.hurtVignette > 0) this.hurtVignette = Math.max(0, this.hurtVignette - dt * 1.6);
     if (this.glitchT > 0) this.glitchT = Math.max(0, this.glitchT - dt);
 
+    // De volta ao jogo depois de uma conversa, loja, mapa ou pausa: o botão que fechou a janela
+    // não vira golpe (js/player.js, captureInput)
+    if (this.state === 'playing' && this.estadoAnt && this.estadoAnt !== 'playing' && this.player) this.player.travaAtaque = 0.25;
+    this.estadoAnt = this.state;
     switch (this.state) {
       case 'menu': this.menu.update(dt, inp); break;
       case 'skills': this.updateSkills(dt); break;
@@ -371,7 +375,7 @@ class Game {
       let bd = 80;
       for (const n of this.npcs) { const d = dist(p.x, p.y, n.x, n.y); if (d < bd && n.canTalk()) { bd = d; this.talkTarget = n; } }
     }
-    if (this.talkTarget && inp.pressed.interact && !this.fadeCb) { this.talkTarget.talk(); inp.pressed.light = false; }
+    if (this.talkTarget && !this.fadeCb && (inp.pressed.interact || this.golpeConversa(inp))) { this.talkTarget.talk(); inp.pressed.light = false; }
     if (!this.fadeCb) p.captureInput(inp);
     this.hud.update(dt);
     AllyRadio.update(dt);
@@ -423,6 +427,14 @@ class Game {
     }
   }
 
+  // Fora de combate, o golpe leve colado num morador do mundo aberto também conversa (não sai
+  // um golpe na cara de quem se queria ouvir); na luta, o golpe é golpe
+  golpeConversa(inp) {
+    const n = this.talkTarget, p = this.player;
+    return !!(this.world && inp.pressed.light && n && typeof Morador !== 'undefined' && n instanceof Morador &&
+      !this.combatActive() && dist(p.x, p.y, n.x, n.y) < 62);
+  }
+
   // Há combate no setor? (NPCs se protegem e não conversam)
   combatActive() {
     if (this.world) return this.world.inCombat();   // mundo aberto: há inimigo acordado
@@ -433,9 +445,10 @@ class Game {
   // Separação entre corpos (inimigos entre si e com o jogador)
   separate() {
     const list = this.enemies, p = this.player;
-    const pSolid = p.state !== 'dash' && p.state !== 'special' && p.state !== 'dead' &&
-      !(p.state === 'attack' && p.attack && p.attack.def.thrust);
-    // NPCs são sólidos para Kael (a esquiva atravessa)
+    // o herói é sólido também na esquiva e nas estocadas: contorna os corpos em vez de passar
+    // por dentro (a invencibilidade da esquiva continua); só as supremas, com teletransporte, não
+    const pSolid = p.state !== 'special' && p.state !== 'dead';
+    // NPCs são sólidos para o herói
     if (pSolid) {
       for (const n of this.npcs) {
         if (n.flat) continue;   // passagens e portais do mundo aberto
@@ -500,6 +513,7 @@ class Game {
     if (def.heavy || crit) this.input.rumble(0.25, 0.35, 70);
     this.audio.play(def.heavy ? 'hitHeavy' : 'hit');
     if (crit) this.audio.play('crit');
+    if (this.world) Encontros.barulho(e.x, e.y);   // o barulho da luta chama os acampamentos vizinhos
   }
 
   onEnemyKilled(e) {
@@ -515,7 +529,7 @@ class Game {
     if (p.kit) p.kit.onKill(p, e);
     LoyaltyQuests.onKill(e);   // missões de lealdade (js/quests.js)
     HeroPassives.kill(p, e);   // passivas das árvores (js/heroes/passivas.js)
-    if (this.world) this.world.onKill(e);   // chefe regional do mundo aberto
+    if (this.world) { this.world.onKill(e); Encontros.barulho(e.x, e.y, 300); }   // chefe regional, missões; barulho da morte
     if (e.elite) this.hud.toast('Unidade de elite destruída', '255,200,90');
     // Efeitos de morte: máquinas explodem em faíscas e peças; humanos sangram
     if (e.T.mech) {
@@ -582,6 +596,7 @@ class Game {
     this.stats.dmgTaken += dmg;
     this.counter.reset();
     this.texts.spawn(p.x, p.y, 52, `-${dmg}`, '#ff3b4f', 25);
+    this.danoDir = { a: Math.atan2(-dy, -dx), t0: this.realTime, k: Math.min(1, 0.45 + dmg / Math.max(1, p.maxHp) * 4) };   // de onde veio (drawDanoDir)
     this.camera.shake(0.35);
     this.addHitStop(0.07);
     this.hurtVignette = 0.55;
@@ -591,6 +606,35 @@ class Game {
     this.input.rumble(0.7, 0.5, 170);
     this.flashScreen('255,20,50', 0.22);
     this.glitch(0.1);
+  }
+
+  // Indicador de onde veio o golpe: um arco vermelho no chão em volta do herói, apontando para
+  // quem bateu (some em 0,9 s); ajuda a entender o dano, inclusive de fora da tela
+  drawDanoDir(ctx) {
+    const D = this.danoDir, p = this.player;
+    if (!D) return;
+    const age = this.realTime - D.t0;
+    if (age > 0.9) { this.danoDir = null; return; }
+    const al = (1 - age / 0.9) * D.k, r = p.radius + 30;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    for (const [w, a] of [[9, 0.25], [3.5, 0.9]]) {
+      ctx.strokeStyle = `rgba(255,60,70,${(al * a).toFixed(3)})`; ctx.lineWidth = w;
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const t = D.a - 0.55 + (1.1 * i) / 12, x = p.x + Math.cos(t) * r, y = p.y + Math.sin(t) * r;
+        if (i) ctx.lineTo(isoX(x, y), isoY(x, y)); else ctx.moveTo(isoX(x, y), isoY(x, y));
+      }
+      ctx.stroke();
+    }
+    // a ponta, para o lado de quem bateu
+    const tx = p.x + Math.cos(D.a) * (r + 14), ty = p.y + Math.sin(D.a) * (r + 14);
+    const lx = p.x + Math.cos(D.a - 0.2) * (r + 2), ly = p.y + Math.sin(D.a - 0.2) * (r + 2);
+    const rx = p.x + Math.cos(D.a + 0.2) * (r + 2), ry = p.y + Math.sin(D.a + 0.2) * (r + 2);
+    ctx.fillStyle = `rgba(255,80,80,${(al * 0.9).toFixed(3)})`;
+    ctx.beginPath(); ctx.moveTo(isoX(tx, ty), isoY(tx, ty)); ctx.lineTo(isoX(lx, ly), isoY(lx, ly)); ctx.lineTo(isoX(rx, ry), isoY(rx, ry)); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
 
   onPlayerDeath() {
@@ -1212,6 +1256,11 @@ class Game {
     if (e.elite) o.scale = (o.scale || 1) * 1.18;
     if (e.escala) o.scale = (o.scale || 1) * e.escala;   // variantes de inimigos (js/mundo/variantes.js): tamanho e cor
     if (e.tint) o.vart = e.tint;
+    // recuo do inimigo atingido: o corpo tomba um pouco na direção do golpe e volta (Enemy.takeHit)
+    if (e.recuoT > 0 && e.recuoDur) {
+      const u = 1 - e.recuoT / e.recuoDur, env = u < 0.2 ? u / 0.2 : (1 - u) / 0.8, amt = 0.3 * (e.recuoK || 0) * env, rel = e.recuoA - (o.yaw || 0);
+      o.pitch = (o.pitch || 0) + Math.cos(rel) * amt; o.roll = (o.roll || 0) - Math.sin(rel) * amt;
+    }
     return R3D.queue(m, def.pose, e, o);
   }
   // Halos definidos pelo modelo, posicionados pelas âncoras projetadas
@@ -1401,6 +1450,7 @@ class Game {
     }
     ctx.restore();
     p.drawAura(ctx, this.realTime);
+    this.drawDanoDir(ctx);
     for (const e of this.enemies) {
       if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
       if (e.state === 'spawn') this.drawSpawnSigil(ctx, e);

@@ -462,6 +462,54 @@ const R3D = {
     return it;
   },
 
+  // Transição entre poses: quando o estado da entidade muda (parado, correndo, golpe, esquiva,
+  // dano, atordoado…) ou começa outro golpe do combo, as juntas saem da última pose desenhada e
+  // chegam à nova em poucos centésimos, em vez de pular de uma para a outra. Rápida ao entrar
+  // numa ação (o golpe continua imediato), mais longa ao voltar dela. Guardada na entidade (o
+  // modelo é compartilhado); o tempo é o animTime dela, então pausa e hit stop congelam junto.
+  // Só a pose: posição, colisão e golpes não mudam.
+  MIX_DUR: { attack: 0.05, dash: 0.05, charge: 0.08, special: 0.08, block: 0.06, hurt: 0.06, plunge: 0.06, windup: 0.1, stun: 0.05, dying: 0.08, dead: 0.1 },
+  misturar(m, e) {
+    if (typeof e !== 'object' || typeof e.state !== 'string' || e.vitrine) return;
+    const keys = m.mixKeys || (m.mixKeys = Object.keys(m.nodes)), n = keys.length, N = m.nodes;
+    const now = typeof e.animTime === 'number' ? e.animTime : 0;
+    const A = e.state === 'attack' && e.attack ? e.attack : null, golpe = A ? (A.serial !== undefined ? A.serial : A.id) : 0;
+    let S = e._mix;
+    const novo = !S || S.m !== m;
+    if (novo) S = e._mix = { m, st: e.state, g: golpe, t: now, k: 1, dur: 0.1, from: new Float32Array(n * 9), out: new Float32Array(n * 9) };
+    else {
+      const dt = Math.min(0.1, Math.max(0, now - S.t));
+      S.t = now;
+      if (e.state !== S.st || golpe !== S.g) {
+        const volta = S.st === 'attack' || S.st === 'hurt' || S.st === 'dash' || S.st === 'stun' || S.st === 'charge' || S.st === 'block';
+        S.from.set(S.out); S.k = 0;
+        S.dur = this.MIX_DUR[e.state] || (volta ? 0.16 : 0.12);
+        S.st = e.state; S.g = golpe;
+      }
+      if (S.k < 1) {
+        S.k = Math.min(1, S.k + dt / S.dur);
+        const u = S.k * S.k * (3 - 2 * S.k), F = S.from;
+        for (let i = 0; i < n; i++) {
+          const nd = N[keys[i]], b = i * 9;
+          for (let j = 0; j < 3; j++) {
+            nd.p[j] = F[b + j] + (nd.p[j] - F[b + j]) * u;
+            let d = nd.r[j] - F[b + 3 + j];
+            d -= Math.round(d / 6.283185307) * 6.283185307;   // pelo lado mais curto
+            nd.r[j] = F[b + 3 + j] + d * u;
+            nd.s[j] = F[b + 6 + j] + (nd.s[j] - F[b + 6 + j]) * u;
+          }
+        }
+      }
+    }
+    const O = S.out;
+    for (let i = 0; i < n; i++) {
+      const nd = N[keys[i]], b = i * 9;
+      O[b] = nd.p[0]; O[b + 1] = nd.p[1]; O[b + 2] = nd.p[2];
+      O[b + 3] = nd.r[0]; O[b + 4] = nd.r[1]; O[b + 5] = nd.r[2];
+      O[b + 6] = nd.s[0]; O[b + 7] = nd.s[1]; O[b + 8] = nd.s[2];
+    }
+  },
+
   // Posa, transforma e desenha todos os modelos enfileirados no atlas
   flush(scale) {
     const n = this.used;
@@ -479,6 +527,7 @@ const R3D = {
       m.reset();
       // Um erro numa pose nunca deve derrubar o quadro: o modelo fica na pose de repouso
       if (it.pose) { try { it.pose(m, it.arg, o); } catch (err) { if (!m.err) { m.err = true; console.error(err); } } }
+      if (it.arg && it.pose) this.misturar(m, it.arg);   // transição suave entre as poses de estados diferentes
       // o.m: matriz da raiz pronta (3×4), usada pelo inspetor 3D para as vistas ortográficas
       let root = this._m;
       if (o.m) root = o.m;

@@ -249,6 +249,44 @@ class Room {
     return false;
   }
 
+  // Linha de visão: nenhum pilar (coluna, árvore, rocha, cristal) corta o segmento; folga
+  // aumenta (> 0) ou diminui (< 0) o raio de cada pilar
+  linhaLivre(x0, y0, x1, y1, folga = 0) {
+    const sx = x1 - x0, sy = y1 - y0, L2 = sx * sx + sy * sy || 1;
+    for (const p of this.pillars) {
+      if (p.deco) continue;
+      const t = clamp(((p.x - x0) * sx + (p.y - y0) * sy) / L2, 0, 1), r = p.r + folga;
+      if (r > 0 && dist2(x0 + sx * t, y0 + sy * t, p.x, p.y) < r * r) return false;
+    }
+    return true;
+  }
+
+  // Desvio de obstáculos: quem anda com velocidade (vx, vy) e vai bater num pilar até 'olhar'
+  // à frente passa a seguir a tangente do pilar (o menor desvio que não bate), do lado em que já
+  // está; de frente, mantém o lado escolhido para o mesmo pilar (sem ficar indeciso). out recebe
+  // a nova velocidade (mesmo módulo); devolve true se desviou
+  desvio(e, vx, vy, out, olhar = 60) {
+    out.x = vx; out.y = vy;
+    const sp = Math.hypot(vx, vy);
+    if (sp < 1) return false;
+    const ux = vx / sp, uy = vy / sp;
+    let best = null, bt = 1e9, bl = 0, bR = 0;
+    for (const p of this.pillars) {
+      if (p.deco) continue;
+      const R = p.r + e.radius + 3, dx = p.x - e.x, dy = p.y - e.y, t = dx * ux + dy * uy;
+      if (t <= 0 || t > olhar + R) continue;
+      const lat = ux * dy - uy * dx;               // > 0: o pilar fica à esquerda do caminho
+      if (Math.abs(lat) >= R || t >= bt) continue;
+      best = p; bt = t; bl = lat; bR = R;
+    }
+    if (!best) { e.desvioP = null; return false; }
+    if (e.desvioP !== best) { e.desvioP = best; e.desvioLado = Math.abs(bl) > 2 ? (bl > 0 ? -1 : 1) : (e.desvioLado || (e.id % 2 ? 1 : -1)); }
+    const dx = best.x - e.x, dy = best.y - e.y, D = Math.hypot(dx, dy) || 1;
+    const a = Math.atan2(dy, dx) + e.desvioLado * Math.asin(Math.min(1, bR / D)) * (D < bR ? 1.15 : 1);
+    out.x = Math.cos(a) * sp; out.y = Math.sin(a) * sp;
+    return true;
+  }
+
   update(dt) {
     if (this.door.opening && this.door.open < 1) this.door.open = Math.min(1, this.door.open + dt * 0.9);
   }

@@ -426,12 +426,13 @@ const World = {
     if (!c || c.awake) { e.dormant = false; return; }
     c.awake = true;
     for (const q of c.enemies) { q.dormant = false; game.particles.ring(q.x, q.y, q.radius * 2.2, q.T.glow, 0.35, 4); }
+    Encontros.acordou(c);   // casa do grupo e a coleira (js/mundo/encontros.js)
     if (c.def.boss) { game.hud.message(worldRegion(this.zone.region).boss.name, 'CHEFE REGIONAL', 2.6, false, true); game.camera.shake(0.35); game.audio.play('bossRoar'); }
     else if (c.chefeMissao) { game.hud.message(c.chefeMissao, this.zone.instancia ? 'CHEFE DA MASMORRA' : 'CHEFE OPCIONAL', 2.4, false, true); game.camera.shake(0.3); game.audio.play('bossRoar'); }
     else game.audio.play('spawn');
   },
   update(dt) {
-    const p = game.player, R = 300 * WorldTime.senseMult();   // à noite e com pouca visibilidade, mais de perto (js/mundo/tempo.js)
+    const p = game.player;
     WorldTime.update(dt);
     // Campo aberto: andar para fora por qualquer ponto da borda leva à zona vizinha
     const z = this.zone, Rm = game.room;
@@ -443,11 +444,7 @@ const World = {
       const nz = dir && worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
       if (nz) this.go(nz.id, dir, dir === 'N' || dir === 'S' ? p.x / Rm.w : p.y / Rm.h);
     }
-    for (const c of this.camps) {
-      if (c.patrulha && !c.awake) { const e = c.enemies.find((q) => q.alive); if (e) { c.x = e.x; c.y = e.y; } }   // o acampamento anda com a patrulha
-      if (c.awake) continue;
-      if (p.state !== 'dead' && dist2(p.x, p.y, c.x, c.y) < R * R) { const e = c.enemies.find((q) => q.alive); if (e) this.wake(e); }
-    }
+    Encontros.update(dt);   // acampamentos: percepção, alerta, luta e coleira (js/mundo/encontros.js)
     Campanhas.update(dt);
     Aventuras.update(dt);   // lugares escondidos e quem volta para casa
     Eventos.update(dt);     // eventos dinâmicos da região

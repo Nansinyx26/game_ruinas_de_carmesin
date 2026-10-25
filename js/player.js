@@ -269,8 +269,9 @@ class Player extends Entity {
   // Captura inputs TODO frame (inclusive durante o hit stop) para o buffer de combos
   captureInput(input) {
     if (this.state === 'dead') return;
-    if (input.pressed.light) this.combo.bufferInput('L');
-    if (input.pressed.heavy) this.combo.bufferInput('H');
+    const livre = !(this.travaAtaque > 0);   // logo depois de fechar uma conversa ou loja, sem golpe
+    if (input.pressed.light && livre) this.combo.bufferInput('L');
+    if (input.pressed.heavy && livre) this.combo.bufferInput('H');
     if (input.pressed.dash) this.dashBuffer = 0.16;
     if (input.pressed.jump) this.jumpBuffer = 0.14;
     if (input.pressed.grenade) this.granadaBuffer = 0.2;
@@ -293,6 +294,8 @@ class Player extends Entity {
     if (this.flash > 0) this.flash -= dt;
     if (this.dashBuffer > 0) this.dashBuffer -= dt;
     if (this.jumpBuffer > 0) this.jumpBuffer -= dt;
+    if (this.derrapaT > 0) this.derrapaT -= dt;
+    if (this.travaAtaque > 0) this.travaAtaque -= dt;
     EnemyTraits.heroi(this, dt);   // lentidão e veneno das variantes (js/mundo/variantes.js)
     if (this.specialBuffer > 0) this.specialBuffer -= dt;
     if (this.abBufT > 0) this.abBufT -= dt;
@@ -336,6 +339,10 @@ class Player extends Entity {
         if (wd) {
           const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this);
           tvx = wd.x * sp; tvy = wd.y * sp;
+          // de frente para um pilar, contorna pela tangente em vez de empacar (Room.desvio)
+          const dv = this.dv || (this.dv = { x: 0, y: 0 });
+          if (game.room.desvio(this, tvx, tvy, dv, 16)) { tvx = dv.x; tvy = dv.y; }
+          this.passos(dt, tvx, tvy);
           this.facing = Math.atan2(wd.y, wd.x);
           this.state = 'run';
           this.idleTime = 0;
@@ -343,6 +350,7 @@ class Player extends Entity {
           this.idleVariant = 'idle_breathing'; this.idleNext = null;
           this.idleTimer = 3.0 + Math.random() * 2.0;
         } else {
+          if (this.state === 'run') this.passos(dt, 0, 0);   // freada
           this.state = 'idle';
           this.idleTime += dt;
           this.idleTimer -= dt;
@@ -384,7 +392,7 @@ class Player extends Entity {
       case 'hurt':
         this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
         this.vx *= Math.exp(-10 * dt); this.vy *= Math.exp(-10 * dt);
-        if (this.stateTime >= 0.22) this.state = 'idle';
+        if (this.stateTime >= (this.hurtDur || 0.22)) this.state = 'idle';
         break;
       case 'special':
         this.idleTime = 0; this.idleBlend = 0; this.idleVariant = 'idle_breathing'; this.idleNext = null;
@@ -412,6 +420,20 @@ class Player extends Entity {
     const vs = this.state;
     if (typeof this.viewFacing !== 'number' || vs === 'attack' || vs === 'charge' || vs === 'special' || vs === 'dash' || vs === 'dead' || vs === 'plunge') this.viewFacing = this.facing;
     else { const d = angleDiff(this.viewFacing, this.facing), mx = 15 * dt; this.viewFacing += d > mx ? mx : d < -mx ? -mx : d; }
+  }
+
+  // Poeira da freada (parar correndo) e da derrapada (virar para trás correndo); só visual
+  passos(dt, tvx, tvy) {
+    if (this.air) return;
+    const v = Math.hypot(this.vx, this.vy), cheia = this.baseSpeed * this.stats.speedMult;
+    if (v < cheia * 0.7 || this.derrapaT > 0) return;
+    const alvo = Math.hypot(tvx, tvy);
+    const vira = alvo > 1 && (this.vx * tvx + this.vy * tvy) / (v * alvo) < -0.35;   // mais de ~110°
+    if (alvo > 1 && !vira) return;
+    this.derrapaT = 0.3;
+    const a = Math.atan2(this.vy, this.vx);
+    game.particles.dust(this.x + Math.cos(a) * 8, this.y + Math.sin(a) * 8, vira ? 5 : 3, 8, vira ? 90 : 60);
+    if (vira) this.squash = -0.06;
   }
 
   // Ações disponíveis em estado livre: especial, esquiva ou golpe
@@ -583,7 +605,17 @@ class Player extends Entity {
     if (this.dashBuffer > 0 && this.canDash() && (a.t < tW || a.t >= tA)) {
       this.dashBuffer = 0; this.endAttack(); this.startDash(wd); return;
     }
+    if (this.andandoSai(a, d, tA, wd)) return;
     if (a.t >= tEnd) { this.endAttack(); this.state = 'idle'; }
+  }
+
+  // Fim da recuperação: andar já sai do golpe (sem esperar a pose terminar); o começo da
+  // recuperação continua preso, para o golpe ter peso. Vale para todos os kits
+  andandoSai(a, d, tA, wd) {
+    if (!wd || this.air || this.combo.hasBuffer() || this.abBufT > 0 || this.specialBuffer > 0) return false;
+    if (a.t < tA + d.recovery * Math.max(0.6, d.chainFrac || 0)) return false;
+    this.endAttack(); this.state = 'run'; this.stateTime = 0;
+    return true;
   }
 
   endAttack() {
@@ -1029,6 +1061,7 @@ class Player extends Entity {
 
   takeDamage(dmg, sx, sy, kb = 260) {
     if (this.state === 'dead' || this.invuln > 0 || game.state !== 'playing') return false;
+    const kb0 = kb, dmg0 = dmg;   // a força do golpe como veio (para a reação: tranco ou cambaleio)
     dmg = Math.max(1, Math.round(dmg * Settings.diff.dmg * (1 - this.stats.armor) * (this.buffs.field > 0 ? 0.6 : 1) * (this.kit ? this.kit.damageTakenMult(this) : 1)));
     // Drakos: Escudo de Energia frontal bloqueia ataques frontais
     if (this.buffs.drakosShield > 0) {
@@ -1080,6 +1113,9 @@ class Player extends Entity {
       this.state = 'dead'; this.stateTime = 0;
       game.onPlayerDeath();
     } else {
+      // reação pelo tamanho do golpe: tranco leve, normal ou cambaleio (golpe pesado)
+      this.hurtForca = kb0 >= 400 || dmg0 >= this.maxHp * 0.2 ? 2 : kb0 < 200 && dmg0 < this.maxHp * 0.06 ? 0 : 1;
+      this.hurtDur = [0.15, 0.22, 0.4][this.hurtForca];
       this.state = 'hurt'; this.stateTime = 0;
       if (this.kit) this.kit.onHurt(this, dmg);
     }

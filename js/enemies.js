@@ -60,6 +60,9 @@ class Enemy extends Entity {
     if (this.hpBar > 0) this.hpBar -= dt;
     if (this.attackCd > 0) this.attackCd -= dt * this.aggro;
     if (this.wallCd > 0) this.wallCd -= dt;
+    if (this.vistaT > 0) this.vistaT -= dt;
+    if (this.recuoT > 0) this.recuoT -= dt;
+    if (this.marcaT > 0) this.marcaT -= dt;   // "!" e "?" dos encontros (js/mundo/encontros.js)
 
     if (this.state === 'spawn') {
       if (Math.random() < 0.4) game.particles.embers(this.x, this.y, 0, 1, this.T.glow, this.radius, 50);
@@ -94,14 +97,10 @@ class Enemy extends Entity {
       if (this.stun <= 0 && this.z <= 0) this.afterStun();
     } else if (this.z <= 0) {
       if (this.dormant) {
-        // acampamento do mundo aberto: parado (ou em patrulha) até o herói chegar perto (World.update) ou ser atingido
-        if (this.hp < this.maxHp) World.wake(this);
-        const P = this.patrulha;
-        if (P) {
-          const q = P.pts[this.pi % P.pts.length], tx = q.x + this.pOff.x, ty = q.y + this.pOff.y;
-          if (dist(this.x, this.y, tx, ty) < 26) this.pi++;
-          this.moveToward(tx, ty, this.speed * 0.35, dt, 300); this.faceToward(tx, ty, dt, 4);
-        } else { const k = Math.exp(-8 * dt); this.vx *= k; this.vy *= k; }
+        // acampamento do mundo aberto (js/mundo/encontros.js): parado, em patrulha, em alerta ou
+        // voltando para casa até perceber o herói; dano de qualquer fonte acorda o grupo
+        if (this.hp < (this.hpCalmo === undefined ? this.maxHp : this.hpCalmo)) World.wake(this);
+        else Encontros.calmo(this, dt);
       } else if (!(this.tracos && EnemyTraits.conduz(this, dt))) this.think(dt, heroTargetFor(this));   // o jogador, ou uma isca de um herói (js/heroes/kit.js)
     }
 
@@ -132,16 +131,37 @@ class Enemy extends Entity {
 
   afterStun() { this.setState('idle'); }
 
-  // Move em direção a um ponto com aceleração suave
+  // Move em direção a um ponto com aceleração suave, contornando os pilares do caminho
+  // (Room.desvio); empacado (quase sem sair do lugar por meio segundo), dá um passo de lado
   moveToward(tx, ty, speed, dt, accel = 900) {
     const dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy);
     let tvx = 0, tvy = 0;
     if (d > 4) {
       const s = speed * Math.min(1, d / 40);
       tvx = (dx / d) * s; tvy = (dy / d) * s;
+      const v = this.dv || (this.dv = { x: 0, y: 0 });
+      if (game.room.desvio(this, tvx, tvy, v, 70)) { tvx = v.x; tvy = v.y; }
+      if (this.destravaT > 0) { this.destravaT -= dt; tvx = Math.cos(this.destravaA) * s; tvy = Math.sin(this.destravaA) * s; }
+      else this.empacado(dt, s, tvx, tvy);
     }
     this.vx = approach(this.vx, tvx, accel * dt);
     this.vy = approach(this.vy, tvy, accel * dt);
+  }
+  empacado(dt, s, tvx, tvy) {
+    this.empT = (this.empT || 0) + dt;
+    if (this.empT < 0.5) return;
+    const andou = this.empX === undefined ? 1e9 : dist(this.x, this.y, this.empX, this.empY);
+    this.empT = 0; this.empX = this.x; this.empY = this.y;
+    if (s > 30 && andou < s * 0.5 * 0.2) {
+      this.empLado = -(this.empLado || 1);
+      this.destravaT = 0.4; this.destravaA = Math.atan2(tvy, tvx) + this.empLado * 1.45;
+    }
+  }
+  // Linha de visão até o alvo (pilares no caminho escondem), refeita a cada 0,15 s
+  vejo(p) {
+    if (this.vistaT > 0 && this.vistaAlvo === p) return this.visto;
+    this.vistaT = 0.15; this.vistaAlvo = p;
+    return (this.visto = game.room.linhaLivre(this.x, this.y, p.x, p.y, -4));
   }
   brake(dt, k = 10) { const f = Math.exp(-k * dt); this.vx *= f; this.vy *= f; }
   faceToward(x, y, dt, rate = 10) { this.facing = angleLerp(this.facing, Math.atan2(y - this.y, x - this.x), 1 - Math.exp(-rate * dt)); }
@@ -152,6 +172,7 @@ class Enemy extends Entity {
     if (this.hitThisAttack || p.state === 'dead') return false;
     if (!Hitbox.test(shape, this.x, this.y, dir, p.x, p.y, p.radius)) return false;
     if (p.z > PULO.ALTO + 10 && !this.isBoss) return false;   // golpe baixo: o herói passou por cima
+    if (!game.room.linhaLivre(this.x, this.y, p.x, p.y, -6)) return false;   // um pilar no meio segura o golpe
     if (p.state === 'dash' && p.invuln > 0) {
       if (!this.dodgeCredited) { this.dodgeCredited = true; game.onPerfectDodge(p); }
       return false;
@@ -173,6 +194,11 @@ class Enemy extends Entity {
     const armored = this.superArmor && !h.heavy && !h.breakArmor;
     const k = (armored ? 0.12 : 1) / this.mass;
     this.kbx += h.kx * h.kb * k; this.kby += h.ky * h.kb * k;
+    // recuo do corpo na direção do golpe (só visual): leve, pesado ou crítico; armadura quase não mexe
+    this.recuoA = Math.atan2(h.ky, h.kx);
+    this.recuoK = (armored ? 0.25 : 1) * (h.heavy || h.crit ? 1 : 0.55) * Math.min(1.3, 1.6 / Math.sqrt(this.mass));
+    this.recuoT = this.recuoDur = h.heavy || h.crit ? 0.3 : 0.18;
+    if (this.dormant && this.camp && typeof World !== 'undefined') World.wake(this);   // atingido no acampamento: o grupo acorda
     if (this.hp <= 0) { this.die(h); return true; }
     if (!armored) {
       if (h.launch > 0 && this.launchable) { this.vz = Math.max(this.vz, h.launch / Math.sqrt(this.mass)); this.z = Math.max(this.z, 1); }
@@ -260,6 +286,7 @@ class Enemy extends Entity {
 
   // Barra de vida pequena sobre a cabeça (desenhada após a iluminação)
   drawHpBar(ctx) {
+    if (this.marcaT > 0 && typeof Encontros !== 'undefined') Encontros.desenharMarca(ctx, this);   // "!" e "?" dos acampamentos
     const always = this.elite || game.player.stats.showBars;
     if ((this.hpBar <= 0 && !always) || this.state === 'dying' || this.state === 'spawn') return;
     const w = this.radius > 20 || this.elite ? 52 : 32;
@@ -315,7 +342,7 @@ class Crawler extends Enemy {
         this.moveToward(tx, ty, this.speed * (this.hasToken ? 1.15 : 1), dt);
         this.faceToward(p.x, p.y, dt);
         if (this.attackCd <= 0 && d < 150 && !this.hasToken) game.director.request(this);
-        if (this.hasToken && d < 62) {
+        if (this.hasToken && d < 62 && this.vejo(p)) {
           this.setState('windup');
           this.atkDir = Math.atan2(p.y - this.y, p.x - this.x);
           this.facing = this.atkDir;
@@ -329,6 +356,8 @@ class Crawler extends Enemy {
         const dur = 0.42 / Math.min(1.3, this.aggro);
         this.tgProgress = this.stateTime / dur;
         this.telegraph.x = this.x; this.telegraph.y = this.y;
+        // o herói saiu do alcance (esquiva, recuo): desiste do bote e volta a perseguir
+        if (this.stateTime > dur * 0.5 && d > 115) { this.telegraph = null; this.releaseToken(); this.attackCd = 0.3; this.setState('idle'); break; }
         if (this.stateTime >= dur) {
           this.telegraph = null;
           this.hitThisAttack = false; this.dodgeCredited = false;
@@ -438,7 +467,7 @@ class Legionary extends Enemy {
       case 'idle':
         this.moveToward(p.x, p.y, this.speed, dt, 400);
         this.faceToward(p.x, p.y, dt, 4);
-        if (this.attackCd <= 0 && d < 125) {
+        if (this.attackCd <= 0 && d < 125 && this.vejo(p)) {
           this.move = d < 72 && chance(0.45) ? 'stomp' : 'slam';
           this.atkDir = Math.atan2(p.y - this.y, p.x - this.x);
           this.facing = this.atkDir;
@@ -618,18 +647,21 @@ class Shooter extends Enemy {
       case 'idle': {
         this.strafeTimer -= dt;
         if (this.strafeTimer <= 0) { this.strafeTimer = rand(1.2, 2.6); this.strafeDir *= -1; }
-        // Recuar se o jogador está perto, aproximar se está longe, senão rodear
+        // Recuar se o jogador está perto, aproximar se está longe (ou escondido atrás de um
+        // pilar: contorna até ter a linha de tiro), senão rodear
+        const ve = this.vejo(p);
         let radial = 0;
-        if (d < 170) radial = -1; else if (d > 340) radial = 1;
+        if (d < 170) radial = -1; else if (d > 340 || !ve) radial = 1;
         const sxv = -dy / d * this.strafeDir, syv = dx / d * this.strafeDir;
         const mx = (dx / d) * radial + sxv * (radial ? 0.45 : 1);
         const my = (dy / d) * radial + syv * (radial ? 0.45 : 1);
         const ml = Math.hypot(mx, my) || 1;
-        const sp = this.speed * (radial < 0 ? 1.15 : 0.8);
-        this.vx = approach(this.vx, (mx / ml) * sp, 700 * dt);
-        this.vy = approach(this.vy, (my / ml) * sp, 700 * dt);
+        const sp = this.speed * (radial < 0 ? 1.15 : 0.8), v = this.dv || (this.dv = { x: 0, y: 0 });
+        game.room.desvio(this, (mx / ml) * sp, (my / ml) * sp, v, 60);
+        this.vx = approach(this.vx, v.x, 700 * dt);
+        this.vy = approach(this.vy, v.y, 700 * dt);
         this.faceToward(p.x, p.y, dt);
-        if (this.attackCd <= 0 && d < 480) {
+        if (this.attackCd <= 0 && d < 480 && ve) {
           this.aim = toP;
           this.setState('windup');
           this.telegraph = { kind: 'line', x: this.x, y: this.y, dir: toP, len: Math.min(d, 420), w: 5 };
@@ -786,7 +818,7 @@ class Hunter extends Enemy {
         const tx = p.x + Math.cos(a) * this.orbit, ty = p.y + Math.sin(a) * this.orbit;
         this.moveToward(tx, ty, this.speed, dt, 1200);
         this.faceToward(p.x, p.y, dt, 12);
-        if (this.attackCd <= 0 && d < 300 && game.director.request(this)) {
+        if (this.attackCd <= 0 && d < 300 && this.vejo(p) && game.director.request(this)) {
           this.atkDir = Math.atan2(dy, dx);
           this.setState('windup');
           this.telegraph = { kind: 'line', x: this.x, y: this.y, dir: this.atkDir, len: Math.min(d + 70, 330), w: 16 };

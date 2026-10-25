@@ -179,7 +179,7 @@ Sete regiões **realmente exploráveis** com o mesmo combate, personagens, árvo
 | Orion | Sem Registro | Contrato Antigo (Galerias de Serviço) · Rostos (Mercado Vertical) · A Corporação (Cânion Rubro) · O Laboratório Atrás do Vidro (Ruínas Submersas) · Apagar o Nome (Cratera Viva, A Mão Invisível) | Lâmina Sem Nome |
 
   As falas das campanhas são só texto (sem dublagem gravada). O andamento fica no salvamento do mundo.
-- **Acampamentos**: os inimigos ficam parados até o herói chegar perto ou um deles ser atingido; aí o grupo inteiro acorda e persegue. Voltam a cada visita (o do chefe não, depois de derrotado).
+- **Acampamentos e encontros** (`js/mundo/encontros.js`, `Encontros`): os grupos ficam no seu lugar, parados (olhando em volta) ou em patrulha, e só entram na luta quando **percebem** o herói — pela distância (300 de dia; menos à noite e com pouca visibilidade; elites e chefes um pouco mais), pela frente (de costas, só pouco mais da metade), pela **linha de visão** (colunas, árvores, rochas e cristais escondem; colado neles, 110, sentem mesmo sem ver) e pelo **barulho** (golpes, esquivas e cargas são notados de mais longe; andar devagar, com o analógico pela metade, menos). Percebido, o grupo para, vira para o herói e um **"!"** aparece (0,6 s; elites e chefes mais rápidos): se ele continua à vista, a luta começa; se sumiu, **"?"** e voltam ao que faziam. Atingido, o grupo acorda na hora. **Coleira**: com o herói longe da casa do grupo (pouco mais da metade da zona, até 720; chefes mais), longe de todos eles ou fora de vista por alguns segundos, o grupo **desiste** ("?"), volta para casa recuperando a vida e dorme de novo — dá para **fugir** de uma luta sem sair da zona. O **barulho da luta** (golpes e mortes) deixa em alerta os acampamentos vizinhos que tenham linha de visão. Voltam a cada visita (o do chefe não, depois de derrotado); ondas de eventos e inimigos de missões continuam acordados desde o começo.
 - **Baús** (células, experiência, cápsula de reparo), **terminais** com memórias da cidade, um **local secreto** que só aparece de perto, **NPCs** no Mercado e o **chefe regional** (Guardião Carmesim) no Coração Carmesim — o baú dele só abre depois.
 - **Descoberta e viagem rápida**: entrar numa zona pela primeira vez a descobre (experiência); **portais** ativados viram destinos de viagem rápida.
 - **Mapa do mundo** (tecla **M**, botão MAPA no toque, ou o portal; `js/mundo/mapa.js`, WorldMapArt): um mapa ilustrado, pintado uma vez quando abre (sem imagens nem bibliotecas: ruído determinístico, sempre o mesmo mapa). Um continente cercado de mar, com o relevo sombreado e o terreno de cada região no seu bioma: as ruínas rachadas e o núcleo vermelho de Carmesin, as árvores de Velmora, os picos nevados de Asterion, os prédios e a cúpula do Nexus, as dunas e o cânion de Seraph, as ilhas e cristais da Lagoa e a cratera com rios de lava do Obsidiano; rios e estradas ligando Carmesin às outras regiões. Regiões ainda não exploradas ficam sob névoa (as bloqueadas, mais fechada e hachurada). Por cima: trilhas entre as zonas vizinhas (cheias as descobertas, tracejadas as outras), um marcador por zona com o ícone do que há nela (⌂ base com mercador, ◈ portal ativado, ☠ chefe regional, ? não descoberta) e, ao lado, as missões (◆), masmorras conhecidas (▼), tesouros marcados (✦), lugares de rumor (…) e eventos (⚔), o nome de cada região com a faixa de nível, cadeado (e o que abre cada uma) ou ✓ quando o chefe caiu, a ★ da campanha e onde você está; moldura de atlas com coordenadas, rosa dos ventos e escala. O painel da zona escolhida mostra região, bioma, nível e o que já se sabe dela (mercador, portal, chefe, baús abertos, terminal, campo aberto, capítulo da campanha). Q/E aproximam e afastam (os nomes das zonas descobertas aparecem com zoom); na viagem rápida, os destinos pulsam.
@@ -250,6 +250,18 @@ Passivas funcionam sozinhas, técnicas entram nos combos da espada e as ativas v
 **Redistribuir os pontos** (botão **REDISTRIBUIR** no alto da árvore, tecla **R** ou **Y/△** no controle): devolve todos os pontos que o herói mostrado gastou na árvore e limpa os atalhos, para distribuir de novo. O primeiro aperto mostra o que volta e o preço; o segundo, em até 4 s, confirma. A primeira redistribuição de cada herói é grátis; as seguintes custam 10 células por ponto devolvido. A contagem fica no salvamento.
 
 O progresso (nível, XP, habilidades, atalhos, evoluções, memórias e setor atual) é **salvo automaticamente** no navegador. Na tela de título aparecem **Continuar** e **Novo jogo**. Ao cair em combate, Kael volta ao início do setor mantendo a evolução.
+
+## Combate em movimento
+
+O combate é o mesmo em qualquer lugar — campanha, mundo aberto, masmorras, eventos e chefes —, sem tela de batalha: os golpes, combos, cargas, habilidades, esquivas, pulo e defesa saem no meio da exploração, e a exploração continua assim que a luta acaba.
+
+- **Movimento**: oito direções relativas à câmera (no analógico, andar devagar e correr), aceleração e freada curtas, o corpo gira suave para a nova direção (os pés dão passos em vez de escorregar). Correndo de frente para uma coluna, árvore ou rocha, o herói **contorna** pela tangente em vez de empacar (`Room.desvio`); a freada e a virada brusca levantam poeira.
+- **Golpes**: preparação, fase ativa (o dano só sai nela, no mesmo instante do impacto visual) e recuperação de cada golpe vêm da tabela de ataques; o combo encadeia pelo buffer, a esquiva cancela a preparação e a recuperação e, no **fim da recuperação, andar já sai do golpe** (o começo continua preso, para o golpe ter peso). A mira corrige um pouco para o inimigo no cone da arma.
+- **Transição de poses** (`R3D.misturar`): ao trocar de estado (parado, correndo, golpe, esquiva, dano, atordoado…) ou ao emendar outro golpe do combo, as juntas do modelo 3D saem da última pose e chegam à nova em poucos centésimos — rápido ao entrar numa ação, mais longo ao voltar dela. Vale para heróis, inimigos e moradores; só a pose muda.
+- **Impacto**: hit stop, tremor, faíscas, rastro da lâmina e números de dano (como antes). Os inimigos **recuam** (o corpo tomba na direção do golpe e volta, mais no pesado e no crítico; a super armadura quase não mexe), atordoam, são lançados ou caem conforme o golpe.
+- **Defesa e dano recebido**: a esquiva continua invencível mas agora **contorna os corpos** (não atravessa inimigos nem pessoas; só as supremas com teletransporte atravessam). Golpe leve dá um tranco curto, golpe pesado faz **cambalear**; um **arco vermelho no chão** em volta do herói aponta de onde veio o dano. Avisos no chão mostram a preparação dos ataques inimigos (cone, círculo ou linha).
+- **IA dos inimigos**: cada um com o seu estado (perseguir, cercar, preparar, atacar, recuperar); **contornam os pilares** no caminho e, empacados, dão um passo de lado; **não golpeiam nem atiram através de obstáculos** (atiradores sem linha de tiro se reposicionam); o rastejador desiste do bote se o herói esquivou para longe; o diretor de IA limita quantos atacam ao mesmo tempo. No mundo aberto, percepção, alerta e coleira ficam com os **encontros** (ver Mundo aberto).
+- **Conversa e interação**: o botão que fecha uma conversa, loja ou mapa não vira golpe (0,25 s de trava); fora de combate, o golpe leve colado num morador abre a conversa (na luta, é golpe); no controle, X conversa perto de alguém. Moradores se encolhem e não conversam com inimigos acordados por perto.
 
 ## Técnicas da Tempestade Nula
 
@@ -392,6 +404,7 @@ js/
                     moradores, conversas, rotinas, vilarejos, quadro de contratos), aventuras.js
                     (WORLD_AVENTURAS, Aventuras: missões secundárias, contratos e diário), locais.js
                     (masmorras, tesouros escondidos), eventos.js (eventos dinâmicos e desafio da arena),
+                    encontros.js (ENCONTRO, Encontros: percepção, alerta, coleira e volta dos acampamentos),
                     mapa.js (WorldMapArt: o terreno pintado, a névoa e a moldura do mapa do mundo)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   thirdperson.js    ThirdPersonMode: arena de teste em terceira pessoa (WebGL próprio)
@@ -401,7 +414,7 @@ js/
   boss.js           HazardSystem e Boss (NEXUS)
   projectiles.js    ProjectileSystem
   pickups.js        PickupSystem (células, cápsulas, memórias)
-  rooms.js          THEMES, ROOM_DEFS e Room (cenário pré-renderizado e colisões)
+  rooms.js          THEMES, ROOM_DEFS e Room (cenário pré-renderizado, colisões, linha de visão e desvio)
   waves.js          WaveManager (ondas, porta, chefe)
   ui.js             wrapText, glowText, drawIcon (ícones procedurais)
   hud.js            HUD: retrato, vida/energia, radar, missão, habilidades em losangos, células,

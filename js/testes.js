@@ -733,6 +733,7 @@ const EclipseTests = {
       this.mapa();
       this.mmo();
       this.paisagem();
+      this.combateMundo();
     } finally {
       World.save = salvar;
       try { if (ls === null) localStorage.removeItem(WORLD_SAVE_KEY); else localStorage.setItem(WORLD_SAVE_KEY, ls); } catch (e) {}
@@ -1327,6 +1328,203 @@ const EclipseTests = {
     ThirdView.set(false, true);
     p.state = sv.st; p.vx = sv.vx; p.vy = sv.vy; p.facing = sv.f; p.air = sv.air;
     World.state.hora = h0;
+  },
+
+  // Combate no mundo aberto (js/mundo/encontros.js, Room.linhaLivre/desvio, js/enemies.js,
+  // js/player.js, R3D.misturar): percepção, alerta, coleira, linha de visão, desvio de pilares,
+  // esquiva sólida, sair do golpe andando, reações ao dano e transição de poses
+  combateMundo() {
+    const g = game, p = g.player, sala = g.enemies.slice(), camps0 = World.camps, prox0 = Eventos.prox, h0 = World.state.hora;
+    const sv = { x: p.x, y: p.y, hp: p.hp, st: p.state };
+    const ent = () => ({ move: { x: 0, y: 0 }, pressed: {}, held: {}, released: {}, look: { x: 0, y: 0 } });
+    let erro = null, pilares0 = null;
+    try {
+      World.loadZone('velmora_trilha', null);
+      Eventos.prox = 1e9; World.state.hora = 12; WorldTime.definir('limpo', 'velmora', false);
+      const R = g.room;
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      const passo = (n, dt = 1 / 30) => { for (let i = 0; i < n; i++) { Encontros.update(dt); for (const e of g.enemies) e.update(dt); g.separate(); } };
+      // um pilar só (a zona é sorteada a cada carga): o acampamento a oeste dele, o herói escondido a leste
+      pilares0 = R.pillars;
+      const pil = { x: R.w * 0.5, y: R.h * 0.42, r: 22, h: 120, broken: false, seed: 1, sprite: null, ox: 0, oy: 0 };
+      R.pillars = [pil];
+      // linha de visão
+      this.ok('linha de visão: o pilar corta, ao lado passa', !R.linhaLivre(pil.x - 100, pil.y, pil.x + 100, pil.y) && R.linhaLivre(pil.x - 100, pil.y + pil.r + 30, pil.x + 100, pil.y + pil.r + 30));
+      // desvio: indo direto no pilar, segue a tangente (mesma velocidade, sem entrar nele)
+      const q = { x: pil.x - 70, y: pil.y + 2, radius: 14, id: 1 }, v = { x: 0, y: 0 };
+      const desviou = R.desvio(q, 300, 0, v, 60), D = dist(q.x, q.y, pil.x, pil.y), ang = Math.abs(angleDiff(Math.atan2(v.y, v.x), Math.atan2(pil.y - q.y, pil.x - q.x)));
+      this.ok('desvio: de frente para o pilar, contorna pela tangente', desviou && Math.abs(Math.hypot(v.x, v.y) - 300) < 1e-6 && ang >= Math.asin(Math.min(1, (pil.r + 17) / D)) - 1e-6, `${desviou} ${ang.toFixed(2)}`);
+      this.ok('desvio: caminho livre não muda', !R.desvio(q, 0, 300, v, 60) && v.x === 0 && v.y === 300);
+      // o herói correndo de frente para o pilar passa por ele (não empaca)
+      p.state = 'idle'; p.x = pil.x - 70; p.y = pil.y + 2; p.vx = p.vy = 0; p.kbx = p.kby = 0; p.air = false; p.z = 0;
+      const corre = ent(); corre.move.x = 1; corre.move.y = 0.5;   // tela (1, 0,5) = mundo +x
+      let dentro = 0;
+      for (let i = 0; i < 90 && p.x < pil.x + pil.r + 20; i++) { p.update(1 / 60, corre); if (dist(p.x, p.y, pil.x, pil.y) < pil.r + p.radius - 1) dentro++; }
+      this.ok('herói: correndo de frente para o pilar, contorna e segue', p.x > pil.x + pil.r && !dentro, `x ${Math.round(p.x - pil.x)} · dentro ${dentro}`);
+      // perseguição: o inimigo do outro lado do pilar contorna e chega
+      const cr = createEnemy('rastejador', pil.x - 90, pil.y, 2); cr.setState('idle'); cr.camp = null; g.enemies.push(cr);
+      p.state = 'idle'; p.x = pil.x + 120; p.y = pil.y; p.vx = p.vy = 0; p.invuln = 99;
+      let perto = 1e9, furou = 0;
+      for (let i = 0; i < 120 && perto > 110; i++) { cr.update(1 / 30); g.director.update(); g.separate(); perto = Math.min(perto, dist(cr.x, cr.y, p.x, p.y)); if (dist(cr.x, cr.y, pil.x, pil.y) < pil.r + cr.radius - 1) furou++; }
+      this.ok('perseguição: contorna o pilar e alcança o herói', perto <= 110 && !furou, `${Math.round(perto)} · dentro ${furou}`);
+      // golpe com o pilar no meio não acerta; sem o pilar, acerta
+      p.invuln = 0; p.state = 'idle'; p.hp = p.maxHp;
+      cr.x = pil.x - pil.r - cr.radius - 2; cr.y = pil.y; p.x = pil.x + pil.r + p.radius + 2; p.y = pil.y;
+      cr.hitThisAttack = false;
+      const atras = cr.strikePlayer({ type: 'circle', radius: 220, offset: 0 }, 0, 5, 100);
+      p.x = cr.x; p.y = cr.y + 50; cr.hitThisAttack = false;
+      const livre = cr.strikePlayer({ type: 'circle', radius: 220, offset: 0 }, 0, 5, 100);
+      this.ok('golpe inimigo: não atravessa o pilar', !atras && livre, `${atras} / ${livre}`);
+      p.hp = p.maxHp; p.invuln = 99; p.state = 'idle';
+      // atirador sem linha de tiro não mira; com linha, mira
+      const at = createEnemy('drone', pil.x - 150, pil.y, 2); at.setState('idle'); at.camp = null; at.attackCd = 0; g.enemies.push(at);
+      p.x = pil.x + 60; p.y = pil.y; at.vistaT = 0; at.think(1 / 30, p);
+      const semLinha = at.state;
+      at.x = pil.x - 150; at.y = pil.y; p.x = pil.x - 150; p.y = pil.y + 220; at.vistaT = 0; at.attackCd = 0; at.think(1 / 30, p);
+      this.ok('atirador: sem linha de tiro não dispara; à vista, mira', semLinha === 'idle' && at.state === 'windup', `${semLinha} → ${at.state}`);
+      // rastejador desiste do bote quando o herói sai do alcance (esquiva)
+      cr.x = pil.x - 150; cr.y = pil.y - 120; p.x = cr.x + 50; p.y = cr.y; cr.setState('windup'); cr.telegraph = { kind: 'cone', x: cr.x, y: cr.y, r: 52, dir: 0, arc: 0.95 };
+      cr.stateTime = 0.3; p.x = cr.x + 220;
+      cr.think(1 / 30, p);
+      this.ok('rastejador: o herói esquivou para longe, desiste do bote', cr.state === 'idle' && !cr.telegraph, cr.state);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; g.director.reset(1);
+      // ---------------------------------------------------------- acampamento: perceber, alerta, luta
+      const cx = pil.x - 160, cy = pil.y, camp = { def: { mobs: {} }, enemies: [], awake: false, x: cx, y: cy };
+      for (const [t, dy] of [['rastejador', -12], ['rastejador', 12], ['cacador', 0]]) {
+        const e = createEnemy(t, cx - (t === 'cacador' ? 16 : 0), cy + dy, 2); e.setState('idle'); e.dormant = true; e.camp = camp; e.facing = 0;
+        camp.enemies.push(e); g.enemies.push(e);
+      }
+      World.camps.push(camp);
+      const olha = (a) => { for (const e of camp.enemies) { e.facing = a; e.olharA = a; e.olharT = 99; e.vistaT = 0; } };   // vistaT: refaz a linha de visão
+      p.state = 'idle'; p.vx = p.vy = 0;
+      p.x = clamp(cx + 620, 40, R.w - 40); p.y = cy; olha(0); passo(6);
+      this.igual('encontro: longe, o grupo segue calmo', Encontros.fase(camp), 'calmo');
+      p.x = pil.x + 60; p.y = pil.y; olha(0); passo(6);
+      this.ok('encontro: escondido atrás do pilar, não é visto', Encontros.fase(camp) === 'calmo', Encontros.fase(camp));
+      p.x = pil.x + 10; p.y = pil.y + 130;
+      olha(Math.PI);
+      this.ok('encontro: de costas para o herói, não percebe a 210', camp.enemies.every((e) => !Encontros.percebe(e, p, camp)));
+      olha(Math.atan2(p.y - cy, p.x - cx));
+      this.ok('encontro: de frente e à vista, percebe', camp.enemies.some((e) => Encontros.percebe(e, p, camp)));
+      p.state = 'run'; p.moveSpeed = p.baseSpeed * 0.4;
+      const furtivo = Encontros.ruido(p);
+      p.state = 'attack';
+      const barulhento = Encontros.ruido(p);
+      p.state = 'idle'; p.moveSpeed = 0;
+      this.ok('encontro: andar devagar chama menos atenção que golpear', furtivo < 1 && barulhento > 1, `${furtivo} / ${barulhento}`);
+      passo(4);
+      this.ok('encontro: percebeu → alerta, com "!" e sem atacar ainda', Encontros.fase(camp) === 'alerta' && camp.enemies.every((e) => e.marca === '!' && e.marcaT > 0 && e.dormant) && !World.inCombat(), Encontros.fase(camp));
+      passo(25);
+      this.ok('encontro: depois do alerta, a luta começa', Encontros.fase(camp) === 'luta' && camp.awake && camp.enemies.every((e) => !e.dormant) && World.inCombat() && !!camp.casa, Encontros.fase(camp));
+      // ---------------------------------------------------------- fuga: coleira e volta
+      for (const e of camp.enemies) e.hp = Math.round(e.maxHp * 0.5);
+      const lim = Encontros.limite(camp), cantos = [[40, 40], [R.w - 40, 40], [40, R.h - 40], [R.w - 40, R.h - 40]];
+      const longe = cantos.reduce((b, c) => (dist(c[0], c[1], cx, cy) > dist(b[0], b[1], cx, cy) ? c : b));
+      p.x = longe[0]; p.y = longe[1]; p.invuln = 99;
+      passo(95);
+      this.ok('fuga: longe demais, o grupo desiste ("?") e volta para casa', Encontros.fase(camp) === 'volta' && camp.enemies.every((e) => e.dormant && e.voltando && e.marca === '?') && !World.inCombat(), `${Encontros.fase(camp)} lim ${Math.round(lim)}`);
+      passo(300);
+      const emCasa = camp.enemies.every((e) => { const H = Encontros.casa(e); return dist(e.x, e.y, H.x, H.y) < 30; });
+      this.ok('fuga: de volta em casa, com a vida cheia, calmos de novo', Encontros.fase(camp) === 'calmo' && emCasa && camp.enemies.every((e) => e.hp === e.maxHp && !e.voltando), Encontros.fase(camp));
+      // atingido dormindo: o grupo acorda na hora (sem alerta)
+      camp.enemies[0].takeHit({ dmg: 1, kx: 1, ky: 0, kb: 10, launch: 0, stun: 0.1, heavy: false, crit: false });
+      this.ok('encontro: atingido no acampamento, todos acordam na hora', Encontros.fase(camp) === 'luta' && camp.enemies.every((e) => !e.dormant));
+      // barulho da luta: outro acampamento perto, com linha de visão, fica em alerta
+      const c2 = { def: { mobs: {} }, enemies: [], awake: false, x: cx, y: cy - 200 };
+      const e2 = createEnemy('rastejador', cx, cy - 200, 2); e2.setState('idle'); e2.dormant = true; e2.camp = c2; c2.enemies.push(e2); g.enemies.push(e2); World.camps.push(c2);
+      Encontros.barulho(cx + 60, cy - 60);
+      this.igual('encontro: o barulho da luta chama o acampamento vizinho', Encontros.fase(c2), 'alerta');
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      // ---------------------------------------------------------- herói
+      // esquiva sólida: contorna o corpo do inimigo em vez de atravessar
+      const alvo = createEnemy('legionario', R.w / 2 + 70, R.h * 0.75, 2); alvo.setState('stun'); alvo.stun = 9; alvo.camp = null; g.enemies.push(alvo);
+      p.state = 'idle'; p.x = R.w / 2; p.y = R.h * 0.75; p.vx = p.vy = 0; p.dashCd = 0; p.dashStock = 3; p.invuln = 0;
+      p.startDash({ x: 1, y: 0 });
+      let atravessou = 0;
+      for (let i = 0; i < 14; i++) { p.update(1 / 60, g.nullInput); alvo.update(1 / 60); g.separate(); if (dist(p.x, p.y, alvo.x, alvo.y) < p.radius + alvo.radius - 2) atravessou++; }
+      this.ok('esquiva: não atravessa o corpo do inimigo', !atravessou, atravessou);
+      alvo.alive = false; g.enemies.length = 0;
+      // sair do golpe andando: só no fim da recuperação
+      p.state = 'idle'; p.x = R.w / 2; p.y = R.h * 0.75; p.vx = p.vy = 0; p.combo.reset(); p.dashBuffer = 0; p.specialBuffer = 0; p.abBufT = 0;
+      p.startAttack(p.combo.resolve('L'), null);
+      const d = p.attack.def, tA = d.windup + d.active, cedo = tA + d.recovery * 0.3, tEnd = tA + d.recovery;
+      const anda = ent();
+      let tt = 0;
+      while (tt < cedo) { p.update(1 / 60, ent()); tt += 1 / 60; }
+      anda.move.x = 1; p.update(1 / 60, anda); tt += 1 / 60;
+      const aindaGolpe = p.state === 'attack';
+      let saiu = -1;
+      for (let i = 0; i < 40 && saiu < 0; i++) { p.update(1 / 60, anda); tt += 1 / 60; if (p.state === 'run') saiu = tt; }
+      this.ok('golpe: andar no começo da recuperação não corta o golpe; no fim, sai correndo', aindaGolpe && saiu > tA + d.recovery * 0.55 && saiu < tEnd, `${aindaGolpe} ${saiu.toFixed(3)} / ${tEnd.toFixed(3)}`);
+      // reação ao dano: tranco leve, cambaleio no golpe pesado; e de onde veio
+      p.state = 'idle'; p.invuln = 0; p.hp = p.maxHp; g.state = 'playing';
+      p.takeDamage(1, p.x - 50, p.y, 100);
+      const leve = p.hurtDur;
+      this.ok('dano: indicador aponta para quem bateu', g.danoDir && Math.abs(angleDiff(g.danoDir.a, Math.PI)) < 0.01, g.danoDir && g.danoDir.a);
+      p.state = 'idle'; p.invuln = 0;
+      p.takeDamage(1, p.x, p.y - 50, 460);
+      this.ok('dano: golpe leve é um tranco, golpe pesado faz cambalear', leve === 0.15 && p.hurtDur === 0.4, `${leve} / ${p.hurtDur}`);
+      p.hp = p.maxHp; p.state = 'idle'; p.invuln = 0;
+      // recuo do inimigo atingido: mais forte no golpe pesado; o corpo tomba na direção do golpe
+      const sac = createEnemy('rastejador', R.w / 2 + 200, R.h * 0.75, 2); sac.setState('idle'); sac.camp = null;
+      sac.takeHit({ dmg: 1, kx: 1, ky: 0, kb: 50, launch: 0, stun: 0.1, heavy: false, crit: false });
+      const kLeve = sac.recuoK;
+      sac.takeHit({ dmg: 1, kx: 1, ky: 0, kb: 50, launch: 0, stun: 0.1, heavy: true, crit: false });
+      sac.recuoT = sac.recuoDur * 0.6;
+      const o = g.opts3(sac, 0); o.yaw = 0; sac.facing = sac.viewFacing = 0;
+      g.queue3(sac.type, sac, o);
+      this.ok('inimigo atingido: recuo maior no golpe pesado, tomba na direção do golpe', kLeve > 0 && sac.recuoK > kLeve && o.pitch > 0.01, `${kLeve.toFixed(2)} ${sac.recuoK.toFixed(2)} ${(o.pitch || 0).toFixed(3)}`);
+      // transição de pose: o primeiro quadro do golpe fica entre o repouso e a pose do golpe
+      const key = heroModelKey(p.def), m = g.model3(key), def = MODELS3D[key];
+      if (m && def) {
+        p.state = 'idle'; p.vx = p.vy = 0; p.moveSpeed = 0; p._mix = null; p.animTime = 50;
+        const pose = () => { m.reset(); def.pose(m, p, g.opts3(p, 0)); };
+        const nos = Object.keys(m.nodes);
+        pose(); R3D.misturar(m, p);
+        const rep = nos.map((k) => m.nodes[k].r.slice());
+        p.combo.reset(); p.startAttack(p.combo.resolve('L'), null); p.attack.t = 0.05; p.animTime += 1 / 60;
+        pose(); const alvoP = nos.map((k) => m.nodes[k].r.slice());
+        R3D.misturar(m, p);
+        let i0 = -1, j0 = 0;
+        for (let i = 0; i < nos.length && i0 < 0; i++) for (let j = 0; j < 3; j++) if (Math.abs(alvoP[i][j] - rep[i][j]) > 0.2) { i0 = i; j0 = j; break; }
+        const meio = i0 >= 0 ? m.nodes[nos[i0]].r[j0] : 0;
+        const entre = i0 >= 0 && Math.abs(meio - rep[i0][j0]) > 1e-4 && Math.abs(meio - alvoP[i0][j0]) > 1e-4 && (meio - rep[i0][j0]) * (alvoP[i0][j0] - rep[i0][j0]) > 0;
+        for (let k = 0; k < 12; k++) { p.animTime += 1 / 60; pose(); R3D.misturar(m, p); }
+        const fimMix = p._mix.k === 1;
+        this.ok('pose: troca de estado com transição (o 1º quadro fica no meio do caminho)', entre && fimMix, i0 >= 0 ? `${nos[i0]} ${rep[i0][j0].toFixed(2)} → ${meio.toFixed(2)} → ${alvoP[i0][j0].toFixed(2)}` : 'sem nó');
+        p.endAttack(); p.state = 'idle'; p._mix = null;
+      }
+      // de volta ao jogo depois de uma conversa: o botão que fechou não vira golpe
+      g.estadoAnt = 'worlddlg'; g.state = 'playing';
+      g.update(0);
+      p.combo.reset();
+      const tecla = ent(); tecla.pressed.light = true;
+      p.captureInput(tecla);
+      this.ok('conversa: logo depois de fechar, o botão de golpe não ataca', p.travaAtaque > 0 && !p.combo.hasBuffer(), p.travaAtaque);
+      p.travaAtaque = 0; p.combo.reset();
+      // golpe colado num morador, fora de combate, vira conversa; na luta, é golpe
+      R.pillars = pilares0; pilares0 = null;
+      World.loadZone('mercado', null);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      const mor = g.npcs.find((n) => n instanceof Morador);
+      if (mor) {
+        p.x = mor.x + 40; p.y = mor.y; g.talkTarget = mor;
+        const conv = g.golpeConversa(tecla);
+        const brig = createEnemy('rastejador', mor.x + 900, mor.y, 1); brig.setState('idle'); brig.camp = null; g.enemies.push(brig);
+        const naLuta = g.golpeConversa(tecla);
+        this.ok('morador: golpe colado nele fora de combate vira conversa; na luta, não', conv && !naLuta, `${conv} / ${naLuta}`);
+        brig.alive = false; g.enemies.length = 0;
+      } else this.ok('mercado tem morador', false);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('combate no mundo: sem exceção', !erro, erro);
+    if (pilares0) g.room.pillars = pilares0;
+    World.camps = camps0; Eventos.prox = prox0; World.state.hora = h0;
+    g.enemies.length = 0; for (const e of sala) g.enemies.push(e);
+    p.x = sv.x; p.y = sv.y; p.hp = sv.hp; p.state = 'idle'; p.invuln = 0; p.vx = p.vy = 0; p.travaAtaque = 0;
   },
 
   // Resultado na tela (canto superior esquerdo), por cima do jogo

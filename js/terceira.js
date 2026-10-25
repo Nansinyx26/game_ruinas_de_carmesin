@@ -494,6 +494,7 @@ const ThirdView = {
       }
       ctx.restore();
       p.drawAura(ctx, g.realTime);
+      g.drawDanoDir(ctx);
       for (const e of g.enemies) {
         if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
         if (e.state === 'spawn') g.drawSpawnSigil(ctx, e);
