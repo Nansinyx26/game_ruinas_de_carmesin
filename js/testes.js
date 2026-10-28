@@ -327,11 +327,32 @@ const EclipseTests = {
       pr.skills = Object.assign({}, nos);
       const p = g.player;
       p.recalc(true); p.fury = p.maxEnergy; p.cds = {}; p.state = 'idle'; p.attack = null; p.facing = 0; p.invuln = 0;
-      // num ponto livre da sala, com espaço à direita (os inimigos ficam a até 220 à frente)
-      const R = g.room, livre = (x, y) => !R.blocksPoint(x, y, 30);
-      for (const [fx, fy] of [[0.4, 0.5], [0.3, 0.5], [0.4, 0.35], [0.3, 0.65], [0.5, 0.5], [0.2, 0.4]]) {
+      // num ponto livre da sala, com espaço e linha de visão totalmente desobstruída à direita
+      const R = g.room, livre = (x, y) => !R.blocksPoint(x, y, 32);
+      const livreCaminho = (x, y) => {
+        if (!livre(x, y) || x + 240 >= R.w - 30 || y < 35 || y > R.h - 50) return false;
+        if (!R.linhaLivre(x, y, x + 240, y, 20) || !R.linhaLivre(x, y + 25, x + 240, y + 25, 20) || !R.linhaLivre(x, y - 25, x + 240, y - 25, 20)) return false;
+        for (let d = 0; d <= 240; d += 20) {
+          if (!livre(x + d, y) || !livre(x + d, y + 25) || !livre(x + d, y - 25)) return false;
+        }
+        return true;
+      };
+      let achou = false;
+      for (const [fx, fy] of [
+        [0.3, 0.4], [0.3, 0.6], [0.25, 0.5], [0.35, 0.35], [0.35, 0.65],
+        [0.4, 0.5], [0.3, 0.5], [0.4, 0.35], [0.4, 0.65], [0.5, 0.5],
+        [0.2, 0.4], [0.2, 0.6], [0.5, 0.3], [0.5, 0.7], [0.2, 0.5], [0.35, 0.5]
+      ]) {
         const x = R.w * fx, y = R.h * fy;
-        if (livre(x, y) && livre(x + 110, y) && livre(x + 230, y) && livre(x + 230, y + 40)) { p.x = x; p.y = y; break; }
+        if (livreCaminho(x, y)) { p.x = x; p.y = y; achou = true; break; }
+      }
+      if (!achou) {
+        for (let fx = 0.15; fx <= 0.65 && !achou; fx += 0.04) {
+          for (let fy = 0.15; fy <= 0.85 && !achou; fy += 0.04) {
+            const x = R.w * fx, y = R.h * fy;
+            if (livreCaminho(x, y)) { p.x = x; p.y = y; achou = true; break; }
+          }
+        }
       }
       p.vx = p.vy = p.kbx = p.kby = 0;
       for (const k in p.buffs) p.buffs[k] = 0;
