@@ -1,0 +1,1 @@
+todas armadura GLB leve 1  serão utilizadas por todas classes que iniciarem o jogo no mundo aberto feito no criar personagem e  começar com elas no inventario 
