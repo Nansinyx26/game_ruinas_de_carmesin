@@ -22,3 +22,5 @@ testes.png
 *.tmp
 *.bak
 .cache_criacao
+tools/blender/_saida/
+assets/_backup/

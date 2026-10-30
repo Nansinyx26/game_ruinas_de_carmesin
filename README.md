@@ -474,6 +474,23 @@ No menu inicial, **MODO 3ª PESSOA (3D)** abre a arena de teste em terceira pess
 
 **Armas 3D (GLB)**: os modelos-fonte ficam em `assets/armas/eclipse/` (10–27 MB cada, gerados no Meshy). O jogo usa uma versão reduzida gerada por `python3 tools/importar_arma.py` (1,5–2,8 mil triângulos por arma, com cor, metal e brilho amostrados da textura do GLB) em `js/assets/armas3d.js`, que também abre por `file://`. Para trocar uma arma: substitua o `.glb` e rode o importador; a orientação, a posição da mão e o comprimento de cada arma ficam em `ARMAS` no próprio importador, e os encaixes (mão, costas, coxa) em `BACK` de `js/heroes/armas3d.js`.
 
+**Assets no Blender** (`tools/blender/`): cada asset novo é um script Python reproduzível que monta o modelo por código (primitivas, bmesh, modificadores), desdobra a UV, cria o material PBR (um por objeto, com atlas de textura gerado), põe a origem na base, exporta `.glb` (glTF 2.0, +Y para cima, metros) para `assets/models/` e renderiza a prévia PNG (Cycles na CPU, sem placa de vídeo). Antes de sobrescrever qualquer arquivo, a cópia vai para `assets/_backup/<data>/`. O mesmo script roda no Blender instalado ou com o módulo `bpy` (`pip install bpy`, Python 3.13):
+
+```bash
+blender -b -P tools/blender/build_all.py                  # todos os asset_*.py → assets/REPORT.md
+python3 tools/blender/build_all.py                        # o mesmo, com o módulo bpy
+python3 tools/blender/asset_lamina_iniciado.py -- --neon 1,0.3,0.2 --nome lamina_rubra   # variação
+python3 tools/blender/preview.py -- arquivo.glb previa.png   # prévia e medidas de qualquer .glb
+python3 tools/blender/auditoria.py                        # assets/AUDITORIA.md (sem Blender)
+python3 tools/importar_arma.py --blender lamina_do_iniciado --saida /tmp/armas.js   # .glb → formato do motor
+```
+
+`utils.py` tem as funções comuns (limpar a cena, material PBR e atlas, aplicar modificadores, origem na base, normais, UV, triângulos, exportar, prévia, relatório) e o orçamento da web (personagens ≤ 5 mil triângulos, armas e props ≤ 1,5 mil, peças modulares ≤ 3 mil, texturas ≤ 1024). A auditoria (`assets/AUDITORIA.md`) lista os GLB e imagens que já existem, com triângulos, texturas, UV, materiais repetidos e medidas, e a prioridade do que otimizar.
+
+**Texturas assadas.** Os objetos de cenário (`kit.py`) usam materiais procedurais por parte (`utils.material_procedural`: variação de cor e sujeira em duas escalas, bordas gastas com metal à mostra, padrões de janelas acesas, blocos de pedra, chapas com frestas, veios de cristal, trama de tecido, runas, couro e pelo, e o chanfro das quinas pelo nó Bevel) que o `utils.assar` assa no Cycles numa UV própria sem sobreposição: cor com oclusão ambiente, ORM (oclusão, aspereza, metal), mapa de normais e emissão, num material só (1024 px nos objetos grandes). `tools/importar_prop.py` leva posição, normal e UV para `js/assets/props3d.js` com as texturas em WebP; o motor desenha com o programa de textura (o mesmo dos heróis), lendo a emissão no canal azul do mapa de material.
+
+**Resolução do motor 3D.** O canvas do motor cresce conforme a tela pede (até 4096, ou o limite da placa de vídeo; 2048 em aparelhos de toque e com pouca memória): a 3ª pessoa é desenhada na resolução nativa da tela (antes, no máximo 1024 de altura) com a passada de brilho em meia resolução, e os sprites da vista isométrica não perdem nitidez quando há muita gente e cenário na tela (o atlas aumenta antes de baixar a escala).
+
 ### Celular, tablet e app instalado
 
 - **Tela baixa (celular deitado)**: em jogo, com menos de 600 px de altura, a altura lógica cai de 720 para cerca de 1,25 × a altura da tela (mínimo 480), e o mundo, o HUD e os botões aparecem cerca de 1,5× maiores; os botões de toque mudam para um arranjo compacto entre o objetivo e a barra de habilidades. Nos menus e telas (inicial, principal, salvamentos, pausa, seleção de personagem, árvore, mapa, mochila, história), a altura lógica cai para cerca de 1,45 × a altura da tela (mínimo 560): letras e botões cerca de 30% maiores. As listas encolhem o espaçamento quando falta altura (`Menu.fitList`), e a seleção de personagem e a árvore de habilidades têm um arranjo compacto (cartões mais baixos, ficha e nós mais juntos) (`Game.resize`, `Game.modoTela`).

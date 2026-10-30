@@ -628,7 +628,7 @@ const CriacaoTela = {
     if (res) {
       ctx.drawImage(R3D.canvas, 0, 0, res.w, res.h, P.x, P.y, P.w, P.h);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      ctx.drawImage(R3D.canvas, 0, R3D.H / 2, res.w, res.h, P.x, P.y, P.w, P.h);
+      ctx.drawImage(R3D.canvas, 0, res.ey, res.ew, res.eh, P.x, P.y, P.w, P.h);
       ctx.restore();
     }
     // brasas subindo

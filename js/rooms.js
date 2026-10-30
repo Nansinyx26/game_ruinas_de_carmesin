@@ -334,7 +334,7 @@ class Room {
     if (!this.aberto) this.drawWalls(ctx, r);
     if (this.cidade) Cidade.desenharFundo(ctx, this);   // praça, ruas e as fachadas dos distritos
     for (const d of this.decals) this.paintDecal(ctx, d);
-    for (const p of this.pillars) this.renderPillar(p, scale);
+    for (const p of this.pillars) if (!p.cenario) this.renderPillar(p, scale);
   }
 
   // Bordas frontais: a plataforma flutua sobre o abismo, com uma faixa de luz

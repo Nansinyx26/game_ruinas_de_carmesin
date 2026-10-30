@@ -282,7 +282,7 @@ precision mediump float;
 #endif
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform sampler2D uTex; uniform sampler2D uMat; uniform float uMatOn; uniform float uBump;
-uniform sampler2D uNrm; uniform float uNrmOn; uniform float uPbr;
+uniform sampler2D uNrm; uniform float uNrmOn; uniform float uPbr; uniform float uEmiB;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
 uniform vec4 uGlow; uniform vec4 uTint; uniform vec4 uWet;
@@ -326,6 +326,7 @@ void main() {
     if (uMatOn > 0.5) {
       vec3 mm = texture2D(uMat, vCol.xy).rgb;
       metal = mm.r; rough = mm.g; specK = uPbr > 0.5 ? 1.0 : 0.6;   // arte com reflexos pintados: especular discreto
+      if (uEmiB > 0.5) e = mm.b * vCol.w;   // texturas assadas no Blender (cenário): a emissão vem no canal azul
 #ifdef BUMP
       vec2 uv = vCol.xy, du = dFdx(uv), dv = dFdy(uv);
       float h0 = mm.b;
@@ -439,7 +440,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -470,6 +471,25 @@ const R3D = {
   },
 
   get active() { return this.ok && this.enabled; },
+
+  // Tamanho do canvas do motor: começa em 2048×2048 e cresce quando a tela pede mais nitidez (a 3ª
+  // pessoa na resolução da tela, os sprites da vista isométrica sem baixar a escala quando há muita
+  // gente e cenário), até o limite da placa de vídeo; em aparelhos de toque ou com pouca memória
+  // fica no tamanho de sempre. Nunca encolhe (realocar a cada quadro custaria mais que a memória).
+  limite() {
+    if (this._lim) return this._lim;
+    const gl = this.gl, vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) || [2048, 2048], rb = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) || 2048;
+    const mem = (typeof navigator !== 'undefined' && navigator.deviceMemory) || 8;
+    const toque = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    return (this._lim = Math.max(this.W, Math.min(toque || mem < 4 ? 2048 : 4096, vp[0], vp[1], rb)));
+  },
+  crescer(W, H) {
+    const L = this.limite(), up = (v) => Math.min(L, Math.ceil(v / 256) * 256);
+    const w = Math.max(this.W, up(W)), h = Math.max(this.H, up(H));
+    if (w === this.W && h === this.H) return false;
+    this.W = this.canvas.width = w; this.H = this.canvas.height = h;
+    return true;
+  },
 
   // Enfileira um modelo para este quadro. pose(model, arg) posiciona os nós.
   // o: { yaw, roll, pitch, scale, flash, ghost: 'r,g,b' | null, emi, holo, lift, m: matriz da raiz (opcional),
@@ -605,10 +625,11 @@ const R3D = {
     }
     return vo;
   },
-  // 2) Empacota as células no atlas (prateleiras); reduz a escala se não couber
+  // 2) Empacota as células no atlas (prateleiras); se não couber, primeiro aumenta o canvas e só
+  // depois reduz a escala
   pack(n, scale) {
     let s = scale;
-    for (let tries = 0; tries < 6; tries++) {
+    for (let tries = 0; tries < 10; tries++) {
       let x = 0, y = 0, rowH = 0, fit = true;
       for (let i = 0; i < n; i++) {
         const it = this.items[i];
@@ -620,7 +641,7 @@ const R3D = {
         x += cw + 2; rowH = Math.max(rowH, ch);
       }
       if (fit) break;
-      s *= 0.75;
+      if (!this.crescer(this.W, this.H * 1.5)) s *= 0.75;
     }
     this.scale = s;
   },
@@ -691,7 +712,7 @@ const R3D = {
       if (nrmOn) { gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, ng); }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tg);
       gl.uniform1f(L.uMatOn, matOn ? 1 : 0); gl.uniform1f(L.uBump, matOn ? tex.bump || 0 : 0);
-      gl.uniform1f(L.uNrmOn, nrmOn ? 1 : 0); gl.uniform1f(L.uPbr, tex.pbr ? 1 : 0);
+      gl.uniform1f(L.uNrmOn, nrmOn ? 1 : 0); gl.uniform1f(L.uPbr, tex.pbr ? 1 : 0); gl.uniform1f(L.uEmiB, tex.emiB ? 1 : 0);
       // tex.glow = [r, g, b, ganho]: brilho na cor-tema (sem ele, o azul do Kael)
       const gw = tex.glow;
       if (gw) gl.uniform4f(L.uGlow, gw[0], gw[1], gw[2], gw[3]); else gl.uniform4f(L.uGlow, 0, 0, 0, 0);
@@ -712,14 +733,17 @@ const R3D = {
 
   // Cena inteira em perspectiva (câmera em terceira pessoa): os itens enfileirados já trazem a
   // posição no mundo na matriz da raiz (o.m). view = { mvp: Float32Array(16) (coluna a coluna),
-  // eye: [x, y, z], key/rim: direções da luz }. Desenha a cor em [0, w]×[0, h] e a emissão logo
-  // abaixo (y de H/2) no canvas do motor; devolve { w, h } (a resolução usada) ou null
+  // eye: [x, y, z], key/rim: direções da luz }. Desenha a cor em [0, w]×[0, h] na resolução pedida
+  // (o canvas cresce até o limite) e a emissão logo abaixo, em meia resolução (é brilho somado,
+  // não precisa de mais): [0, ew]×[ey, ey + eh]. Devolve { w, h, ey, ew, eh } ou null
   renderScene(view, W, H) {
     const n = this.used;
     this.used = 0;
     if (!this.active || !n || !this.progsP) return null;
     const vo = this.poseAll(n, 4);
-    const k = Math.min(1, this.W / W, (this.H / 2) / H), w = Math.floor(W * k), h = Math.floor(H * k);
+    const L = this.limite(), k = Math.min(1, L / W, L / (H * 1.5));
+    const w = Math.floor(W * k), h = Math.floor(H * k), ew = Math.ceil(w / 2), eh = Math.ceil(h / 2);
+    this.crescer(w, h + eh);
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
     if (this.data.byteLength > this.bufBytes || !this.bufBytes) { gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW); this.bufBytes = this.data.byteLength; }
@@ -751,8 +775,8 @@ const R3D = {
       return L;
     };
     for (let pass = 0; pass < 2; pass++) {
-      // cor em cima (y do canvas 0..h), emissão a partir da metade (H/2..H/2 + h)
-      gl.viewport(0, this.H - h - (pass ? this.H / 2 : 0), w, h);
+      // cor em cima (y do canvas 0..h), emissão logo abaixo em meia resolução (h..h + eh)
+      if (pass) gl.viewport(0, this.H - h - eh, ew, eh); else gl.viewport(0, this.H - h, w, h);
       let cur = -1, L = null;
       for (let i = 0; i < n; i++) {
         const it = this.items[i];
@@ -767,7 +791,7 @@ const R3D = {
       }
       if (!pass) gl.clear(gl.DEPTH_BUFFER_BIT);
     }
-    return { w, h };
+    return { w, h, ey: h, ew, eh };
   },
 
   // Pele (skinning linear na CPU). sk = { bones: [N3], inv: Float32Array(12·ossos) (inversa da

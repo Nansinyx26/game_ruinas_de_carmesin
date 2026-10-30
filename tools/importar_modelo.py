@@ -124,7 +124,7 @@ def ler_obj(path):
 
 def ler_glb(path):
     """GLB (glTF 2.0) → (posições, uv, triângulos, mapas): mapas = {'cor', 'mr' (metal/aspereza),
-    'nrm' (normais no espaço tangente), 'normais' (normais dos vértices, se o arquivo tiver)}."""
+    'nrm' (normais no espaço tangente), 'emi' (emissão), 'normais' (normais dos vértices, se o arquivo tiver)}."""
     raw = open(path, 'rb').read()
     magic, ver, _ = struct.unpack_from('<4sII', raw, 0)
     if magic != b'glTF' or ver != 2:
@@ -213,6 +213,7 @@ def ler_glb(path):
                     mapas['cor'] = imagem(pbr.get('baseColorTexture'))
                     mapas['mr'] = imagem(pbr.get('metallicRoughnessTexture'))
                     mapas['nrm'] = imagem(mt.get('normalTexture'))
+                    mapas['emi'] = imagem(mt.get('emissiveTexture'))   # partes acesas (cenário feito no Blender)
         for k in nd.get('children', []):
             visita(k, M)
     for i in cena['nodes']:

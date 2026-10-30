@@ -57,6 +57,7 @@ SAIDA = 'js/assets/armas3d.js'
 #   cabo_z: a origem em Z fica na empunhadura (meio do arco), não no centro da caixa
 #   limpar: tira fragmentos soltos minúsculos (menos de 0,5% dos triângulos)
 #   cortar: caixas (x0, x1, z0, z1) no referencial da arma cujos triângulos saem (lascas da geração)
+#   pasta: pasta do GLB, se não for assets/armas/eclipse (ex.: as feitas no Blender, assets/models/armas)
 ARMAS = {
     # Kael: a espada oficial (Kael_Espada_oficial) e a versão anterior como variação
     'kael_espada': dict(arq='kael_espada_oficial.glb', cortar=[(50, 70, -9, -2.4)], eixo='y', largura='x', inv=True, invz=False, cabo=0.1, len=64, tri=2600, glow='60,150,255'),
@@ -73,6 +74,11 @@ ARMAS = {
     'orion_pistola': dict(arq='orion_secundaria.glb', eixo='x', largura='y', inv=True, invz=False, cabo=0.1, mz=-0.2, len=19, tri=6000, fio=True, glow='255,138,31'),
     'sera_bastao': dict(arq='sera_bastao.glb', eixo='x', largura='z', inv=False, invz=False, cabo=0.45, len=62, tri=2400, glow='25,230,210'),
     'sera_drone': dict(arq='sera_drone.glb', eixo='x', largura='z', inv=False, invz=False, cabo=0.5, len=17, tri=2600, glow='25,230,210'),
+}
+# Armas feitas no Blender (tools/blender/asset_*.py): convertidas sob pedido (--blender), fora da
+# lista padrão até alguém as usar no jogo. glTF com +Y para cima: o comprimento é o eixo y do arquivo
+ARMAS_BLENDER = {
+    'lamina_do_iniciado': dict(arq='lamina_do_iniciado.glb', pasta='assets/models/armas', eixo='y', largura='x', inv=False, invz=False, cabo=0.2, len=56, tri=1500, glow='60,215,255'),
 }
 EIXO = {'x': 0, 'y': 1, 'z': 2}
 
@@ -215,7 +221,7 @@ def sem_corda(V, F, c):
 
 
 def importar(nome, c):
-    V, UV, F, mapas = ler_glb(os.path.join(RAIZ, PASTA, c['arq']))
+    V, UV, F, mapas = ler_glb(os.path.join(RAIZ, c.get('pasta', PASTA), c['arq']))
     if mapas.get('cor') is None:
         raise SystemExit(f'{nome}: o GLB não tem textura de cor')
     if c.get('parte'):
@@ -259,7 +265,7 @@ def importar(nome, c):
     ordx = np.argsort(VL[:, 0])
     pontas = [np.round(VL[ordx[-k:]][:, [0, 2]].mean(0), 2).tolist(), np.round(VL[ordx[:k]][:, [0, 2]].mean(0), 2).tolist()]
     info = dict(n=int(len(FL)), q=round(float(q), 4), len=c['len'], cabo=round(-float(VL[:, 0].min()), 2),
-                w=round(float(ext[2]), 2), h=round(float(ext[1]), 2), pontas=pontas, glow=c['glow'], src=f"{PASTA}/{c['arq']}",
+                w=round(float(ext[2]), 2), h=round(float(ext[1]), 2), pontas=pontas, glow=c['glow'], src=f"{c.get('pasta', PASTA)}/{c['arq']}",
                 a=base64.b64encode(bytes(reg)).decode('ascii'))
     print(f"{nome}: {len(F)} → {len(FL)} triângulos, {ext.round(1).tolist()} (x, y, z), emissivos {float((emi > 0.3).mean()):.0%}, {len(reg) // 1024} KB")
     return info, (VL, FL, cor, emi)
@@ -298,9 +304,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('armas', nargs='*', help='ids de ARMAS (padrão: todas)')
     ap.add_argument('--previa', help='pasta para as imagens de conferência')
+    ap.add_argument('--blender', action='store_true', help='inclui as armas feitas no Blender (ARMAS_BLENDER)')
+    ap.add_argument('--saida', help=f'outro arquivo de saída (padrão: {SAIDA})')
     args = ap.parse_args()
+    if args.blender:
+        ARMAS.update(ARMAS_BLENDER)
     nomes = args.armas or list(ARMAS)
-    destino = os.path.join(RAIZ, SAIDA)
+    destino = os.path.join(RAIZ, args.saida or SAIDA)
     atuais = {}
     if os.path.exists(destino):
         m = re.search(r'WEAPON3D = (\{.*\});', open(destino, encoding='utf-8').read(), re.S)
@@ -318,7 +328,7 @@ def main():
            f'// {PASTA}/; não edite à mão). Formato e encaixes: js/heroes/armas3d.js\n')
     with open(destino, 'w', encoding='utf-8') as fo:
         fo.write(cab + 'const WEAPON3D = ' + json.dumps({k: atuais[k] for k in ARMAS if k in atuais}, separators=(',', ':')) + ';\n')
-    print('gravado', SAIDA, os.path.getsize(destino) // 1024, 'KB')
+    print('gravado', destino, os.path.getsize(destino) // 1024, 'KB')
 
 
 if __name__ == '__main__':

@@ -247,6 +247,7 @@ const ThirdView = {
     // pilares (um nó cada: o que fica entre a câmera e o herói some), com a luz do tema no topo dos inteiros
     const pc = hex(wh, ws * 0.8, 17), kind = th.pillar;
     R.pillars.forEach((q, i) => {
+      if (q.cenario) return;   // colisor de um objeto de cenário (o modelo vem de js/mundo/cenario.js)
       const pil = new G3(), rr = mulberry32(q.seed || i + 1);
       if (kind === 'tree') {
         // tronco e copa em tufos (as cores das folhas vêm do tema)
@@ -278,7 +279,7 @@ const ThirdView = {
     });
     const m = new Model3(root);
     m.walls = R.aberto ? [] : ['N', 'S', 'W', 'E'].map((k) => m.nodes['parede' + k]);
-    m.pillars = R.pillars.map((q, i) => [q, m.nodes['pilar' + i]]);
+    m.pillars = R.pillars.map((q, i) => [q, m.nodes['pilar' + i]]).filter(([, nd]) => nd);
     return m;
   },
   roomFor(R) {
@@ -385,7 +386,7 @@ const ThirdView = {
     if (res) {
       ctx.drawImage(R3D.canvas, 0, 0, res.w, res.h, 0, 0, VIEW_W, VIEW_H);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      ctx.drawImage(R3D.canvas, 0, R3D.H / 2, res.w, res.h, 0, 0, VIEW_W, VIEW_H);
+      ctx.drawImage(R3D.canvas, 0, res.ey, res.ew, res.eh, 0, 0, VIEW_W, VIEW_H);
       ctx.restore();
     }
     Ambiente3P.desenharAr(ctx, R, g.realTime);   // pólen, poeira, cinzas, cristais de gelo, névoa baixa
@@ -431,7 +432,7 @@ const ThirdView = {
     } else if (n.modelo3D) {
       // estações, monumento e bancas da cidade (js/mundo/cidade.js): de frente para a rua
       const o = n._o3p || (n._o3p = {}), B = n.data && n.data.predio;
-      o.yaw = B && B.lado === 'W' ? -Math.PI / 2 : 0; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
+      o.yaw = n.cenId ? n.facing : B && B.lado === 'W' ? -Math.PI / 2 : 0; o.scale = n.escalaCen || 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
       place(R3D.queue(n.modelo3D(), null, null, o), n);
     } else if (n.kind === 'quadro' || (n.kind === 'evento' && n.sub !== 'fragmento' && !n.feito)) {
       // quadro de contratos, estandarte da incursão e carroça da caravana (js/mundo/povo.js, eventos.js)

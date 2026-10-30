@@ -1432,7 +1432,7 @@ class Game {
     list.push(p);
     for (const e of this.enemies) list.push(e);
     for (const n of this.npcs) list.push(n);
-    for (const pl of room.pillars) list.push(pl);
+    for (const pl of room.pillars) if (!pl.cenario) list.push(pl);   // (cenario: só o colisor de um objeto do Blender, js/mundo/cenario.js)
     list.sort((a, b) => (a.x + a.y) - (b.x + b.y));
     for (const o of list) {
       if (o.sprite !== undefined) drawPillar(ctx, o, p);

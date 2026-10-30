@@ -428,6 +428,7 @@ const World = {
     Cidade.aoCarregar(z);       // estações, bancas, monumento e portões da cidade principal (js/mundo/cidade.js)
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
     Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
+    Cenario.aoCarregar(z);      // objetos de cenário modelados no Blender (js/mundo/cenario.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
     Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
     this.save();
