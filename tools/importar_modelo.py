@@ -42,7 +42,8 @@ Armaduras vestidas em jogo (os GLB de assets/modelos/armaduras/, personagens com
 armadura): --armadura <nome> grava ARMOR3D[<nome>] em js/assets/armaduras/<nome>.js, carregado
 só quando a armadura é equipada (js/heroes/armaduras3d.js):
   python3 tools/importar_modelo.py assets/modelos/armaduras/lyra/lyra_n1.glb --id lyra --armadura lyra_n1 --tex 1024 --max-tri 16000
-Requer numpy, scipy, opencv-python-headless, fast-simplification, xatlas e node.
+Requer numpy, scipy, opencv-python-headless, fast-simplification, xatlas e node; GLB com malha
+comprimida (KHR_draco_mesh_compression) pede também o DracoPy (pip install DracoPy).
 """
 import argparse
 import base64
@@ -154,7 +155,8 @@ def ler_glb(path):
     def imagem(ti):
         if ti is None:
             return None
-        src = js['textures'][ti['index']]['source']
+        tx = js['textures'][ti['index']]
+        src = tx.get('source', tx.get('extensions', {}).get('EXT_texture_webp', {}).get('source'))   # WebP (EXT_texture_webp)
         im = js['images'][src]
         bv = js['bufferViews'][im['bufferView']]
         b = binc[bv.get('byteOffset', 0): bv.get('byteOffset', 0) + bv['byteLength']]
@@ -183,12 +185,25 @@ def ler_glb(path):
             for pr in js['meshes'][nd['mesh']]['primitives']:
                 if pr.get('mode', 4) != 4:
                     continue
-                pos = acc(pr['attributes']['POSITION'])
-                uv = acc(pr['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in pr['attributes'] else np.full((len(pos), 2), 0.5)
-                ind = acc(pr['indices']).astype(np.int64).ravel() if 'indices' in pr else np.arange(len(pos))
+                draco = pr.get('extensions', {}).get('KHR_draco_mesh_compression')
+                if draco:
+                    # malha comprimida (KHR_draco_mesh_compression, ex.: exportada do Blender): DracoPy
+                    import DracoPy
+                    bv = js['bufferViews'][draco['bufferView']]
+                    d = DracoPy.decode(binc[bv.get('byteOffset', 0): bv.get('byteOffset', 0) + bv['byteLength']])
+                    pos = np.asarray(d.points, np.float64).reshape(-1, 3)
+                    tc = getattr(d, 'tex_coord', None)
+                    uv = np.asarray(tc, np.float64).reshape(-1, 2) if tc is not None and len(tc) else np.full((len(pos), 2), 0.5)
+                    ind = np.asarray(d.faces, np.int64).ravel()
+                    nd_ = getattr(d, 'normals', None)
+                    nv = np.asarray(nd_, np.float64).reshape(-1, 3) if nd_ is not None and len(nd_) else np.zeros((len(pos), 3))
+                else:
+                    pos = acc(pr['attributes']['POSITION'])
+                    uv = acc(pr['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in pr['attributes'] else np.full((len(pos), 2), 0.5)
+                    ind = acc(pr['indices']).astype(np.int64).ravel() if 'indices' in pr else np.arange(len(pos))
+                    nv = acc(pr['attributes']['NORMAL']) if 'NORMAL' in pr['attributes'] else np.zeros((len(pos), 3))
                 base = sum(len(v) for v in V)
                 V.append((np.c_[pos, np.ones(len(pos))] @ M.T)[:, :3])
-                nv = acc(pr['attributes']['NORMAL']) if 'NORMAL' in pr['attributes'] else np.zeros((len(pos), 3))
                 NV.append(nv @ np.linalg.inv(M[:3, :3]))          # normais: inversa transposta
                 UV.append(uv)
                 F.append(ind.reshape(-1, 3) + base)

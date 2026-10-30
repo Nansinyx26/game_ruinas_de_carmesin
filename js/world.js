@@ -282,13 +282,24 @@ const World = {
     g.timeScale = 1; g.slowTimer = 0; g.hitStop = 0;
     const P = this.state.pos;   // (lido antes: carregar a zona salva o mundo com a posição de chegada)
     this.loadZone(this.state.zona in WORLD_ZONES ? this.state.zona : WORLD_START, null);
-    // volta ao ponto onde o herói estava ao salvar (se ainda dá para ficar ali)
-    const pl = g.player;
-    if (P && P.zona === this.zone.id && g.room.canStand(P.x, P.y, pl.radius + 2)) { pl.x = P.x; pl.y = P.y; g.camera.snap(isoX(pl.x, pl.y), isoY(pl.x, pl.y) - 30); }
+    // volta ao ponto onde o herói estava ao salvar (a sala é sorteada de novo: se ali agora tem um
+    // pilar, o ponto livre mais perto)
+    const pl = g.player, q = P && P.zona === this.zone.id ? this.pontoLivre(P.x, P.y, pl.radius + 2) : null;
+    if (q) { pl.x = q[0]; pl.y = q[1]; g.camera.snap(isoX(pl.x, pl.y), isoY(pl.x, pl.y) - 30); }
     g.state = 'playing';
     g.fade = 1; g.fadeTarget = 0;
     const reg = worldRegion(this.zone.region);
     g.hud.toast(`MUNDO ABERTO · ${reg.name} — mapa: M`, reg.rgb);
+  },
+  // Ponto livre mais perto de (x, y) na sala atual (anéis de 20 em 20 até 240), ou null
+  pontoLivre(x, y, r) {
+    const R = game.room;
+    if (R.canStand(x, y, r)) return [x, y];
+    for (let d = 20; d <= 240; d += 20) for (let k = 0; k < 16; k++) {
+      const a = k / 16 * Math.PI * 2, qx = x + Math.cos(a) * d, qy = y + Math.sin(a) * d;
+      if (R.canStand(qx, qy, r)) return [qx, qy];
+    }
+    return null;
   },
   stop() { this.active = false; this.map.open = false; if (game.world === this) game.world = null; Clima.silenciar(); },
 

@@ -1965,22 +1965,80 @@ const EclipseTests = {
         this.igual(`classe ${c}: kit da base`, p1.kit ? p1.kit.id : null, heroKitOf(CHARACTERS_BY_ID[PERS_CLASSES[c].base]) ? heroKitOf(CHARACTERS_BY_ID[PERS_CLASSES[c].base]).id : null);
         delete CHARACTERS_BY_ID[d.id]; delete SKILL_SETS[d.id]; delete MODELS3D[d.model];
       }
-      // ------------------------------------------------ modelo: todas as opções de todos os campos
-      let ruins = [], n = 0;
+      // ------------------------------------------------ modelo detalhado: malhas com pele, textura, medidas
+      // (cada malha: ossos que existem, índices válidos, pesos que somam 1, posições e normais finitas)
+      const confere = (m) => {
+        const err = [];
+        if (!m.skins || !m.peles || !m.peles.corpo || !m.peles.cabeca) return 'sem as peles do corpo e da cabeça';
+        for (const sk of m.skins) {
+          const nv = sk.pos.length / 3;
+          if (!sk.bones.every(Boolean)) err.push(sk.nome + ': osso inexistente');
+          for (let i = 0; i < sk.idx.length; i++) if (sk.idx[i] >= nv) { err.push(sk.nome + ': índice'); break; }
+          for (let v = 0; v < nv; v++) {
+            const w = sk.bw[v * 4] + sk.bw[v * 4 + 1] + sk.bw[v * 4 + 2] + sk.bw[v * 4 + 3];
+            if (Math.abs(w - 1) > 1e-3 || !isFinite(sk.pos[v * 3] + sk.pos[v * 3 + 1] + sk.pos[v * 3 + 2]) || !isFinite(sk.nor[v * 3])) { err.push(sk.nome + ': peso ou posição'); break; }
+          }
+        }
+        if (!m.tex || !m.tex.canvas || m.tex.canvas.width !== PinturaPers.LADO || !m.tex.mat) err.push('textura');
+        if (!m.medidasPecas || !m.medidasPecas.torso || !m.medidasPecas.head || !m.medidasPecas.thighL) err.push('medidas das peças');
+        return err.join(',');
+      };
+      let ruins = [], n = 0, nv0 = 0;
       try {
-        for (const c of PERS_ORDEM) for (const k of PERS_CAMPOS) for (let v = 0; v < persNumOps(k, c); v++) {
-          if (c !== 'mago' && k !== 'roupa' && k !== 'corRoupa') continue;   // a aparência é a mesma em todas as classes
+        // campos que mudam a malha: em todas as opções (a roupa em todas as classes)
+        for (const c of PERS_ORDEM) for (const k of ['corpo', 'rosto', 'cabelo', 'barba', 'marcas', 'roupa']) for (let v = 0; v < persNumOps(k, c); v++) {
+          if (c !== 'mago' && k !== 'roupa') continue;
           const A = persAparenciaPadrao(c); A[k] = v;
           const m = PersonagemModelo.build({ id: 'p_modelo', base: PERS_CLASSES[c].base, classe: c, aparencia: A });
-          n++;
-          if (!(m.nodes.head.geo instanceof Float32Array) || !m.nodes.head.geo.length || !(m.nodes.torso.geo instanceof Float32Array) || !m.medidasPecas) ruins.push(`${c}.${k}=${v}`);
+          n++; nv0 = Math.max(nv0, m.skins.reduce((q, sk) => q + sk.pos.length / 3, 0));
+          const e = confere(m);
+          if (e) ruins.push(`${c}.${k}=${v}: ${e}`);
+        }
+      } catch (e) { ruins.push(e.stack ? e.stack.split('\n').slice(0, 2).join(' | ') : e.message); }
+      this.ok(`modelo: ${n} combinações montam com pele válida (corpo, rosto, cabelo, barba, marcas, roupas)`, n >= 40 && !ruins.length, ruins.slice(0, 4).join(' · '));
+      this.ok('modelo: tamanho da malha parecido com o dos modelos da Meshy (até 40 mil vértices)', nv0 > 8000 && nv0 < 40000, nv0);
+      // campos só de textura: todas as opções pintam
+      ruins = [];
+      try {
+        for (const k of ['pele', 'olhos', 'sobrancelhas', 'corCabelo', 'corRoupa', 'corDetalhe']) for (let v = 0; v < persNumOps(k, 'guardiao'); v++) {
+          const A = persAparenciaPadrao('guardiao'); A[k] = v;
+          const t = PinturaPers.pintar(PersonagemModelo.paleta(A, 'guardiao'), PersonagemModelo.receita('guardiao', 0), A, { tronco: { vCinto0: 0.67, vCinto1: 0.78 }, braco: { vManga: 1, vCotovelo: 0.5 }, perna: { vJoelho: 0.5 } });
+          if (!t.cor || !t.mat) ruins.push(`${k}=${v}`);
         }
       } catch (e) { ruins.push(e.message); }
-      this.ok(`modelo: ${n} combinações montam (corpo, rosto, cabelo, barba, marcas, roupas)`, n > 60 && !ruins.length, ruins.slice(0, 5).join(','));
-      const g1 = PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), { cabelo: 0 }) }).nodes.head.geo.length;
-      const g2 = PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), { cabelo: 5 }) }).nodes.head.geo.length;
-      const h0 = PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), { altura: 0 }) });
-      this.ok('modelo: o cabelo muda a malha da cabeça', g1 !== g2, `${g1} ${g2}`);
+      this.ok('textura: pele, olhos, sobrancelhas e cores pintam em todas as opções', !ruins.length, ruins.join(','));
+      const mc = (ap) => PersonagemModelo.build({ id: 'p_m', base: 'orion', classe: 'assassino', aparencia: Object.assign(persAparenciaPadrao('assassino'), ap) });
+      const c0 = mc({ cabelo: 0 }), c3 = mc({ cabelo: 3 }), b4 = mc({ barba: 4 });
+      this.ok('modelo: o cabelo vira malha própria (raspado só pintado; longo com mechas)', !c0.peles.cabelo && c3.peles.cabelo && c3.peles.cabelo.pos.length > 3000, c3.peles.cabelo && c3.peles.cabelo.pos.length);
+      this.ok('modelo: cabelo longo balança (pontas no osso do cabelo)', c3.peles.cabelo.ossos.includes('hair'));
+      this.ok('modelo: barba cheia em malha própria', !!b4.peles.barba && !c0.peles.barba);
+      // pose de verdade: a pele dobra sem esticar (nenhuma aresta do corpo cresce demais) em vários estados
+      {
+        const d = Perfis.registrar({ id: 'p_pose', nome: 'Pose', classe: 'mago', aparencia: Object.assign(persAparenciaPadrao('mago'), { cabelo: 3 }) });
+        const M = game.model3(d.model), v = new Player(0, 0, d), mundo = () => { (function anda(nd, P) { M3.mul(nd.w, P, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make()); };
+        let pior = 0, alt = 0, erro = '';
+        for (const [st, t] of [['idle', 0.5], ['run', 0.3], ['attack', 0.15], ['dash', 0.1], ['hurt', 0.1]]) {
+          v.state = st; v.stateTime = t; v.animTime = t; v.attack = st === 'attack' ? { def: ATTACKS[Object.keys(ATTACKS).find((k) => k.startsWith('sera')) || 'light1'] || ATTACKS.light1, t: 0.1 } : null;
+          try { MODELS3D[d.model].pose(M, v, game.opts3(v, 0)); mundo(); } catch (e) { erro = st + ': ' + e.message; break; }
+          let zmin = 1e9, zmax = -1e9;
+          for (const q of [M.peles.cabeca, M.peles.roupa]) { R3D.skin(q, 0); for (let i = 0; i < q.P.length; i += 3) { zmin = Math.min(zmin, q.P[i + 2]); zmax = Math.max(zmax, q.P[i + 2]); } }
+          const sk = M.peles.corpo;
+          R3D.skin(sk, 0);
+          const P = sk.P, I = sk.idx;
+          for (let i = 0; i < P.length; i += 3) { if (!isFinite(P[i])) { erro = st + ': posição'; break; } zmin = Math.min(zmin, P[i + 2]); zmax = Math.max(zmax, P[i + 2]); }
+          for (let t2 = 0; t2 < I.length; t2 += 3) for (const [a, b] of [[I[t2], I[t2 + 1]], [I[t2 + 1], I[t2 + 2]]]) pior = Math.max(pior, Math.hypot(P[a * 3] - P[b * 3], P[a * 3 + 1] - P[b * 3 + 1], P[a * 3 + 2] - P[b * 3 + 2]));
+          if (st === 'idle') alt = zmax - zmin;
+        }
+        this.ok('pose: o corpo dobra sem esticar a pele (parado, correndo, golpe, esquiva, dano)', !erro && pior < 6, erro || pior.toFixed(2));
+        this.ok('pose: altura do corpo como a de um herói (50 a 65)', alt > 50 && alt < 65, alt.toFixed(1));
+        // peças do Arsenal vestidas: as ombreiras da roupa e o cabelo saem
+        M.pcOmbro = [{ vis: true, geo: [1] }]; M.pcCapacete = [{ vis: true, geo: [1] }];
+        MODELS3D[d.model].pose(M, v, game.opts3(v, 0));
+        this.ok('Arsenal: capacete vestido esconde o cabelo', M.peles.cabelo.hide === true);
+        M.pcOmbro = null;
+        delete CHARACTERS_BY_ID.p_pose; delete SKILL_SETS.p_pose; delete MODELS3D[d.model];
+      }
+      const h0 = mc({ altura: 0 });
       this.ok('modelo: altura vira escala do modelo', MODELS3D[def.model].opts(null).scale === PersonagemModelo.ALTURA[def.aparencia.altura] && PersonagemModelo.ALTURA[0] < 1 && PersonagemModelo.ALTURA[4] > 1 && !!h0);
       if (R3D.active) {
         const ret = PersonagemModelo.retrato(def);
@@ -2034,19 +2092,21 @@ const EclipseTests = {
       let fala = '';
       if (mor) { Povo.conversar(mor); fala = Dialogo.texto; Dialogo.fechar(); g.state = 'playing'; }
       this.ok('moradores: chamam o personagem criado pelo nome no primeiro encontro', fala.includes(`Você deve ser ${p.def.name}.`), fala || 'sem morador na zona');
-      // salvamento: posição, reserva e arquivo danificado
-      p.x = 700; p.y = 650;
+      // salvamento: posição, reserva e arquivo danificado (um ponto livre: a sala muda a cada mundo)
+      let px = 700, py = 650;
+      for (let k = 0; k < 60 && !g.room.canStand(px, py, p.radius + 2); k++) { px = 300 + (k * 97) % 700; py = 300 + (k * 53) % 500; }
+      p.x = px; p.y = py;
       salvarMundo.call(World);
       const s1 = JSON.parse(ler(World.chave()) || 'null');
-      this.ok('mundo: salva a posição do personagem', s1 && s1.world.pos && s1.world.pos.x === 700 && s1.world.pos.y === 650, s1 && JSON.stringify(s1.world.pos));
+      this.ok('mundo: salva a posição do personagem', s1 && s1.world.pos && s1.world.pos.x === px && s1.world.pos.y === py, s1 && JSON.stringify(s1.world.pos));
       this.igual('mundo: o salvamento do Kael não é tocado', ler(WORLD_SAVE_KEY), kw);
       salvarMundo.call(World);
       this.ok('mundo: a versão anterior vira reserva', !!ler(World.chave() + '_reserva'));
       grava(World.chave(), '{"v":1,"world":');
       const lido = World.read();
-      this.ok('mundo: salvamento danificado usa a reserva', lido && lido.world.pos.x === 700);
+      this.ok('mundo: salvamento danificado usa a reserva', lido && lido.world.pos.x === px);
       World.start();
-      this.ok('mundo: recarregado no mesmo lugar', g.player.def.id === id && Math.round(g.player.x) === 700 && Math.round(g.player.y) === 650, `${g.player.x},${g.player.y}`);
+      this.ok('mundo: recarregado no lugar salvo (ou no ponto livre mais perto, a sala muda)', g.player.def.id === id && Math.hypot(g.player.x - px, g.player.y - py) <= 241 && Math.hypot(g.player.x - 420, g.player.y - 480) > 1, `${Math.round(g.player.x)},${Math.round(g.player.y)} (salvo ${px},${py})`);
       // excluir leva o mundo junto
       Perfis.excluir(id);
       this.ok('perfis: excluir remove o personagem, a ficha e o mundo dele', !Perfis.obter(id) && !CHARACTERS_BY_ID[id] && !SKILL_SETS[id] && !ler(`${WORLD_SAVE_KEY}:${id}`) && !ler(`${WORLD_SAVE_KEY}:${id}_reserva`));
