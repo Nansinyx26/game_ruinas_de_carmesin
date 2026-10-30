@@ -1134,8 +1134,9 @@ class Player extends Entity {
     const oldMax = this.maxHp;
     Object.assign(S, BASE_STATS);
     this.combo.unlocked.clear();
-    S.dmgMult += PL.dmg * L; S.power += PL.power * L; S.armor += PL.def * L;
-    S.cdr = Math.max(0.6, 1 - PL.cdr * L); S.speedMult += PL.mob * L; S.dashMult += PL.mob * L * 0.5;
+    const Ls = PROG.nivelSuave(L), M = pr.maestria || 0;
+    S.dmgMult += PL.dmg * L + 0.005 * M; S.power += PL.power * L; S.armor += PL.def * Ls; S.hpBonus += 3 * M;
+    S.cdr = Math.max(0.6, 1 - PL.cdr * L); S.speedMult += PL.mob * Ls; S.dashMult += PL.mob * Ls * 0.5;
     for (const u of UPGRADES) for (let i = game.upgrades.level(u.id); i > 0; i--) u.apply(this);
     const lv = (id) => pr.lv(id);
     let l;

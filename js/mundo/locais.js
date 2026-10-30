@@ -147,6 +147,7 @@ const Locais = {
     for (const id in WORLD_MASMORRAS) {
       const M = WORLD_MASMORRAS[id], n = 3;
       M.id = id;
+      if (WORLD_ZONES[`${id}_0`]) { col++; continue; }   // já montada (js/mundo/expansao.js chama de novo para as novas)
       for (let k = 0; k < n; k++) {
         const ult = k === n - 1, lv = M.lv + k, tam = 3 + Math.floor(lv / 10) + k;
         const lugares = k === 0 ? [[0.3, 0.35], [0.7, 0.42]] : ult ? [[0.22, 0.7], [0.78, 0.68]] : [[0.25, 0.3], [0.74, 0.35], [0.5, 0.66]];

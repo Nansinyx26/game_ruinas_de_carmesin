@@ -15,7 +15,8 @@
 // 1100 de largura com a proporção do mapa, então fica igual em qualquer tamanho de tela.
 // ---------------------------------------------------------------------------
 const WorldMapArt = (function () {
-  const BIOMA = { carmesin: 'ruinas', velmora: 'floresta', asterion: 'montanha', nexus: 'cidade', lagoa: 'lago', seraph: 'deserto', obsidiano: 'vulcao' };
+  const BIOMA = { carmesin: 'ruinas', velmora: 'floresta', asterion: 'montanha', nexus: 'cidade', lagoa: 'lago', seraph: 'deserto', obsidiano: 'vulcao',
+    metropole: 'cidade', ruinas: 'ruinas', nexuszero: 'cidade' };
   const VW = 1100;
 
   // ------------------------------------------------------------ ruído (determinístico)

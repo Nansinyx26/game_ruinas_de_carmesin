@@ -678,8 +678,8 @@ const EclipseTests = {
   // ------------------------------------------------------------ mundo aberto
   mundo() {
     // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
-    this.igual('mundo: 7 regiões', WORLD_REGIONS.length, 7);
-    this.igual('mundo: 45 zonas das regiões no mapa (9 de Carmesin + 6 × 6)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 45);
+    this.igual('mundo: 10 regiões', WORLD_REGIONS.length, 10);
+    this.igual('mundo: 72 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 72);
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
@@ -697,6 +697,7 @@ const EclipseTests = {
       World.start();
       const g = game, p = g.player;
       this.ok('mundo: começa no Mercado Afundado', World.active && World.zone.id === 'mercado' && g.state === 'playing', World.zone && World.zone.id);
+      this.expansao();   // cidades dos níveis 25 a 100 (com o mundo já começado)
       // relógio e clima
       this.ok('dia e noite: meio-dia claro, meia-noite escura', WorldTime.luz(12) === 1 && WorldTime.luz(0) === 0);
       const th = THEMES.floresta, h0 = World.state.hora;
@@ -772,6 +773,47 @@ const EclipseTests = {
     }
   },
 
+  // Mundo até o nível 100 (js/mundo/expansao.js): faixas, cidades, acesso por nível, conteúdo de
+  // cada cidade, experiência das zonas altas e a maestria depois do nível 100
+  expansao() {
+    const g = game;
+    this.igual('faixas: 4 (1–25, 25–50, 50–75, 75–100)', WORLD_FAIXAS.map((f) => f.lv.join('-')).join(','), '1-25,25-50,50-75,75-100');
+    this.igual('nível máximo 100', PROG.maxLevel, 100);
+    for (const [id, nv] of [['metropole', 25], ['ruinas', 50], ['nexuszero', 75]]) {
+      const R = worldRegion(id), zs = worldZonesOf(id), hub = WORLD_ZONES[R.hub];
+      this.ok(`${id}: 9 zonas (3 × 3) com a cidade no centro`, zs.length === 9 && hub && hub.r === 1 && hub.c === 1 && hub.hub && hub.portal && !hub.camps.length, `${zs.length} ${hub && hub.r},${hub && hub.c}`);
+      this.ok(`${id}: níveis da faixa`, zs.every((z) => z.lv >= R.lv[0] && z.lv <= R.lv[1]), zs.map((z) => z.lv).join(','));
+      this.ok(`${id}: cidade com 4+ moradores de serviço (ferreiro, curandeiro, artesão, treinador)`, ['ferreiro', 'curandeiro', 'artesao', 'treinador'].every((sv) => WORLD_POVO.some((P) => P.zona === R.hub && (P.servicos || []).includes(sv))));
+      this.ok(`${id}: masmorra de 3 andares, tesouros e chefe`, Object.values(WORLD_MASMORRAS).some((M) => M.reg === id && WORLD_ZONES[`${M.id}_2`]) && Object.values(WORLD_TESOUROS).filter((T) => WORLD_ZONES[T.zona].region === id).length >= 2 && zs.some((z) => z.camps.some((c) => c.boss)));
+      this.ok(`${id}: 3 missões da região e 3 secundárias`, WorldQuests.lista(id).length === 3 && WORLD_AVENTURAS.filter((q) => q.reg === id).length === 3);
+      this.ok(`${id}: tema, facção, clima, contratos e material`, zs.every((z) => THEMES[z.theme]) && WORLD_FACCOES[id] && CLIMA_REGIAO[id] && WORLD_CLIMA_REG[id] && WORLD_CONTRATO_ALVOS[id].every((t) => ENEMY_VARIANTS[t] || ENEMY_TYPES[t]) && WORLD_MAT_REG[id]);
+      // acesso: só com o nível da faixa (o chefe anterior não basta)
+      const pr = g.activeProgress(), lv0 = pr.level, ch0 = Object.assign({}, World.state.chefes);
+      for (const q of WORLD_REGIONS) World.state.chefes[q.id] = true;
+      pr.level = nv - 1;
+      const antes = World.regionOpen(id);
+      pr.level = nv;
+      this.ok(`${id}: abre no nível ${nv}, não antes (nem com todos os chefes derrotados)`, !antes && World.regionOpen(id));
+      pr.level = lv0; World.state.chefes = ch0;
+    }
+    // experiência: zonas acima do nível 40 rendem mais; até o 40 continua igual
+    const e = { type: 'legionario', level: 5 }, z0 = World.zone, xpEm = (lv) => { World.zone = { lv }; return g.xpFor ? g.xpFor(e) : 0; };
+    if (g.xpFor) { const a = xpEm(30), b = xpEm(40), c = xpEm(99); World.zone = z0; this.ok('experiência: igual até a zona 40, ~6× na zona 99', a === b && c > b * 5 && c < b * 8, `${a} ${b} ${c}`); }
+    else World.zone = z0;
+    // nível alto: defesa e mobilidade rendem 1/4 depois do 40
+    this.ok('nível 100: mobilidade e defesa com retorno menor depois do 40', PROG.nivelSuave(39) === 39 && PROG.nivelSuave(99) === 54);
+    // maestria depois do nível 100
+    const pr = g.activeProgress(), lv0 = pr.level, m0 = pr.maestria || 0, x0 = pr.mxp || 0, dm0 = g.player.stats.dmgMult;
+    pr.level = PROG.maxLevel; pr.maestria = 0; pr.mxp = 0;
+    g.player.recalc(false); const dmA = g.player.stats.dmgMult;
+    g.gainXP(PROG.xpMaestria * 2 + 10);
+    this.ok('maestria: a experiência no nível 100 vira pontos (+0,5% de dano cada)', pr.level === 100 && pr.maestria === 2 && pr.mxp === 10 && Math.abs(g.player.stats.dmgMult - dmA - 0.01) < 1e-9, `${pr.maestria} ${pr.mxp}`);
+    const js = JSON.parse(JSON.stringify(pr.toJSON()));
+    this.ok('maestria: vai para o salvamento', js.maestria === 2 && js.mxp === 10);
+    pr.level = lv0; pr.maestria = m0; pr.mxp = x0; g.player.recalc(false);
+    this.ok('maestria: volta ao estado do teste', Math.abs(g.player.stats.dmgMult - dm0) < 1e-9);
+  },
+
   // Mundo aberto à moda de MMO (js/mundo/dialogo.js, oficios.js, povo.js, aventuras.js, locais.js,
   // eventos.js): dados, conversa, missões secundárias de todos os tipos, contratos, ofícios,
   // reputação, masmorras, tesouros, eventos, diário e validação do salvamento
@@ -825,7 +867,7 @@ const EclipseTests = {
     this.ok('missões: todos os tipos de objetivo aparecem', ['matar', 'entregar', 'falar', 'achar', 'examinar', 'chefe', 'escolta', 'local', 'masmorra', 'evento'].every((t) => tipos.has(t)), [...tipos].join(','));
     this.ok('missões: há escolhas com recompensas diferentes', WORLD_AVENTURAS.filter((q) => q.escolha && q.escolha.opcoes.length >= 2).length >= 3);
     this.ok('receitas: materiais e produtos válidos', WORLD_RECEITAS.every((R) => Object.keys(R.mat).every((k) => k === 'regional' || WORLD_MATERIAIS[k]) && (R.id === 'capsula' || R.id === 'reliquia' || WORLD_CONSUMIVEIS[R.id])));
-    this.igual('masmorras: uma por região', Object.keys(WORLD_MASMORRAS).length, 7);
+    this.igual('masmorras: uma por região', Object.keys(WORLD_MASMORRAS).length, WORLD_REGIONS.length);
     let andaresOk = true;
     for (const id in WORLD_MASMORRAS) {
       const M = WORLD_MASMORRAS[id], A = [0, 1, 2].map((k) => WORLD_ZONES[`${id}_${k}`]);

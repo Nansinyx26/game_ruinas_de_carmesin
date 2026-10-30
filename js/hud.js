@@ -606,10 +606,10 @@ class HUD {
       ctx.globalAlpha = ga;
     }
     // Experiência
-    const xk = pr.level >= PROG.maxLevel ? 1 : pr.xp / pr.xpNext;
+    const xk = pr.level >= PROG.maxLevel ? (pr.mxp || 0) / PROG.xpMaestria : pr.xp / pr.xpNext;
     ctx.fillStyle = this.xpFlash > 0 ? '#e6dcff' : '#9b7dff'; ctx.fillRect(fx, 108, 150 * clamp(xk, 0, 1), 6);
     ctx.font = `10px ${FONT_UI}`; ctx.fillStyle = 'rgba(214,210,240,0.8)';
-    ctx.fillText(pr.level >= PROG.maxLevel ? 'MÁX' : `${pr.xp} / ${pr.xpNext}`, fx + 158, 111.5);
+    ctx.fillText(pr.level >= PROG.maxLevel ? `MAESTRIA ${pr.maestria || 0}` : `${pr.xp} / ${pr.xpNext}`, fx + 158, 111.5);
     ctx.restore();
   }
 

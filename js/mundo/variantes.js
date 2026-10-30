@@ -31,6 +31,14 @@ const ENEMY_VARIANTS = {
   golem_gelo: { base: 'legionario', nome: 'Golem de Gelo', tint: [0.55, 0.72, 0.9, 0.9], glow: '160,220,255', escala: 1.15, vida: 1.4, dano: 1.15, vel: 0.8, tracos: ['congela', 'rastro'], rastro: 'gelo' },
   magma: { base: 'sacerdote', nome: 'Elemental de Magma', tint: [0.6, 0.18, 0.05, 0.9], glow: '255,120,40', escala: 1.12, vida: 1.3, dano: 1.1, vel: 0.95, tracos: ['rastro', 'divide'], rastro: 'fogo' },
   diabrete: { base: 'drone', nome: 'Diabrete de Cinza', tint: [0.4, 0.2, 0.12, 0.85], glow: '255,140,50', escala: 0.85, vida: 0.6, dano: 1.4, vel: 1.5, tracos: ['kamikaze'] },
+  // faixas altas (js/mundo/regioes.js): Metrópole Tecnológica, Ruínas Carmesins e Nexus Zero
+  sentinela_neon: { base: 'drone', nome: 'Sentinela Neon', tint: [0.1, 0.5, 0.62, 0.8], glow: '80,240,255', escala: 1.05, vida: 1.1, dano: 1.15, vel: 1.1, tracos: ['teleporta'] },
+  executor: { base: 'legionario', nome: 'Executor Corporativo', tint: [0.2, 0.24, 0.34, 0.85], glow: '255,80,220', escala: 1.12, vida: 1.4, dano: 1.2, vel: 0.95, tracos: ['carapaca'] },
+  cavaleiro_rubro: { base: 'legionario', nome: 'Cavaleiro Rubro', tint: [0.5, 0.06, 0.1, 0.9], glow: '255,50,80', escala: 1.18, vida: 1.5, dano: 1.25, vel: 0.95, tracos: ['carapaca', 'regenera'] },
+  espectro: { base: 'sacerdote', nome: 'Espectro da Capital', tint: [0.42, 0.12, 0.2, 0.7], glow: '255,90,120', escala: 1.05, vida: 1.1, dano: 1.2, vel: 1.1, tracos: ['teleporta', 'rastro'], rastro: 'fogo' },
+  fragmento: { base: 'drone', nome: 'Fragmento de Código', tint: [0.36, 0.26, 0.6, 0.8], glow: '170,140,255', escala: 0.95, vida: 1, dano: 1.2, vel: 1.25, tracos: ['divide', 'explode'] },
+  arauto_nulo: { base: 'cacador', nome: 'Arauto Nulo', tint: [0.24, 0.18, 0.42, 0.85], glow: '120,255,240', escala: 1.08, vida: 1.3, dano: 1.3, vel: 1.1, tracos: ['teleporta', 'regenera'] },
+  golem_dados: { base: 'legionario', nome: 'Golem de Dados', tint: [0.3, 0.28, 0.55, 0.9], glow: '150,130,255', escala: 1.25, vida: 1.7, dano: 1.25, vel: 0.85, tracos: ['carapaca', 'congela'] },
 };
 const POCAS = { fogo: { rgb: '255,110,40', dmg: 6 }, gelo: { rgb: '150,215,255', dmg: 3, lento: 2 } };
 

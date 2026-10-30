@@ -109,10 +109,10 @@ const Cidade = {
     for (const B of CIDADE_PREDIOS) { const f = this.frente(B, R); g.npcs.push(new CidadeProp('estacao', f.x, f.y, { est: B.est, predio: B })); }
     g.npcs.push(new CidadeProp('monumento', R.w * 0.42, R.h * 0.42, {}));
     CIDADE_BANCAS.forEach((b, k) => { const pt = spot(b.at); g.npcs.push(new CidadeProp('banca', pt.x, pt.y, { cor: b.cor, k })); });
-    // portões de saída: um por região, nas bordas da frente (sul e leste)
-    const regs = WORLD_REGIONS.slice().sort((a, b) => a.order - b.order);
+    // portões de saída: um por região, nas bordas da frente (metade no sul, metade no leste)
+    const regs = WORLD_REGIONS.slice().sort((a, b) => a.order - b.order), nS = Math.ceil(regs.length / 2), nL = regs.length - nS;
     regs.forEach((reg, k) => {
-      const sul = k < 4, f = sul ? 0.2 + k * 0.2 : 0.3 + (k - 4) * 0.22;
+      const sul = k < nS, f = sul ? 0.14 + k * (0.74 / Math.max(1, nS - 1)) : 0.24 + (k - nS) * (0.62 / Math.max(1, nL - 1));
       const x = sul ? R.w * f : R.w - 64, y = sul ? R.h - 64 : R.h * f;
       g.npcs.push(new PortaoCidade(x, y, reg));
     });
@@ -516,14 +516,15 @@ class PortaoCidade extends WorldProp {
   constructor(x, y, reg) {
     super('gate', x, y, { to: reg.hub, dir: null, reg: reg.id, rgb: reg.rgb });
     this.lightRgb = reg.rgb;
-    this.data.rotulo = World.regionOpen(reg.id) ? `PORTÃO · ${reg.name.toUpperCase()}` : `🔒 ${reg.name.toUpperCase()} · NÍVEL ${reg.lv[0]}`;
+    this.data.rotulo = World.regionOpen(reg.id) ? `PORTÃO · ${reg.name.toUpperCase()}` : `🔒 ${reg.name.toUpperCase()} · NÍVEL ${reg.minLv || reg.lv[0]}`;
   }
   selada() { return !World.regionOpen(this.data.reg); }
   update(dt) {
     super.update(dt);
     const p = game.player;
     if (this.selada() && p && dist(p.x, p.y, this.x, this.y) < 30) {
-      if (!(this.avisoT > 0)) { game.hud.toast(`${worldRegion(this.data.reg).name}: abre no nível ${worldRegion(this.data.reg).lv[0]} ou com o chefe anterior derrotado`, '255,160,160'); this.avisoT = 3; }
+      const R = worldRegion(this.data.reg);
+      if (!(this.avisoT > 0)) { game.hud.toast(R.minLv ? `${R.name}: só a partir do nível ${R.minLv}` : `${R.name}: abre no nível ${R.lv[0]} ou com o chefe anterior derrotado`, '255,160,160'); this.avisoT = 3; }
     }
     if (this.avisoT > 0) this.avisoT -= dt;
   }

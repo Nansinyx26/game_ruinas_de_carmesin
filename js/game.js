@@ -863,7 +863,9 @@ class Game {
   // ---------------------------------------------------- progressão e XP
   xpFor(e) {
     if (e.isBoss) return XP_ENEMY.chefe;
-    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1) * (this.world ? WorldTime.xpMult() : 1);   // mundo: +20% à noite
+    // mundo: +20% à noite; nas zonas acima do nível 40 (faixas até o 100) a experiência cresce com o nível da zona
+    const zk = this.world && World.zone ? 1 + Math.max(0, World.zone.lv - 40) * 0.09 : 1;
+    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1) * (this.world ? WorldTime.xpMult() : 1) * zk;
   }
 
   // Progresso do personagem em campo (o do Kael é this.progress, no formato de sempre)
@@ -872,7 +874,8 @@ class Game {
   gainXP(n, x, y) {
     const pr = this.activeProgress();
     n = Math.round(n);
-    if (n <= 0 || pr.level >= PROG.maxLevel) return;
+    if (n <= 0) return;
+    if (pr.level >= PROG.maxLevel) { this.ganharMaestria(pr, n, x, y); return; }
     pr.xp += n;
     this.hud.xpGain(n);
     if (x !== undefined) this.texts.spawn(x, y, 70, `+${n} XP`, '#b9a8ff', 13, 0.9);
@@ -880,6 +883,16 @@ class Game {
     while (pr.level < PROG.maxLevel && pr.xp >= pr.xpNext) { pr.xp -= pr.xpNext; pr.level++; }
     if (pr.level >= PROG.maxLevel) pr.xp = 0;
     if (pr.level > from) this.onLevelUp(from, pr.level);
+  }
+
+  // Nível 100: a experiência vira maestria (PROG.xpMaestria por ponto, até PROG.maestriaMax)
+  ganharMaestria(pr, n, x, y) {
+    if ((pr.maestria || 0) >= PROG.maestriaMax) return;
+    pr.mxp = (pr.mxp || 0) + n;
+    if (x !== undefined) this.texts.spawn(x, y, 70, `+${n} MAESTRIA`, '#ffd98a', 13, 0.9);
+    let ganhou = 0;
+    while (pr.mxp >= PROG.xpMaestria && (pr.maestria || 0) < PROG.maestriaMax) { pr.mxp -= PROG.xpMaestria; pr.maestria = (pr.maestria || 0) + 1; ganhou++; }
+    if (ganhou) { this.hud.toast(`MAESTRIA ${pr.maestria} · +0,5% de dano e +3 de vida`, '255,217,138'); this.audio.play('levelUp'); if (this.player) this.player.recalc(false); }
   }
 
   // Subida de nível: atributos, pontos de habilidade, vida e energia restauradas

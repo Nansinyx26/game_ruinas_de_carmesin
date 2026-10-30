@@ -68,8 +68,13 @@ const PROG = {
   xpToNext: (l) => Math.round(45 * Math.pow(l, 1.5) + 55),
   // Pontos de habilidade ganhos ao alcançar o nível l (bônus a cada 5 níveis)
   pointsAt: (l) => (l % 5 === 0 ? 2 : 1),
-  // Ganho de atributos por nível acima do 1
+  // Ganho de atributos por nível acima do 1 (defesa e mobilidade rendem 1/4 depois do nível 40, para o
+  // herói do nível 100 não ficar rápido e blindado demais: o resto vem do equipamento)
   perLevel: { hp: 8, energy: 4, dmg: 0.04, power: 0.05, def: 0.008, cdr: 0.012, mob: 0.008 },
+  nivelSuave: (L) => (L <= 39 ? L : 39 + (L - 39) * 0.25),
+  // Depois do nível 100 a experiência vira MAESTRIA: um ponto a cada xpMaestria (+0,5% de dano e +3 de
+  // vida cada, até maestriaMax) — a progressão continua com equipamento, conjuntos e maestria
+  xpMaestria: 60000, maestriaMax: 200,
 };
 const XP_ENEMY = { rastejador: 14, drone: 20, sacerdote: 24, cacador: 26, legionario: 55, chefe: 900 };
 // Outras fontes de experiência
@@ -188,7 +193,7 @@ class Progress {
   constructor() { this.reset(); }
   reset() {
     this.level = 1; this.xp = 0; this.sp = 2;
-    this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0;
+    this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0; this.maestria = 0; this.mxp = 0;
   }
   lv(id) { return this.skills[id] || 0; }
   get xpNext() { return PROG.xpToNext(this.level); }
@@ -229,11 +234,12 @@ class Progress {
   // Redistribuição (respec): devolve todos os pontos gastos na árvore e limpa os atalhos
   spent() { let n = 0; for (const id in this.skills) n += this.skills[id] * skillPts(SKILLS[id]); return n; }
   respec() { const n = this.spent(); this.skills = {}; this.slots = [null, null, null, null]; this.sp += n; this.respecs++; return n; }
-  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs }; }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs, maestria: this.maestria || 0, mxp: this.mxp || 0 }; }
   load(o) {
     this.reset();
     if (!o) return;
     this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0); this.respecs = Math.max(0, o.respecs | 0);
+    this.maestria = clamp(o.maestria | 0, 0, PROG.maestriaMax); this.mxp = Math.max(0, o.mxp | 0);   // depois do nível 100
     for (const id in o.skills || {}) if (SKILLS[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, SKILLS[id].max);
     if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (SKILL_ACTIVE(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
   }
@@ -253,7 +259,7 @@ class CharacterProgress {
   get defs() { return skillsOf(this.charId); }
   reset() {
     this.level = 1; this.xp = 0; this.sp = 0;
-    this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0;
+    this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0; this.maestria = 0; this.mxp = 0;
   }
   lv(id) { return this.skills[id] || 0; }
   get xpNext() { return PROG.xpToNext(this.level); }
@@ -297,12 +303,13 @@ class CharacterProgress {
   // Redistribuição (respec): devolve todos os pontos gastos na árvore e limpa os atalhos
   spent() { const D = this.defs; let n = 0; for (const id in this.skills) n += this.skills[id] * skillPts(D[id]); return n; }
   respec() { const n = this.spent(); this.skills = {}; this.slots = [null, null, null, null]; this.sp += n; this.respecs++; return n; }
-  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs }; }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs, maestria: this.maestria || 0, mxp: this.mxp || 0 }; }
   load(o) {
     this.reset();
     if (!o || typeof o !== 'object') return;
     const D = this.defs;
     this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0); this.respecs = Math.max(0, o.respecs | 0);
+    this.maestria = clamp(o.maestria | 0, 0, PROG.maestriaMax); this.mxp = Math.max(0, o.mxp | 0);   // depois do nível 100
     for (const id in o.skills || {}) if (D[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, D[id].max);
     if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (this.isActiveSkill(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
   }

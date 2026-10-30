@@ -1,8 +1,10 @@
 'use strict';
 // ECLIPSE ZERO · Mundo aberto (protótipo jogável, fase 2 do plano): regiões, zonas, mapa
 // ---------------------------------------------------------------------------
-// MODO MUNDO ABERTO (menu inicial → MUNDO ABERTO): 7 regiões exploráveis. As RUÍNAS DE
-// CARMESIN têm 9 zonas numa grade 3×3; as outras seis (js/mundo/regioes.js), 6 zonas em 2×3.
+// MODO MUNDO ABERTO (menu inicial → MUNDO ABERTO): 10 regiões exploráveis em quatro faixas de
+// nível até o 100 (WORLD_FAIXAS). As RUÍNAS DE CARMESIN têm 9 zonas numa grade 3×3; as outras seis
+// da faixa inicial (js/mundo/regioes.js), 6 zonas em 2×3; as três cidades das faixas altas
+// (Metrópole Tecnológica, Ruínas Carmesins e Nexus Zero), 9 zonas em 3×3 com a cidade no centro.
 // As zonas se ligam por PASSAGENS nas bordas (pare sobre a luz para seguir), com
 // ACAMPAMENTOS de inimigos que dormem até o herói chegar perto (ou ser atacado), BAÚS
 // (células, experiência e reparo), TERMINAIS com memórias, um local SECRETO, PORTAIS de
@@ -19,7 +21,8 @@ const WORLD_SAVE_KEY = 'eclipse_zero_mundo_v1';
 // Regiões do mapa do mundo (at: posição no mapa, de 0 a 1). hub: zona de chegada (portal e
 // mercador); boss: o chefe regional (nome e tipo do inimigo); order: a sequência sugerida — uma região
 // abre quando a anterior tem o chefe derrotado ou o herói chega ao nível mínimo dela
-// (World.regionOpen). As zonas de Carmesin estão aqui embaixo; as das outras seis, em js/mundo/regioes.js
+// (World.regionOpen). As zonas de Carmesin estão aqui embaixo; as das outras, em js/mundo/regioes.js.
+// minLv: região das faixas altas, que só abre com o herói nesse nível (o chefe anterior não basta)
 const WORLD_REGIONS = [
   { id: 'carmesin', name: 'Ruínas de Carmesin', biome: 'Zona de Corrupção', lv: [1, 10], rgb: '255,50,90', at: [0.5, 0.45], r: 0.15, open: true,
     order: 0, hub: 'mercado', boss: { name: 'GUARDIÃO CARMESIM', type: 'legionario', hp: 2 },
@@ -42,6 +45,23 @@ const WORLD_REGIONS = [
   { id: 'obsidiano', name: 'Cratera de Obsidiano', biome: 'Vulcânico', lv: [25, 40], rgb: '255,110,40', at: [0.52, 0.8], r: 0.13,
     order: 6, hub: 'obsidiano_posto', boss: { name: 'NÚCLEO DE OBSIDIANA', type: 'legionario', hp: 3.6 },
     desc: 'Território vulcânico: lava, inimigos de alto nível e eventos mundiais.' },
+  // Faixas altas: cidades enormes com distritos, cada uma com a sua chegada (a cidade no centro)
+  { id: 'metropole', name: 'Metrópole Tecnológica', biome: 'Megacidade', lv: [25, 50], minLv: 25, rgb: '80,225,255', at: [0.92, 0.37], r: 0.085,
+    order: 7, hub: 'metro_centro', boss: { name: 'SUPERVISOR ÔMEGA', type: 'legionario', hp: 4.4 },
+    desc: 'Torres de vidro, trens suspensos e a corporação que ainda vigia cada rua. A cidade de quem chega ao nível 25.' },
+  { id: 'ruinas', name: 'Cidade das Ruínas Carmesins', biome: 'Cidade em ruínas', lv: [50, 75], minLv: 50, rgb: '230,50,80', at: [0.07, 0.45], r: 0.08,
+    order: 8, hub: 'rc_cidadela', boss: { name: 'REI CARMESIM', type: 'sacerdote', hp: 5.2 },
+    desc: 'A capital antiga, partida pela energia vermelha: catedrais, mercados mortos e a cidadela onde os sobreviventes resistem.' },
+  { id: 'nexuszero', name: 'Nexus Zero', biome: 'Núcleo digital', lv: [75, 100], minLv: 75, rgb: '175,135,255', at: [0.92, 0.1], r: 0.075,
+    order: 9, hub: 'nz_santuario', boss: { name: 'NEXUS ZERO', type: 'legionario', hp: 6.5 },
+    desc: 'O lugar onde o NEXUS nasceu: uma cidade de dados que se reescreve sozinha. O fim do caminho, até o nível 100.' },
+];
+// Faixas de nível do mundo e a cidade de cada uma (mapa, portões da cidade e README)
+const WORLD_FAIXAS = [
+  { id: 'inicial', nome: 'Cidade inicial · Refúgio da Aurora', lv: [1, 25], cidade: 'aurora', regioes: ['carmesin', 'velmora', 'nexus', 'lagoa', 'seraph', 'asterion'] },
+  { id: 'metropole', nome: 'Metrópole Tecnológica', lv: [25, 50], cidade: 'metro_centro', regioes: ['obsidiano', 'metropole'] },
+  { id: 'ruinas', nome: 'Cidade das Ruínas Carmesins', lv: [50, 75], cidade: 'rc_cidadela', regioes: ['ruinas'] },
+  { id: 'nexuszero', nome: 'Nexus Zero', lv: [75, 100], cidade: 'nz_santuario', regioes: ['nexuszero'] },
 ];
 
 // Zonas das Ruínas de Carmesin (grade 3×3: r = linha, c = coluna; o norte é r = 0).
@@ -246,6 +266,7 @@ const World = {
     if (r.open) return true;
     const prev = WORLD_REGIONS.find((q) => q.order === r.order - 1);
     const nv = game.progress ? Math.max(game.progress.level, game.activeProgress ? game.activeProgress().level : 0) : 0;   // o herói em campo também conta (o personagem criado)
+    if (r.minLv) return nv >= r.minLv;   // faixas altas: só pelo nível (25, 50, 75)
     return (prev && this.bossDone(prev.id)) || nv >= r.lv[0]
       || (typeof Campanhas !== 'undefined' && Campanhas.abreRegiao(id));   // capítulo da campanha do herói (js/mundo/campanhas.js)
   },
