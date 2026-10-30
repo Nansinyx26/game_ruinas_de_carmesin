@@ -271,7 +271,8 @@ void main() {
 // Mapa de material (model.tex.mat, opcional) para os vértices pintados: R = metal, G = aspereza,
 // B = relevo (0,5 = plano). Com ele, brilho especular e relevo (bump pelas derivadas de tela,
 // sem tangentes: OES_standard_derivatives; sem a extensão, só o especular). model.tex.nrm:
-// mapa de normais no espaço tangente (x ao longo de u, y = −v), também pelas derivadas de tela.
+// mapa de normais no espaço tangente (x ao longo de u, y = −v), também pelas derivadas de tela
+// (data URI ou canvas, como o atlas do personagem criado, js/criacao/montagem.js).
 // model.tex.pbr: a textura é cor pura (modelo importado), não arte com luz pintada.
 const R3D_FS_TEX = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -683,7 +684,7 @@ const R3D = {
       // mapa de material (metal, aspereza, relevo), se o modelo tiver um; texOf cria na unidade ativa,
       // então as duas texturas são resolvidas antes de ligar cada uma na sua unidade
       const mt = tex.mat ? (tex.matTex || (tex.matTex = typeof tex.mat === 'string' ? { src: tex.mat } : { canvas: tex.mat })) : null;
-      const nt = tex.nrm ? (tex.nrmTex || (tex.nrmTex = { src: tex.nrm })) : null;
+      const nt = tex.nrm ? (tex.nrmTex || (tex.nrmTex = typeof tex.nrm === 'string' ? { src: tex.nrm } : { canvas: tex.nrm })) : null;
       const tg = this.texOf(tex), mg = mt ? this.texOf(mt) : null, ng = nt ? this.texOf(nt) : null;
       const matOn = mg && mg !== this.blankTex, nrmOn = ng && ng !== this.blankTex;
       if (matOn) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mg); }

@@ -277,6 +277,7 @@ const World = {
     g.player = new Player(0, 0);
     g.player.recalc(true);
     if (perf && !saved) PersCriacao.equiparInicial(perf);   // equipamento inicial da classe (na mochila e vestido)
+    else if (perf) Arsenal.inicial(perf.id, false);   // mundo salvo antes do conjunto do Iniciado: as peças entram na mochila (uma vez)
     g.hud.reset();
     g.victoryTimer = 0; g.ending = null; g.lostMemory = false; g.glitchT = 0;
     g.timeScale = 1; g.slowTimer = 0; g.hitStop = 0;

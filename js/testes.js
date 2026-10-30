@@ -45,6 +45,7 @@ const EclipseTests = {
       this.puloDefesa();
       this.pendencias();
       this.mundo();   // por último: troca a partida pelo modo mundo
+      await this.criacaoGLB();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -1568,7 +1569,7 @@ const EclipseTests = {
       this.igual('arsenal: 9 vagas (capacete, peitoral, 2 ombreiras, luvas, calças, botas, capa, acessório)', ARS_ORDEM.length, 9);
       const rara = A.gerar('peitoral', 'placas', 2, 20), ecl = A.gerar('botas', 'eclipse', 0, 30);
       this.ok('arsenal: peça rara tem um bônus secundário', Object.keys(rara.st).filter((k) => ['dano', 'critico', 'energia', 'recarga'].includes(k)).length === 1, JSON.stringify(rara.st));
-      this.igual('arsenal: conjunto Eclipse nasce na raridade especial', ecl.r, ARS_ECLIPSE);
+      this.igual('arsenal: conjunto Eclipse nasce Lendário (a maior das quatro raridades)', ecl.r, ARS_LENDARIA);
       g.activeProgress().level = 30;
       A.S.vest[A.heroi()] = {};
       A.refazer();
@@ -1911,7 +1912,7 @@ const EclipseTests = {
       this.ok('perfis: aparência com todos os campos', PERS_CAMPOS.every((k) => Number.isInteger(Av[k])));
       // criar
       this.ok('perfis: sem classe válida, recusa', !Perfis.criar('Teste', 'bardo', P).ok);
-      const r1 = Perfis.criar('Ravena', 'assassino', persAparenciaPadrao('assassino'));
+      const r1 = Perfis.criar('Ravena', 'assassino', Object.assign(persAparenciaPadrao('assassino'), { estilo: 1 }));   // estilizado (o Realista: criacaoGLB)
       const r2 = Perfis.criar('ravena', 'mago', P);
       this.ok('perfis: cria com id único', r1.ok && /^p_[a-z0-9]+$/.test(r1.perfil.id), r1.erro);
       this.ok('perfis: nome repetido (sem diferença de maiúsculas) recusado', !r2.ok && /Já existe/.test(r2.erro), r2.erro);
@@ -2014,7 +2015,7 @@ const EclipseTests = {
       this.ok('modelo: barba cheia em malha própria', !!b4.peles.barba && !c0.peles.barba);
       // pose de verdade: a pele dobra sem esticar (nenhuma aresta do corpo cresce demais) em vários estados
       {
-        const d = Perfis.registrar({ id: 'p_pose', nome: 'Pose', classe: 'mago', aparencia: Object.assign(persAparenciaPadrao('mago'), { cabelo: 3 }) });
+        const d = Perfis.registrar({ id: 'p_pose', nome: 'Pose', classe: 'mago', aparencia: Object.assign(persAparenciaPadrao('mago'), { cabelo: 3, estilo: 1 }) });
         const M = game.model3(d.model), v = new Player(0, 0, d), mundo = () => { (function anda(nd, P) { M3.mul(nd.w, P, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make()); };
         let pior = 0, alt = 0, erro = '';
         for (const [st, t] of [['idle', 0.5], ['run', 0.3], ['attack', 0.15], ['dash', 0.1], ['hurt', 0.1]]) {
@@ -2056,7 +2057,14 @@ const EclipseTests = {
         const cl = U.classe;
         i = ent(); i.pressed.tabNext = true; CriacaoTela.update(1 / 60, i);
         i = ent(); i.pressed.right = true; CriacaoTela.update(1 / 60, i);
-        this.ok('tela: escolhe a classe e muda a aparência pelo teclado', cl === PERS_ORDEM[1] && U.aba === 'aparencia' && U.A.corpo !== persAparenciaPadrao(cl).corpo, `${cl} ${U.aba}`);
+        this.ok('tela: escolhe a classe e muda a aparência pelo teclado', cl === PERS_ORDEM[1] && U.aba === 'aparencia' && (CriacaoTela.realista() ? U.A.corpoG !== persAparenciaPadrao(cl).corpoG : U.A.corpo !== persAparenciaPadrao(cl).corpo), `${cl} ${U.aba}`);
+        // grades do estilo Realista: cada categoria desenha e a miniatura escolhe a opção
+        for (const c of CRIA_CATS) { CriacaoTela.acao('cat', c.id); CriacaoTela.draw(g.ctx, 0.1); }
+        CriacaoTela.acao('opcao', { k: 'cabeloG', i: 5 }); CriacaoTela.acao('opcao', { k: 'barbaG', i: 0 });
+        this.ok('tela: a miniatura escolhe a opção (cabelo 5, sem barba)', U.A.cabeloG === 5 && U.A.barbaG === 0 && U.sujo);
+        CriacaoTela.acao('estilo', 1); CriacaoTela.draw(g.ctx, 0.1);
+        this.ok('tela: estilo Estilizado volta às 13 opções do modelo paramétrico', !CriacaoTela.realista() && CriacaoTela.linhas().length === PERS_CAMPOS.filter((k) => !PERS_APAR[k].glb).length);
+        CriacaoTela.acao('estilo', 0);
         for (let z = 0; z < 3; z++) { CriacaoTela.acao('zoom', z); for (const ps of [0, 1, 2, 3, 4]) { CriacaoTela.acao('pose', ps); CriacaoTela.draw(g.ctx, ps * 0.3); } }
         CriacaoTela.acao('aba', 'equipamento'); CriacaoTela.mudar(0, 1); CriacaoTela.draw(g.ctx, 0.2);
         CriacaoTela.aleatorio(); CriacaoTela.draw(g.ctx, 0.3);
@@ -2076,7 +2084,10 @@ const EclipseTests = {
       this.ok('mundo: o personagem criado entra em campo', p.def.id === id && RosterManager.active === id && p.base === 'orion', p.def.id);
       this.igual('mundo: salvamento separado por personagem', World.chave(), `${WORLD_SAVE_KEY}:${id}`);
       const V = Arsenal.vestidos(id);
-      this.ok('mundo: começa com as peças da classe vestidas', PERS_CLASSES.assassino.pecas.every(([v, f]) => V[v] && V[v].fam === f), Object.keys(V).join(','));
+      const ini = Arsenal.S.itens.filter((q) => q.cat && q.cat.startsWith('ini_'));
+      this.ok('mundo: começa com as 7 peças do conjunto do Iniciado na mochila (uma de cada)', ini.length === 7 && new Set(ini.map((q) => q.cat)).size === 7, ini.map((q) => q.cat).join(','));
+      this.ok('mundo: seis vestidas, com o gibão (peitoral leve) do assassino', ['capacete', 'peitoral', 'luvas', 'calcas', 'botas', 'capa'].every((v) => V[v] && V[v].cat) && V.peitoral.cat === 'ini_peitoral' && V.capacete.cat === 'ini_capuz', Object.keys(V).map((k) => `${k}:${V[k].cat}`).join(','));
+      this.ok('mundo: nenhuma peça de nível 30 no começo', !Arsenal.S.itens.some((q) => q.cat && q.cat.startsWith('n30_')));
       this.ok('mundo: progresso próprio com os pontos iniciais', g.activeProgress() === PartyProgress.of(id) && g.activeProgress().sp === 2 && g.activeProgress() !== g.progress);
       this.ok('mundo: o herói da árvore é o personagem criado', skillCharacters()[0] === id && skillTreeAccess(id).editable);
       for (const e of g.enemies) e.alive = false;
@@ -2118,6 +2129,171 @@ const EclipseTests = {
     Perfis.dados.ativo = null;   // (só na memória: o jogador continua com o personagem que tinha escolhido)
     grava(WORLD_SAVE_KEY, null);
     World.start();
+    if (RosterManager.isSelectable(ativo0)) RosterManager.active = ativo0;
+    g.state = 'playing';
+  },
+
+  // ---------------------------------------------------------------- peças GLB da criação e armaduras
+  // Personagem com as peças GLB (js/criacao/montagem.js) e as armaduras do catálogo central
+  // (js/mundo/armaduras.js): catálogo e caminhos, quatro raridades, conjunto inicial (uma vez só,
+  // salvo), requisitos de nível e classe, bônus de conjunto, filtros, modelo montado, atlas,
+  // tintura, troca de peças no corpo e migração dos salvamentos antigos
+  async criacaoGLB() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
+    // ------------------------------------------------ catálogo central e caminhos reais
+    const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
+    this.igual('catálogo: 2 corpos, 8 rostos, 8 cabelos, 5 barbas', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,8,5');
+    this.igual('catálogo: 7 peças do nível 1 (Armaduras_Inicial_Level_1/)', ini.filter((c) => c.arq.startsWith('assets/Criar_Personagem/Armaduras_Inicial_Level_1/') && c.arq.endsWith('.glb')).length, 7);
+    this.ok('catálogo: 7 peças de nível 30 para cada uma das 5 classes (Armaduras_Level_30/<classe>/)', ARM_CLASSES.every((c) => n30.filter((q) => q.classe === c && q.arq.startsWith('assets/Criar_Personagem/Armaduras_Level_30/')).length === 7), n30.length);
+    const campos = ['itemLevel', 'rarity', 'requiredLevel', 'allowedClasses', 'equipmentSlot', 'baseStats', 'bonusStats', 'modelPath', 'iconPath', 'description', 'sellValue', 'setId'];
+    this.ok('catálogo: cada armadura com os 12 campos', Object.values(ARMADURAS_GLB).length === 42 && Object.values(ARMADURAS_GLB).every((D) => campos.every((k) => D[k] !== undefined && D[k] !== '')), Object.keys(ARMADURAS_GLB).length);
+    this.ok('catálogo: todas convertidas para o motor', CRIA_CATALOGO.every((c) => c.convertido), CRIA_CATALOGO.filter((c) => !c.convertido).map((c) => c.id).join(','));
+    // ------------------------------------------------ raridades
+    this.igual('raridades: exatamente quatro (Comum, Incomum, Raro, Lendário)', ARS_RARIDADES.map((r) => `${r.name}/${r.cor}`).join(','), 'Comum/branco,Incomum/verde,Raro/azul,Lendário/dourado');
+    const lend1 = Arsenal.gerarCat('ini_botas', 3), comum30 = Arsenal.gerarCat('n30_mago_botas', 0);
+    this.ok('raridade independe do nível (nível 1 Lendária, nível 30 Comum)', lend1.r === 3 && lend1.lv === 1 && comum30.r === 0 && comum30.lv === 30);
+    this.ok('raridade: um atributo sorteado por grau acima de Comum', [0, 1, 2, 3].every((r) => Object.keys(Arsenal.gerarCat('n30_guerreiro_peitoral', r).bonus).length === r));
+    this.ok('raridade: nada além do grau 3 (pedido maior vira Lendário)', Arsenal.gerarCat('ini_capa', 9).r === 3 && Arsenal.gerar('botas', 'couro', 5, 10).r === 3);
+    // ------------------------------------------------ personagem criado no estilo Realista: mundo, inventário inicial
+    const K = PERFIS_CHAVE, ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const grava = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+    const ls0 = ler(K), lsr0 = ler(K + '_reserva'), lsW = ler(WORLD_SAVE_KEY), ativo0 = RosterManager.active, salvarMundo = World.save;
+    World.save = () => {};   // o mundo do jogador não é tocado (só o do personagem de teste, de propósito)
+    let id = null, erro = null;
+    try {
+      const r = Perfis.criar('Brisa', 'guerreiro', Object.assign(persAparenciaPadrao('guerreiro'), { corpoG: 1, rostoG: 5, cabeloG: 6, barbaG: 0, pele: 4, corCabelo: 2 }), null, { peitoral: 'ini_peitoral' });
+      id = r.perfil.id;
+      const def = CHARACTERS_BY_ID[id];
+      this.ok('perfil: escolhas do estilo Realista e o peitoral inicial salvos', r.ok && r.perfil.aparencia.estilo === 0 && r.perfil.aparencia.rostoG === 5 && r.perfil.opcoes.peitoral === 'ini_peitoral');
+      this.ok('modelo: o personagem usa as peças GLB', Criacao3D.usa(def));
+      // peças da aparência e as armaduras carregadas (scripts sob demanda, como no jogo)
+      await carregar(['corpo_f', 'rosto_6', 'cabelo_6', 'corpo_m', 'rosto_1', 'cabelo_1', 'barba_curta', 'minis'].concat(ARM_INICIAL, ['n30_guerreiro_peitoral', 'n30_guerreiro_capa']));
+      this.ok('carregamento: peças, armaduras e miniaturas chegam por <script>', ['corpo_f', 'rosto_6', 'cabelo_6', 'ini_botas', 'n30_guerreiro_capa'].every((k) => Criacao3D.tem(k)) && typeof CRIA_MINIS !== 'undefined');
+      MODELS3D[def.model].model = null;
+      const M = g.model3(def.model);
+      const conf = (m) => {
+        const err = [];
+        for (const sk of m.skins) {
+          const nv = sk.pos.length / 3;
+          if (!sk.bones.every(Boolean)) err.push(sk.nome + ': osso');
+          for (let i = 0; i < sk.idx.length; i++) if (sk.idx[i] >= nv) { err.push(sk.nome + ': índice'); break; }
+          for (let v = 0; v < nv; v++) { const w = sk.bw[v * 4] + sk.bw[v * 4 + 1] + sk.bw[v * 4 + 2] + sk.bw[v * 4 + 3]; if (Math.abs(w - 1) > 0.02 || !isFinite(sk.pos[v * 3])) { err.push(sk.nome + ': peso'); break; } }
+          for (let j = 0; j < sk.att.length; j += 4) if (sk.att[j + 2] > -0.5 && (sk.att[j] < 0 || sk.att[j] > 1 || sk.att[j + 1] < 0 || sk.att[j + 1] > 1)) { err.push(sk.nome + ': uv'); break; }
+        }
+        return err.join(',');
+      };
+      this.ok('modelo GLB: montado (corpo feminino, rosto 6, cabelo 6) com pele válida', M && M.cria && !M.criaVazio && M.cria.corpo === 'corpo_f' && M.cria.ids.rosto === 'rosto_6' && M.cria.ids.cabelo === 'cabelo_6' && !conf(M), M && (M.criaVazio ? 'vazio' : conf(M)));
+      this.ok('modelo GLB: atlas 2048 com material e normais', M.tex.canvas.width === 2048 && M.tex.mat.width === 1024 && M.tex.nrm.width === 1024 && M.tex.pbr);
+      this.ok('modelo GLB: regiões do corpo separadas (tronco, braços, mãos, pernas, pés)', ['tronco', 'bracos', 'maos', 'pernas', 'pes'].every((rg) => M.cria.peles.corpo.some((S) => S.regiao === rg)));
+      for (let i = 0; i < 60 && !Criacao3D.pintado(M); i++) await espera(50);
+      this.ok('modelo GLB: atlas pintado depois das imagens', Criacao3D.pintado(M));
+      // tintura: pele vai para o tom; cabelo segue a luminância
+      const px = new Uint8ClampedArray([200, 140, 110, 255, 198, 142, 108, 255, 30, 30, 32, 255, 205, 138, 112, 255].concat(...Array(2000).fill([201, 141, 109, 255])));
+      const px0 = px.slice(); Criacao3D.tingirPele(px, [0.36, 0.24, 0.16]);
+      this.ok('tintura: a pele escurece para o tom escolhido e o preto (roupa) não muda', px[0] < px0[0] * 0.7 && px[8] === px0[8] && px[9] === px0[9]);
+      const ph = new Uint8ClampedArray([].concat(...Array(2000).fill([120, 120, 120, 255]), [240, 240, 240, 255]));
+      Criacao3D.tingirCabelo(ph, [0.8, 0.2, 0.1]);
+      this.ok('tintura: o cabelo cinza vira a cor escolhida e o reflexo continua mais claro', ph[0] > ph[2] * 3 && ph[2000 * 4] > ph[0], `${ph[0]},${ph[2]} reflexo ${ph[2000 * 4]}`);
+      // pose: dobra sem esticar e na altura de um herói
+      const v = new Player(0, 0, def), mundo = () => { (function anda(nd, P) { M3.mul(nd.w, P, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make()); };
+      let pior = 0, alt = 0, perr = '';
+      for (const [st, t] of [['idle', 0.5], ['run', 0.3], ['dash', 0.1], ['hurt', 0.1]]) {
+        v.state = st; v.stateTime = t; v.animTime = t; v.pecasPrevia = {};
+        try { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); mundo(); } catch (e) { perr = st + ': ' + e.message; break; }
+        let zmin = 1e9, zmax = -1e9;
+        for (const sk of M.skins) { if (sk.hide) continue; R3D.skin(sk, 0); const P = sk.P; for (let i = 0; i < P.length; i += 3) { zmin = Math.min(zmin, P[i + 2]); zmax = Math.max(zmax, P[i + 2]); } }
+        for (const sk of M.cria.peles.corpo) { const P = sk.P, I = sk.idx; for (let i = 0; i < I.length; i += 3) pior = Math.max(pior, Math.hypot(P[I[i] * 3] - P[I[i + 1] * 3], P[I[i] * 3 + 1] - P[I[i + 1] * 3 + 1], P[I[i] * 3 + 2] - P[I[i + 1] * 3 + 2])); }
+        if (st === 'idle') alt = zmax - zmin;
+      }
+      this.ok('pose GLB: o corpo dobra sem esticar (parado, correndo, esquiva, dano)', !perr && pior < 6, perr || pior.toFixed(2));
+      this.ok('pose GLB: altura de um herói (50 a 65)', alt > 50 && alt < 65, alt.toFixed(1));
+      // armaduras GLB no corpo: entram pela prévia, escondem o que fica dentro
+      v.state = 'idle'; v.pecasPrevia = { botas: Arsenal.gerarCat('ini_botas', 0), capacete: Arsenal.gerarCat('ini_capuz', 0), capa: Arsenal.gerarCat('n30_guerreiro_capa', 1) };
+      const n0 = M.skins.length;
+      MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+      this.ok('armadura GLB: botas, capuz e capa entram no modelo', M.cria.ids.botas === 'ini_botas' && M.cria.ids.capacete === 'ini_capuz' && M.cria.ids.capa === 'n30_guerreiro_capa' && M.skins.length > n0 && !conf(M), conf(M));
+      this.ok('armadura GLB: pés dentro das botas e cabelo dentro do capuz somem', M.cria.peles.corpo.filter((S) => S.regiao === 'pes').every((S) => S.hide) && M.cria.peles.cabelo.every((S) => S.hide) && M.cria.peles.corpo.filter((S) => S.regiao === 'tronco').every((S) => !S.hide));
+      this.ok('armadura GLB: a capa pende nas abas (balança)', M.cria.peles.capa.some((S) => S.bones.some((b) => /^c[FSB][RL]2?$/.test(b.name))));
+      v.pecasPrevia = {};
+      MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+      this.ok('armadura GLB: tirar devolve o corpo inteiro', !M.cria.ids.botas && M.cria.peles.corpo.every((S) => !S.hide) && M.skins.length === n0);
+      if (R3D.active) {
+        for (let i = 0; i < 40 && !Criacao3D.pintado(M); i++) await espera(50);
+        PersonagemModelo._ret = {};
+        const ret = PersonagemModelo.retrato(def);
+        this.ok('retrato do HUD do personagem GLB: 288×288', ret && ret.width === 288);
+      }
+      // ------------------------------------------------ mundo: conjunto inicial (uma vez só, salvo)
+      Perfis.ativar(id);
+      grava(`${WORLD_SAVE_KEY}:${id}`, null);
+      World.start();
+      const A = Arsenal, V = A.vestidos(id), iniI = A.S.itens.filter((q) => q.cat && q.cat.startsWith('ini_'));
+      this.ok('inicial: as 7 peças do nível 1 na mochila, Comuns', iniI.length === 7 && iniI.every((q) => q.r === 0 && q.lv === 1), iniI.map((q) => q.cat).join(','));
+      this.ok('inicial: seis vestidas, com o peitoral escolhido (gibão)', Object.keys(V).length === 6 && V.peitoral.cat === 'ini_peitoral' && !Object.values(V).some((q) => q.cat === 'ini_armadura'));
+      A.inicial(id, true); A.inicial(id, false);
+      this.igual('inicial: entregar de novo não duplica', A.S.itens.filter((q) => q.cat && q.cat.startsWith('ini_')).length, 7);
+      this.ok('inicial: nenhuma peça de nível 30', !A.S.itens.some((q) => q.cat && q.cat.startsWith('n30_')));
+      // bônus de conjunto: 6 peças do Iniciado = as três faixas, uma vez cada
+      const p = g.player, cj = A.conjuntos(id).find((c) => c.id === 'iniciado');
+      this.ok('conjunto: 6/6 do Iniciado com as três faixas ativas', cj && cj.n === 6 && cj.ativos.length === 3);
+      p.recalc(false); const hpA = p.maxHp; p.recalc(false); p.recalc(false);
+      this.igual('conjunto: recalcular não soma o bônus de novo', p.maxHp, hpA);
+      A.tirar('capa'); A.tirar('botas'); A.tirar('luvas');
+      const cj3 = A.conjuntos(id).find((c) => c.id === 'iniciado');
+      this.ok('conjunto: com 3 peças só a faixa de 2 fica', cj3.n === 3 && cj3.ativos.length === 1 && p.maxHp < hpA, `${cj3.n} ${cj3.ativos.length}`);
+      // requisitos: nível e classe
+      const g30 = A.guardar(A.gerarCat('n30_guerreiro_peitoral', 2), true), m30 = A.guardar(A.gerarCat('n30_mago_peitoral', 1), true);
+      this.ok('requisito: nível 30 recusado no nível 1', /nível 30/.test(A.equipar(g30.id)));
+      const lv0 = g.activeProgress().level; g.activeProgress().level = 30;
+      this.ok('requisito: classe errada recusada (mago)', /classe Mago/.test(A.equipar(m30.id)));
+      this.igual('requisito: nível 30 e classe certa veste', A.equipar(g30.id), '');
+      this.ok('requisito: a peça de outra classe não serve no Kael', /classe/.test(A.podeUsar(g30, 'kael')));
+      g.activeProgress().level = lv0;
+      // filtros e detalhes da aba EQUIPAMENTO
+      A.ui.vaga = ARS_ORDEM.indexOf('peitoral'); A.ui.filtroR = 2; A.ui.usaveis = false;
+      const L2 = A.lista();
+      this.ok('filtro: raridade Raro mostra só as azuis', L2.length >= 1 && L2.every((q) => q.r === 2));
+      A.ui.filtroR = -1; A.ui.usaveis = true;
+      this.ok('filtro: só as que posso usar esconde a do mago', !A.lista().some((q) => q.cat === 'n30_mago_peitoral') && A.lista().some((q) => q.cat === 'ini_armadura'));
+      A.ui.usaveis = false;
+      let terr = null;
+      try { A.tooltip(g.ctx, g30, 200, 300); A.tooltip(g.ctx, m30, 900, 100); WorldInv.ui.rects = []; A.draw(g.ctx, { top: 120, det: 520, lx: 36 }, 0.5); } catch (e) { terr = e.message; }
+      this.ok('aba EQUIPAMENTO: lista, filtros e detalhes desenham', !terr, terr);
+      // salvamento: o inventário inicial e a raridade voltam iguais
+      const qtd = A.S.itens.length, r30 = g30.r;
+      salvarMundo.call(World);
+      World.start();
+      this.ok('salvamento: as peças, as vestidas e a marca do inicial voltam', Arsenal.S.itens.length === qtd && Arsenal.S.inicialGLB && Arsenal.S.itens.find((q) => q.cat === 'n30_guerreiro_peitoral').r === r30 && Arsenal.vestidos(id).peitoral.cat === 'n30_guerreiro_peitoral');
+      Arsenal.inicial(id, false);
+      this.igual('salvamento: ao voltar ao mundo, o inicial não repete', Arsenal.S.itens.filter((q) => q.cat && q.cat.startsWith('ini_')).length, 7);
+      // salvamento antigo (seis raridades): Épica vira Rara; Lendária e Eclipse viram Lendário
+      const W = World.state.arsenal;
+      W.itens.push(Object.assign(A.gerar('botas', 'couro', 0, 5), { id: 9001, r: 3 }), Object.assign(A.gerar('luvas', 'couro', 0, 5), { id: 9002, r: 5 }));
+      delete W.rv;
+      const S2 = Arsenal.S;
+      this.ok('migração: raridades antigas viram as quatro', S2.itens.find((q) => q.id === 9001).r === 2 && S2.itens.find((q) => q.id === 9002).r === 3 && S2.itens.every((q) => q.r >= 0 && q.r <= 3));
+      // aparência salva antes das peças GLB
+      const Am = Perfis.validarAparencia({ corpo: 3, rosto: 2, cabelo: 3, barba: 4, pele: 5 }, 'mago');
+      this.ok('migração: aparência antiga vira o estilo Realista mais parecido', Am.estilo === 0 && Am.corpoG === 1 && Am.rostoG === 6 && Am.cabeloG === 8 && Am.barbaG === 3 && Am.pele === 5, JSON.stringify(Am));
+      // sem os arquivos convertidos: o modelo paramétrico
+      const c0 = Criacao3D.POR_ID.rosto_3, conv = c0.convertido;
+      c0.convertido = false;
+      const dF = Perfis.registrar({ id: 'p_semglb', nome: 'Sem', classe: 'mago', aparencia: Object.assign(persAparenciaPadrao('mago'), { rostoG: 2 }) });
+      const mF = g.model3(dF.model);
+      this.ok('sem a peça convertida: usa o modelo paramétrico', mF && !mF.cria && mF.peles && mF.peles.corpo);
+      c0.convertido = conv;
+      delete MODELS3D[dF.model]; delete CHARACTERS_BY_ID.p_semglb; delete SKILL_SETS.p_semglb;
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('peças GLB e armaduras: sem exceção', !erro, erro);
+    // limpeza
+    if (id) { try { localStorage.removeItem(`${WORLD_SAVE_KEY}:${id}`); localStorage.removeItem(`${WORLD_SAVE_KEY}:${id}_reserva`); } catch (e) {} const d = CHARACTERS_BY_ID[id]; if (d) { delete MODELS3D[d.model]; delete CHARACTERS_BY_ID[id]; delete SKILL_SETS[id]; } }
+    grava(K, ls0); grava(K + '_reserva', lsr0);
+    Perfis.carregar(); Perfis.dados.ativo = null;
+    grava(WORLD_SAVE_KEY, null);
+    World.start();
+    World.save = salvarMundo;
+    grava(WORLD_SAVE_KEY, lsW);
     if (RosterManager.isSelectable(ativo0)) RosterManager.active = ativo0;
     g.state = 'playing';
   },

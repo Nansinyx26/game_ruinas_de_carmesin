@@ -101,7 +101,7 @@ const Fabrica = {
       game.stats.soulsBank -= R.cel;
       if (o.peca) {
         const [slot, fam] = o.peca, nv = Oficios.nivel('criacao'), F = ARS_FAMILIAS[fam];
-        const r = F.rmin || Math.min(nv >= 8 ? 4 : 3, WorldInv.rolarRaridade(0, 0.1 + nv * 0.06));
+        const r = F.rmin || Math.min(nv >= 8 ? ARS_LENDARIA : 2, Arsenal.rolar(0, 0.1 + nv * 0.06));
         Arsenal.guardar(Arsenal.gerar(slot, fam, r, Math.max(game.activeProgress().level, F.tier * 5)));
       } else if (o.ferramenta) {
         Arsenal.S.ferramenta = o.ferramenta;
@@ -333,7 +333,7 @@ const Fabrica = {
       const n = Oficios.mat(k), D = WORLD_MATERIAIS[k], pede = P[k] || 0;
       if (!n || (c === 'missao' && !pede)) continue;
       const usa = this.receitas().filter((R) => Oficios.resolver(R.mat)[k]).slice(0, 4).map((R) => R.nome);
-      out.push({ nome: `${D.icon} ${D.nome}`, sub: `${pede ? `Item de missão (${pede} para entregar) · ` : 'Material · '}${ARS_RARIDADES[WORLD_MAT_RARIDADE[k] || 0].name}`, rgb: D.rgb, dir: `×${n}`,
+      out.push({ nome: `${D.icon} ${D.nome}`, sub: `${pede ? `Item de missão (${pede} para entregar) · ` : 'Material · '}${WORLD_RARIDADES[WORLD_MAT_RARIDADE[k] || 0].name}`, rgb: D.rgb, dir: `×${n}`,
         det: { titulo: D.nome, rgb: D.rgb, linhas: [`${D.desc} Onde achar: ${WORLD_MAT_FONTE[k] || '—'}.`, `Usado em: ${usa.length ? usa.join(', ') : 'vendas'}${usa.length >= 4 ? '…' : ''}`] },
         acoes: [['desc1', WorldInv.vende() ? 'VENDER 1' : 'DESCARTAR 1']],
         fazer: () => {

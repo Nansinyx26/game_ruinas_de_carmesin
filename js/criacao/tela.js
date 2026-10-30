@@ -8,14 +8,32 @@
 //     sobre um altar com runas, luz que gira devagar, sombra e brasas no ar). Arraste (mouse ou
 //     dedo) ou Z / C para girar; roda, + / − ou os botões para aproximar (corpo inteiro, busto,
 //     rosto); poses de apresentação (parado, guarda, vitória, correndo, golpe da arma da classe).
-//     Painéis: CLASSE (as cinco, com o que muda no jogo), APARÊNCIA (13 opções, todas desenhadas
-//     no modelo), EQUIPAMENTO (arma principal da classe e as peças iniciais, vestidas na prévia;
-//     esconder o capacete) e, à direita, o NOME (com validação), os atributos reais da classe,
+//     Painéis: CLASSE (as cinco, com o que muda no jogo), APARÊNCIA (estilo Realista, com as
+//     peças GLB da criação em grades de miniaturas por categoria — corpo e altura, rosto, cabelo,
+//     barba, cores da pele e do cabelo — ou Estilizado, o modelo paramétrico com as 13 opções),
+//     EQUIPAMENTO (arma principal da classe e o conjunto inicial do nível 1, vestido na prévia:
+//     gibão leve ou couraça pesada, esconder o capuz) e, à direita, o NOME (com validação), os atributos reais da classe,
 //     habilidades, armas e o botão de confirmar. Tudo muda na hora no modelo.
 // Confirmar grava o perfil (Perfis) e começa o mundo do personagem (World.start).
 // ---------------------------------------------------------------------------
 const CRIA_POSES = ['Parado', 'Guarda', 'Vitória', 'Correndo', 'Golpe'];
 const CRIA_ZOOM = [{ nome: 'Corpo inteiro', d: 150, z: 30 }, { nome: 'Busto', d: 82, z: 45 }, { nome: 'Rosto', d: 44, z: 53 }];
+// Categorias da aparência no estilo Realista (peças GLB) e as linhas (teclado) de cada uma
+const CRIA_CATS = [
+  { id: 'corpo', nome: 'CORPO', campos: ['corpoG', 'altura'] },
+  { id: 'rosto', nome: 'ROSTO', campos: ['rostoG'] },
+  { id: 'cabelo', nome: 'CABELO', campos: ['cabeloG'] },
+  { id: 'barba', nome: 'BARBA', campos: ['barbaG'] },
+  { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo'] },
+];
+const CRIA_LINHAS_GLB = ['estilo'].concat(...CRIA_CATS.map((c) => c.campos));
+// Miniaturas (ids do catálogo da criação) de cada opção; null = 'sem'
+const CRIA_MINI = {
+  corpoG: () => ['corpo_m', 'corpo_f'],
+  rostoG: () => [1, 2, 3, 4, 5, 6, 7, 8].map((i) => `rosto_${i}`),
+  cabeloG: () => [null, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (i ? `cabelo_${i}` : null)),
+  barbaG: () => [null].concat(typeof Criacao3D !== 'undefined' ? Criacao3D.BARBAS : []),
+};
 const CriacaoTela = {
   ui: null,
   // ------------------------------------------------------------ abrir / fechar
@@ -24,8 +42,9 @@ const CriacaoTela = {
     const lista = Perfis.lista();
     this.ui = { modo: modo || (lista.length ? 'lista' : 'criar'), aba: 'classe', sel: 0, lsel: 0, classe: 'guerreiro', A: persAparenciaPadrao('guerreiro'), nome: '', editId: null,
       yaw: 0.35, zoom: 0, zoomAlvo: 0, pose: 0, mostrarEquip: true, ocultarCapacete: false, arma: null, erro: Perfis.aviso, msgT: Perfis.aviso ? 4 : 0, t: 0, rects: [],
-      digitando: false, confirma: null, terceira: false, sujo: true, arrasto: null, origem: game.menu.page || 'main' };
+      digitando: false, confirma: null, terceira: false, sujo: true, arrasto: null, origem: game.menu.page || 'main', peitoral: null };
     this.instalar();
+    if (typeof Criacao3D !== 'undefined') Criacao3D.carregar('minis');   // miniaturas das grades
     game.state = 'criacao';
     game.audio.play('uiSelect');
   },
@@ -36,8 +55,8 @@ const CriacaoTela = {
     game.menu.reset(this.ui && this.ui.origem === 'start' ? 'start' : 'main');
     game.audio.play('uiMove');
   },
-  novo() { const U = this.ui; Object.assign(U, { modo: 'criar', aba: 'classe', sel: 0, classe: 'guerreiro', A: persAparenciaPadrao('guerreiro'), nome: '', editId: null, arma: null, ocultarCapacete: false, sujo: true, erro: '' }); },
-  editar(p) { const U = this.ui; Object.assign(U, { modo: 'editar', aba: 'aparencia', sel: 0, classe: p.classe, A: Object.assign({}, p.aparencia), nome: p.nome, editId: p.id, arma: p.opcoes && p.opcoes.arma, ocultarCapacete: !!(p.opcoes && p.opcoes.ocultarCapacete), sujo: true, erro: '' }); },
+  novo() { const U = this.ui; Object.assign(U, { modo: 'criar', aba: 'classe', sel: 0, classe: 'guerreiro', A: persAparenciaPadrao('guerreiro'), nome: '', editId: null, arma: null, ocultarCapacete: false, peitoral: null, sujo: true, erro: '' }); },
+  editar(p) { const U = this.ui; Object.assign(U, { modo: 'editar', aba: 'aparencia', sel: 0, classe: p.classe, A: Object.assign({}, p.aparencia), nome: p.nome, editId: p.id, arma: p.opcoes && p.opcoes.arma, ocultarCapacete: !!(p.opcoes && p.opcoes.ocultarCapacete), peitoral: (p.opcoes && p.opcoes.peitoral) || null, sujo: true, erro: '' }); },
   aviso(txt, ok = false) { this.ui.erro = txt; this.ui.msgT = 3.2; this.ui.ok = ok; if (!ok) game.audio.play('uiDeny'); },
 
   // ------------------------------------------------------------ personagem da prévia
@@ -57,12 +76,24 @@ const CriacaoTela = {
     }
     return CHARACTERS_BY_ID.p_previa;
   },
+  // O conjunto do Iniciado (o que o personagem veste ao entrar no mundo), com o peitoral escolhido
   pecasPrevia(def) {
-    const U = this.ui, C = PERS_CLASSES[def.classe], out = {};
+    const U = this.ui, out = {};
     if (U.modo !== 'lista' && !U.mostrarEquip) return out;
-    for (const [slot, fam] of C.pecas) if (!(slot === 'capacete' && (U.modo === 'lista' ? CRIA_OPC(def).ocultarCapacete : U.ocultarCapacete))) out[slot] = Arsenal.gerar(slot, fam, 0, 1);
+    const op = U.modo === 'lista' ? CRIA_OPC(def) : { ocultarCapacete: U.ocultarCapacete, peitoral: U.peitoral };
+    const pe = this.peitoralDe(def.classe, op.peitoral), C = this._ini || (this._ini = {});
+    for (const id of ARM_INICIAL) {
+      if ((id === 'ini_peitoral' || id === 'ini_armadura') && id !== pe) continue;
+      const it = C[id] || (C[id] = Arsenal.gerarCat(id, 0));
+      if (it && !(it.slot === 'capacete' && op.ocultarCapacete)) out[it.slot] = it;
+    }
     return out;
   },
+  peitoralDe(classe, v) { return v || ARM_PEITORAL_PADRAO[classe] || 'ini_peitoral'; },
+  // Aparência no estilo Realista (peças GLB)?
+  realista() { return this.ui.A.estilo !== 1 && typeof Criacao3D !== 'undefined' && Criacao3D.CAT.length > 0; },
+  // Miniatura (imagem do catálogo da criação) já decodificada, ou null
+  mini(id) { return typeof Criacao3D !== 'undefined' ? Criacao3D.mini(id) : null; },
   armasDe(def) { return def.weapons.filter((w) => WEAPON_DEFS[w] && !WEAPON_DEFS[w].gadget && WEAPON_DEFS[w].implemented !== false); },
 
   // ------------------------------------------------------------ entrada (arrastar, roda, digitar)
@@ -109,7 +140,7 @@ const CriacaoTela = {
   parar() { if (this.ui && this.ui.digitando) this.digitar(false); },
   aleatorio() {
     const U = this.ui, r = (n) => Math.floor(Math.random() * n);
-    for (const k of PERS_CAMPOS) U.A[k] = r(persNumOps(k, U.classe));
+    for (const k of PERS_CAMPOS) if (k !== 'estilo') U.A[k] = r(persNumOps(k, U.classe));
     U.A.altura = 1 + r(3);
     const silabas = ['ka', 'ri', 'on', 'va', 'el', 'dra', 'my', 'sor', 'tel', 'zan', 'lia', 'ven', 'ro', 'is', 'mar'];
     if (!U.nome) { let n = ''; for (let i = 0; i < 2 + r(2); i++) n += silabas[r(silabas.length)]; U.nome = n.charAt(0).toUpperCase() + n.slice(1); }
@@ -141,7 +172,7 @@ const CriacaoTela = {
       return;
     }
     const abas = ['classe', 'aparencia', 'equipamento'];
-    if (inp.pressed.tabNext || inp.pressed.tabPrev) { const i = abas.indexOf(U.aba); U.aba = abas[(i + (inp.pressed.tabNext ? 1 : 2)) % 3]; U.sel = 0; game.audio.play('uiMove'); }
+    if (inp.pressed.tabNext || inp.pressed.tabPrev) { const i = abas.indexOf(U.aba); this.acao('aba', abas[(i + (inp.pressed.tabNext ? 1 : 2)) % 3]); }
     const n = this.linhas().length;
     if (inp.pressed.up && n) { U.sel = (U.sel - 1 + n) % n; game.audio.play('uiMove'); }
     if (inp.pressed.down && n) { U.sel = (U.sel + 1) % n; game.audio.play('uiMove'); }
@@ -153,15 +184,15 @@ const CriacaoTela = {
   linhas() {
     const U = this.ui;
     if (U.aba === 'classe') return U.modo === 'editar' ? [U.classe] : PERS_ORDEM;
-    if (U.aba === 'aparencia') return PERS_CAMPOS;
-    return ['arma', 'mostrar', 'capacete'];
+    if (U.aba === 'aparencia') return this.realista() ? CRIA_LINHAS_GLB : PERS_CAMPOS.filter((k) => !PERS_APAR[k].glb);
+    return ['arma', 'peitoral', 'mostrar', 'capacete'];
   },
   mudar(i, d) {
     const U = this.ui, L = this.linhas(), k = L[i];
     if (!k) return;
     if (U.aba === 'classe') {
       if (U.modo === 'editar') return this.aviso('A classe não muda depois de criada (as árvores e o equipamento são dela).');
-      if (U.classe !== k) { const A0 = U.A; U.classe = k; U.A = persAparenciaPadrao(k); for (const c of ['corpo', 'altura', 'pele', 'rosto', 'olhos', 'sobrancelhas', 'cabelo', 'corCabelo', 'barba', 'marcas']) U.A[c] = A0[c]; U.arma = null; U.sujo = true; }
+      if (U.classe !== k) { const A0 = U.A; U.classe = k; U.A = persAparenciaPadrao(k); for (const c of ['estilo', 'corpoG', 'rostoG', 'cabeloG', 'barbaG', 'corpo', 'altura', 'pele', 'rosto', 'olhos', 'sobrancelhas', 'cabelo', 'corCabelo', 'barba', 'marcas']) U.A[c] = A0[c]; U.arma = null; U.sujo = true; }
       U.sel = i; game.audio.play('uiSelect');
       return;
     }
@@ -173,14 +204,19 @@ const CriacaoTela = {
     }
     const def = this.previa();
     if (k === 'arma') { const W = this.armasDe(def); if (W.length) { const j = W.indexOf(U.arma || W[0]); U.arma = W[((j + (d || 1)) % W.length + W.length) % W.length]; U.sujo = true; } }
+    else if (k === 'peitoral') U.peitoral = this.peitoralDe(U.classe, U.peitoral) === 'ini_peitoral' ? 'ini_armadura' : 'ini_peitoral';
     else if (k === 'mostrar') U.mostrarEquip = !U.mostrarEquip;
     else if (k === 'capacete') U.ocultarCapacete = !U.ocultarCapacete;
     U.sel = i; game.audio.play('uiMove');
   },
   acao(id, v) {
     const U = this.ui;
-    if (id === 'aba') { U.aba = v; U.sel = 0; game.audio.play('uiMove'); return; }
+    if (id === 'aba') { U.aba = v; U.sel = v === 'aparencia' && this.realista() ? 1 : 0; game.audio.play('uiMove'); return; }   // Realista: começa no corpo (a linha 0 é o estilo)
     if (id === 'linha') { this.mudar(v, 1); return; }
+    // grade de miniaturas (estilo Realista): escolhe a opção direto; categoria; estilo
+    if (id === 'opcao') { U.A[v.k] = v.i; U.sel = Math.max(0, this.linhas().indexOf(v.k)); U.sujo = true; game.audio.play('uiMove'); return; }
+    if (id === 'cat') { const C = CRIA_CATS.find((c) => c.id === v); if (C) { U.sel = this.linhas().indexOf(C.campos[0]); game.audio.play('uiMove'); } return; }
+    if (id === 'estilo') { if (U.A.estilo !== v) { U.A.estilo = v; U.sel = 0; U.sujo = true; game.audio.play('uiSelect'); } return; }
     if (id === 'menos') { this.mudar(v, -1); return; }
     if (id === 'nome') { this.digitar(true); return; }
     if (id === 'aleatorio') { this.aleatorio(); return; }
@@ -204,7 +240,7 @@ const CriacaoTela = {
       return;
     }
     if (id === 'confirmar') {
-      const r = Perfis.criar(U.nome, U.classe, U.A, U.editId, { ocultarCapacete: U.ocultarCapacete, arma: U.arma });
+      const r = Perfis.criar(U.nome, U.classe, U.A, U.editId, { ocultarCapacete: U.ocultarCapacete, arma: U.arma, peitoral: U.peitoral });
       if (!r.ok) { this.aviso(r.erro); if (/nome/i.test(r.erro)) this.digitar(true); return; }
       game.audio.play('levelUp');
       if (U.modo === 'editar') { U.modo = 'lista'; U.lsel = Math.max(0, Perfis.lista().indexOf(r.perfil)); this.aviso(`${r.perfil.nome} foi atualizado.`, true); return; }
@@ -299,9 +335,10 @@ const CriacaoTela = {
       if (U.modo === 'editar') { ctx.fillStyle = 'rgba(255,200,150,0.85)'; ctx.fillText('A classe é fixa depois de criada.', x + 16, y + h - 18); }
       return;
     }
+    if (U.aba === 'aparencia' && this.realista()) { this.drawGrades(ctx, x, y0, w, h - (y0 - y), rgb); return; }
     if (U.aba === 'aparencia') {
-      const rh = Math.min(36, (h - 64) / PERS_CAMPOS.length);
-      PERS_CAMPOS.forEach((k, i) => {
+      const L = this.linhas(), rh = Math.min(36, (h - 64) / L.length);
+      L.forEach((k, i) => {
         const yy = y0 + i * rh, on = U.sel === i, ops = k === 'roupa' ? C.roupas : PERS_APAR[k].ops, v = U.A[k];
         if (on) { ctx.fillStyle = 'rgba(70,56,120,0.45)'; ctx.fillRect(x + 8, yy, w - 16, rh - 3); }
         ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = on ? '#ffffff' : 'rgba(200,190,230,0.85)';
@@ -320,7 +357,8 @@ const CriacaoTela = {
     }
     // equipamento
     const def = this.previa(), W = this.armasDe(def), arma = U.arma || W[0], rh = 36;
-    const rows = [['Arma principal', WEAPON_DEFS[arma] ? WEAPON_DEFS[arma].name : '—'], ['Mostrar peças na prévia', U.mostrarEquip ? 'SIM' : 'NÃO'], ['Esconder o capacete', U.ocultarCapacete ? 'SIM' : 'NÃO']];
+    const pe = this.peitoralDe(U.classe, U.peitoral);
+    const rows = [['Arma principal', WEAPON_DEFS[arma] ? WEAPON_DEFS[arma].name : '—'], ['Peitoral inicial', pe === 'ini_armadura' ? 'COURAÇA' : 'GIBÃO'], ['Mostrar peças na prévia', U.mostrarEquip ? 'SIM' : 'NÃO'], ['Esconder o capuz', U.ocultarCapacete ? 'SIM' : 'NÃO']];
     rows.forEach(([nm, val], i) => {
       const yy = y0 + i * rh, on = U.sel === i;
       if (on) { ctx.fillStyle = 'rgba(70,56,120,0.45)'; ctx.fillRect(x + 8, yy, w - 16, rh - 3); }
@@ -336,12 +374,86 @@ const CriacaoTela = {
     for (const w0 of def.weapons) { const D = WEAPON_DEFS[w0]; if (!D) continue; ctx.fillStyle = w0 === arma ? '#ffffff' : 'rgba(200,190,230,0.8)'; ctx.fillText(`${D.gadget ? 'Equipamento' : w0 === arma ? 'Principal' : 'Secundária'} · ${D.name}`, x + 16, yy); yy += 18; }
     yy += 8;
     ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(rgb, 1);
-    ctx.fillText('PEÇAS INICIAIS', x + 16, yy); ctx.letterSpacing = '0px'; yy += 20;
-    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(215,205,240,0.9)';
-    for (const [slot, fam] of C.pecas) { ctx.fillText(`${ARS_VAGAS[slot].nome} · ${Arsenal.nomeBase(slot, fam)}`, x + 16, yy); yy += 18; }
-    yy += 6;
-    ctx.fillStyle = 'rgba(180,170,210,0.75)';
-    wrapText(ctx, 'As peças vão para a mochila e já começam vestidas; no mundo, a aba EQUIPAMENTO troca cada uma e a forja da cidade faz novas.', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+    ctx.fillText('CONJUNTO DO INICIADO · NÍVEL 1', x + 16, yy); ctx.letterSpacing = '0px'; yy += 12;
+    // as sete peças (miniaturas): as vestidas acesas, o outro peitoral apagado
+    const ids = ARM_INICIAL.filter((id) => ARMADURAS_GLB[id]), cs = Math.min(64, (w - 32 - 6 * 3) / 4);
+    ids.forEach((id, i) => {
+      const cx = x + 16 + (i % 4) * (cs + 6), cy = yy + Math.floor(i / 4) * (cs + 6), D = ARMADURAS_GLB[id], veste = !((id === 'ini_peitoral' || id === 'ini_armadura') && id !== pe);
+      ctx.fillStyle = veste ? 'rgba(34,28,52,0.95)' : 'rgba(16,14,24,0.8)'; ctx.fillRect(cx, cy, cs, cs);
+      ctx.strokeStyle = veste ? rgba(ARS_RARIDADES[0].rgb, 0.7) : 'rgba(120,110,150,0.3)'; ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, cs - 1);
+      const im = this.mini(id);
+      if (im) { ctx.globalAlpha = veste ? 1 : 0.35; ctx.drawImage(im, cx + 3, cy + 3, cs - 6, cs - 6); ctx.globalAlpha = 1; }
+      else this.icone(ctx, D.equipmentSlot, cx + cs / 2, cy + cs / 2, cs * 0.5);
+    });
+    yy += Math.ceil(ids.length / 4) * (cs + 6) + 10;
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';
+    wrapText(ctx, 'Raridade Comum. As sete peças vão para a mochila (uma vez só) e seis já começam vestidas; o conjunto de nível 30 da classe se conquista no mundo. Na aba EQUIPAMENTO do mundo, cada peça é trocada à parte.', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+  },
+  icone(ctx, slot, cx, cy, s) { if (typeof Arsenal !== 'undefined' && Arsenal.iconeVaga) Arsenal.iconeVaga(ctx, slot, cx, cy, s, 'rgba(200,190,230,0.7)'); },
+  // Estilo Realista: estilo, categorias e a grade de miniaturas das opções da categoria
+  drawGrades(ctx, x, y0, w, h, rgb) {
+    const U = this.ui, A = U.A, L = this.linhas(), campo = L[U.sel] || 'corpoG', catAt = (CRIA_CATS.find((c) => c.campos.includes(campo)) || CRIA_CATS[0]);
+    const bw = (w - 28) / 2;
+    this.botao(ctx, 'estilo', 0, x + 12, y0, bw, 26, 'REALISTA', A.estilo !== 1, rgb);
+    this.botao(ctx, 'estilo', 1, x + 16 + bw, y0, bw, 26, 'ESTILIZADO', A.estilo === 1, rgb);
+    const cw = (w - 24) / CRIA_CATS.length;
+    CRIA_CATS.forEach((c, i) => this.botao(ctx, 'cat', c.id, x + 12 + i * cw, y0 + 34, cw - 4, 26, c.nome, c === catAt, rgb));
+    let yy = y0 + 72;
+    const fim = y0 + h - 56;
+    for (const k of catAt.campos) {
+      const on = campo === k;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      ctx.fillStyle = on ? rgba(rgb, 1) : 'rgba(200,190,230,0.8)'; ctx.fillText(PERS_APAR[k].nome.toUpperCase(), x + 14, yy + 6); ctx.letterSpacing = '0px';
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#efe8ff'; ctx.textAlign = 'right';
+      ctx.fillText(PERS_APAR[k].ops[A[k]] || '', x + w - 14, yy + 6);
+      yy += 16;
+      const ops = PERS_APAR[k].ops, n = ops.length;
+      if (CRIA_MINI[k]) {
+        // grade de miniaturas
+        const ids = CRIA_MINI[k](), cols = k === 'corpoG' ? 2 : k === 'rostoG' ? 4 : 3, rows = Math.ceil(n / cols);
+        const cs = Math.min((w - 24 - (cols - 1) * 6) / cols, (fim - yy - (catAt.campos.length > 1 ? 70 : 0)) / rows - 6);
+        for (let i = 0; i < n; i++) {
+          const cx = x + 12 + (i % cols) * (cs + 6), cy = yy + Math.floor(i / cols) * (cs + 6), sel = A[k] === i;
+          const m = game.input.mouse, hov = m.x >= cx && m.x <= cx + cs && m.y >= cy && m.y <= cy + cs;
+          const g = ctx.createLinearGradient(0, cy, 0, cy + cs);
+          g.addColorStop(0, sel ? rgba(rgb, 0.32) : 'rgba(40,34,60,0.95)'); g.addColorStop(1, 'rgba(12,10,20,0.95)');
+          ctx.fillStyle = g; ctx.fillRect(cx, cy, cs, cs);
+          const im = this.mini(ids[i]);
+          if (im) ctx.drawImage(im, cx + 4, cy + 2, cs - 8, cs - 8);
+          else if (!ids[i]) {   // 'sem': círculo cortado
+            ctx.strokeStyle = 'rgba(200,190,230,0.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx + cs / 2, cy + cs / 2 - 6, cs * 0.18, 0, Math.PI * 2);
+            ctx.moveTo(cx + cs / 2 - cs * 0.13, cy + cs / 2 - 6 + cs * 0.13); ctx.lineTo(cx + cs / 2 + cs * 0.13, cy + cs / 2 - 6 - cs * 0.13); ctx.stroke();
+          } else { ctx.fillStyle = 'rgba(200,190,230,0.4)'; ctx.font = `11px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.fillText('…', cx + cs / 2, cy + cs / 2); }
+          ctx.fillStyle = 'rgba(6,5,10,0.7)'; ctx.fillRect(cx, cy + cs - 16, cs, 16);
+          ctx.font = `${cs < 70 ? 9 : 10}px ${FONT_UI}`; ctx.fillStyle = sel ? '#ffffff' : 'rgba(215,205,240,0.85)'; ctx.textAlign = 'center';
+          ctx.fillText(ops[i], cx + cs / 2, cy + cs - 8);
+          ctx.strokeStyle = sel ? rgba(rgb, 1) : hov ? 'rgba(200,180,255,0.7)' : 'rgba(150,130,210,0.3)'; ctx.lineWidth = sel ? 2 : 1;
+          ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, cs - 1);
+          U.rects.push({ id: 'opcao', v: { k, i }, x: cx, y: cy, w: cs, h: cs });
+        }
+        yy += rows * (cs + 6) + 10;
+      } else if (PERS_APAR[k].cores) {
+        // amostras de cor
+        const cols = Math.min(8, n), cs = Math.min(34, (w - 24 - (cols - 1) * 6) / cols);
+        for (let i = 0; i < n; i++) {
+          const cx = x + 12 + (i % cols) * (cs + 6), cy = yy + Math.floor(i / cols) * (cs + 6), sel = A[k] === i;
+          ctx.fillStyle = PERS_APAR[k].cores[i]; ctx.fillRect(cx, cy, cs, cs);
+          ctx.strokeStyle = sel ? '#ffffff' : 'rgba(255,255,255,0.25)'; ctx.lineWidth = sel ? 2.5 : 1; ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, cs - 1);
+          U.rects.push({ id: 'opcao', v: { k, i }, x: cx, y: cy, w: cs, h: cs });
+        }
+        yy += Math.ceil(n / cols) * (cs + 6) + 14;
+      } else {
+        // opções em botões (altura)
+        const bw2 = (w - 24 - (n - 1) * 4) / n;
+        for (let i = 0; i < n; i++) this.botao(ctx, 'opcao', { k, i }, x + 12 + i * (bw2 + 4), yy, bw2, 26, ops[i].toUpperCase(), A[k] === i, rgb);
+        yy += 40;
+      }
+    }
+    if (catAt.id === 'cores') {
+      ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';
+      wrapText(ctx, 'A cor da pele vale para o corpo e o rosto; a do cabelo, para o cabelo e a barba. Sombras, poros e reflexos da textura continuam.', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+    }
+    this.botao(ctx, 'aleatorio', 0, x + 12, y0 + h - 40, w - 24, 28, 'APARÊNCIA ALEATÓRIA', false, rgb);
   },
   seta(ctx, x, y, s, d, i) {
     const m = game.input.mouse, hov = m.x >= x && m.x <= x + s && m.y >= y && m.y <= y + s;

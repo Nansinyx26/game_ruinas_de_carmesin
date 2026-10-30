@@ -7,11 +7,15 @@
 // visual (js/heroes/pecas3d.js: a peça presa ao esqueleto do herói, no tamanho de cada um), o
 // TECIDO (tecido, linho leve, lã, couro, metal, cristal, liga Eclipse: resistência à água,
 // absorção e secagem, isolamento, vento, neve, peso e reflexo do calor — o clima usa isso,
-// js/mundo/clima.js) e as resistências (fogo, gelo, elétrico, veneno). Raridades: as das
-// relíquias (Comum → Lendária) e a Eclipse, só das peças da família Eclipse.
+// js/mundo/clima.js) e as resistências (fogo, gelo, elétrico, veneno). Raridades: exatamente
+// quatro (Comum/branco, Incomum/verde, Raro/azul, Lendário/dourado), independentes do nível; as
+// peças da família Eclipse nascem Lendárias. As peças GLB do catálogo central (conjunto inicial e
+// os de nível 30 de cada classe) estão em js/mundo/armaduras.js.
 // Atributos: defesa, vida, mobilidade (peças leves ajudam, placas pesam) e, das raras em
-// diante, bônus secundários (dano, crítico, energia, recarga). O PESO total acima de 6 deixa
-// o herói mais lento. Equipar pede o nível (nível da peça − 4). Tudo só vale no mundo aberto,
+// diante, bônus secundários (dano, crítico, energia, recarga); peças de um mesmo conjunto dão
+// bônus com 2, 4 e o conjunto completo vestidos. O PESO total acima de 6 deixa
+// o herói mais lento. Equipar pede o nível (nível da peça − 4; nas peças do catálogo, o nível
+// exigido e a classe). Tudo só vale no mundo aberto,
 // como as relíquias. Combinar famílias é livre; a armadura especial inteira (Roster) cobre as
 // peças no modelo (os atributos continuam). Ocultar capacete, capa ou acessório só esconde.
 // Guardado em World.state.arsenal (o salvamento do mundo): mochila de peças, o que cada herói
@@ -20,8 +24,15 @@
 // A aba EQUIPAMENTO da mochila (WorldInv) mostra o herói em 3D com as peças, as vagas, as
 // peças da vaga escolhida (a escolhida aparece no modelo antes de confirmar) e a comparação.
 // ---------------------------------------------------------------------------
-const ARS_RARIDADES = WORLD_RARIDADES.concat([{ id: 'eclipse', name: 'Eclipse', rgb: '150,130,255', k: 5.2, w: 0, preco: 26 }]);
-const ARS_ECLIPSE = ARS_RARIDADES.length - 1;
+const ARS_RARIDADES = [
+  { id: 'comum', name: 'Comum', cor: 'branco', rgb: '232,234,240', k: 1, preco: 1 },
+  { id: 'incomum', name: 'Incomum', cor: 'verde', rgb: '90,220,120', k: 1.5, preco: 2 },
+  { id: 'raro', name: 'Raro', cor: 'azul', rgb: '80,160,255', k: 2.2, preco: 4.5 },
+  { id: 'lendario', name: 'Lendário', cor: 'dourado', rgb: '255,196,60', k: 3.4, preco: 14 },
+];
+const ARS_LENDARIA = ARS_RARIDADES.length - 1;
+// A rolagem das relíquias (cinco graus, js/mundo/inventario.js) nas quatro da armadura: a Épica conta como Rara
+const arsRaridade = (r) => [0, 1, 2, 2, 3][clamp(r | 0, 0, 4)];
 // Vagas: peso relativo de defesa, vida e carga
 const ARS_VAGAS = {
   capacete: { nome: 'Capacete', def: 0.012, vida: 5, peso: 1, area: 0.12 },
@@ -64,7 +75,7 @@ const ARS_FAMILIAS = {
     nomes: { capacete: 'Visor de Cristal', peitoral: 'Peitoral de Cristal', capa: 'Capa Refratária', acessorio: 'Módulo de Cristal' }, acc: 'modulo', cor: ['#3c5a7a', '#22324a', '#7fe8ff'], luz: '#7fe8ff' },
   obsidiana: { nome: 'de Obsidiana', tier: 5, tec: 'metal', res: { fogo: 0.2 }, mob: -0.015, mat: { obsidiana: 3, ferro: 2, nucleo: 1 }, plano: true,
     nomes: { capacete: 'Elmo de Obsidiana', peitoral: 'Couraça de Obsidiana', capa: 'Manto de Cinzas', acessorio: 'Braseiro de Obsidiana' }, acc: 'braseiro', cor: ['#2a2024', '#161114', '#5a4a50'], luz: '#ff7a2a' },
-  eclipse: { nome: 'Eclipse', tier: 6, tec: 'eclipse', res: { fogo: 0.1, gelo: 0.1, eletrico: 0.1, veneno: 0.1 }, mob: 0.01, mat: { essencia: 2, circuito: 2, nucleo: 2 }, plano: true, rmin: ARS_ECLIPSE,
+  eclipse: { nome: 'Eclipse', tier: 6, tec: 'eclipse', res: { fogo: 0.1, gelo: 0.1, eletrico: 0.1, veneno: 0.1 }, mob: 0.01, mat: { essencia: 2, circuito: 2, nucleo: 2 }, plano: true, rmin: ARS_LENDARIA,
     nomes: { capacete: 'Coroa Eclipse', peitoral: 'Égide Eclipse', capa: 'Manto do Eclipse', acessorio: 'Núcleo Eclipse' }, acc: 'nucleo', cor: ['#1c1f33', '#0e0f1c', '#3a3f66'], luz: '#8fa8ff' },
 };
 const ARS_RES = { fogo: 'Fogo', gelo: 'Gelo', eletrico: 'Elétrico', veneno: 'Veneno' };
@@ -82,7 +93,7 @@ const ARS_ACESSORIOS = {
 const ARS_MAX = 30;   // peças na mochila (o resto vai ao armazém da cidade)
 
 const Arsenal = {
-  ui: { foco: 'vagas', vaga: 0, sel: 0 },
+  ui: { foco: 'vagas', vaga: 0, sel: 0, filtroR: -1, usaveis: false },
   get S() {
     const W = World.state;
     if (!W.arsenal) {
@@ -92,6 +103,12 @@ const Arsenal = {
     }
     const A = W.arsenal;
     A.itens = A.itens || []; A.vest = A.vest || {}; A.ocultar = A.ocultar || {}; A.armas = A.armas || {};
+    // salvamentos de antes das quatro raridades (seis graus: Épica → Raro, Lendária e Eclipse → Lendário)
+    if (!A.rv) {
+      const m = (it) => { if (it && it.r !== undefined) it.r = [0, 1, 2, 2, 3, 3][clamp(it.r | 0, 0, 5)]; };
+      A.itens.forEach(m); if (A.armazem) A.armazem.itens.forEach(m); if (A.loja) A.loja.itens.forEach(m);
+      A.rv = 4;
+    }
     A.receitas = A.receitas || []; A.armazem = A.armazem || { itens: [], mat: {} };
     return A;
   },
@@ -100,8 +117,9 @@ const Arsenal = {
   tec(it) { return ARS_TECIDOS[this.fam(it).tec]; },
   // Nome: o próprio da família (capacete, peitoral, capa e acessório) ou a vaga + a família
   nomeBase(slot, fam) { const F = ARS_FAMILIAS[fam]; return F.nomes[slot] || `${ARS_VAGAS[slot].nome} ${F.nome}`; },
-  nome(it) { return `${this.nomeBase(it.slot, it.fam)}${it.ap ? ` +${it.ap}` : ''}`; },
-  req(it) { return Math.max(1, it.lv - 4); },
+  nome(it) { const D = this.cat(it); return `${D ? D.nome : this.nomeBase(it.slot, it.fam)}${it.ap ? ` +${it.ap}` : ''}`; },
+  req(it) { const D = this.cat(it); return D ? D.requiredLevel : Math.max(1, it.lv - 4); },
+  rolar(min = 0, sorte = 0) { return arsRaridade(WorldInv.rolarRaridade(min, sorte)); },
   mult(it) { return 1 + (it.ap || 0) * 0.1; },
   // Materiais da receita da peça (por família e peso da vaga)
   custoMat(slot, fam) {
@@ -112,14 +130,14 @@ const Arsenal = {
   // Valor das peças: preço dos materiais da receita; a venda paga menos que comprar o material
   // (nunca dá lucro fabricar para vender), mesmo nas raras
   valorBase(slot, fam) { const M = this.custoMat(slot, fam); let v = 0; for (const m in M) v += (WORLD_MATERIAIS[m] ? WORLD_MATERIAIS[m].preco : 10) * M[m]; return v; },
-  valor(it) { return Math.round(this.valorBase(it.slot, it.fam) * (1.3 + it.r * 0.6) * (1 + (it.ap || 0) * 0.2)); },   // preço de compra
-  venda(it) { return Math.max(1, Math.round(this.valorBase(it.slot, it.fam) * (0.3 + it.r * 0.04))); },
+  valor(it) { const D = this.cat(it); return Math.round((D ? D.sellValue * 3.2 : this.valorBase(it.slot, it.fam)) * (1.3 + it.r * 0.6) * (1 + (it.ap || 0) * 0.2)); },   // preço de compra
+  venda(it) { const D = this.cat(it); return Math.max(1, Math.round(D ? D.sellValue * ARS_RARIDADES[it.r].preco ** 0.6 : this.valorBase(it.slot, it.fam) * (0.3 + it.r * 0.04))); },
   item(id) { return this.S.itens.find((q) => q.id === id) || null; },
 
   // ---------------------------------------------------------------- geração
   gerar(slot, fam, r = 0, lv = 1) {
     const F = ARS_FAMILIAS[fam], V = ARS_VAGAS[slot];
-    r = Math.max(r, F.rmin || 0);
+    r = clamp(Math.max(r | 0, F.rmin || 0), 0, ARS_LENDARIA);
     const R = ARS_RARIDADES[r], tk = 0.7 + 0.3 * F.tier, rk = 1 + (R.k - 1) * 0.35, nk = 1 + lv * 0.01;
     const st = {};
     if (V.def) st.defesa = V.def * tk * rk * nk;
@@ -161,13 +179,14 @@ const Arsenal = {
     const z = World.zone;
     if (!z) return;
     const fam = this.famDaZona(z), slot = pick(ARS_ORDEM);
-    if (e.worldBoss) this.guardar(this.gerar(slot, fam, WorldInv.rolarRaridade(3, 0.4), z.lv + 2));
-    else if (e.elite && Math.random() < 0.08) this.guardar(this.gerar(slot, fam, WorldInv.rolarRaridade(1, 0.3), z.lv));
+    if (e.worldBoss) this.guardar(this.gerar(slot, fam, this.rolar(3, 0.4), z.lv + 2));
+    else if (e.elite && Math.random() < 0.08) this.guardar(this.gerar(slot, fam, this.rolar(1, 0.3), z.lv));
+    this.onKillClasse(e, z);   // peças de nível 30 da classe (js/mundo/armaduras.js)
   },
   onChest(d) {
     const z = World.zone;
     if (!z || Math.random() > (d.boss || d.secret ? 0.6 : 0.25)) return;
-    this.guardar(this.gerar(pick(ARS_ORDEM), this.famDaZona(z), WorldInv.rolarRaridade(d.boss ? 2 : 0, 0.2), z.lv));
+    this.guardar(this.gerar(pick(ARS_ORDEM), this.famDaZona(z), this.rolar(d.boss ? 2 : 0, 0.2), z.lv));
   },
 
   // ---------------------------------------------------------------- vestir
@@ -179,7 +198,8 @@ const Arsenal = {
   equipar(id, h = this.heroi()) {
     const it = this.item(id);
     if (!it) return 'Escolha uma peça.';
-    if (game.activeProgress().level < this.req(it)) return `Requer nível ${this.req(it)}.`;
+    const nao = this.podeUsar(it, h);
+    if (nao) return nao;
     const outro = this.vestidaPor(id);
     if (outro && outro !== h) delete this.S.vest[outro][it.slot];
     (this.S.vest[h] || (this.S.vest[h] = {}))[it.slot] = id;
@@ -219,6 +239,13 @@ const Arsenal = {
       const rnd = mulberry32((dia * 7919 + 131) >>> 0), fam = this.famDaZona({ lv: lv + 2, region: 'nexus' }), vagas = ARS_ORDEM.slice();
       S.loja = { dia, itens: [0, 0, 1, 2].map((r) => this.gerar(vagas.splice(Math.floor(rnd() * vagas.length), 1)[0], fam, r, lv + 1)) };
     }
+    // personagem criado do nível 30 em diante: duas peças do conjunto de nível 30 da classe dele
+    const c = this.classeDe(this.heroi());
+    if (c && lv >= 30 && !S.loja.classe) {
+      const rnd = mulberry32((dia * 104729 + 7) >>> 0), ids = Object.keys(ARMADURAS_GLB).filter((k) => ARMADURAS_GLB[k].setId === `${c}30`);
+      for (let i = 0; i < 2 && ids.length; i++) S.loja.itens.push(this.gerarCat(ids.splice(Math.floor(rnd() * ids.length), 1)[0], Math.floor(rnd() * 3), rnd));
+      S.loja.classe = c;
+    }
     const out = S.loja.itens.map((it, k) => ({ peca: k }));
     for (const f of FAB_PLANOS) if (f !== 'eclipse' && !Fabrica.sabePlano(f) && lv >= this.nivelPlano(f)) out.push({ plano: f });
     return out;
@@ -256,6 +283,7 @@ const Arsenal = {
       peso += ARS_VAGAS[s].peso * this.tec(it).peso;
       if (s === 'acessorio') { const A = ARS_ACESSORIOS[this.fam(it).acc]; if (A && A.carga) carga += A.carga; }
     }
+    this.aplicarConjuntos(S, h, V);   // bônus dos conjuntos (js/mundo/armaduras.js)
     S.peso = peso; S.carga = carga;
     if (peso > carga) S.speedMult -= (peso - carga) * 0.02;
     // arma aprimorada na bancada (js/mundo/fabrica.js): +6% de dano por nível
@@ -283,10 +311,18 @@ const Arsenal = {
   },
 
   // ---------------------------------------------------------------- aba EQUIPAMENTO
+  // Peças da vaga na mochila, com os filtros (raridade; só as que o herói pode vestir agora)
   lista() {
     const U = this.ui, slot = ARS_ORDEM[U.vaga];
-    return this.S.itens.filter((it) => it.slot === slot).sort((a, b) => b.r - a.r || b.lv - a.lv);
+    return this.S.itens.filter((it) => it.slot === slot && (U.filtroR < 0 || it.r === U.filtroR) && (!U.usaveis || !this.podeUsar(it))).sort((a, b) => b.r - a.r || b.lv - a.lv);
   },
+  filtrar(tipo) {
+    const U = this.ui;
+    if (tipo === 'r') U.filtroR = U.filtroR >= ARS_LENDARIA ? -1 : U.filtroR + 1; else U.usaveis = !U.usaveis;
+    U.sel = 0; game.audio.play('uiMove');
+  },
+  // Texto dos atributos ({ dano: 0.03, vida: 10 } → '+3,0% Dano · +10 Vida')
+  fmtLista(st) { return Object.keys(st).map((k) => this.fmtSt(k, st[k])).join(' · '); },
   // Prévia: o que o herói vestiria com a peça escolhida no lugar da atual
   previa() {
     const U = this.ui, V = Object.assign({}, this.vestidos());
@@ -325,6 +361,8 @@ const Arsenal = {
       if (inp.pressed.erase) this.acao('vender');
       if (!L.length) U.foco = 'vagas';
     }
+    if (inp.pressed.camLeft || inp.pressed.camRight) this.filtrar('r');   // Z / C: filtro de raridade
+    if (inp.pressed.camToggle) this.filtrar('u');                          // V: só as que posso usar
     U.sel = clamp(U.sel, 0, Math.max(0, L.length - 1));
   },
   acao(a) {
@@ -348,6 +386,7 @@ const Arsenal = {
     if (r.vaga !== undefined) { U.vaga = r.vaga; U.foco = 'vagas'; U.sel = 0; game.audio.play('uiMove'); return true; }
     if (r.peca !== undefined) { if (U.foco === 'pecas' && U.sel === r.peca) this.acao('vestir'); else { U.foco = 'pecas'; U.sel = r.peca; game.audio.play('uiMove'); } return true; }
     if (r.ars) { this.acao(r.ars); return true; }
+    if (r.filtro) { this.filtrar(r.filtro); return true; }
     return false;
   },
   // Herói girando devagar com as peças (a escolhida já no corpo)
@@ -361,7 +400,8 @@ const Arsenal = {
     k.vitrine = true; k.state = 'idle'; k.animTime = t; k.stateTime = t; k.moveSpeed = 0; k.flash = 0; k.fury = 0;
     k.wpnOut = false; k.facing = k.viewFacing = 0.9 + 0.55 * Math.sin(t * 0.35);
     k.pecasPrevia = this.previa();
-    const o = game.opts3(k, 0); o.scale = sc;
+    k.escala = sc;   // (pela escala da entidade: as opções do modelo, como a altura do personagem criado, vêm por cima de o.scale)
+    const o = game.opts3(k, 0);
     const it = game.queue3(key, k, o);
     R3D.flush(Math.min(3, game.scale));
     if (!it || !it.ok) return false;
@@ -419,23 +459,44 @@ const Arsenal = {
     // peças da vaga
     const px = vx + vw + 18, pwd = VIEW_W - 36 - px, slot = ARS_ORDEM[U.vaga];
     titulo(`${ARS_VAGAS[slot].nome.toUpperCase()} · NA MOCHILA (${S.itens.length}/${ARS_MAX})`, px, top - 12);
-    const prh = 40, maxN = Math.max(1, Math.floor((bot - top - 110) / (prh + 4)));
+    // filtros: raridade (Z/C) e só as que posso usar (V)
+    const fr = U.filtroR < 0 ? null : ARS_RARIDADES[U.filtroR], fw = Math.min(170, (pwd - 8) / 2);
+    const botaoF = (id, txt, x0, rgbF, on) => {
+      ctx.fillStyle = on ? rgba(rgbF, 0.25) : 'rgba(12,20,36,0.85)'; ctx.fillRect(x0, top, fw, 24);
+      ctx.strokeStyle = rgba(rgbF, on ? 0.9 : 0.4); ctx.strokeRect(x0 + 0.5, top + 0.5, fw - 1, 23);
+      ctx.font = `bold 11px ${FONT_UI}`; ctx.fillStyle = on ? rgba(rgbF, 1) : 'rgba(200,214,235,0.85)'; ctx.textAlign = 'center'; ctx.fillText(txt, x0 + fw / 2, top + 12);
+      WU.rects.push({ filtro: id, x: x0, y: top, w: fw, h: 24 });
+    };
+    botaoF('r', fr ? `RARIDADE: ${fr.name.toUpperCase()}` : 'RARIDADE: TODAS', px, fr ? fr.rgb : '150,205,255', !!fr);
+    botaoF('u', U.usaveis ? 'SÓ AS QUE POSSO USAR' : 'TODAS AS PEÇAS', px + fw + 8, '150,205,255', U.usaveis);
+    const lt = top + 30, prh = 40, maxN = Math.max(1, Math.floor((bot - lt - 110) / (prh + 4)));
+    let hov = null;
     const ini = clamp(U.sel - maxN + 1, 0, Math.max(0, L.length - maxN));
     L.slice(ini, ini + maxN).forEach((it, j) => {
-      const i = ini + j, y = top + j * (prh + 4), on = U.foco === 'pecas' && U.sel === i, R = this.rar(it), vest = this.vestido(it.id), outro = !vest && this.vestidaPor(it.id);
+      const i = ini + j, y = lt + j * (prh + 4), on = U.foco === 'pecas' && U.sel === i, R = this.rar(it), vest = this.vestido(it.id), outro = !vest && this.vestidaPor(it.id);
       ctx.fillStyle = on ? 'rgba(40,70,130,0.6)' : 'rgba(12,20,36,0.85)'; ctx.fillRect(px, y, pwd, prh);
       ctx.strokeStyle = on ? '#ffffff' : rgba(R.rgb, 0.55); ctx.lineWidth = on ? 2 : 1; ctx.strokeRect(px + 0.5, y + 0.5, pwd - 1, prh - 1);
+      // miniatura da peça GLB (ou o ícone da vaga)
+      const im = it.cat && typeof Criacao3D !== 'undefined' ? Criacao3D.mini(it.cat) : null;
+      if (im) ctx.drawImage(im, px + 4, y + 4, prh - 8, prh - 8); else this.iconeVaga(ctx, it.slot, px + prh / 2, y + prh / 2, 16, rgba(R.rgb, 0.9));
+      const tx = px + prh + 4, nao = this.podeUsar(it);
       ctx.textAlign = 'left'; ctx.font = `bold 13px ${FONT_UI}`; ctx.fillStyle = rgba(R.rgb, 1);
-      ctx.fillText(`${this.nome(it)}`, px + 10, y + 14);
-      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.8)';
-      ctx.fillText(`${R.name} · ${this.tec(it).nome} · nv ${it.lv}${vest ? ' · VESTIDA' : outro ? ` · com ${charFirstName(outro)}` : ''}`, px + 10, y + 30);
+      ctx.fillText(`${this.nome(it)}`, tx, y + 14);
+      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = nao && !vest ? 'rgba(255,150,160,0.85)' : 'rgba(200,214,235,0.8)';
+      ctx.fillText(`${R.name} · ${this.tec(it).nome} · nv ${it.lv}${vest ? ' · VESTIDA' : outro ? ` · com ${charFirstName(outro)}` : nao ? ` · ${nao.replace(/\.$/, '').toLowerCase()}` : ''}`, tx, y + 30);
       WU.rects.push({ peca: i, x: px, y, w: pwd, h: prh });
+      const m = game.input.mouse;
+      if (m.x >= px && m.x <= px + pwd && m.y >= y && m.y <= y + prh) hov = it;
     });
-    if (!L.length) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Nenhuma peça desta vaga. Fabrique na forja do Refúgio da Aurora,', px, top + 18); ctx.fillText('compre no armeiro ou encontre em baús, elites e chefes.', px, top + 36); }
+    if (!L.length) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.7)'; ctx.textAlign = 'left'; ctx.fillText(U.filtroR >= 0 || U.usaveis ? 'Nenhuma peça desta vaga com esses filtros.' : 'Nenhuma peça desta vaga. Fabrique na forja do Refúgio da Aurora,', px, lt + 18); if (!(U.filtroR >= 0 || U.usaveis)) ctx.fillText('compre no armeiro ou encontre em baús, elites e chefes.', px, lt + 36); }
     // resumo do conjunto: defesa, peso e proteção contra o clima
     const Ssum = Object.assign({}, BASE_STATS); this.apply(Ssum);
-    const P = this.protecao(), ry = bot - 96;
+    const P = this.protecao(), cj = this.conjuntos(), ry = bot - 96 - (cj.length ? 20 : 0);
     titulo('CONJUNTO', px, ry);
+    if (cj.length) {
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#ffd98a'; ctx.textAlign = 'left';
+      ctx.fillText(cj.map((c) => `${c.nome} ${c.n}/${c.completo}${c.ativos.length ? ` (${c.ativos.map(([k]) => k).join('+')} ativo)` : ''}`).join(' · '), px, bot - 16);
+    }
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#eef3fa'; ctx.textAlign = 'left';
     const resTxt = Object.keys(ARS_RES).map((r) => { const v = Ssum['res' + r.charAt(0).toUpperCase() + r.slice(1)] || 0; return v ? `${ARS_RES[r]} ${Math.round(v * 100)}%` : ''; }).filter(Boolean).join(' · ');
     ctx.fillText(`Defesa +${Math.round((Ssum.armor || 0) * 100)}% · Vida +${Math.round(Ssum.hpBonus || 0)} · Peso ${(Ssum.peso || 0).toFixed(1)}/${Ssum.carga || 6}${(Ssum.peso || 0) > (Ssum.carga || 6) ? ' (lento)' : ''}`, px, ry + 20);
@@ -451,8 +512,9 @@ const Arsenal = {
       ctx.textAlign = 'left'; ctx.font = `bold 18px ${FONT_TITLE}`; ctx.fillStyle = rgba(R.rgb, 1); ctx.fillText(this.nome(it).toUpperCase(), x + 18, y + 24);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.85)';
       const ac = it.slot === 'acessorio' ? ARS_ACESSORIOS[this.fam(it).acc] : null;
-      ctx.fillText(`${R.name} · ${ARS_VAGAS[it.slot].nome} · ${this.tec(it).nome}${ac ? ` · ${ac.desc}` : ''} · nível ${it.lv}${it.ap ? ` · +${it.ap}` : ''}`, x + 18, y + 46);
-      ctx.textAlign = 'right'; ctx.fillStyle = falta ? '#ff8a9a' : 'rgba(160,200,170,0.85)'; ctx.fillText(`Requer nível ${req}`, x + w - 18, y + 24); ctx.textAlign = 'left';
+      const D = this.cat(it), nao = this.podeUsar(it);
+      ctx.fillText(`${R.name} (${R.cor}) · ${ARS_VAGAS[it.slot].nome} · ${this.tec(it).nome}${ac && !D ? ` · ${ac.desc}` : ''} · nível do item ${it.lv}${it.ap ? ` · +${it.ap}` : ''}${D ? ` · ${ARM_CONJUNTOS[D.setId].nome}` : ''}`, x + 18, y + 46);
+      ctx.textAlign = 'right'; ctx.fillStyle = falta || nao ? '#ff8a9a' : 'rgba(160,200,170,0.85)'; ctx.fillText(nao && !falta ? nao : `Requer nível ${req}`, x + w - 18, y + 24); ctx.textAlign = 'left';
       let cx = x + 18;
       for (const c of this.comparar(it)) {
         const nome = c.res ? `${ARS_RES[c.res]} ${Math.round(c.v * 100)}%` : this.fmtSt(c.k, c.v);
@@ -472,7 +534,7 @@ const Arsenal = {
     }
     if (this.ocultavel(slot)) acoes.push(['ocultar', S.ocultar[slot] ? 'MOSTRAR' : 'OCULTAR']);
     ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#9fd0ff'; ctx.textAlign = 'left';
-    ctx.fillText(it ? `Vale ${this.venda(it)} células na loja · desmontar devolve parte do material` : 'Enter: ver as peças da vaga', x + 18, y + 104);
+    ctx.fillText(it ? `Vale ${this.venda(it)} células na loja · desmontar devolve parte do material${this.cat(it) ? ' · passe o mouse na peça para os detalhes' : ''}` : 'Enter: ver as peças da vaga', x + 18, y + 104);
     let bx = x + w - 18;
     for (const [id, label] of acoes.slice().reverse()) {
       ctx.font = `bold 13px ${FONT_TITLE}`;
@@ -485,6 +547,41 @@ const Arsenal = {
       WU.rects.push({ ars: id, x: bx, y: y + 84, w: bw, h: 34 });
       bx -= 12;
     }
+    if (hov) this.tooltip(ctx, hov, game.input.mouse.x, game.input.mouse.y);
   },
-  dica() { return this.ui.foco === 'pecas' ? 'Enter: vestir / tirar · Delete: vender ou desmontar · ←: vagas · Q/E: abas · Esc: fechar' : '↑/↓: vaga · Enter ou →: peças · Delete: tirar · Q/E: abas · Esc: fechar'; },
+  // Detalhes completos da peça (passando o mouse): raridade, níveis, classes, atributos de base e
+  // da raridade, o conjunto (bônus e quantas peças vestidas), descrição e valor
+  tooltip(ctx, it, mx, my) {
+    const D = this.cat(it), R = this.rar(it), linhas = [];
+    linhas.push([`${R.name} (${R.cor}) · ${ARS_VAGAS[it.slot].nome} · nível do item ${it.lv}`, 'rgba(210,222,240,0.9)']);
+    const cls = D && D.allowedClasses.length < ARM_CLASSES.length ? D.allowedClasses.map((k) => (typeof PERS_CLASSES !== 'undefined' && PERS_CLASSES[k] ? PERS_CLASSES[k].nome : k)).join(', ') : 'todas as classes';
+    const nao = this.podeUsar(it);
+    linhas.push([`Requer nível ${this.req(it)} · ${cls}`, nao ? '#ff8a9a' : 'rgba(160,220,180,0.9)']);
+    const base = it.base || it.st, bonus = it.bonus || {};
+    linhas.push([`Base: ${this.fmtLista(base) || '—'}`, '#ffffff']);
+    if (Object.keys(bonus).length) linhas.push([`Raridade: ${this.fmtLista(bonus)}`, rgba(R.rgb, 1)]);
+    const res = Object.keys(it.res || {}).filter((r) => it.res[r] > 0.001).map((r) => `${ARS_RES[r]} ${Math.round(it.res[r] * 100)}%`).join(' · ');
+    if (res) linhas.push([`Resistências: ${res}`, 'rgba(200,214,235,0.85)']);
+    if (D) {
+      const C = ARM_CONJUNTOS[D.setId], cj = this.conjuntos().find((c) => c.id === D.setId), n = cj ? cj.n : 0;
+      linhas.push([`${C.nome} (${n}/${C.completo} vestidas)`, '#ffd98a']);
+      for (const [k, b] of C.bonus) linhas.push([`  ${k === C.completo ? 'completo' : `${k} peças`}: ${this.fmtLista(b)}${n >= k ? ' ✓' : ''}`, n >= k ? '#ffe7a8' : 'rgba(200,190,160,0.7)']);
+      ctx.save(); ctx.font = `12px ${FONT_UI}`;
+      for (const ln of wrapText(ctx, D.description, 380)) linhas.push([ln, 'rgba(190,200,220,0.8)']);
+      ctx.restore();
+    }
+    linhas.push([`Venda: ${this.venda(it)} células`, '#9fd0ff']);
+    ctx.save();
+    ctx.font = `12px ${FONT_UI}`;
+    const w = Math.min(420, Math.max(...linhas.map(([t]) => ctx.measureText(t).width), ctx.measureText(this.nome(it)).width + 20) + 24), h = 34 + linhas.length * 17;
+    const x = clamp(mx + 18, 8, VIEW_W - w - 8), y = clamp(my - h - 10, 8, VIEW_H - h - 8);
+    ctx.fillStyle = 'rgba(6,10,20,0.96)'; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = rgba(R.rgb, 0.85); ctx.lineWidth = 1.5; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `bold 14px ${FONT_UI}`; ctx.fillStyle = rgba(R.rgb, 1);
+    ctx.fillText(this.nome(it), x + 12, y + 16);
+    ctx.font = `12px ${FONT_UI}`;
+    linhas.forEach(([t, c], i) => { ctx.fillStyle = c; ctx.fillText(t.length > 70 ? t.slice(0, 69) + '…' : t, x + 12, y + 36 + i * 17); });
+    ctx.restore();
+  },
+  dica() { return this.ui.foco === 'pecas' ? 'Enter: vestir / tirar · Delete: vender ou desmontar · ←: vagas · Z/C: raridade · V: só as usáveis · Esc: fechar' : '↑/↓: vaga · Enter ou →: peças · Delete: tirar · Z/C: raridade · V: só as usáveis · Q/E: abas · Esc: fechar'; },
 };

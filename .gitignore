@@ -21,3 +21,4 @@ yarn-error.log*
 testes.png
 *.tmp
 *.bak
+.cache_criacao

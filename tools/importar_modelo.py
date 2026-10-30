@@ -540,25 +540,10 @@ def reassar(Vh, Fh, UVh, Nh, mapas, VL, FL, NL, lado=2048, K=8):
 
 
 # ============================================================ principal
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('arquivo')
-    ap.add_argument('--id', default='kael')
-    ap.add_argument('--altura', type=float, default=None)
-    ap.add_argument('--cima', default='+y', choices=list(EIXOS))
-    ap.add_argument('--frente', default='+z', choices=list(EIXOS))
-    ap.add_argument('--casaco', action='store_true', default=None)
-    ap.add_argument('--sem-casaco', dest='casaco', action='store_false')
-    ap.add_argument('--tex', type=int, default=2048)
-    ap.add_argument('--max-tri', type=int, default=40000)
-    ap.add_argument('--saida', default=None)
-    ap.add_argument('--maos-do-modelo', action='store_true', help='mantém as mãos da malha (sem as luvas articuladas do jogo)')
-    ap.add_argument('--sem-simbolo', action='store_true', help='não acrescenta o símbolo luminoso das costas (Kael)')
-    ap.add_argument('--armadura', default=None, help='grava ARMOR3D[<nome>] (armadura vestida em jogo, js/heroes/armaduras3d.js) em vez do modelo do herói')
-    a = ap.parse_args()
-    H = a.altura or {'kael': 62.1, 'lyra': 58.5, 'drakos': 66.5, 'sera': 60.0, 'orion': 63.0}.get(a.id, 62.1)
-    casaco = a.casaco if a.casaco is not None else a.id in ('kael', 'lyra', 'sera', 'orion')
-
+def rigar(a, H, casaco):
+    """Lê o modelo, reduz e reassa os mapas, monta o esqueleto pelas silhuetas e dá os pesos de
+    cada vértice (até 4 ossos). Usado por main() e por tools/importar_criacao.py (corpos da
+    criação de personagem). Devolve os dados num dicionário."""
     ler = ler_glb if a.arquivo.lower().endswith('.glb') else ler_obj
     V, UV, F, mapas = ler(a.arquivo)
     print(f'lido {a.arquivo}: {len(V)} vértices, {len(F)} triângulos, mapas {[k for k, v in mapas.items() if v is not None]}')
@@ -719,6 +704,30 @@ def main():
         B = ligacao(kk)
         Mi = np.linalg.inv(B[:, :3])
         inv[kk] = [round(float(x), 6) for x in np.hstack([Mi, (-Mi @ B[:, 3]).reshape(3, 1)]).ravel()]
+    return dict(V=V, F=F, Fo=Fo, Uo=Uo, cor=cor, mr=mr, nrm=nrm, o2r=o2r, rot=rot, nomes=nomes, ix=ix, ordem=ordem, w=w, inv=inv, props=props, Nr=Nr, k=k, bones=bones, Wn=Wn, H=H, Vr=Vr, Rx=Rx, masks=masks, P=P, z_pesc=z_pesc, z_cint=z_cint)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap.add_argument('arquivo')
+    ap.add_argument('--id', default='kael')
+    ap.add_argument('--altura', type=float, default=None)
+    ap.add_argument('--cima', default='+y', choices=list(EIXOS))
+    ap.add_argument('--frente', default='+z', choices=list(EIXOS))
+    ap.add_argument('--casaco', action='store_true', default=None)
+    ap.add_argument('--sem-casaco', dest='casaco', action='store_false')
+    ap.add_argument('--tex', type=int, default=2048)
+    ap.add_argument('--max-tri', type=int, default=40000)
+    ap.add_argument('--saida', default=None)
+    ap.add_argument('--maos-do-modelo', action='store_true', help='mantém as mãos da malha (sem as luvas articuladas do jogo)')
+    ap.add_argument('--sem-simbolo', action='store_true', help='não acrescenta o símbolo luminoso das costas (Kael)')
+    ap.add_argument('--armadura', default=None, help='grava ARMOR3D[<nome>] (armadura vestida em jogo, js/heroes/armaduras3d.js) em vez do modelo do herói')
+    a = ap.parse_args()
+    H = a.altura or {'kael': 62.1, 'lyra': 58.5, 'drakos': 66.5, 'sera': 60.0, 'orion': 63.0}.get(a.id, 62.1)
+    casaco = a.casaco if a.casaco is not None else a.id in ('kael', 'lyra', 'sera', 'orion')
+
+    r = rigar(a, H, casaco)
+    V, F, Fo, Uo, cor, mr, nrm, o2r, rot, nomes, ix, ordem, w, inv, props, Nr = (r[c] for c in ('V', 'F', 'Fo', 'Uo', 'cor', 'mr', 'nrm', 'o2r', 'rot', 'nomes', 'ix', 'ordem', 'w', 'inv', 'props', 'Nr'))
 
     # ---- mapas: cor, material (R metal, G aspereza, B relevo neutro) e normais
     def jpg(img, lado_, q):

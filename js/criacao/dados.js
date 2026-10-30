@@ -88,7 +88,20 @@ const PERS_PELES = ['#f2d0b6', '#e8b896', '#d29f7a', '#b98563', '#9a6a4c', '#7b5
 const PERS_CABELOS = [['Preto', '#141216'], ['Castanho', '#4a2e1c'], ['Ruivo', '#8a3a1a'], ['Loiro', '#c9a35e'], ['Grisalho', '#8a8a90'], ['Branco', '#e4e4ea'], ['Azul', '#2a4a9a'], ['Carmesim', '#8a1a2a']];
 const PERS_OLHOS = [['Castanhos', '#4a2c18', 0], ['Verdes', '#2e6a3a', 0], ['Azuis', '#2f5aa8', 0], ['Cinzentos', '#6a7480', 0], ['Âmbar', '#b07a1e', 0], ['Arcanos', '#7ad0ff', 1]];
 const PERS_CORES = [['Ônix', '#1c1b20'], ['Aço', '#4a5260'], ['Floresta', '#2c4a2e'], ['Índigo', '#2e2a5a'], ['Vinho', '#5a1e26'], ['Couro', '#5c3e26'], ['Areia', '#8a7452'], ['Musgo', '#4a5232']];
+// Estilo Realista: as peças GLB da criação (js/criacao/montagem.js; nomes do catálogo); Estilizado:
+// o modelo paramétrico, com os campos de forma, rosto, cabelo, barba, marcas e roupa abaixo
+const PERS_GLB = {
+  corpoG: ['Masculino', 'Feminino'],
+  rostoG: ['Rosto 1', 'Rosto 2', 'Rosto 3', 'Rosto 4', 'Rosto 5', 'Rosto 6', 'Rosto 7', 'Rosto 8'],
+  cabeloG: ['Sem cabelo', 'Cabelo 1', 'Cabelo 2', 'Cabelo 3', 'Cabelo 4', 'Cabelo 5', 'Cabelo 6', 'Cabelo 7', 'Cabelo 8'],
+  barbaG: ['Sem barba', 'Cacheada', 'Curta', 'Longa', 'Média', 'Viking'],
+};
 const PERS_APAR = {
+  estilo: { nome: 'Estilo do modelo', ops: ['Realista', 'Estilizado'] },
+  corpoG: { nome: 'Corpo', ops: PERS_GLB.corpoG, glb: true },
+  rostoG: { nome: 'Rosto', ops: PERS_GLB.rostoG, glb: true },
+  cabeloG: { nome: 'Cabelo', ops: PERS_GLB.cabeloG, glb: true },
+  barbaG: { nome: 'Barba', ops: PERS_GLB.barbaG, glb: true },
   corpo: { nome: 'Tipo de corpo', ops: ['Esguio', 'Atlético', 'Robusto', 'Curvilíneo'] },
   altura: { nome: 'Altura', ops: ['Baixa', 'Mediana baixa', 'Mediana', 'Alta', 'Muito alta'] },
   pele: { nome: 'Tom de pele', ops: PERS_PELES.map((c, i) => `Tom ${i + 1}`), cores: PERS_PELES },
@@ -107,8 +120,21 @@ const PERS_CAMPOS = Object.keys(PERS_APAR);
 // Aparência inicial de uma classe (o jogador muda tudo na tela)
 function persAparenciaPadrao(classe = 'guerreiro') {
   const C = PERS_CLASSES[classe] || PERS_CLASSES.guerreiro;
-  return { corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
+  return { estilo: 0, corpoG: 0, rostoG: { guerreiro: 0, mago: 2, assassino: 3, patrulheiro: 1, guardiao: 2 }[classe] || 0, cabeloG: classe === 'mago' ? 8 : classe === 'assassino' ? 2 : 1, barbaG: classe === 'guerreiro' ? 2 : 0,
+    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
 }
+// Personagem salvo antes das peças GLB: as escolhas do modelo paramétrico viram as mais parecidas
+// (corpo curvilíneo → feminino; o penteado e a barba pelo formato)
+function persMigrarGLB(A) {
+  const fem = A.corpo === 3, rosto = Number.isInteger(A.rosto) ? A.rosto % 4 : 0;
+  return {
+    estilo: 0, corpoG: fem ? 1 : 0, rostoG: (fem ? 4 : 0) + rosto,
+    cabeloG: [0, 1, 2, 8, 6, 4, 5, 6][A.cabelo] !== undefined ? [0, 1, 2, 8, 6, 4, 5, 6][A.cabelo] : 1,
+    barbaG: [0, 2, 4, 2, 3][A.barba] || 0,
+  };
+}
+// Peitoral do conjunto inicial escolhido na criação (gibão leve ou couraça pesada; null = o da classe)
+function persPeitoral(v) { return v === 'ini_peitoral' || v === 'ini_armadura' ? v : null; }
 // Número de opções de um campo (a roupa depende da classe)
 function persNumOps(campo, classe) { return campo === 'roupa' ? (PERS_CLASSES[classe] || PERS_CLASSES.guerreiro).roupas.length : PERS_APAR[campo].ops.length; }
 
@@ -170,6 +196,7 @@ const Perfis = {
   // Aparência válida: cada campo dentro das opções (o que faltar ou vier errado volta ao padrão)
   validarAparencia(A, classe) {
     const P = persAparenciaPadrao(classe), out = {};
+    if (A && typeof A === 'object' && A.estilo === undefined) A = Object.assign({}, A, persMigrarGLB(A));
     for (const k of PERS_CAMPOS) { const v = A && Number.isInteger(A[k]) ? A[k] : P[k]; out[k] = v >= 0 && v < persNumOps(k, classe) ? v : P[k]; }
     return out;
   },
@@ -178,7 +205,7 @@ const Perfis = {
     const v = this.validarNome(p.nome, p.id);
     const nome = v.ok || /repetido|Já existe/.test(v.erro) ? v.nome : null;
     if (!nome || nome.length < 2 || nome.length > 16) return null;
-    return { id: p.id, nome, classe: p.classe, aparencia: this.validarAparencia(p.aparencia, p.classe), opcoes: { ocultarCapacete: !!(p.opcoes && p.opcoes.ocultarCapacete), arma: p.opcoes && typeof p.opcoes.arma === 'string' && WEAPON_DEFS[p.opcoes.arma] ? p.opcoes.arma : null },
+    return { id: p.id, nome, classe: p.classe, aparencia: this.validarAparencia(p.aparencia, p.classe), opcoes: { ocultarCapacete: !!(p.opcoes && p.opcoes.ocultarCapacete), arma: p.opcoes && typeof p.opcoes.arma === 'string' && WEAPON_DEFS[p.opcoes.arma] ? p.opcoes.arma : null, peitoral: persPeitoral(p.opcoes && p.opcoes.peitoral) },
       criado: +p.criado || Date.now(), atualizado: +p.atualizado || Date.now() };
   },
   validar(D) {
@@ -226,7 +253,7 @@ const Perfis = {
     if (!v.ok) return { ok: false, erro: v.erro };
     const agora = Date.now();
     let p = id && this.obter(id);
-    const op = { ocultarCapacete: !!opcoes.ocultarCapacete, arma: opcoes.arma && WEAPON_DEFS[opcoes.arma] ? opcoes.arma : null };
+    const op = { ocultarCapacete: !!opcoes.ocultarCapacete, arma: opcoes.arma && WEAPON_DEFS[opcoes.arma] ? opcoes.arma : null, peitoral: persPeitoral(opcoes.peitoral) };
     if (p) { p.nome = v.nome; p.aparencia = this.validarAparencia(aparencia, p.classe); p.opcoes = op; p.atualizado = agora; }   // a classe não muda depois de criada
     else { p = { id: this.novoId('p'), nome: v.nome, classe, aparencia: this.validarAparencia(aparencia, classe), opcoes: op, criado: agora, atualizado: agora }; D.personagens.push(p); }
     this.registrar(p);
@@ -264,8 +291,9 @@ const Perfis = {
 };
 
 // ---------------------------------------------------------------------------
-// Começo no mundo (World.start, mundo novo do personagem criado): equipamento inicial da classe
-// (as peças vão para a mochila do Arsenal e já começam vestidas), a arma escolhida na criação e o
+// Começo no mundo (World.start, mundo novo do personagem criado): o conjunto do Iniciado (as sete
+// peças GLB do nível 1 vão para a mochila do Arsenal e seis já começam vestidas, com o peitoral
+// escolhido na criação), a arma escolhida na criação e o
 // progresso inicial (2 pontos de habilidade, como os outros heróis)
 // ---------------------------------------------------------------------------
 const PersCriacao = {
@@ -273,7 +301,7 @@ const PersCriacao = {
     const C = PERS_CLASSES[perf.classe];
     if (!C) return;
     if (typeof Arsenal !== 'undefined') {
-      for (const [slot, fam] of C.pecas) { const it = Arsenal.guardar(Arsenal.gerar(slot, fam, 0, 1), true); Arsenal.equipar(it.id, perf.id); }
+      Arsenal.inicial(perf.id, true, perf.opcoes && perf.opcoes.peitoral);   // conjunto do Iniciado (js/mundo/armaduras.js)
       if (perf.opcoes && perf.opcoes.ocultarCapacete) Arsenal.S.ocultar.capacete = true;
     }
     if (perf.opcoes && perf.opcoes.arma) RosterManager.equipWeapon(perf.id, perf.opcoes.arma);

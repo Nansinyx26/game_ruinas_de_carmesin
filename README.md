@@ -146,29 +146,38 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
   - **Painéis**: CLASSE, APARÊNCIA e EQUIPAMENTO (Q/E trocam de aba). À direita ficam o **nome**, os números reais da classe, as habilidades e a câmera inicial (isométrica ou 3ª pessoa).
   - **ALEATÓRIO** sorteia a aparência. Tudo muda na hora no modelo.
 - **Nome**: de 2 a 16 caracteres (letras com acento, números, espaço, hífen ou apóstrofo), sem repetir outro personagem da conta. Recusado, aparece o motivo.
-- **Aparência** (13 opções, todas desenhadas no modelo; `PERS_APAR` em `js/criacao/dados.js`):
+- **Aparência — estilo Realista** (o padrão; `js/criacao/montagem.js`): o personagem é montado com as **peças GLB** de `assets/Criar_Personagem/`, em grades de miniaturas (as PNG da pasta) por categoria:
+  - **Corpo**: masculino ou feminino, e 5 alturas (de 92% a 108%).
+  - **Rosto**: 8 rostos (4 masculinos e 4 femininos; qualquer um em qualquer corpo).
+  - **Cabelo**: 8 penteados (curtos, espetados, longos, tranças, coque) ou sem cabelo; o cabelo comprido balança.
+  - **Barba**: cacheada, curta, longa, média, viking ou sem barba.
+  - **Cores**: 8 tons de pele (corpo e rosto juntos, a emenda do pescoço some) e 8 cores de cabelo (cabelo e barba). A cor é aplicada pixel a pixel na textura: sombras, poros e reflexos continuam.
+  - Personagens salvos antes recebem as peças mais parecidas com o que tinham (corpo curvilíneo → feminino, o penteado e a barba pelo formato).
+- **Aparência — estilo Estilizado** (13 opções, o modelo paramétrico de antes; `PERS_APAR` em `js/criacao/dados.js`):
   - **Corpo e altura**: 4 tipos de corpo (esguio, atlético, robusto, curvilíneo: ombros, quadril, braços e pernas) e 5 alturas (de 92% a 108%).
   - **Rosto**: 8 tons de pele e 4 formatos de rosto. Olhos em 6 cores; os **arcanos** brilham. Sobrancelhas em 4 opções.
   - **Cabelo e barba**: 8 cabelos (raspado, curto, topete, longo, rabo de cavalo, moicano, tranças, coque) em 8 cores; 5 barbas.
   - **Marcas**: cicatrizes, tatuagem, runas acesas ou pintura de guerra.
   - **Roupa**: 3 roupas por classe, com cor da roupa e cor dos detalhes.
-- **Equipamento**: escolher a arma principal entre as da classe, ver as peças iniciais vestidas na prévia e esconder o capacete.
+- **Equipamento**: escolher a arma principal entre as da classe, escolher o peitoral inicial (gibão leve ou couraça pesada), ver o **conjunto do Iniciado** vestido na prévia (as sete peças em miniatura) e esconder o capuz.
 
 ### Classes
 
 Cada classe luta com o conjunto de combate de um herói do jogo: golpes, combos, poderes, suprema, arma 3D e as 5 árvores de habilidades. O progresso é próprio do personagem. Por cima disso a classe tem vida, energia, velocidade e bônus próprios, aplicados de verdade no `Player.recalc`.
 
-| Classe | Luta como | Vida · Energia · Velocidade | Bônus da classe | Começa vestindo |
+| Classe | Luta como | Vida · Energia · Velocidade | Bônus da classe | Peitoral inicial (padrão) |
 |---|---|---|---|---|
-| Guerreiro | Drakos (machado e martelo, escudo, investida, retaliação) | 150 · 90 · 210 | +6% defesa, +15% quebra de guarda | peitoral e ombreiras de placas, botas de couro |
-| Mago | Sera (bastão neural, drone, pulsos, campo de força) | 90 · 135 · 228 | +10% poder das habilidades, −8% recarga | capa e botas do Viajante, amuleto de cristal |
-| Assassino | Orion (lâminas duplas, furtividade, golpe pelas costas, pistola) | 82 · 100 · 268 | +6% crítico | capuz, luvas e botas de couro |
-| Patrulheiro | Lyra (kit completo: arco de fóton, armadilhas, iscas, chuva de flechas, gancho) | 92 · 110 · 250 | +4% crítico, alcance maior para coletar | capa do Viajante, calças e botas de couro |
-| Guardião Arcano | Kael (Tempestade Nula, técnicas, granada, Eclipse Absoluto) | 115 · 115 · 232 | +3% defesa, +6% poder | peitoral de couro, ombreiras de cristal, capa |
+| Guerreiro | Drakos (machado e martelo, escudo, investida, retaliação) | 150 · 90 · 210 | +6% defesa, +15% quebra de guarda | couraça (pesada) |
+| Mago | Sera (bastão neural, drone, pulsos, campo de força) | 90 · 135 · 228 | +10% poder das habilidades, −8% recarga | gibão (leve) |
+| Assassino | Orion (lâminas duplas, furtividade, golpe pelas costas, pistola) | 82 · 100 · 268 | +6% crítico | gibão (leve) |
+| Patrulheiro | Lyra (kit completo: arco de fóton, armadilhas, iscas, chuva de flechas, gancho) | 92 · 110 · 250 | +4% crítico, alcance maior para coletar | gibão (leve) |
+| Guardião Arcano | Kael (Tempestade Nula, técnicas, granada, Eclipse Absoluto) | 115 · 115 · 232 | +3% defesa, +6% poder | couraça (pesada) |
+
+Todas as classes começam com o mesmo **conjunto do Iniciado** (nível 1, Comum): capuz, peitoral, luvas, calças, botas e capa vestidos, e o outro peitoral na mochila. O conjunto de nível 30 de cada classe se conquista no mundo (veja *Armaduras GLB* em *Mundo aberto*).
 
 ### No jogo
 
-- **Mundo próprio**: confirmar a criação começa um mundo novo só daquele personagem, no Mercado Afundado, com as peças iniciais da classe vestidas no **Arsenal** e 2 pontos de habilidade.
+- **Mundo próprio**: confirmar a criação começa um mundo novo só daquele personagem, no Mercado Afundado, com o conjunto do Iniciado na mochila e vestido no **Arsenal** e 2 pontos de habilidade.
 - **Personagem ativo**: o último escolhido na lista continua ativo, e **MUNDO ABERTO** no menu volta para o mundo dele. Para jogar com o Kael, escolha **Mundo original do Kael** na lista.
 - **Retrato e árvores**: o HUD mostra o rosto do próprio modelo (com a aparência escolhida). Na árvore de habilidades (Tab), ele é a primeira aba.
 - **Visual**: o modelo usa as peças de armadura vestidas, o clima na roupa (molhado, neve, geada), as poses de combate e as armas da classe, nas duas câmeras.
@@ -188,10 +197,27 @@ Cada classe luta com o conjunto de combate de um herói do jogo: golpes, combos,
 
 ### Limites
 
-- **Corpo**: o corpo é feito de partes rígidas presas ao esqueleto do Kael. Os tipos de corpo mudam as proporções das partes; não há malha contínua deformável (sem *morph targets*) nem controles deslizantes livres.
-- **Rosto**: tem poucos polígonos, no estilo dos modelos procedurais do jogo.
+- **Peças GLB**: os modelos da pasta foram gerados separados, sem esqueleto e em escalas diferentes. O conversor encaixa cada um sozinho (o rosto pelo crânio, cabelo, barba e capuz pela cobertura da cabeça, as armaduras pela região do corpo, empurradas para fora da pele) e liga tudo ao esqueleto do Kael; em poses extremas uma peça pode encostar ou atravessar um pouco a outra. O cabelo some debaixo do capuz. Não há controles deslizantes livres nem *morph targets*: as escolhas são as peças da pasta.
+- **Tamanho**: cada peça convertida tem de 0,3 a 1,4 MB (45 MB ao todo em `js/assets/criacao/`); o jogo só carrega as peças que o personagem usa.
+- **Estilizado**: o modelo paramétrico tem menos polígonos, no estilo dos modelos procedurais do jogo.
 - **Classe**: não muda depois de criada (as árvores e o equipamento são dela).
 - **Animações e campanha**: as animações e os golpes são os do herói da base da classe. O personagem criado não entra na campanha da história nem nas missões de lealdade e campanhas dos heróis do elenco: ele joga o mundo aberto.
+
+### Peças GLB da criação: conversão
+
+`tools/importar_criacao.py` (Python com numpy, scipy, OpenCV, fast-simplification, xatlas e DracoPy) lê os GLB de `assets/Criar_Personagem/` **sem mover, renomear nem copiar** os arquivos e grava `js/assets/criacao/<id>.js` (malhas com pele, textura, mapa de material e de normais reassados), `catalogo.js` (os caminhos reais de cada GLB e miniatura) e `minis.js` (as miniaturas em data URI, porque imagens de arquivo não podem ir para o canvas abrindo o jogo do disco).
+
+```bash
+python3 tools/importar_criacao.py --listar          # inventário dos GLB por pasta
+python3 tools/importar_criacao.py                   # tudo (corpos primeiro, ~15 min, 2 processos)
+python3 tools/importar_criacao.py --so rosto_3      # só algumas peças (os corpos já convertidos ficam)
+python3 tools/importar_criacao.py --minis           # só miniaturas e catálogo
+```
+
+- **Corpos** (masculino e feminino, 1,5 milhão de triângulos e textura 4K cada): reduzidos a 18 mil triângulos e ligados ao esqueleto pelas silhuetas (o mesmo processo dos heróis); a cabeça careca sai e o corpo é dividido em regiões (tronco, braços, mãos, pernas, pés) para esconder o que fica dentro de botas, luvas e calças.
+- **Rostos**: crânio do busto encaixado no crânio do corpo (escala e posição pela distância entre as superfícies), pescoço levado à forma do pescoço do corpo.
+- **Cabelos, barbas e capuzes**: escala e posição que melhor cobrem a cabeça sem entrar nela nem tapar os olhos.
+- **Armaduras**: botas e luvas em par (separadas e postas em cada pé e mão), peitoral e calças na caixa da região, capa presa na base do pescoço e pendurada nas abas do casaco do Kael (balança), amuleto no peito.
 
 ## Mundo aberto
 
@@ -259,7 +285,14 @@ Sete regiões **realmente exploráveis** com o mesmo combate, personagens, árvo
 
 ### Armaduras, fabricação e a cidade principal
 
-- **Armadura modular** (`js/mundo/arsenal.js`, aba **EQUIPAMENTO** da mochila): nove vagas — capacete, peitoral, ombreira esquerda, ombreira direita, luvas, calças, botas, capa e acessório —, cada uma trocada sozinha. As peças vêm em oito famílias (Viajante, Couro, Inverno, Deserto, Placas, Cristal, Obsidiana e o conjunto especial **Eclipse**), com as raridades das relíquias mais a Eclipse. Cada peça soma defesa e vida (pelo tamanho da vaga, pela família e pela raridade), muda a velocidade conforme o material, dá **resistências** (fogo, gelo, elétrico e veneno, que reduzem de verdade o dano das poças, o veneno, a lentidão e os lasers) e tem **peso** (acima da carga, o herói fica mais lento; o acessório mochila aumenta a carga). Cada peça veste um herói por vez e pede o nível dele. A tela mostra as vagas, a lista da vaga escolhida, a **prévia 3D** do herói com a peça escolhida no lugar da atual, a **comparação** atributo por atributo (▲▼), e deixa esconder capacete, capa e acessório. Tudo fica no salvamento do mundo na hora.
+- **Armadura modular** (`js/mundo/arsenal.js`, aba **EQUIPAMENTO** da mochila): nove vagas — capacete, peitoral, ombreira esquerda, ombreira direita, luvas, calças, botas, capa e acessório —, cada uma trocada sozinha. As peças vêm em oito famílias (Viajante, Couro, Inverno, Deserto, Placas, Cristal, Obsidiana e o conjunto especial **Eclipse**, que nasce Lendário) e exatamente **quatro raridades**: Comum (branco), Incomum (verde), Raro (azul) e Lendário (dourado). A raridade não depende do nível. Salvamentos antigos (seis graus) são convertidos: Épica vira Raro; Lendária e Eclipse viram Lendário. Cada peça soma defesa e vida (pelo tamanho da vaga, pela família e pela raridade), muda a velocidade conforme o material, dá **resistências** (fogo, gelo, elétrico e veneno, que reduzem de verdade o dano das poças, o veneno, a lentidão e os lasers) e tem **peso** (acima da carga, o herói fica mais lento; o acessório mochila aumenta a carga). Cada peça veste um herói por vez e pede o nível dele. A tela mostra as vagas, a lista da vaga escolhida, a **prévia 3D** do herói com a peça escolhida no lugar da atual, a **comparação** atributo por atributo (▲▼), e deixa esconder capacete, capa e acessório. Tudo fica no salvamento do mundo na hora.
+- **Armaduras GLB** (`js/mundo/armaduras.js`, catálogo central `ARMADURAS_GLB` com os caminhos reais de `js/assets/criacao/catalogo.js`): cada definição tem `itemLevel`, `rarity`, `requiredLevel`, `allowedClasses`, `equipmentSlot`, `baseStats`, `bonusStats`, `modelPath`, `iconPath`, `description`, `sellValue` e `setId`.
+  - **Conjunto do Iniciado** (`Armaduras_Inicial_Level_1/`, nível 1, todas as classes): capuz, gibão, couraça com ombreiras, luvas, calças, botas e capa. Todo personagem criado recebe as sete na mochila **uma vez** (sem repetir, nem ao voltar ao mundo; personagens antigos recebem ao entrar) e começa com seis vestidas.
+  - **Conjuntos de nível 30** (`Armaduras_Level_30/<classe>/`, um por classe: peitoral com ombreiras, capa, luvas, capuz, calças, botas e amuleto): pedem nível 30 e a classe certa; **nunca vêm de graça**. Os chefes das zonas de nível 25+ sempre deixam uma peça da classe do personagem, as elites às vezes, e a Armaria vende duas por dia a partir do nível 30. A raridade de cada peça é sorteada.
+  - **Atributos**: os de base (defesa e vida pela vaga e pelo nível; a couraça protege mais e pesa; as botas dão velocidade; o amuleto, o atributo do tema) mais um atributo sorteado por grau de raridade, do tema do conjunto.
+  - **Bônus de conjunto** com 2, 4 e o conjunto completo vestidos (6 no Iniciado, 7 nos de classe); cada faixa conta uma vez.
+  - **No personagem criado** (estilo Realista) as peças GLB vestidas aparecem no próprio corpo e trocam na hora; nos outros heróis e no estilo Estilizado, a peça usa o visual procedural da família dela.
+  - **Aba EQUIPAMENTO**: miniatura de cada peça, filtro de raridade (Z/C ou o botão) e "só as que posso usar" (V), e os detalhes ao passar o mouse (raridade, níveis, classes, atributos de base e da raridade, o conjunto com as faixas ativas, descrição e valor).
 - **Peças no modelo 3D** (`js/heroes/pecas3d.js`, `PecasRig`): as peças vestidas aparecem no próprio herói (vista isométrica com gráficos 3D, 3ª pessoa e prévia), medidas a partir da malha de cada herói: capuz, turbante, gorro ou elmo com viseira; peitoral de pano ou de placas curvas; ombreiras de cada lado; braçadeiras e luvas; cinto com faldas, coxotes e grevas; botas; capa presa nos ombros que balança com o movimento e o vento. Material próprio por família (pano, couro, metal, cristal, partes acesas); as armaduras especiais e o Exoesqueleto continuam por cima.
 - **Materiais** (aba INVENTÁRIO → MATERIAIS): ferro, tecido, couro, componente mecânico, tecnologia antiga e amostra desconhecida, além dos materiais das regiões; cada um com nome, descrição, raridade, onde achar e em que receitas entra. Vêm do ferro-velho, das criaturas (couro), das máquinas (componentes), dos baús, terminais, chefes e elites, e do mercado da cidade.
 - **Fabricação** (`js/mundo/fabrica.js`): cinco estações — **forja** (as peças de corpo e o aprimoramento delas, até +5), **bancada de armas** (aprimora a arma equipada de cada herói, +6% de dano por nível), **laboratório** (acessórios e a relíquia forjada), **engenharia** (ferramentas de coleta, que rendem mais material, pedra de retorno e fogueira portátil) e **alquimia** (cápsulas, elixires, tônicos, chá quente e refresco). Cada receita mostra os materiais (verde: tem; vermelho: falta), as células, o nível de Criação e o nível do herói; o botão **FABRICAR** só aparece quando tudo está certo, e fabricar gasta exatamente o que foi mostrado. As famílias acima do Couro pedem o **plano** — do armeiro, de baús, chefes regionais, missões, terminais ou do pesquisador.

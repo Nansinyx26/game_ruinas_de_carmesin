@@ -621,7 +621,11 @@ const PersonagemModelo = (function () {
       if (R && R.head) { const hd = R.head, mg = A.cabelo === 0 ? 0.1 : 0.45; R.head = { x0: hd.x0 - mg, x1: hd.x1, y0: hd.y0 - mg, y1: hd.y1 + mg, z0: hd.z0, z1: hd.z1 + mg }; }
       m.medidasPecas = R;
     }
-    // arma da base da classe: a Tempestade Nula do Kael (procedural ou a GLB), ou a do kit do herói
+    return finalizar(m, def);
+  }
+  // Arma da base da classe (a Tempestade Nula do Kael, procedural ou a GLB, ou a do kit do herói) e
+  // os ganchos das peças do Arsenal; também no modelo com as peças GLB (js/criacao/montagem.js)
+  function finalizar(m, def) {
     const base = def.base, Wp = typeof HERO_WEAPONS !== 'undefined' && HERO_WEAPONS[base], n = m.nodes;
     if (base === 'kael') {
       const conv = (g) => { const a = new Float32Array(g.d); for (let i = 0; i < a.length; i += 10) a[i + 8] = -1 - a[i + 8]; return a; };   // cores no formato da textura
@@ -642,12 +646,14 @@ const PersonagemModelo = (function () {
     if (velho && velho.model && velho.model.tex && typeof R3D !== 'undefined' && R3D.freeTex) R3D.freeTex(velho.model.tex);   // a textura do modelo anterior
     const O = { 0: { scale: alt }, f: { flash: 0.85, scale: alt }, s: { emi: 1.25, scale: alt } };
     MODELS3D[key] = {
-      build: () => build(def),
+      // peças GLB da criação (estilo Realista), ou o modelo paramétrico
+      build: () => (typeof Criacao3D !== 'undefined' && Criacao3D.usa(def) && Criacao3D.build(def)) || build(def),
       pose(m, e, o) {
         MODELS3D.kael.pose(m, e, o);
         const W = typeof HERO_WEAPONS !== 'undefined' && HERO_WEAPONS[base];
         if (base !== 'kael') { for (const k of SWORD) if (m.nodes[k]) m.nodes[k].vis = false; if (W && W.pose) W.pose(m, e, o); }
         else if (m.wr) WeaponRig.pose(m, e);
+        if (m.cria) Criacao3D.pose(m, e, def);   // armaduras GLB vestidas antes das peças procedurais
         if (!m.wr && typeof PecasRig !== 'undefined' && e) PecasRig.pose(m, e, def.id);
         // peças do Arsenal vestidas: as ombreiras da roupa e o cabelo saem (não atravessam)
         if (m.peles) {
@@ -675,7 +681,7 @@ const PersonagemModelo = (function () {
     const R = PersonagemModelo._ret, k = `${def.id}:${def.ver || 0}`;
     if (R[k] !== undefined) return R[k];
     const m = typeof R3D !== 'undefined' && R3D.active && game.model3(def.model);
-    if (!m) return null;
+    if (!m || m.criaVazio || (m.cria && !Criacao3D.pintado(m))) return null;   // peças GLB ainda carregando
     const v = new Player(0, 0, def);
     v.vitrine = true; v.retrato = true; v.state = 'idle'; v.animTime = 0.4; v.stateTime = 0.4; v.facing = v.viewFacing = Math.PI * 0.25; v.wpnOut = false; v.pecasPrevia = {};
     const o = game.opts3(v, 0);
@@ -690,5 +696,5 @@ const PersonagemModelo = (function () {
     c.getContext('2d').drawImage(R3D.canvas, it.cx + (cx - lado / 2 - it.minX) * s, it.cy + (cy - lado / 2 - it.minY) * s, lado * s, lado * s, 54, 18, 180, 180);
     return (R[k] = c);
   }
-  return { build, registrar, retrato, CORPO, ALTURA, FORMA, RECEITAS, paleta, receita, _ret: {} };
+  return { build, finalizar, registrar, retrato, CORPO, ALTURA, FORMA, RECEITAS, paleta, receita, _ret: {} };
 })();

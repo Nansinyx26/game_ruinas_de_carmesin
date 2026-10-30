@@ -294,7 +294,10 @@ const PecasRig = (function () {
     const V = pecasDe(e, charId), esp = typeof SPECIAL_ARMOR_DEFS !== 'undefined' && typeof RosterManager !== 'undefined' && SPECIAL_ARMOR_DEFS[RosterManager.equippedArmor(charId)];
     const oc = V && typeof Arsenal !== 'undefined' && World.state ? Arsenal.S.ocultar : {}, tx = !!m.tex;
     for (const nd of m.pecas) {
-      const it = V && !esp && !oc[nd._slot] ? V[nd._slot] : null;
+      let it = V && !esp && !oc[nd._slot] ? V[nd._slot] : null;
+      // personagem criado com as peças GLB: a vaga com a peça GLB vestida (e as ombreiras, sob um
+      // peitoral GLB com ombreiras) não leva a peça procedural (js/criacao/montagem.js)
+      if (it && m.criaVagas && (m.criaVagas[nd._slot] || ((nd._slot === 'ombroE' || nd._slot === 'ombroD') && m.criaVagas.peitoral && Criacao3D.POR_ID[m.criaVagas.peitoral].ombros))) it = null;
       if (!it) { nd.vis = false; continue; }
       const G = geo(m, nd._slot, nd._osso, it.fam);
       if (!G) { nd.vis = false; continue; }
