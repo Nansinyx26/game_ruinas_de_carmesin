@@ -10,6 +10,10 @@
 //   Armaduras_Level_30/<classe>/ → um conjunto de nível 30 por classe (peitoral com ombreiras,
 //     capa, luvas, capuz, calças, botas e amuleto). Nunca vêm de graça: caem dos chefes e elites
 //     das zonas de nível 25+ e a Armaria vende peças da classe a partir do nível 30.
+//   Armaduras_Level_50/75/100/<classe>/ → os conjuntos de nível 50, 75 e 100 de cada classe, feitos
+//     no Blender a partir das imagens da pasta (tools/blender/asset_armadura_<classe>_n<nível>.py):
+//     peitoral, ombreiras (duas peças: esquerda e direita), capa, capuz, luvas, calça, botas e
+//     amuleto. Caem nas zonas da faixa de nível (45+, 70+ e 95+) e a Armaria vende as da faixa.
 // Cada definição tem os campos pedidos: itemLevel, rarity (a de referência; cada peça ganha a
 // própria ao surgir), requiredLevel, allowedClasses, equipmentSlot, baseStats, bonusStats (o que a
 // raridade sorteia), modelPath (o GLB), iconPath (a miniatura), description, sellValue e setId.
@@ -33,6 +37,19 @@ const ARM_TEMAS = {
   assassino30: ['critico', 'dano', 'veloc', 'energia'], patrulheiro30: ['veloc', 'critico', 'dano', 'vida'],
   guardiao30: ['defesa', 'energia', 'vida', 'recarga'],
 };
+// Faixas de nível dos conjuntos de classe e a força de cada uma (atributos de base e bônus)
+const ARM_FAIXAS = [30, 50, 75, 100];
+const ARM_FORCA = { 1: 1, 30: 2.05, 50: 2.7, 75: 3.5, 100: 4.4 };
+// Os conjuntos de nível 50, 75 e 100: o tema da classe, nove peças (as ombreiras contam duas) e
+// os bônus do conjunto de nível 30 na força da faixa
+for (const lv of [50, 75, 100]) {
+  for (const c of ARM_CLASSES) {
+    const b30 = ARM_CONJUNTOS[c + '30'], k = ARM_FORCA[lv] / ARM_FORCA[30];
+    const esc = (b) => { const o = {}; for (const q in b) o[q] = WORLD_ATRIB[q] && WORLD_ATRIB[q].pct ? +(b[q] * k).toFixed(3) : Math.round(b[q] * k); return o; };
+    ARM_CONJUNTOS[c + lv] = { nome: `${b30.nome} · nível ${lv}`, classe: c, completo: 9, bonus: [[2, esc(b30.bonus[0][1])], [5, esc(b30.bonus[1][1])], [9, esc(b30.bonus[2][1])]] };
+    ARM_TEMAS[c + lv] = ARM_TEMAS[c + '30'];
+  }
+}
 // Família do Arsenal de cada peça: tecido (clima), resistências e o visual procedural nos heróis
 // que não usam as peças GLB (Kael, aliados e o estilo Estilizado)
 const ARM_FAMILIA = {
@@ -42,6 +59,7 @@ const ARM_FAMILIA = {
 const ARM_DESC = {
   capacete: 'Capuz que protege a cabeça e a nuca', peitoral: 'Peça do tronco, a que mais protege', luvas: 'Luvas para punhos e mãos',
   calcas: 'Calças reforçadas nas coxas e nos joelhos', botas: 'Botas para terreno de ruína', capa: 'Capa contra vento, chuva e poeira', acessorio: 'Amuleto de cristal usado no peito',
+  ombroE: 'Ombreira do ombro esquerdo', ombroD: 'Ombreira do ombro direito',
 };
 
 // ------------------------------------------------------------ catálogo central (caminhos reais)
@@ -50,10 +68,11 @@ const ARMADURAS_GLB = (function () {
   if (typeof CRIA_CATALOGO === 'undefined') return out;
   for (const c of CRIA_CATALOGO) {
     if (c.tipo !== 'peca') continue;
-    const cls = c.classe || null, set = cls ? `${cls}30` : 'iniciado', lv = c.nivel || 1, V = ARS_VAGAS[c.vaga];
+    const cls = c.classe || null, lv = c.nivel || 1, set = cls ? `${cls}${lv}` : 'iniciado', V = ARS_VAGAS[c.vaga];
+    if (!V || !ARM_CONJUNTOS[set]) continue;
     // atributos de base: os pesos da vaga (defesa, vida) na força do nível; o peitoral pesado
     // protege mais e pesa; o amuleto dá o atributo do tema
-    const tk = lv >= 30 ? 2.05 : 1, nk = 1 + lv * 0.01, base = {};
+    const tk = ARM_FORCA[lv] || 1, nk = 1 + lv * 0.01, base = {};
     if (V.def) base.defesa = +(V.def * tk * nk * (c.ombros ? 1.35 : 1)).toFixed(4);
     if (V.vida) base.vida = Math.round(V.vida * tk * nk * (c.ombros ? 1.25 : 1));
     if (c.ombros) base.veloc = -0.01;
@@ -66,8 +85,8 @@ const ARMADURAS_GLB = (function () {
       itemLevel: lv, rarity: 'comum', requiredLevel: lv, allowedClasses: cls ? [cls] : ARM_CLASSES.slice(),
       equipmentSlot: c.vaga, baseStats: base, bonusStats: ARM_TEMAS[set],
       modelPath: c.arq, iconPath: c.mini, convertido: !!c.convertido, ombros: !!c.ombros,
-      description: cls ? `${ARM_DESC[c.vaga]}. Parte do conjunto de nível 30 da classe ${nomeC}.` : `${ARM_DESC[c.vaga]}. Equipamento inicial de quem chega ao mundo aberto.`,
-      sellValue: Math.round((cls ? 90 : 8) * Math.max(0.5, V.peso || 0.3)),
+      description: cls ? `${ARM_DESC[c.vaga]}. Parte do conjunto de nível ${lv} da classe ${nomeC}${c.blender ? ' (modelada no Blender)' : ''}.` : `${ARM_DESC[c.vaga]}. Equipamento inicial de quem chega ao mundo aberto.`,
+      sellValue: Math.round((cls ? 90 * (ARM_FORCA[lv] / 2.05) : 8) * Math.max(0.5, V.peso || 0.3)),
     };
   }
   return out;
@@ -141,12 +160,18 @@ Object.assign(Arsenal, {
     }
     this.refazer();
   },
-  // Peças de nível 30 da classe: um dos chefes das zonas 25+ sempre larga uma (para a classe do
-  // personagem criado), as elites às vezes; a raridade é sorteada
+  // Faixa do conjunto de classe para um nível (de zona ou do herói, com 'folga' níveis antes): 30,
+  // 50, 75 ou 100, ou 0 abaixo de todas
+  faixaClasse(lv, folga = 5) { let f = 0; for (const k of ARM_FAIXAS) if (lv + folga >= k) f = k; return f; },
+  // Peças do conjunto de uma faixa (só as que existem convertidas)
+  pecasClasse(c, faixa) { return Object.keys(ARMADURAS_GLB).filter((k) => ARMADURAS_GLB[k].setId === `${c}${faixa}` && ARMADURAS_GLB[k].convertido); },
+  // Peças de classe: um dos chefes das zonas 25+ sempre larga uma (para a classe do personagem
+  // criado), as elites às vezes; o conjunto é o da faixa da zona (nível 30 nas zonas 25+, 50 nas
+  // 45+, 75 nas 70+, 100 nas 95+); a raridade é sorteada
   onKillClasse(e, z) {
     const c = this.classeDe(this.heroi());
     if (!c || !z || z.lv < 25) return;
-    const ids = Object.keys(ARMADURAS_GLB).filter((k) => ARMADURAS_GLB[k].setId === `${c}30`);
+    const ids = this.pecasClasse(c, this.faixaClasse(z.lv));
     if (!ids.length) return;
     if (e.worldBoss) this.guardar(this.gerarCat(pick(ids), this.rolar(1, 0.4)));
     else if (e.elite && Math.random() < 0.05) this.guardar(this.gerarCat(pick(ids), this.rolar(0, 0.2)));

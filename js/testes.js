@@ -2189,8 +2189,24 @@ const EclipseTests = {
     this.igual('catálogo: 7 peças do nível 1 (Armaduras_Inicial_Level_1/)', ini.filter((c) => c.arq.startsWith('assets/Criar_Personagem/Armaduras_Inicial_Level_1/') && c.arq.endsWith('.glb')).length, 7);
     this.ok('catálogo: 7 peças de nível 30 para cada uma das 5 classes (Armaduras_Level_30/<classe>/)', ARM_CLASSES.every((c) => n30.filter((q) => q.classe === c && q.arq.startsWith('assets/Criar_Personagem/Armaduras_Level_30/')).length === 7), n30.length);
     const campos = ['itemLevel', 'rarity', 'requiredLevel', 'allowedClasses', 'equipmentSlot', 'baseStats', 'bonusStats', 'modelPath', 'iconPath', 'description', 'sellValue', 'setId'];
-    this.ok('catálogo: cada armadura com os 12 campos', Object.values(ARMADURAS_GLB).length === 42 && Object.values(ARMADURAS_GLB).every((D) => campos.every((k) => D[k] !== undefined && D[k] !== '')), Object.keys(ARMADURAS_GLB).length);
+    this.ok('catálogo: cada armadura com os 12 campos', Object.values(ARMADURAS_GLB).length === 42 + 135 && Object.values(ARMADURAS_GLB).every((D) => campos.every((k) => D[k] !== undefined && D[k] !== '')), Object.keys(ARMADURAS_GLB).length);
     this.ok('catálogo: todas convertidas para o motor', CRIA_CATALOGO.every((c) => c.convertido), CRIA_CATALOGO.filter((c) => !c.convertido).map((c) => c.id).join(','));
+    // ------------------------------------------------ níveis 50, 75 e 100 (feitos no Blender a partir das imagens)
+    for (const nv of [50, 75, 100]) {
+      const L = pecas.filter((c) => c.nivel === nv);
+      this.ok(`nível ${nv}: 9 peças por classe (8 da imagem; as ombreiras viram esquerda e direita), GLB do Blender ao lado da imagem ou GLB realista pronto`,
+        ARM_CLASSES.every((c) => { const q = L.filter((x) => x.classe === c); return q.length === 9 && q.every((x) => x.arq.startsWith(`assets/Criar_Personagem/Armaduras_Level_${nv}/`) && x.arq.endsWith('.glb') && x.mini.endsWith(`_nivel${nv}.png`) && (x.blender ? x.arq.endsWith(`_nivel${nv}.glb`) : x.real)); }), L.length);
+      this.ok(`nível ${nv}: as vagas do Arsenal (com ombroE e ombroD) e um conjunto de 9 por classe`,
+        ARM_CLASSES.every((c) => ['peitoral', 'ombroE', 'ombroD', 'capa', 'capacete', 'luvas', 'calcas', 'botas', 'acessorio'].every((v) => L.some((x) => x.classe === c && x.vaga === v)) && ARM_CONJUNTOS[c + nv] && ARM_CONJUNTOS[c + nv].completo === 9));
+    }
+    this.ok('Guerreiro nível 50: peitoral, calça, botas, capa e capuz são os GLB realistas enviados (exemplo_glb/)', ['peitoral', 'calcas', 'botas', 'capa', 'capacete'].every((v) => { const c = Criacao3D.POR_ID[`n50_guerreiro_${v}`]; return c && c.real && c.arq.includes('/exemplo_glb/'); }) && Criacao3D.POR_ID.n50_guerreiro_peitoral.ombros);
+    this.ok('nomes das peças: os das imagens (manifesto)', ARMADURAS_GLB.n75_guerreiro_peitoral.nome === 'Peitoral de Placas' && ARMADURAS_GLB.n100_mago_acessorio.nome === 'Amuleto do Astral' && ARMADURAS_GLB.n50_assassino_ombroE.nome.startsWith('Ombreiras Leves'));
+    this.ok('força cresce com a faixa (defesa do peitoral 30 < 50 < 75 < 100)', ['30', '50', '75', '100'].map((n) => ARMADURAS_GLB[`n${n}_guerreiro_peitoral`].baseStats.defesa).every((v, i, a) => !i || v > a[i - 1]));
+    this.igual('faixa do conjunto pelo nível da zona (20, 26, 47, 72, 96)', [20, 26, 47, 72, 96].map((n) => Arsenal.faixaClasse(n)).join(','), '0,30,50,75,100');
+    this.ok('montagem: ombreiras com célula própria no atlas, sem sobrepor as outras', ['ombroE', 'ombroD'].every((v) => Criacao3D.VAGAS.includes(v) && Criacao3D.CEL[v]) && (() => {
+      const C = Object.values(Criacao3D.CEL);
+      return C.every(([x, y, l]) => x + l <= 2048 && y + l <= 2048) && C.every((a, i) => C.every((b, j) => i === j || a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[2] <= b[1] || b[1] + b[2] <= a[1]));
+    })());
     // ------------------------------------------------ raridades
     this.igual('raridades: exatamente quatro (Comum, Incomum, Raro, Lendário)', ARS_RARIDADES.map((r) => `${r.name}/${r.cor}`).join(','), 'Comum/branco,Incomum/verde,Raro/azul,Lendário/dourado');
     const lend1 = Arsenal.gerarCat('ini_botas', 3), comum30 = Arsenal.gerarCat('n30_mago_botas', 0);
@@ -2212,6 +2228,10 @@ const EclipseTests = {
       // peças da aparência e as armaduras carregadas (scripts sob demanda, como no jogo)
       await carregar(['corpo_f', 'rosto_6', 'cabelo_6', 'corpo_m', 'rosto_1', 'cabelo_1', 'barba_curta', 'minis'].concat(ARM_INICIAL, ['n30_guerreiro_peitoral', 'n30_guerreiro_capa']));
       this.ok('carregamento: peças, armaduras e miniaturas chegam por <script>', ['corpo_f', 'rosto_6', 'cabelo_6', 'ini_botas', 'n30_guerreiro_capa'].every((k) => Criacao3D.tem(k)) && typeof CRIA_MINIS !== 'undefined');
+      await carregar(['n75_guerreiro_peitoral', 'n100_mago_capa']);
+      const conta = (id, c) => window.CRIA3D[id].porCorpo[c].reduce((s, k) => s + atob(k.i).length / 6, 0);   // triângulos (uint16 ×3)
+      this.ok('Blender: a peça tem a forma dos dois corpos com a mesma malha (shape key do feminino)', ['n75_guerreiro_peitoral', 'n100_mago_capa'].every((id) => Criacao3D.tem(id) && conta(id, 'corpo_m') > 0 && conta(id, 'corpo_m') === conta(id, 'corpo_f')),
+        ['n75_guerreiro_peitoral', 'n100_mago_capa'].map((id) => Criacao3D.tem(id) ? conta(id, 'corpo_m') + '/' + conta(id, 'corpo_f') : 'falta').join(' '));
       MODELS3D[def.model].model = null;
       const M = g.model3(def.model);
       const conf = (m) => {

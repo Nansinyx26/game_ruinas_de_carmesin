@@ -124,7 +124,8 @@ def ler_obj(path):
 
 def ler_glb(path):
     """GLB (glTF 2.0) → (posições, uv, triângulos, mapas): mapas = {'cor', 'mr' (metal/aspereza),
-    'nrm' (normais no espaço tangente), 'emi' (emissão), 'normais' (normais dos vértices, se o arquivo tiver)}."""
+    'nrm' (normais no espaço tangente), 'emi' (emissão), 'normais' (normais dos vértices, se o arquivo tiver),
+    'alvo' (deslocamento do primeiro morph target, se houver)}."""
     raw = open(path, 'rb').read()
     magic, ver, _ = struct.unpack_from('<4sII', raw, 0)
     if magic != b'glTF' or ver != 2:
@@ -175,7 +176,7 @@ def ler_glb(path):
         M[:3, 3] = t
         return M
 
-    V, UV, F, NV, mapas = [], [], [], [], {}
+    V, UV, F, NV, ALVO, mapas = [], [], [], [], [], {}
     cena = js['scenes'][js.get('scene', 0)]
 
     def visita(i, P):
@@ -202,6 +203,9 @@ def ler_glb(path):
                     uv = acc(pr['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in pr['attributes'] else np.full((len(pos), 2), 0.5)
                     ind = acc(pr['indices']).astype(np.int64).ravel() if 'indices' in pr else np.arange(len(pos))
                     nv = acc(pr['attributes']['NORMAL']) if 'NORMAL' in pr['attributes'] else np.zeros((len(pos), 3))
+                # forma alternativa (shape key do Blender → morph target): o primeiro alvo de posição
+                alvo = acc(pr['targets'][0]['POSITION']) if not draco and pr.get('targets') and 'POSITION' in pr['targets'][0] else np.zeros((len(pos), 3))
+                ALVO.append(alvo @ M[:3, :3].T)
                 base = sum(len(v) for v in V)
                 V.append((np.c_[pos, np.ones(len(pos))] @ M.T)[:, :3])
                 NV.append(nv @ np.linalg.inv(M[:3, :3]))          # normais: inversa transposta
@@ -221,6 +225,9 @@ def ler_glb(path):
     NV = np.concatenate(NV)
     if np.abs(NV).sum() > 0:
         mapas['normais'] = NV
+    ALVO = np.concatenate(ALVO)
+    if np.abs(ALVO).sum() > 0:
+        mapas['alvo'] = ALVO                                 # deslocamento de cada vértice na forma alternativa
     return np.concatenate(V), np.concatenate(UV), np.concatenate(F), mapas
 
 

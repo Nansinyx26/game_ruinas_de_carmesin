@@ -100,9 +100,39 @@ for cls, pasta, nomeC, itens in [
     for vaga, arq, mini, nome in itens:
         PECAS.append(dict(id=f'n30_{cls}_{vaga}', tipo='peca', vaga=vaga, classe=cls, nivel=30, nome=f'{nome} {nomeC}' if vaga not in ('capa', 'capacete') else f'{nome} {nomeC}',
                           arq=f'{L30}{pasta}/{arq}.glb', mini=f'{L30}{pasta}/{mini}.png'))
+# Níveis 50, 75 e 100: feitos no Blender (tools/blender/asset_armadura_<classe>_n<nível>.py) já sobre
+# os dois corpos do jogo (a forma do feminino numa shape key), com as texturas assadas; o GLB fica ao
+# lado da imagem de referência. As ombreiras vêm em par num GLB só e viram duas peças (esquerda e
+# direita, as vagas ombroE e ombroD do Arsenal).
+_PALETAS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blender', 'armaduras_paletas.json')
+# Peças que vêm prontas (GLB realista, como os do Meshy) no lugar das geradas no Blender:
+# tools/blender/armaduras_reais.json (classe → nível → vaga → GLB na pasta da classe)
+_REAIS_ARQ = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blender', 'armaduras_reais.json')
+_REAIS = json.load(open(_REAIS_ARQ, encoding='utf-8')) if os.path.exists(_REAIS_ARQ) else {}
+if os.path.exists(_PALETAS):
+    _NOMES_C = {'guerreiro': 'do Guerreiro', 'mago': 'do Mago', 'assassino': 'do Assassino', 'patrulheiro': 'do Patrulheiro', 'guardiao': 'do Guardião Arcano'}
+    for _cls, _niveis in json.load(open(_PALETAS, encoding='utf-8')).items():
+        for _nv, _d in sorted(_niveis.items(), key=lambda x: int(x[0])):
+            for _vaga, _pc in _d['pecas'].items():
+                _img = os.path.relpath(os.path.join(RAIZ, _pc['imagem']), ORIG).replace(os.sep, '/')
+                _base = dict(tipo='peca', classe=_cls, nivel=int(_nv), arq=os.path.splitext(_img)[0] + '.glb', mini=_img, blender=True)
+                _real = _REAIS.get(_cls, {}).get(_nv, {}).get(_vaga)
+                if _real:
+                    # GLB pronto: o caminho das peças do Meshy; o peitoral pronto já traz as ombreiras
+                    if isinstance(_real, dict):
+                        _base['girar'] = _real.get('girar', 0)
+                        _real = _real['arq']
+                    _base.update(arq=os.path.dirname(_img) + '/' + _real, blender=False, real=True)
+                    if _vaga == 'peitoral':
+                        _base['ombros'] = True
+                if _vaga == 'ombros':
+                    for _lado, _v, _n in (('E', 'ombroE', 'esquerda'), ('D', 'ombroD', 'direita')):
+                        PECAS.append(dict(_base, id=f'n{_nv}_{_cls}_{_v}', vaga=_v, lado=_lado, nome=f"{_pc['nome']} · {_n}"))
+                else:
+                    PECAS.append(dict(_base, id=f'n{_nv}_{_cls}_{_vaga}', vaga=_vaga, nome=_pc['nome']))
 # triângulos e textura por vaga das peças de armadura
-TRI_VAGA = {'peitoral': 8000, 'calcas': 6000, 'botas': 6000, 'luvas': 5000, 'capacete': 6000, 'capa': 6000, 'acessorio': 2500}
-TEX_VAGA = {'acessorio': 256}
+TRI_VAGA = {'peitoral': 8000, 'calcas': 6000, 'botas': 6000, 'luvas': 5000, 'capacete': 6000, 'capa': 6000, 'acessorio': 2500, 'ombroE': 3000, 'ombroD': 3000}
+TEX_VAGA = {'acessorio': 256, 'ombroE': 256, 'ombroD': 256}
 for p in PECAS:
     if p['tipo'] == 'peca':
         p.setdefault('tri', TRI_VAGA[p['vaga']])
@@ -112,6 +142,7 @@ ESCONDE = {'botas': ['pes'], 'luvas': ['maos'], 'calcas': ['pernas']}
 
 # ============================================================ utilidades
 R_JOGO = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]], float)   # linhas: frente, direita, cima do jogo no espaço do glTF (+y cima, +z frente)
+ESCALA_BLENDER = 34.0                                          # as peças do Blender estão em metros
 
 
 def ler_peca(arq):
@@ -612,6 +643,92 @@ def processar_cobertura(p, refs, modo):
     print(f"{p['id']}: {len(R['Fo'])} triângulos → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
 
 
+def pesos_capa(W, P, ref):
+    """A capa quase não segue os braços; da axila para baixo pende nas abas do casaco do Kael
+    (frente, lados e costas, com as barras embaixo): balança e acompanha as pernas."""
+    m, nomes = ref['medida'], ref['nomes']
+    W = W.copy()
+    it_ = nomes.index('torso')
+    for nm in ['armRu', 'armLu', 'armRf', 'armLf', 'handR', 'handL']:
+        if nm in nomes:
+            j = nomes.index(nm)
+            W[:, it_] += 0.7 * W[:, j]
+            W[:, j] *= 0.3
+    abas = [('cFR', 64), ('cSR', 107), ('cBR', 147), ('cFL', -64), ('cSL', -107), ('cBL', -147)]
+    nomes = list(nomes) + [a for a, _ in abas] + [a + '2' for a, _ in abas]
+    W = np.hstack([W, np.zeros((len(W), 2 * len(abas)))])
+    ang = np.degrees(np.arctan2(P[:, 1] - m['cy'], P[:, 0] - m['cx']))
+    pr = np.stack([np.clip(1 - np.abs((ang - c + 180) % 360 - 180) / 60, 0, 1) for _, c in abas], 1)
+    vazio = pr.sum(1) < 1e-6
+    pr[vazio, np.argmin(np.stack([np.abs((ang[vazio] - c + 180) % 360 - 180) for _, c in abas], 1), axis=1)] = 1
+    pr /= pr.sum(1, keepdims=True)
+    wp = np.clip((m['axila'] - P[:, 2]) / 5.0, 0, 1)
+    fundo = np.clip((m['quadrilZ'] - P[:, 2]) / 8.0, 0, 1)
+    W *= (1 - wp)[:, None]
+    na = len(abas)
+    W[:, -2 * na:-na] += (wp * (1 - fundo))[:, None] * pr
+    W[:, -na:] += (wp * fundo)[:, None] * pr
+    return W, nomes
+
+
+def pesos_capuz(W, P, ref, nomes):
+    """O capuz segue a cabeça (da altura do pescoço para cima, só o osso da cabeça)."""
+    m = ref['medida']
+    W = W.copy()
+    ih = nomes.index('head')
+    cab = P[:, 2] > m['pescoco'] + 0.1 * (m['topo'] - m['pescoco'])
+    W[cab] = 0
+    W[cab, ih] = 1
+    return W
+
+
+def processar_blender(p, refs):
+    """Peça feita no Blender sobre os corpos do jogo (tools/blender/armaduras.py): já está no lugar
+    (metros → unidades do jogo), a forma do corpo feminino vem na shape key; aqui só os pesos do corpo,
+    um empurrão de segurança para fora da pele e as texturas assadas do próprio GLB."""
+    t0 = time.time()
+    V, UV, F, mapas, N = ler_peca(p['arq'])
+    V = V * ESCALA_BLENDER
+    alvo = mapas.get('alvo')
+    Vf = V + (alvo @ R_JOGO.T) * ESCALA_BLENDER if alvo is not None else V
+    if p.get('lado'):
+        # ombreiras: as duas vêm no mesmo arquivo; fica a do lado pedido (direita = +Y do jogo)
+        s = 1 if p['lado'] == 'D' else -1
+        cy = refs['corpo_m']['medida']['cy']
+        F = F[np.sign(V[F].mean(1)[:, 1] - cy) == s]
+        usados, nova = np.unique(F, return_inverse=True)
+        V, Vf, UV, N, F = V[usados], Vf[usados], UV[usados], N[usados], nova.reshape(-1, 3)
+    Vs, Fs, inv = im.soldar(V, F)
+    Vfs = np.zeros_like(Vs)
+    Vfs[inv] = Vf
+    vaga = p['vaga']
+    porCorpo = {}
+    for cid, ref in refs.items():
+        m = ref['medida']
+        P = (Vs if cid == 'corpo_m' else Vfs).copy()
+        corpo = dict(V=ref['V'], N=ref['N'], kd=ref['kd'])
+        if vaga == 'capacete':
+            HV, HN = cabeca_de_referencia(ref)
+            corpo = dict(V=np.concatenate([ref['V'][ref['V'][:, 2] < m['pescoco']], HV]), N=np.concatenate([ref['N'][ref['V'][:, 2] < m['pescoco']], HN]))
+            corpo['kd'] = cKDTree(corpo['V'])
+        P = empurrar_para_fora(P, corpo, 0.12)
+        # normais: as do arquivo (as do assado, com as quinas vivas), giradas pela mudança de forma
+        Nl = im.normais_vertices(P, Fs)[inv]
+        Nb = im.normais_vertices(Vs, Fs)[inv]
+        Np = N + (Nl - Nb)
+        Np /= np.linalg.norm(Np, axis=1, keepdims=True) + 1e-9
+        W = transferir_pesos(P, ref)
+        nomes = ref['nomes']
+        if vaga == 'capa':
+            W, nomes = pesos_capa(W, P, ref)
+        if vaga == 'capacete':
+            W = pesos_capuz(W, P, ref, nomes)
+        porCorpo[cid] = pele_js(P[inv], Np, UV, F, W[inv], nomes)
+    dados = dict(v=2, tipo='peca', vaga=vaga, q=Q, porCorpo=porCorpo, esconde=ESCONDE.get(vaga, []), origem=p['arq'], pbr=1)
+    destino = gravar(p['id'], dados, mapas_js(dict(cor=mapas['cor'], mr=mapas.get('mr'), nrm=mapas.get('nrm')), p['tex']))
+    print(f"{p['id']}: {len(F)} triângulos (Blender) → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
+
+
 # ============================================================ armaduras: caixa da região, pele por fora
 def caixa_regiao(ref, vaga, lado=None):
     """Caixa-alvo (min, max) da peça no corpo de referência."""
@@ -627,6 +744,12 @@ def caixa_regiao(ref, vaga, lado=None):
         sel = ((reg == 'pernas') | ((reg == 'tronco') & (V[:, 2] < m['quadrilZ'] + 2.5))) & (V[:, 2] > m['tornozelo'] + 0.6)
         S = V[sel]
         return np.array([S[:, 0].min() - 0.4, S[:, 1].min() - 0.4, m['tornozelo'] + 0.4]), np.array([S[:, 0].max() + 0.4, S[:, 1].max() + 0.4, m['quadrilZ'] + 3.2])
+    if vaga == 'saia':
+        # saiote: da cintura até acima do joelho, por fora das coxas
+        joelho = float(np.mean([ref['bones'][b][1][2] for b in ('thighR', 'thighL')])) if 'thighR' in ref['bones'] else m['quadrilZ'] - 13
+        sel = ((reg == 'pernas') | (reg == 'tronco')) & (V[:, 2] > joelho + 2) & (V[:, 2] < m['quadrilZ'] + 3)
+        S = V[sel]
+        return np.array([S[:, 0].min() - 0.7, S[:, 1].min() - 0.7, joelho + 1.0]), np.array([S[:, 0].max() + 0.7, S[:, 1].max() + 0.7, m['quadrilZ'] + 3.4])
     if vaga == 'botas':
         sel = ((reg == 'pes') | ((reg == 'pernas') & (V[:, 2] < m['tornozelo'] + 0.3 * (m['quadrilZ'] - m['tornozelo'])))) & (np.sign(Y) == lado)
         S = V[sel]
@@ -668,6 +791,11 @@ def processar_armadura(p, refs):
     R = reduzir_e_assar(V, UV, F, N, mapas, p['tri'], p['tex'])
     vaga = p['vaga']
     porCorpo = {}
+    if p.get('girar'):
+        # giro em torno do eixo vertical (o GLB foi gerado olhando a peça de costas)
+        a = np.radians(p['girar'])
+        c0 = (R['Vr'].min(0) + R['Vr'].max(0)) / 2
+        R['Vr'] = girar_z(R['Vr'], a, c0)
     for cid, ref in refs.items():
         m = ref['medida']
         Vr = R['Vr'].copy()
@@ -703,7 +831,7 @@ def processar_armadura(p, refs):
                     Pi += np.array([amn[0] - 0.1, (amn[1] + amx[1]) / 2, ref['V'][:, 2].min() - 0.05])
                 P[idx] = Pi
         elif vaga in ('peitoral', 'calcas'):
-            amn, amx = caixa_regiao(ref, vaga)
+            amn, amx = caixa_regiao(ref, 'saia' if p.get('saia') else vaga)
             P = encaixar_caixa(Vr, amn, amx, 0.12)
         elif vaga == 'capa':
             # o colar em volta da base do pescoço (sobre o trapézio); o pano pelos ombros, na largura
@@ -743,36 +871,11 @@ def processar_armadura(p, refs):
         W = transferir_pesos(P, ref)
         nomes = ref['nomes']
         if vaga == 'capa':
-            # a capa quase não segue os braços; da axila para baixo pende nas abas do casaco do Kael
-            # (frente, lados e costas, com as barras embaixo): balança e acompanha as pernas
-            W = W.copy()
-            it_ = nomes.index('torso')
-            for nm in ['armRu', 'armLu', 'armRf', 'armLf', 'handR', 'handL']:
-                if nm in nomes:
-                    j = nomes.index(nm)
-                    W[:, it_] += 0.7 * W[:, j]
-                    W[:, j] *= 0.3
-            abas = [('cFR', 64), ('cSR', 107), ('cBR', 147), ('cFL', -64), ('cSL', -107), ('cBL', -147)]
-            nomes = list(nomes) + [a for a, _ in abas] + [a + '2' for a, _ in abas]
-            W = np.hstack([W, np.zeros((len(W), 2 * len(abas)))])
-            ang = np.degrees(np.arctan2(P[:, 1] - m['cy'], P[:, 0] - m['cx']))
-            pr = np.stack([np.clip(1 - np.abs((ang - c + 180) % 360 - 180) / 60, 0, 1) for _, c in abas], 1)
-            vazio = pr.sum(1) < 1e-6
-            pr[vazio, np.argmin(np.stack([np.abs((ang[vazio] - c + 180) % 360 - 180) for _, c in abas], 1), axis=1)] = 1
-            pr /= pr.sum(1, keepdims=True)
-            wp = np.clip((m['axila'] - P[:, 2]) / 5.0, 0, 1)
-            fundo = np.clip((m['quadrilZ'] - P[:, 2]) / 8.0, 0, 1)
-            W *= (1 - wp)[:, None]
-            na = len(abas)
-            W[:, -2 * na:-na] += (wp * (1 - fundo))[:, None] * pr
-            W[:, -na:] += (wp * fundo)[:, None] * pr
+            W, nomes = pesos_capa(W, P, ref)
         if vaga == 'capacete':
-            ih = nomes.index('head')
-            cab = P[:, 2] > m['pescoco'] + 0.1 * (m['topo'] - m['pescoco'])
-            W[cab] = 0
-            W[cab, ih] = 1
+            W = pesos_capuz(W, P, ref, nomes)
         porCorpo[cid] = pele_js(P[R['vmap']], Np[R['vmap']], R['Uo'], R['Fo'], W[R['vmap']], nomes)
-    dados = dict(v=2, tipo='peca', vaga=vaga, q=Q, porCorpo=porCorpo, esconde=ESCONDE.get(vaga, []), origem=p['arq'], pbr=1)
+    dados = dict(v=2, tipo='peca', vaga=vaga, q=Q, porCorpo=porCorpo, esconde=p.get('esconde', ESCONDE.get(vaga, [])), origem=p['arq'], pbr=1)
     destino = gravar(p['id'], dados, mapas_js(R, p['tex']))
     print(f"{p['id']}: {len(R['Fo'])} triângulos → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
 
@@ -785,11 +888,11 @@ def gravar_catalogo():
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
     for p in PECAS:
         it = dict(id=p['id'], tipo=p['tipo'], nome=p['nome'], arq='assets/Criar_Personagem/' + p['arq'], mini='assets/Criar_Personagem/' + p['mini'], js='js/assets/criacao/' + p['id'] + '.js')
-        for k in ('vaga', 'classe', 'nivel', 'ombros'):
+        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real'):
             if p.get(k) is not None:
                 it[k] = p[k]
-        if p.get('vaga') in ESCONDE:
-            it['esconde'] = ESCONDE[p['vaga']]
+        if 'esconde' in p or p.get('vaga') in ESCONDE:
+            it['esconde'] = p.get('esconde', ESCONDE.get(p.get('vaga'), []))
         it['convertido'] = os.path.exists(os.path.join(DEST, p['id'] + '.js'))
         itens.append(it)
     destino = os.path.join(DEST, 'catalogo.js')
@@ -847,6 +950,8 @@ def _tarefa(p):
             processar_rosto(p, refs)
         elif p['tipo'] in ('cabelo', 'barba'):
             processar_cobertura(p, refs, p['tipo'])
+        elif p.get('blender'):
+            processar_blender(p, refs)
         else:
             processar_armadura(p, refs)
         return p['id'], None

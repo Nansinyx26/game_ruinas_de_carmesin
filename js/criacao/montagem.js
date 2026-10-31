@@ -7,7 +7,7 @@
 // com textura, mapa de material e mapa de normais reassados do GLB original. Aqui elas são
 // carregadas sob demanda (um <script> por peça: funciona também abrindo o index.html do disco) e
 // montadas no esqueleto do corpo escolhido, com uma textura só para o personagem inteiro (atlas
-// 2048: corpo e rosto em 1024, cabelo e armaduras em 512, barba e acessório em 256). A pele do
+// 2048: corpo e rosto em 1024, cabelo e armaduras em 512, barba, acessório e ombreiras em 256). A pele do
 // corpo e do rosto e o cabelo e a barba são tingidos pixel a pixel na cor escolhida: a mesma cor
 // de pele nos dois deixa a emenda do pescoço invisível, e a luz e os detalhes da textura ficam.
 // As armaduras GLB vestidas (js/mundo/arsenal.js, campo cat) entram e saem do modelo sem
@@ -22,7 +22,7 @@ const Criacao3D = (function () {
   for (const c of CAT) POR_ID[c.id] = c;
   const CORPOS = ['corpo_m', 'corpo_f'];
   const BARBAS = ['barba_cacheada', 'barba_curta', 'barba_longa', 'barba_media', 'barba_viking'];
-  const VAGAS = ['capacete', 'peitoral', 'luvas', 'calcas', 'botas', 'capa', 'acessorio'];
+  const VAGAS = ['capacete', 'peitoral', 'luvas', 'calcas', 'botas', 'capa', 'acessorio', 'ombroE', 'ombroD'];
   const LADO = 2048;
   // células do atlas: [x, y, lado] em pixels da textura de cor (material e normais na metade)
   const CEL = {
@@ -30,6 +30,7 @@ const Criacao3D = (function () {
     cabelo: [0, 1024, 512], capacete: [512, 1024, 512], peitoral: [1024, 1024, 512], calcas: [1536, 1024, 512],
     botas: [0, 1536, 512], luvas: [512, 1536, 512], capa: [1024, 1536, 512],
     barba: [1536, 1536, 256], acessorio: [1792, 1536, 256],
+    ombroE: [1536, 1792, 256], ombroD: [1792, 1792, 256],     // ombreiras dos conjuntos 50, 75 e 100
   };
   const TINTA = { corpo: 'pele', rosto: 'pele', cabelo: 'cabelo', barba: 'cabelo' };
 
@@ -264,6 +265,9 @@ const Criacao3D = (function () {
     if (esp) return out;
     const oc = !e.pecasPrevia && typeof World !== 'undefined' && World.state ? Arsenal.S.ocultar : {};
     for (const s of VAGAS) { const it = V[s]; if (it && it.cat && POR_ID[it.cat] && disponivel(it.cat) && !oc[s]) out[s] = it.cat; }
+    // peitoral que já traz ombreiras (os do Meshy): as ombreiras vestidas contam nos atributos, mas
+    // não são desenhadas por cima das dele
+    if (out.peitoral && POR_ID[out.peitoral].ombros) { delete out.ombroE; delete out.ombroD; }
     return out;
   }
   // A cada quadro (pose do modelo): troca as peças que mudaram, esconde o que fica dentro delas

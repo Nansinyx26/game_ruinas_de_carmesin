@@ -247,22 +247,31 @@ def material_procedural(nome, C, semente=1, bisel=0.03):
         corf = tb.outputs[0]
         altura = _mat(nt, 'MULTIPLY', wv.outputs[1], 0.4)
         if pad == 'runas':
-            # runas: traços nas bordas de células de Voronoi, só em algumas (sorteio por célula)
+            # runas bordadas: faixas verticais (em volta do eixo do corpo: 'faixas' por volta) com um
+            # friso em cada borda e glifos dentro (bordas de células de Voronoi, só em algumas células)
+            sep = _no(nt, 'ShaderNodeSeparateXYZ', -1000, 900)
+            nt.links.new(tc.outputs['Object'], sep.inputs[0])
+            ang = _mat(nt, 'ARCTAN2', sep.outputs[0], sep.outputs[1])
+            fz = _mat(nt, 'FRACT', _mat(nt, 'MULTIPLY', ang, C.get('faixas', 9) / (2 * math.pi)))
+            faixa = _mat(nt, 'LESS_THAN', fz, 0.22)
+            friso = _mat(nt, 'MAXIMUM', _mat(nt, 'LESS_THAN', fz, 0.035), _mat(nt, 'MULTIPLY', _mat(nt, 'GREATER_THAN', fz, 0.185), faixa))
             vr = _no(nt, 'ShaderNodeTexVoronoi', -650, 850, feature='DISTANCE_TO_EDGE')
-            vr.inputs['Scale'].default_value = 14 / esc
+            vr.inputs['Scale'].default_value = 34 / esc
             nt.links.new(vco, vr.inputs['Vector'])
             vs = _no(nt, 'ShaderNodeTexVoronoi', -650, 1050)
-            vs.inputs['Scale'].default_value = 14 / esc
+            vs.inputs['Scale'].default_value = 34 / esc
             nt.links.new(vco, vs.inputs['Vector'])
             sv = _no(nt, 'ShaderNodeSeparateColor', -450, 1050)
             nt.links.new(vs.outputs['Color'], sv.inputs[0])
-            traco = _mat(nt, 'MULTIPLY', _mat(nt, 'LESS_THAN', vr.outputs[0], 0.035), _mat(nt, 'GREATER_THAN', sv.outputs[0], 0.55))
+            glifo = _mat(nt, 'MULTIPLY', _mat(nt, 'LESS_THAN', vr.outputs[0], 0.06), _mat(nt, 'GREATER_THAN', sv.outputs[0], 0.35))
+            glifo = _mat(nt, 'MULTIPLY', glifo, _mat(nt, 'MULTIPLY', faixa, _mat(nt, 'SUBTRACT', 1.0, friso)))
+            traco = _mat(nt, 'MAXIMUM', glifo, friso)
             luz = tuple(C.get('cor2', (1.0, 0.8, 0.4)))
             corf = _mix(nt, traco, corf, luz)
             if C.get('runas_acesas'):
                 ve = _no(nt, 'ShaderNodeVectorMath', -200, 1100, operation='SCALE')
                 ve.inputs[0].default_value = luz
-                nt.links.new(_mat(nt, 'MULTIPLY', traco, 0.9), ve.inputs['Scale'])
+                nt.links.new(_mat(nt, 'MULTIPLY', glifo, 0.9), ve.inputs['Scale'])
                 emis = ve.outputs[0]
     if pad == 'couro':
         vr = _no(nt, 'ShaderNodeTexVoronoi', -650, 650)
@@ -439,7 +448,7 @@ def assar(obj, lado=1024, amostras_ao=32, margem_px=6, forca_emissao=3.0):
         return im
 
     t0 = time.time()
-    i_cor = bake('DIFFUSE', img('cor', True), 1, pass_filter={'COLOR'})
+    i_cor = canal_por_emissao('Base Color', img('cor', True))   # (o DIFFUSE do Cycles escurece o que é metal)
     i_ao = bake('AO', img('ao', False), amostras_ao)
     i_rough = bake('ROUGHNESS', img('aspereza', False))
     i_metal = canal_por_emissao('Metallic', img('metal', False))

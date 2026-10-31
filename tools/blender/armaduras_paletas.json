@@ -1,0 +1,1317 @@
+{
+ "assassino": {
+  "50": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Peitoral_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras Leves",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Ombreiras_Leves_nivel50.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa Sombria",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Capa_Sombria_nivel50.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Assassino",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Capuz_do_Assassino_nivel50.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Luvas_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Assassino",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Calça_do_Assassino_nivel50.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Botas_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto da Sombra",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Assassino_nvl50/Amuleto_da_Sombra_nivel50.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0319,
+    0.0131,
+    0.0271
+   ],
+   "escuro": [
+    0.0119,
+    0.0037,
+    0.0097
+   ],
+   "acabamento": [
+    0.3993,
+    0.3345,
+    0.3787
+   ],
+   "brilho": [
+    0.2065,
+    0.0152,
+    0.4878
+   ],
+   "srgb": {
+    "principal": [
+     53,
+     35,
+     49
+    ],
+    "escuro": [
+     34,
+     20,
+     31
+    ],
+    "acabamento": [
+     168,
+     155,
+     164
+    ],
+    "brilho": [
+     124,
+     38,
+     184
+    ]
+   }
+  },
+  "75": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Peitoral_de_Couro_nivel75.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras Leves",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Ombreiras_Leves_nivel75.png",
+     "revisar": "resto de fundo escuro no canto inferior esquerdo"
+    },
+    "capa": {
+     "nome": "Capa Sombria",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Capa_Sombria_nivel75.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Assassino",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Capuz_do_Assassino_nivel75.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Luvas_de_Couro_nivel75.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Assassino",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Calça_do_Assassino_nivel75.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Botas_de_Couro_nivel75.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto da Sombra",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Assassino_nvl75/Amuleto_da_Sombra_nivel75.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0322,
+    0.0077,
+    0.0329
+   ],
+   "escuro": [
+    0.0097,
+    0.0014,
+    0.009
+   ],
+   "acabamento": [
+    0.4423,
+    0.3392,
+    0.4151
+   ],
+   "brilho": [
+    0.187,
+    0.0204,
+    0.5542
+   ],
+   "srgb": {
+    "principal": [
+     53,
+     27,
+     54
+    ],
+    "escuro": [
+     31,
+     13,
+     30
+    ],
+    "acabamento": [
+     176,
+     156,
+     171
+    ],
+    "brilho": [
+     119,
+     43,
+     195
+    ]
+   }
+  },
+  "100": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Peitoral_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras Leves",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Ombreiras_Leves_nivel100.png",
+     "revisar": "peça fina e pequena; pontas podem estar incompletas"
+    },
+    "capa": {
+     "nome": "Capa Sombria",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Capa_Sombria_nivel100.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Assassino",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Capuz_do_Assassino_nivel100.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Luvas_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Assassino",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Calça_do_Assassino_nivel100.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Botas_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto da Sombra",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Assassino_nvl100/Amuleto_da_Sombra_nivel100.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0329,
+    0.0091,
+    0.0366
+   ],
+   "escuro": [
+    0.009,
+    0.0014,
+    0.009
+   ],
+   "acabamento": [
+    0.4313,
+    0.3537,
+    0.4313
+   ],
+   "brilho": [
+    0.1835,
+    0.0161,
+    0.6187
+   ],
+   "srgb": {
+    "principal": [
+     53,
+     30,
+     56
+    ],
+    "escuro": [
+     30,
+     13,
+     30
+    ],
+    "acabamento": [
+     174,
+     159,
+     174
+    ],
+    "brilho": [
+     118,
+     39,
+     205
+    ]
+   }
+  }
+ },
+ "guerreiro": {
+  "50": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Peitoral_de_Placas_nivel50.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Ombreiras_de_Placas_nivel50.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa de Batalha",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Capa_de_Batalha_nivel50.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Guerreiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Capuz_do_Guerreiro_nivel50.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Luvas_de_Placas_nivel50.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Calça_de_Placas_nivel50.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Botas_de_Placas_nivel50.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto de Rubi de Batalha",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Guerreiro_nvl50/Amuleto_de_Rubi_de_Batalha_nivel50.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0523,
+    0.0052,
+    0.0065
+   ],
+   "escuro": [
+    0.0143,
+    0.0023,
+    0.0023
+   ],
+   "acabamento": [
+    0.4259,
+    0.3587,
+    0.3636
+   ],
+   "brilho": [
+    0.4045,
+    0.0104,
+    0.022
+   ],
+   "srgb": {
+    "principal": [
+     66,
+     23,
+     25
+    ],
+    "escuro": [
+     37,
+     16,
+     16
+    ],
+    "acabamento": [
+     173,
+     160,
+     161
+    ],
+    "brilho": [
+     169,
+     32,
+     45
+    ]
+   }
+  },
+  "75": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Peitoral_de_Placas_nivel75.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Ombreiras_de_Placas_nivel75.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa de Batalha",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Capa_de_Batalha_nivel75.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Guerreiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Capuz_do_Guerreiro_nivel75.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Luvas_de_Placas_nivel75.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Calça_de_Placas_nivel75.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Botas_de_Placas_nivel75.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto de Rubi de Batalha",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Guerreiro_nvl75/Amuleto_de_Rubi_de_Batalha_nivel75.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0513,
+    0.0029,
+    0.0031
+   ],
+   "escuro": [
+    0.0143,
+    0.0005,
+    0.0005
+   ],
+   "acabamento": [
+    0.3112,
+    0.142,
+    0.0677
+   ],
+   "brilho": [
+    0.4878,
+    0.0041,
+    0.0135
+   ],
+   "srgb": {
+    "principal": [
+     66,
+     18,
+     18
+    ],
+    "escuro": [
+     37,
+     8,
+     8
+    ],
+    "acabamento": [
+     150,
+     105,
+     75
+    ],
+    "brilho": [
+     184,
+     21,
+     36
+    ]
+   }
+  },
+  "100": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Peitoral_de_Placas_nivel100.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Ombreiras_de_Placas_nivel100.png",
+     "revisar": "partes escuras do metal ficaram translúcidas"
+    },
+    "capa": {
+     "nome": "Capa de Batalha",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Capa_de_Batalha_nivel100.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz de Guerreiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Capuz_de_Guerreiro_nivel100.png",
+     "revisar": "partes escuras do metal ficaram translúcidas"
+    },
+    "luvas": {
+     "nome": "Luvas de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Luvas_de_Placas_nivel100.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Calça_de_Placas_nivel100.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Placas",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Botas_de_Placas_nivel100.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto de Fúria",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Guerreiro_nvl100/Amuleto_de_Fúria_nivel100.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0518,
+    0.002,
+    0.0022
+   ],
+   "escuro": [
+    0.0143,
+    0.0004,
+    0.0004
+   ],
+   "acabamento": [
+    0.4936,
+    0.3941,
+    0.3889
+   ],
+   "brilho": [
+    0.5668,
+    0.021,
+    0.0189
+   ],
+   "srgb": {
+    "principal": [
+     66,
+     15,
+     15
+    ],
+    "escuro": [
+     37,
+     7,
+     7
+    ],
+    "acabamento": [
+     185,
+     167,
+     166
+    ],
+    "brilho": [
+     197,
+     44,
+     42
+    ]
+   }
+  }
+ },
+ "mago": {
+  "50": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Tecido Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Peitoral_de_Tecido_Arcano_nivel50.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Cristal",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Ombreiras_de_Cristal_nivel50.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa Arcana",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Capa_Arcana_nivel50.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Mago",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Capuz_do_Mago_nivel50.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Tecido",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Luvas_de_Tecido_nivel50.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Mago",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Calça_do_Mago_nivel50.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Tecido",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Botas_de_Tecido_nivel50.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto de Cristal Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Mago_nvl50/Amuleto_de_Cristal_Arcano_nivel50.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0136,
+    0.0106,
+    0.0356
+   ],
+   "escuro": [
+    0.0037,
+    0.0026,
+    0.0127
+   ],
+   "acabamento": [
+    0.2549,
+    0.1332,
+    0.0718
+   ],
+   "brilho": [
+    0.0179,
+    0.1511,
+    0.7012
+   ],
+   "srgb": {
+    "principal": [
+     36,
+     32,
+     55
+    ],
+    "escuro": [
+     20,
+     17,
+     35
+    ],
+    "acabamento": [
+     137,
+     102,
+     77
+    ],
+    "brilho": [
+     41,
+     108,
+     217
+    ]
+   }
+  },
+  "75": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Tecido Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Peitoral_de_Tecido_Arcano_nivel75.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Cristal",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Ombreiras_de_Cristal_nivel75.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa Arcana",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Capa_Arcana_nivel75.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Mago",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Capuz_do_Mago_nivel75.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Tecido",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Luvas_de_Tecido_nivel75.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Mago",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Calça_do_Mago_nivel75.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Tecido",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Botas_de_Tecido_nivel75.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto de Cristal Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Mago_nvl75/Amuleto_de_Cristal_Arcano_nivel75.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0166,
+    0.0101,
+    0.0363
+   ],
+   "escuro": [
+    0.0033,
+    0.0012,
+    0.0084
+   ],
+   "acabamento": [
+    0.2845,
+    0.142,
+    0.0738
+   ],
+   "brilho": [
+    0.0046,
+    0.0802,
+    0.6661
+   ],
+   "srgb": {
+    "principal": [
+     39,
+     31,
+     56
+    ],
+    "escuro": [
+     19,
+     12,
+     29
+    ],
+    "acabamento": [
+     144,
+     105,
+     78
+    ],
+    "brilho": [
+     22,
+     81,
+     212
+    ]
+   }
+  },
+  "100": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Tecido Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Peitoral_de_Tecido_Arcano_nivel100.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Cristal",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Ombreiras_de_Cristal_nivel100.png",
+     "revisar": "brilho azul semitransparente ao redor (efeito luminoso mantido)"
+    },
+    "capa": {
+     "nome": "Capa Arcana",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Capa_Arcana_nivel100.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Mago",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Capuz_do_Mago_nivel100.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Tecido",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Luvas_de_Tecido_nivel100.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Mago",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Calça_do_Mago_nivel100.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Tecido",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Botas_de_Tecido_nivel100.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto do Astral",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Mago_nvl100/Amuleto_do_Astral_nivel100.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0091,
+    0.0073,
+    0.0379
+   ],
+   "escuro": [
+    0.0033,
+    0.0012,
+    0.009
+   ],
+   "acabamento": [
+    0.3636,
+    0.1905,
+    0.0963
+   ],
+   "brilho": [
+    0.002,
+    0.1087,
+    0.7299
+   ],
+   "srgb": {
+    "principal": [
+     30,
+     27,
+     57
+    ],
+    "escuro": [
+     19,
+     12,
+     30
+    ],
+    "acabamento": [
+     161,
+     120,
+     88
+    ],
+    "brilho": [
+     15,
+     93,
+     221
+    ]
+   }
+  }
+ },
+ "patrulheiro": {
+  "50": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Peitoral_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Ombreiras_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa do Explorador",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Capa_do_Explorador_nivel50.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Patrulheiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Capuz_do_Patrulheiro_nivel50.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Luvas_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Patrulheiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Calça_do_Patrulheiro_nivel50.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Botas_de_Couro_nivel50.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto da Natureza",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Classe_Patrulheiro_nvl50/Amuleto_da_Natureza_nivel50.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0353,
+    0.0232,
+    0.0083
+   ],
+   "escuro": [
+    0.0135,
+    0.0078,
+    0.002
+   ],
+   "acabamento": [
+    0.1801,
+    0.1139,
+    0.0582
+   ],
+   "brilho": [
+    0.0749,
+    0.3562,
+    0.0718
+   ],
+   "srgb": {
+    "principal": [
+     55,
+     46,
+     28
+    ],
+    "escuro": [
+     36,
+     28,
+     15
+    ],
+    "acabamento": [
+     117,
+     95,
+     70
+    ],
+    "brilho": [
+     78,
+     159,
+     77
+    ]
+   }
+  },
+  "75": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Peitoral_de_Couro_nivel75.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Ombreiras_de_Couro_nivel75.png",
+     "revisar": "pequeno resíduo escuro na base direita"
+    },
+    "capa": {
+     "nome": "Capa do Explorador",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Capa_do_Explorador_nivel75.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Patrulheiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Capuz_do_Patrulheiro_nivel75.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Luvas_de_Couro_nivel75.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Patrulheiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Calça_do_Patrulheiro_nivel75.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Botas_de_Couro_nivel75.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto da Natureza",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Classe_Patrulheiro_nvl75/Amuleto_da_Natureza_nivel75.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0369,
+    0.021,
+    0.0044
+   ],
+   "escuro": [
+    0.0127,
+    0.0055,
+    0.0005
+   ],
+   "acabamento": [
+    0.2084,
+    0.1247,
+    0.0582
+   ],
+   "brilho": [
+    0.1636,
+    0.5668,
+    0.0802
+   ],
+   "srgb": {
+    "principal": [
+     56,
+     44,
+     21
+    ],
+    "escuro": [
+     35,
+     24,
+     8
+    ],
+    "acabamento": [
+     125,
+     99,
+     70
+    ],
+    "brilho": [
+     112,
+     197,
+     81
+    ]
+   }
+  },
+  "100": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Peitoral_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Ombreiras_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa do Explorador",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Capa_do_Explorador_nivel100.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz do Patrulheiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Capuz_do_Patrulheiro_nivel100.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Luvas_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Patrulheiro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Calça_do_Patrulheiro_nivel100.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Couro",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Botas_de_Couro_nivel100.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto da Natureza",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Classe_Patrulheiro_nvl100/Amuleto_da_Natureza_nivel100.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.037,
+    0.0224,
+    0.0066
+   ],
+   "escuro": [
+    0.0111,
+    0.005,
+    0.0006
+   ],
+   "acabamento": [
+    0.2011,
+    0.1193,
+    0.0582
+   ],
+   "brilho": [
+    0.1011,
+    0.5234,
+    0.0619
+   ],
+   "srgb": {
+    "principal": [
+     56,
+     45,
+     26
+    ],
+    "escuro": [
+     33,
+     23,
+     9
+    ],
+    "acabamento": [
+     123,
+     97,
+     70
+    ],
+    "brilho": [
+     90,
+     190,
+     72
+    ]
+   }
+  }
+ },
+ "guardiao": {
+  "50": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Cristal",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Peitoral_de_Cristal_nivel50.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Ombreiras_de_Energia_nivel50.png",
+     "revisar": null
+    },
+    "capa": {
+     "nome": "Capa do Guardião",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Capa_do_Guardião_nivel50.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Capuz_Arcano_nivel50.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Luvas_de_Energia_nivel50.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Guardião",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Calça_do_Guardião_nivel50.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Botas_de_Energia_nivel50.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto do Equilíbrio",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_50/Guardião_Arcano_nvl50/Amuleto_do_Equilíbrio_nivel50.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0068,
+    0.0133,
+    0.0593
+   ],
+   "escuro": [
+    0.002,
+    0.0026,
+    0.0135
+   ],
+   "acabamento": [
+    0.4368,
+    0.4259,
+    0.4936
+   ],
+   "brilho": [
+    0.0119,
+    0.1604,
+    0.6388
+   ],
+   "srgb": {
+    "principal": [
+     26,
+     35,
+     70
+    ],
+    "escuro": [
+     15,
+     17,
+     36
+    ],
+    "acabamento": [
+     175,
+     173,
+     185
+    ],
+    "brilho": [
+     34,
+     111,
+     208
+    ]
+   }
+  },
+  "75": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Cristal",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Peitoral_de_Cristal_nivel75.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Ombreiras_de_Energia_nivel75.png",
+     "revisar": "resíduos escuros entre as pontas da base"
+    },
+    "capa": {
+     "nome": "Capa do Guardião",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Capa_do_Guardião_nivel75.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Capuz_Arcano_nivel75.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Luvas_de_Energia_nivel75.png",
+     "revisar": "resíduo escuro na base"
+    },
+    "calcas": {
+     "nome": "Calça do Guardião",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Calça_do_Guardião_nivel75.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Botas_de_Energia_nivel75.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto do Equilíbrio",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_75/Guardião_Arcano_nvl75/Amuleto_do_Equilíbrio_nivel75.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0074,
+    0.0107,
+    0.0541
+   ],
+   "escuro": [
+    0.0017,
+    0.0017,
+    0.0111
+   ],
+   "acabamento": [
+    0.5234,
+    0.482,
+    0.5542
+   ],
+   "brilho": [
+    0.0017,
+    0.0802,
+    0.6388
+   ],
+   "srgb": {
+    "principal": [
+     27,
+     32,
+     67
+    ],
+    "escuro": [
+     14,
+     14,
+     33
+    ],
+    "acabamento": [
+     190,
+     183,
+     195
+    ],
+    "brilho": [
+     14,
+     81,
+     208
+    ]
+   }
+  },
+  "100": {
+   "pasta": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100",
+   "pecas": {
+    "peitoral": {
+     "nome": "Peitoral de Cristal",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Peitoral_de_Cristal_nivel100.png",
+     "revisar": null
+    },
+    "ombros": {
+     "nome": "Ombreiras de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Ombreiras_de_Energia_nivel100.png",
+     "revisar": "brilho semitransparente; contorno suave"
+    },
+    "capa": {
+     "nome": "Capa do Guardião",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Capa_do_Guardião_nivel100.png",
+     "revisar": null
+    },
+    "capacete": {
+     "nome": "Capuz Arcano",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Capuz_Arcano_nivel100.png",
+     "revisar": null
+    },
+    "luvas": {
+     "nome": "Luvas de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Luvas_de_Energia_nivel100.png",
+     "revisar": null
+    },
+    "calcas": {
+     "nome": "Calça do Guardião",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Calça_do_Guardião_nivel100.png",
+     "revisar": null
+    },
+    "botas": {
+     "nome": "Botas de Energia",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Botas_de_Energia_nivel100.png",
+     "revisar": null
+    },
+    "acessorio": {
+     "nome": "Amuleto do Equilíbrio",
+     "imagem": "assets/Criar_Personagem/Armaduras_Level_100/Guardião_Arcano_nvl100/Amuleto_do_Equilíbrio_nivel100.png",
+     "revisar": null
+    }
+   },
+   "principal": [
+    0.0064,
+    0.0138,
+    0.0749
+   ],
+   "escuro": [
+    0.0014,
+    0.002,
+    0.0143
+   ],
+   "acabamento": [
+    0.5234,
+    0.4878,
+    0.5795
+   ],
+   "brilho": [
+    0.0078,
+    0.1701,
+    0.7012
+   ],
+   "srgb": {
+    "principal": [
+     25,
+     36,
+     78
+    ],
+    "escuro": [
+     13,
+     15,
+     37
+    ],
+    "acabamento": [
+     190,
+     184,
+     199
+    ],
+    "brilho": [
+     28,
+     114,
+     217
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,43 @@
+ARMADURAS LEVEL 50, 75 E 100 - RECORTES INDIVIDUAIS COM TRANSPARENCIA
+Eclipse Zero / Ruinas de Carmesin
+
+O QUE TEM AQUI
+- Armadura_level_50/   -> 5 pastas de classe x 8 pecas = 40 PNG
+- Armaduras_level_75/  -> 5 pastas de classe x 8 pecas = 40 PNG
+- Armaduras_level_100/ -> 5 pastas de classe x 8 pecas = 40 PNG
+- Cada nivel tem MANIFESTO_level_XX.csv (abre no Excel), PREVIA_*_xadrez.jpg e PREVIA_*_fundo_cinza.jpg
+
+COMO USAR
+Substitua/mescle as tres pastas dentro da pasta "armaduras" do projeto. As pranchas originais
+(WhatsApp Image ... .jpeg) e os JPEGs antigos do Assassino nivel 50 nao estao aqui: continuam
+intactos no armaduras.zip original (faca backup antes de substituir a pasta do Level 50).
+
+LEVEL 50
+- Guerreiro, Mago, Patrulheiro e Guardiao Arcano: recortados das pranchas, igual aos niveis 75/100.
+- Assassino: as 8 pecas ja estavam separadas, mas em JPEG com fundo BRANCO. Foram convertidas para
+  PNG com fundo transparente e os nomes padronizados (ex.: CapuzdoAssasino_nivel50.jpeg ->
+  Capuz_do_Assassino_nivel50.png; botasl_de_Couro -> Botas_de_Couro; calçadoassasino -> Calça_do_Assassino).
+
+PADRAO
+- Pastas: Classe_<Classe>_nvlXX e Guardião_Arcano_nvlXX (mesmo padrao do Level 50 original).
+- Nomes: <Nome_da_Peca>_nivelXX.png (mesmo estilo de "Peitoral_de_Couro_nivel50").
+  Nomes tirados dos rotulos das pranchas; erros de digitacao das pranchas foram corrigidos
+  (OMBIEIRAS -> Ombreiras, BOTAS DE COUREA/COURIA -> Botas de Couro).
+- Ordem das 8 pecas: Peitoral, Ombreiras, Capa, Capuz, Luvas, Calca, Botas, Amuleto.
+- Pares (ombreiras, luvas, botas) ficam juntos num arquivo, como no Level 50.
+- PNG RGBA (canal alfa real), resolucao original da prancha (sem reducao), margem transparente de 6 px.
+
+COMO O FUNDO FOI REMOVIDO
+Mascara de segmentacao (IS-Net) + distancia de cor ao fundo local da prancha. Partes escuras
+cercadas pela peca sao mantidas opacas; so sai o fundo ligado a borda do recorte.
+Bordas semitransparentes foram "descontaminadas" (sem halo preto).
+
+REVISAR MANUALMENTE (coluna "revisar" do manifesto)
+- L75 Assassino - Ombreiras Leves: resto de fundo escuro no canto inferior esquerdo
+- L75 Patrulheiro - Ombreiras de Couro: pequeno residuo escuro na base
+- L75 Guardiao Arcano - Ombreiras de Energia e Luvas de Energia: residuos escuros na base
+- L100 Guerreiro - Ombreiras de Placas e Capuz de Guerreiro: partes escuras do metal translucidas
+- L100 Assassino - Ombreiras Leves: peca fina, pontas podem estar incompletas
+- L100 Mago - Ombreiras de Cristal / L100 Guardiao - Ombreiras de Energia: brilho semitransparente
+Limitacao de origem: as pranchas sao JPEG de WhatsApp com ~200 px de largura, entao cada peca
+tem entre ~80 e ~220 px. Para assets finais em alta, o ideal e gerar/exportar as pecas em resolucao maior.

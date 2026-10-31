@@ -239,10 +239,11 @@ const Arsenal = {
       const rnd = mulberry32((dia * 7919 + 131) >>> 0), fam = this.famDaZona({ lv: lv + 2, region: 'nexus' }), vagas = ARS_ORDEM.slice();
       S.loja = { dia, itens: [0, 0, 1, 2].map((r) => this.gerar(vagas.splice(Math.floor(rnd() * vagas.length), 1)[0], fam, r, lv + 1)) };
     }
-    // personagem criado do nível 30 em diante: duas peças do conjunto de nível 30 da classe dele
+    // personagem criado do nível 30 em diante: duas peças do conjunto de classe da faixa dele
+    // (nível 30, 50, 75 ou 100)
     const c = this.classeDe(this.heroi());
     if (c && lv >= 30 && !S.loja.classe) {
-      const rnd = mulberry32((dia * 104729 + 7) >>> 0), ids = Object.keys(ARMADURAS_GLB).filter((k) => ARMADURAS_GLB[k].setId === `${c}30`);
+      const rnd = mulberry32((dia * 104729 + 7) >>> 0), ids = this.pecasClasse(c, this.faixaClasse(lv, 0));
       for (let i = 0; i < 2 && ids.length; i++) S.loja.itens.push(this.gerarCat(ids.splice(Math.floor(rnd() * ids.length), 1)[0], Math.floor(rnd() * 3), rnd));
       S.loja.classe = c;
     }
