@@ -119,11 +119,13 @@ if os.path.exists(_PALETAS):
                 _real = _REAIS.get(_cls, {}).get(_nv, {}).get(_vaga)
                 if _real:
                     # GLB pronto: o caminho das peças do Meshy; o peitoral pronto já traz as ombreiras
+                    esconde_ombros = _vaga == 'peitoral' and not _REAIS[_cls][_nv].get('ombros')
                     if isinstance(_real, dict):
                         _base['girar'] = _real.get('girar', 0)
+                        esconde_ombros = _vaga == 'peitoral' and _real.get('ombros', esconde_ombros)
                         _real = _real['arq']
                     _base.update(arq=os.path.dirname(_img) + '/' + _real, blender=False, real=True)
-                    if _vaga == 'peitoral' and not _REAIS[_cls][_nv].get('ombros'):
+                    if esconde_ombros:
                         _base['ombros'] = True
                 if _vaga == 'ombros':
                     for _lado, _v, _n in (('E', 'ombroE', 'esquerda'), ('D', 'ombroD', 'direita')):

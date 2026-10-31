@@ -2212,6 +2212,11 @@ const EclipseTests = {
     }
     this.ok('Guerreiro nível 50: peitoral, calça, botas, capa e capuz são os GLB realistas enviados (exemplo_glb/)', ['peitoral', 'calcas', 'botas', 'capa', 'capacete'].every((v) => { const c = Criacao3D.POR_ID[`n50_guerreiro_${v}`]; return c && c.real && c.arq.includes('/exemplo_glb/'); }) && Criacao3D.POR_ID.n50_guerreiro_peitoral.ombros);
     this.ok('Mago nível 50: as sete peças realistas enviadas (exemplo_glb/), com as ombreiras próprias à mostra (o manto não as esconde)', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capa', 'capacete', 'luvas'].every((v) => { const c = Criacao3D.POR_ID[`n50_mago_${v}`]; return c && c.real && c.arq.includes('/exemplo_glb/'); }) && !Criacao3D.POR_ID.n50_mago_peitoral.ombros && Criacao3D.POR_ID.n50_mago_acessorio.blender);
+    const reais = (pre, vagas) => vagas.every((v) => { const c = Criacao3D.POR_ID[pre + v]; return c && c.real && c.arq.includes('/exemplo_glb/'); });
+    this.ok('Patrulheiro 50 (sete peças com as ombreiras de folhas), Guardião Arcano 50 (seis; o peitoral traz as ombreiras) e Assassino 75 (sete, com o amuleto): GLB realistas enviados',
+      reais('n50_patrulheiro_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && !Criacao3D.POR_ID.n50_patrulheiro_peitoral.ombros &&
+      reais('n50_guardiao_', ['peitoral', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && Criacao3D.POR_ID.n50_guardiao_peitoral.ombros && Criacao3D.POR_ID.n50_guardiao_ombroE.blender &&
+      reais('n75_assassino_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capacete', 'luvas', 'acessorio']) && Criacao3D.POR_ID.n75_assassino_capa.blender);
     this.ok('nomes das peças: os das imagens (manifesto)', ARMADURAS_GLB.n75_guerreiro_peitoral.nome === 'Peitoral de Placas' && ARMADURAS_GLB.n100_mago_acessorio.nome === 'Amuleto do Astral' && ARMADURAS_GLB.n50_assassino_ombroE.nome.startsWith('Ombreiras Leves'));
     this.ok('força cresce com a faixa (defesa do peitoral 30 < 50 < 75 < 100)', ['30', '50', '75', '100'].map((n) => ARMADURAS_GLB[`n${n}_guerreiro_peitoral`].baseStats.defesa).every((v, i, a) => !i || v > a[i - 1]));
     this.igual('faixa do conjunto pelo nível da zona (20, 26, 47, 72, 96)', [20, 26, 47, 72, 96].map((n) => Arsenal.faixaClasse(n)).join(','), '0,30,50,75,100');

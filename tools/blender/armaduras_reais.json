@@ -1,5 +1,5 @@
 {
- "_leia": "Peças de armadura que vêm prontas (GLB realista) no lugar das geradas pelo tools/blender/armaduras.py: classe → nível → vaga → GLB (relativo à pasta da classe). O gerador do Blender pula essas vagas e o tools/importar_criacao.py converte o GLB pelo caminho das peças do Meshy (reduz, reassa as texturas e encaixa no corpo). A vaga pode ter, no lugar do caminho, {\"arq\": caminho, \"girar\": graus}: meia-volta (ou outro giro) em torno do eixo vertical, para o GLB gerado de costas (as capas dos conjuntos de nível 50 vêm com o lado de fora das costas virado para a frente do arquivo). As ombreiras prontas vêm em par num GLB só e viram as duas peças (esquerda e direita); com elas, o peitoral pronto não esconde as ombreiras.",
+ "_leia": "Peças de armadura que vêm prontas (GLB realista) no lugar das geradas pelo tools/blender/armaduras.py: classe → nível → vaga → GLB (relativo à pasta da classe). O gerador do Blender pula essas vagas e o tools/importar_criacao.py converte o GLB pelo caminho das peças do Meshy (reduz, reassa as texturas e encaixa no corpo). A vaga pode ter, no lugar do caminho, {\"arq\": caminho, \"girar\": graus}: meia-volta (ou outro giro) em torno do eixo vertical, para o GLB gerado de costas (as capas dos conjuntos de nível 50 vêm com o lado de fora das costas virado para a frente do arquivo). As ombreiras prontas vêm em par num GLB só e viram as duas peças (esquerda e direita); com elas, o peitoral pronto não esconde as ombreiras (no peitoral, {\"arq\": ..., \"ombros\": true} esconde mesmo assim).",
  "guerreiro": {
   "50": {
    "peitoral": "exemplo_glb/armor.glb",
@@ -22,6 +22,15 @@
     "arq": "exemplo_glb/Feathered_Cloak.glb",
     "girar": 180
    }
+  },
+  "75": {
+   "peitoral": "exemplo_glb/Peitoral_de_Couro_nivel75.glb",
+   "ombros": "exemplo_glb/Ombreiras_Leves_nivel75.glb",
+   "luvas": "exemplo_glb/Luvas_de_Couro_nivel75.glb",
+   "calcas": "exemplo_glb/Cal_a_do_Assassino_nivel75.glb",
+   "botas": "exemplo_glb/Botas_de_Couro_nivel75.glb",
+   "capacete": "exemplo_glb/Capuz_do_Assassino_nivel75.glb",
+   "acessorio": "exemplo_glb/Amuleto_da_Sombra_nivel75.glb"
   }
  },
  "mago": {
@@ -36,6 +45,33 @@
     "girar": 180
    },
    "capacete": "exemplo_glb/Hood.glb"
+  }
+ },
+ "patrulheiro": {
+  "50": {
+   "peitoral": "exemplo_glb/Green_Leather_Armor.glb",
+   "ombros": "exemplo_glb/Leaf_Armor.glb",
+   "luvas": "exemplo_glb/Leather_Gauntlets.glb",
+   "calcas": "exemplo_glb/Leafy_Pants.glb",
+   "botas": "exemplo_glb/Leaf_Boots.glb",
+   "capa": {
+    "arq": "exemplo_glb/cloak.glb",
+    "girar": 180
+   },
+   "capacete": "exemplo_glb/Fur-Lined_Hood.glb"
+  }
+ },
+ "guardiao": {
+  "50": {
+   "peitoral": "exemplo_glb/Fantasy_Armor.glb",
+   "luvas": "exemplo_glb/Crystal_Gauntlets.glb",
+   "calcas": "exemplo_glb/Blue_Crystal_Armor_Pants.glb",
+   "botas": "exemplo_glb/Fantasy_Boots.glb",
+   "capa": {
+    "arq": "exemplo_glb/Blue_Cloak.glb",
+    "girar": 180
+   },
+   "capacete": "exemplo_glb/Arcane_Hood.glb"
   }
  }
 }
