@@ -86,22 +86,29 @@ const PERS_ORDEM = ['guerreiro', 'mago', 'assassino', 'patrulheiro', 'guardiao']
 // Opções da aparência (todas desenhadas de verdade pelo modelo, js/criacao/modelo.js)
 const PERS_PELES = ['#f2d0b6', '#e8b896', '#d29f7a', '#b98563', '#9a6a4c', '#7b5139', '#5a3a29', '#3e281c'];
 const PERS_CABELOS = [['Preto', '#141216'], ['Castanho', '#4a2e1c'], ['Ruivo', '#8a3a1a'], ['Loiro', '#c9a35e'], ['Grisalho', '#8a8a90'], ['Branco', '#e4e4ea'], ['Azul', '#2a4a9a'], ['Carmesim', '#8a1a2a']];
-const PERS_OLHOS = [['Castanhos', '#4a2c18', 0], ['Verdes', '#2e6a3a', 0], ['Azuis', '#2f5aa8', 0], ['Cinzentos', '#6a7480', 0], ['Âmbar', '#b07a1e', 0], ['Arcanos', '#7ad0ff', 1]];
+const PERS_OLHOS = [['Castanhos', '#4a2c18', 0], ['Verdes', '#2e6a3a', 0], ['Azuis', '#2f5aa8', 0], ['Cinzentos', '#6a7480', 0], ['Âmbar', '#b07a1e', 0], ['Arcanos', '#7ad0ff', 1],
+  ['Mel', '#8a5a26', 0], ['Violeta', '#6a3aa8', 0], ['Carmesim', '#9a1a2a', 0], ['Gelo', '#a8d8f0', 0], ['Dourados', '#c89a22', 0], ['Esmeralda', '#1a8a5a', 0]];
 const PERS_CORES = [['Ônix', '#1c1b20'], ['Aço', '#4a5260'], ['Floresta', '#2c4a2e'], ['Índigo', '#2e2a5a'], ['Vinho', '#5a1e26'], ['Couro', '#5c3e26'], ['Areia', '#8a7452'], ['Musgo', '#4a5232']];
 // Estilo Realista: as peças GLB da criação (js/criacao/montagem.js; nomes do catálogo); Estilizado:
 // o modelo paramétrico, com os campos de forma, rosto, cabelo, barba, marcas e roupa abaixo
 const PERS_GLB = {
   corpoG: ['Masculino', 'Feminino'],
   rostoG: ['Rosto 1', 'Rosto 2', 'Rosto 3', 'Rosto 4', 'Rosto 5', 'Rosto 6', 'Rosto 7', 'Rosto 8'],
-  // 1 a 8: os do Meshy (só a ponta do comprido balança); 9 a 18: feitos no Blender, em mechas com
+  // 1 a 8: os do Meshy (só a ponta do comprido balança); 9 a 23: feitos no Blender, em mechas com
   // física (js/criacao/cabelo_fisica.js)
   cabeloG: ['Sem cabelo', 'Cabelo 1', 'Cabelo 2', 'Cabelo 3', 'Cabelo 4', 'Cabelo 5', 'Cabelo 6', 'Cabelo 7', 'Cabelo 8',
-    'Curto (mechas)', 'Médio (mechas)', 'Longo (mechas)', 'Espetado (mechas)', 'Ondulado (mechas)', 'Coque (mechas)', 'Rabo de cavalo (mechas)', 'Tranças (mechas)', 'Franja (mechas)', 'Repicado (mechas)'],
-  barbaG: ['Sem barba', 'Cacheada', 'Curta', 'Longa', 'Média', 'Viking'],
+    'Curto (mechas)', 'Médio (mechas)', 'Longo (mechas)', 'Espetado (mechas)', 'Ondulado (mechas)', 'Coque (mechas)', 'Rabo de cavalo (mechas)', 'Tranças (mechas)', 'Franja (mechas)', 'Repicado (mechas)',
+    'Raspado (mechas)', 'Militar (mechas)', 'Topete (mechas)', 'Undercut (mechas)', 'Moicano (mechas)'],
+  // 1 a 5: as do Meshy; 6 a 14: feitas no Blender em mechas (tools/blender/barbas.py), com as
+  // combinações de barba e bigode
+  barbaG: ['Sem barba', 'Cacheada', 'Curta', 'Longa', 'Média', 'Viking',
+    'Por fazer (mechas)', 'Curta com bigode (mechas)', 'Média com bigode (mechas)', 'Cheia (mechas)', 'Longa (mechas)',
+    'Cavanhaque (mechas)', 'Contorno sem bigode (mechas)', 'Bigode (mechas)', 'Bigode guidão (mechas)'],
 };
 // id do catálogo da criação de cada opção de cabelo (null: sem cabelo)
 const PERS_CABELOS_GLB = [null, 'cabelo_1', 'cabelo_2', 'cabelo_3', 'cabelo_4', 'cabelo_5', 'cabelo_6', 'cabelo_7', 'cabelo_8',
-  'cabelo_curto', 'cabelo_medio', 'cabelo_longo', 'cabelo_espetado', 'cabelo_ondulado', 'cabelo_coque', 'cabelo_rabo', 'cabelo_trancas', 'cabelo_franja', 'cabelo_repicado'];
+  'cabelo_curto', 'cabelo_medio', 'cabelo_longo', 'cabelo_espetado', 'cabelo_ondulado', 'cabelo_coque', 'cabelo_rabo', 'cabelo_trancas', 'cabelo_franja', 'cabelo_repicado',
+  'cabelo_raspado', 'cabelo_militar', 'cabelo_topete', 'cabelo_undercut', 'cabelo_moicano'];
 const PERS_APAR = {
   estilo: { nome: 'Estilo do modelo', ops: ['Realista', 'Estilizado'] },
   corpoG: { nome: 'Corpo', ops: PERS_GLB.corpoG, glb: true },
@@ -116,6 +123,8 @@ const PERS_APAR = {
   sobrancelhas: { nome: 'Sobrancelhas', ops: ['Finas', 'Grossas', 'Arqueadas', 'Sem'] },
   cabelo: { nome: 'Cabelo', ops: ['Raspado', 'Curto', 'Topete', 'Longo', 'Rabo de cavalo', 'Moicano', 'Tranças', 'Coque'] },
   corCabelo: { nome: 'Cor do cabelo', ops: PERS_CABELOS.map((c) => c[0]), cores: PERS_CABELOS.map((c) => c[1]) },
+  // (a primeira: a barba na mesma cor do cabelo; a amostra dela é desenhada meio a meio)
+  corBarba: { nome: 'Cor da barba', ops: ['Como o cabelo'].concat(PERS_CABELOS.map((c) => c[0])), cores: [null].concat(PERS_CABELOS.map((c) => c[1])), glb: true },
   barba: { nome: 'Barba e bigode', ops: ['Sem', 'Por fazer', 'Cavanhaque', 'Bigode', 'Cheia'] },
   marcas: { nome: 'Marcas', ops: ['Sem', 'Cicatriz no olho', 'Cicatriz na face', 'Tatuagem tribal', 'Runas acesas', 'Pintura de guerra'] },
   roupa: { nome: 'Roupa inicial', ops: null },   // por classe (PERS_CLASSES[c].roupas)
@@ -127,7 +136,7 @@ const PERS_CAMPOS = Object.keys(PERS_APAR);
 function persAparenciaPadrao(classe = 'guerreiro') {
   const C = PERS_CLASSES[classe] || PERS_CLASSES.guerreiro;
   return { estilo: 0, corpoG: 0, rostoG: { guerreiro: 0, mago: 2, assassino: 3, patrulheiro: 1, guardiao: 2 }[classe] || 0, cabeloG: classe === 'mago' ? 8 : classe === 'assassino' ? 2 : 1, barbaG: classe === 'guerreiro' ? 2 : 0,
-    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
+    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, corBarba: 0, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
 }
 // Personagem salvo antes das peças GLB: as escolhas do modelo paramétrico viram as mais parecidas
 // (corpo curvilíneo → feminino; o penteado e a barba pelo formato)
@@ -265,6 +274,35 @@ const Perfis = {
     this.registrar(p);
     if (!this.salvar()) return { ok: false, erro: 'Não foi possível salvar no navegador (armazenamento cheio ou bloqueado).', perfil: p };
     return { ok: true, erro: '', perfil: p };
+  },
+  // Pacote do personagem: tudo o que define a aparência num objeto só, versionado e validado na
+  // volta (o formato que um servidor guardaria ou mandaria aos outros jogadores no modo online
+  // futuro; hoje, exportar e importar entre navegadores). vestidos: as peças do Arsenal à mostra
+  // (id do catálogo, raridade e nível), quando o mundo do personagem está carregado.
+  pacote(id) {
+    const p = this.obter(id);
+    if (!p) return null;
+    const V = {};
+    if (typeof Arsenal !== 'undefined' && typeof World !== 'undefined' && World.state && Arsenal.S && Arsenal.S.vest && Arsenal.S.vest[id]) {
+      const vs = Arsenal.vestidos(id);
+      for (const s in vs) if (vs[s] && vs[s].cat) V[s] = { cat: vs[s].cat, r: vs[s].r | 0, lv: vs[s].lv | 0 };
+    }
+    return { esquema: 'eclipse-zero/personagem', v: PERFIS_VERSAO, id: p.id, nome: p.nome, classe: p.classe,
+      aparencia: Object.assign({}, p.aparencia), opcoes: Object.assign({}, p.opcoes), vestidos: V, atualizado: p.atualizado };
+  },
+  // Lê um pacote: devolve o personagem validado (campos fora das opções voltam ao padrão; peças
+  // que o catálogo não conhece saem) ou null
+  dePacote(P) {
+    if (!P || P.esquema !== 'eclipse-zero/personagem' || !(P.v >= 1)) return null;
+    const q = this.validarPersonagem({ id: P.id, nome: P.nome, classe: P.classe, aparencia: P.aparencia, opcoes: P.opcoes, criado: P.atualizado, atualizado: P.atualizado });
+    if (!q) return null;
+    const cat = typeof CRIA_CATALOGO !== 'undefined' ? new Set(CRIA_CATALOGO.map((c) => c.id)) : null;
+    q.vestidos = {};
+    for (const s in P.vestidos || {}) {
+      const it = P.vestidos[s];
+      if (it && typeof it.cat === 'string' && (!cat || cat.has(it.cat))) q.vestidos[s] = { cat: it.cat, r: Math.max(0, Math.min(3, it.r | 0)), lv: Math.max(1, Math.min(100, it.lv | 0)) };
+    }
+    return q;
   },
   excluir(id) {
     const D = this.dados || this.carregar();

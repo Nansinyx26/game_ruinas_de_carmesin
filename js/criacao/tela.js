@@ -23,8 +23,8 @@ const CRIA_CATS = [
   { id: 'corpo', nome: 'CORPO', campos: ['corpoG', 'altura'] },
   { id: 'rosto', nome: 'ROSTO', campos: ['rostoG'] },
   { id: 'cabelo', nome: 'CABELO', campos: ['cabeloG'] },
-  { id: 'barba', nome: 'BARBA', campos: ['barbaG'] },
-  { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo'] },
+  { id: 'barba', nome: 'BARBA', campos: ['barbaG', 'corBarba'] },   // (barba e bigode; a cor, própria ou a do cabelo)
+  { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo', 'olhos'] },   // (olhos: a íris do rosto pintada na cor)
 ];
 const CRIA_LINHAS_GLB = ['estilo'].concat(...CRIA_CATS.map((c) => c.campos));
 // Miniaturas (ids do catálogo da criação) de cada opção; null = 'sem'
@@ -437,7 +437,12 @@ const CriacaoTela = {
         const cols = Math.min(8, n), cs = Math.min(34, (w - 24 - (cols - 1) * 6) / cols);
         for (let i = 0; i < n; i++) {
           const cx = x + 12 + (i % cols) * (cs + 6), cy = yy + Math.floor(i / cols) * (cs + 6), sel = A[k] === i;
-          ctx.fillStyle = PERS_APAR[k].cores[i]; ctx.fillRect(cx, cy, cs, cs);
+          const cor = PERS_APAR[k].cores[i];
+          if (cor === null) {   // "como o cabelo": a amostra meio a meio com a cor do cabelo
+            ctx.fillStyle = (PERS_CABELOS[A.corCabelo] || PERS_CABELOS[0])[1]; ctx.fillRect(cx, cy, cs, cs);
+            ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = `bold ${Math.round(cs * 0.5)}px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('=', cx + cs / 2, cy + cs / 2 + 1);
+          } else { ctx.fillStyle = cor; ctx.fillRect(cx, cy, cs, cs); }
           ctx.strokeStyle = sel ? '#ffffff' : 'rgba(255,255,255,0.25)'; ctx.lineWidth = sel ? 2.5 : 1; ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, cs - 1);
           U.rects.push({ id: 'opcao', v: { k, i }, x: cx, y: cy, w: cs, h: cs });
         }
@@ -451,7 +456,9 @@ const CriacaoTela = {
     }
     if (catAt.id === 'cores') {
       ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';
-      wrapText(ctx, 'A cor da pele vale para o corpo e o rosto; a do cabelo, para o cabelo e a barba. Sombras, poros e reflexos da textura continuam.', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+      const ro = typeof Criacao3D !== 'undefined' && Criacao3D.POR_ID[`rosto_${(A.rostoG | 0) + 1}`], semIris = ro && ro.sem_iris;
+      wrapText(ctx, 'A cor da pele vale para o corpo e o rosto; a do cabelo, para o cabelo (e a barba, se ela não tiver cor própria); a dos olhos pinta a íris (a pupila e o brilho ficam). Sombras, poros e reflexos da textura continuam.' +
+        (semIris ? ' Neste rosto a cor dos olhos não muda: a íris não é achada na textura dele.' : ''), w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
     }
     this.botao(ctx, 'aleatorio', 0, x + 12, y0 + h - 40, w - 24, 28, 'APARÊNCIA ALEATÓRIA', false, rgb);
   },

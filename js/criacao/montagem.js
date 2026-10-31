@@ -21,7 +21,8 @@ const Criacao3D = (function () {
   const POR_ID = {};
   for (const c of CAT) POR_ID[c.id] = c;
   const CORPOS = ['corpo_m', 'corpo_f'];
-  const BARBAS = ['barba_cacheada', 'barba_curta', 'barba_longa', 'barba_media', 'barba_viking'];
+  const BARBAS = ['barba_cacheada', 'barba_curta', 'barba_longa', 'barba_media', 'barba_viking',
+    'barba_b_por_fazer', 'barba_b_curta', 'barba_b_media', 'barba_b_cheia', 'barba_b_longa', 'barba_b_cavanhaque', 'barba_b_queixo', 'barba_b_bigode', 'barba_b_guidao'];
   const VAGAS = ['capacete', 'peitoral', 'luvas', 'calcas', 'botas', 'capa', 'acessorio', 'ombroE', 'ombroD'];
   const LADO = 2048;
   // células do atlas: [x, y, lado] em pixels da textura de cor (material e normais na metade)
@@ -32,7 +33,7 @@ const Criacao3D = (function () {
     barba: [1536, 1536, 256], acessorio: [1792, 1536, 256],
     ombroE: [1536, 1792, 256], ombroD: [1792, 1792, 256],     // ombreiras dos conjuntos 50, 75 e 100
   };
-  const TINTA = { corpo: 'pele', rosto: 'pele', cabelo: 'cabelo', barba: 'cabelo' };
+  const TINTA = { corpo: 'pele', rosto: 'pele', cabelo: 'cabelo', barba: 'barba' };
 
   // ------------------------------------------------------------ carregamento sob demanda
   const espera = {}, falhou = {}, pedido = {};
@@ -71,7 +72,7 @@ const Criacao3D = (function () {
       corpo: CORPOS[A.corpoG === 1 ? 1 : 0],
       rosto: `rosto_${Math.max(0, Math.min(7, A.rostoG | 0)) + 1}`,
       cabelo: (typeof PERS_CABELOS_GLB !== 'undefined' ? PERS_CABELOS_GLB[A.cabeloG | 0] : A.cabeloG > 0 ? `cabelo_${Math.min(8, A.cabeloG)}` : null) || null,
-      barba: A.barbaG > 0 ? BARBAS[Math.min(5, A.barbaG) - 1] : null,
+      barba: A.barbaG > 0 ? BARBAS[Math.min(BARBAS.length, A.barbaG) - 1] : null,
     };
   }
   // O personagem usa o modelo com as peças GLB (estilo 'Realista') e as peças dele existem
@@ -93,7 +94,7 @@ const Criacao3D = (function () {
   function imagens(id) {
     if (IMG[id]) return IMG[id];
     const D = dados(id), I = IMG[id] = { n: 0, ok: 0, cbs: [] };
-    for (const k of ['tex', 'mat', 'nrm']) {
+    for (const k of ['tex', 'mat', 'nrm', 'iris']) {   // (iris: máscara da íris dos rostos, para a cor dos olhos)
       if (!D || !D[k]) continue;
       I.n++;
       const im = I[k] = new Image();
@@ -161,11 +162,33 @@ const Criacao3D = (function () {
       px[i + 2] = Math.min(255, alvo[2] * 255 * f + br);
     }
   }
+  // Olhos: a íris (máscara feita pelo conversor a partir da posição de cada pixel na cabeça) vai
+  // para a cor escolhida, com a luminância de cada pixel em relação à média da íris; a pupila
+  // (bem escura) e o brilho (bem claro) ficam como estão
+  function tingirOlhos(px, mk, alvo) {
+    let s = 0, n = 0;
+    for (let i = 0; i < px.length; i += 4) if (mk[i] > 128) { s += 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]; n++; }
+    if (n < 8) return 0;
+    const ref = Math.max(20, s / n);
+    for (let i = 0; i < px.length; i += 4) {
+      const a = mk[i] / 255;
+      if (a <= 0) continue;
+      const f = (0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) / ref;
+      if (f < 0.35 || f > 2.2) continue;
+      const w = a * Math.min(1, (f - 0.35) / 0.2, (2.2 - f) / 0.4);
+      for (let c = 0; c < 3; c++) px[i + c] += (Math.min(255, alvo[c] * 255 * (0.55 + 0.6 * f)) - px[i + c]) * w;
+    }
+    return n;
+  }
   function tintas(def) {
     const A = def.aparencia || {};
     return {
+      olhos: typeof PERS_OLHOS !== 'undefined' && PERS_OLHOS[A.olhos] ? cor01(PERS_OLHOS[A.olhos][1]) : null,
       pele: typeof PERS_PELES !== 'undefined' && PERS_PELES[A.pele] ? cor01(PERS_PELES[A.pele]) : null,
       cabelo: typeof PERS_CABELOS !== 'undefined' && PERS_CABELOS[A.corCabelo] ? cor01(PERS_CABELOS[A.corCabelo][1]) : null,
+      // a barba: a cor própria ou a do cabelo
+      barba: typeof PERS_CABELOS !== 'undefined' && A.corBarba > 0 && PERS_CABELOS[A.corBarba - 1] ? cor01(PERS_CABELOS[A.corBarba - 1][1])
+        : typeof PERS_CABELOS !== 'undefined' && PERS_CABELOS[A.corCabelo] ? cor01(PERS_CABELOS[A.corCabelo][1]) : null,
     };
   }
 
@@ -185,11 +208,17 @@ const Criacao3D = (function () {
     const [x, y, s] = CEL[cel], T = C.tinta[TINTA[cel]];
     const gc = C.at.cor.getContext('2d');
     if (I.tex && I.tex.naturalWidth) {
-      if (T) {
+      const olhos = cel === 'rosto' && C.tinta.olhos && I.iris && I.iris.naturalWidth;
+      if (T || olhos) {
         const tmp = tela(s, '#000'), g = tmp.getContext('2d');
         g.drawImage(I.tex, 0, 0, s, s);
         const d = g.getImageData(0, 0, s, s);
-        if (TINTA[cel] === 'pele') tingirPele(d.data, T); else tingirCabelo(d.data, T);
+        if (T) { if (TINTA[cel] === 'pele') tingirPele(d.data, T); else tingirCabelo(d.data, T); }
+        if (olhos) {
+          const mk = tela(s, '#000'), gk = mk.getContext('2d');
+          gk.drawImage(I.iris, 0, 0, s, s);
+          C.irisPx = tingirOlhos(d.data, gk.getImageData(0, 0, s, s).data, C.tinta.olhos);
+        }
         gc.putImageData(d, x, y);
       } else gc.drawImage(I.tex, x, y, s, s);
     }
@@ -271,30 +300,34 @@ const Criacao3D = (function () {
     // (o cabelo em mechas do Blender também cobre: o couro cabeludo de rostos maiores que a cabeça
     // de referência atravessava as mechas curtas)
     // de referência atravessava as mechas curtas); ali o recuo é menor (a testa sob a franja)
-    const mechas = C.ids.cabelo && POR_ID[C.ids.cabelo] && POR_ID[C.ids.cabelo].fisica ? C.peles.cabelo || [] : [];
+    const barbas = C.ids.barba ? C.peles.barba || [] : [];   // (a barba também cobre: o queixo e a mandíbula de rostos maiores atravessavam)
+    const mechas = (C.ids.cabelo && POR_ID[C.ids.cabelo] && POR_ID[C.ids.cabelo].fisica ? C.peles.cabelo || [] : []).concat(barbas);
     const pecas = COBRE.flatMap((v) => C.peles[v] || []).concat(mechas);
     if (!pecas.length) return;
     const H = 1.2, G = new Map(), chave = (i, j, k) => (i * 92837111) ^ (j * 689287499) ^ (k * 283923481);
-    for (const P of pecas) {
-      const p = P.pos, n = P.nor, mx = mechas.includes(P) ? 1.0 : 3.0;
+    pecas.forEach((P, pi) => {
+      // recuo máximo: 3 nas armaduras, 1 nas mechas do cabelo, 0,35 na barba (perto da boca o rosto
+      // afundava e ficava uma mancha escura em volta do bigode)
+      const p = P.pos, n = P.nor, mx = barbas.includes(P) ? 0.35 : mechas.includes(P) ? 1.0 : 3.0;
       for (let i = 0; i < p.length; i += 3) {
         const c = chave(Math.floor(p[i] / H), Math.floor(p[i + 1] / H), Math.floor(p[i + 2] / H));
         let L = G.get(c);
         if (!L) G.set(c, (L = []));
-        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2], mx);
+        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2], mx, pi);   // (pi: a peça; a barba não recua dentro de si mesma)
       }
-    }
+    });
     const MARGEM = 0.28, R2 = 2.3 * 2.3, LAT2 = 1.7 * 1.7;
     for (const S of pele) {
       if (!S.pos0) { S.pos0 = S.pos; S.pos = new Float32Array(S.pos0); }
-      const p = S.pos, nb = S.nor;
+      const p = S.pos, nb = S.nor, eu = pecas.indexOf(S);
       for (let i = 0; i < p.length; i += 3) {
         const X = p[i], Y = p[i + 1], Z = p[i + 2], ci = Math.floor(X / H), cj = Math.floor(Y / H), ck = Math.floor(Z / H);
         let best = R2, q = null, qo = 0;
         for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
           const L = G.get(chave(ci + a, cj + b, ck + c));
           if (!L) continue;
-          for (let t = 0; t < L.length; t += 7) {
+          for (let t = 0; t < L.length; t += 8) {
+            if (L[t + 7] === eu) continue;
             const dx = X - L[t], dy = Y - L[t + 1], dz = Z - L[t + 2], d2 = dx * dx + dy * dy + dz * dz;
             if (d2 < best) { best = d2; q = L; qo = t; }
           }

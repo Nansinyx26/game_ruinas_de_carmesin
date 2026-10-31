@@ -2210,7 +2210,12 @@ const EclipseTests = {
     const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
-    this.igual('catálogo: 2 corpos, 8 rostos, 18 cabelos (8 do Meshy e 10 com física), 5 barbas', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,18,5');
+    this.igual('catálogo: 2 corpos, 8 rostos, 23 cabelos (8 do Meshy e 15 em mechas do Blender, 5 deles masculinos), 14 barbas (5 do Meshy e 9 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,23,14');
+    this.ok('opções da criação: 24 de cabelo, 15 de barba (com as combinações de barba e bigode), cor da barba (a do cabelo ou própria) e 12 cores de olhos',
+      PERS_GLB.cabeloG.length === 24 && PERS_CABELOS_GLB.length === 24 && PERS_GLB.barbaG.length === 15 && Criacao3D.BARBAS.length === 14 &&
+      Criacao3D.BARBAS.every((id) => Criacao3D.POR_ID[id] && Criacao3D.POR_ID[id].tipo === 'barba') && PERS_APAR.corBarba.ops.length === PERS_CABELOS.length + 1 && PERS_OLHOS.length === 12,
+      `${PERS_GLB.cabeloG.length} ${PERS_GLB.barbaG.length} ${PERS_OLHOS.length}`);
+    this.igual('cortes masculinos em mechas no catálogo', ['raspado', 'militar', 'topete', 'undercut', 'moicano'].filter((c) => Criacao3D.POR_ID['cabelo_' + c] && Criacao3D.POR_ID['cabelo_' + c].fisica).length, 5);
     this.igual('catálogo: 7 peças do nível 1 (Armaduras_Inicial_Level_1/)', ini.filter((c) => c.arq.startsWith('assets/Criar_Personagem/Armaduras_Inicial_Level_1/') && c.arq.endsWith('.glb')).length, 7);
     this.ok('catálogo: 7 peças de nível 30 para cada uma das 5 classes (Armaduras_Level_30/<classe>/)', ARM_CLASSES.every((c) => n30.filter((q) => q.classe === c && q.arq.startsWith('assets/Criar_Personagem/Armaduras_Level_30/')).length === 7), n30.length);
     const campos = ['itemLevel', 'rarity', 'requiredLevel', 'allowedClasses', 'equipmentSlot', 'baseStats', 'bonusStats', 'modelPath', 'iconPath', 'description', 'sellValue', 'setId'];
@@ -2234,6 +2239,10 @@ const EclipseTests = {
     this.ok('Guerreiro 75: peitoral (com as ombreiras), calça, botas, elmo e manto são os GLB realistas enviados; luvas, ombreiras e amuleto continuam os do Blender',
       reais('n75_guerreiro_', ['peitoral', 'calcas', 'botas', 'capa', 'capacete']) && Criacao3D.POR_ID.n75_guerreiro_peitoral.ombros &&
       ['ombroE', 'ombroD', 'luvas', 'acessorio'].every((v) => Criacao3D.POR_ID[`n75_guerreiro_${v}`].blender));
+    this.ok('Mago 75 (manto com ombreiras, saia, grevas, capuz, capa e as asas de cristal nas costas), Patrulheiro 75 (cinco) e Guardião Arcano 75 (sete, com ombreiras e manoplas): GLB realistas enviados',
+      reais('n75_mago_', ['peitoral', 'calcas', 'botas', 'capacete', 'capa', 'acessorio']) && Criacao3D.POR_ID.n75_mago_peitoral.ombros && Criacao3D.POR_ID.n75_mago_luvas.blender &&
+      reais('n75_patrulheiro_', ['peitoral', 'calcas', 'botas', 'capacete', 'capa']) && Criacao3D.POR_ID.n75_patrulheiro_peitoral.ombros &&
+      reais('n75_guardiao_', ['peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas', 'capa', 'capacete']) && !Criacao3D.POR_ID.n75_guardiao_peitoral.ombros);
     // ------------------------------------------------ rig: pele por quatérnios duplos (R3D.skin, personagens principais)
     if (R3D.data) {
       const osso = (rz) => { const n = new N3('osso'); M3.trs(n.w, [0, 0, 0], [0, 0, rz], [1, 1, 1]); return n; };
@@ -2253,8 +2262,8 @@ const EclipseTests = {
     }
     // ------------------------------------------------ cabelo com física (Blender + js/criacao/cabelo_fisica.js)
     const cabF = CRIA_CATALOGO.filter((c) => c.tipo === 'cabelo' && c.fisica);
-    this.ok('cabelo com física: os dez cortes do Blender no catálogo e nas opções da criação (curto, médio, longo, espetado, ondulado, coque, rabo, tranças, franja, repicado)',
-      cabF.length === 10 && cabF.every((c) => c.convertido && c.arq.startsWith('assets/Criar_Personagem/Cabelo_Fisica/') && PERS_CABELOS_GLB.includes(c.id)) && PERS_CABELOS_GLB.length === PERS_GLB.cabeloG.length, cabF.map((c) => c.id).join(','));
+    this.ok('cabelo em mechas: os quinze cortes do Blender no catálogo e nas opções da criação (curto, médio, longo, espetado, ondulado, coque, rabo, tranças, franja, repicado e os masculinos raspado, militar, topete, undercut e moicano)',
+      cabF.length === 15 && cabF.every((c) => c.convertido && c.arq.startsWith('assets/Criar_Personagem/Cabelo_Fisica/') && PERS_CABELOS_GLB.includes(c.id)) && PERS_CABELOS_GLB.length === PERS_GLB.cabeloG.length, cabF.map((c) => c.id).join(','));
     this.ok('cabelo com física: a opção escolhida vira a peça do catálogo', Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('mago'), { cabeloG: 11 }) }).cabelo === 'cabelo_longo' && Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('mago'), { cabeloG: 3 }) }).cabelo === 'cabelo_3');
     {
       // modelo mínimo: cabeça e uma cadeia de dois ossos; a cabeça anda de lado e para
@@ -2301,6 +2310,13 @@ const EclipseTests = {
       id = r.perfil.id;
       const def = CHARACTERS_BY_ID[id];
       this.ok('perfil: escolhas do estilo Realista e o peitoral inicial salvos', r.ok && r.perfil.aparencia.estilo === 0 && r.perfil.aparencia.rostoG === 5 && r.perfil.opcoes.peitoral === 'ini_peitoral');
+      // pacote do personagem (exportar/importar; o formato do modo online futuro)
+      const pk = Perfis.pacote(id), pkJ = JSON.parse(JSON.stringify(pk));
+      pkJ.aparencia.olhos = 99; pkJ.vestidos = { botas: { cat: 'n75_mago_botas', r: 7, lv: 500 }, capa: { cat: 'nao_existe', r: 1, lv: 1 } };
+      const volta = Perfis.dePacote(pkJ);
+      this.ok('pacote do personagem: aparência e opções vão e voltam; campo fora das opções volta ao padrão; peça desconhecida sai',
+        pk && pk.esquema === 'eclipse-zero/personagem' && volta && volta.aparencia.rostoG === 5 && volta.aparencia.corBarba === 0 && volta.aparencia.olhos === persAparenciaPadrao('guerreiro').olhos &&
+        volta.vestidos.botas && volta.vestidos.botas.r === 3 && volta.vestidos.botas.lv === 100 && !volta.vestidos.capa && Perfis.dePacote({ esquema: 'outro' }) === null);
       this.ok('modelo: o personagem usa as peças GLB', Criacao3D.usa(def));
       // peças da aparência e as armaduras carregadas (scripts sob demanda, como no jogo)
       await carregar(['corpo_f', 'rosto_6', 'cabelo_6', 'corpo_m', 'rosto_1', 'cabelo_1', 'barba_curta', 'minis'].concat(ARM_INICIAL, ['n30_guerreiro_peitoral', 'n30_guerreiro_capa']));
@@ -2363,6 +2379,17 @@ const EclipseTests = {
         const ret = PersonagemModelo.retrato(def);
         this.ok('retrato do HUD do personagem GLB: 288×288', ret && ret.width === 288);
       }
+      // ------------------------------------------------ olhos coloridos, barba do Blender com cor própria, corte masculino
+      await carregar(['corpo_m', 'rosto_1', 'barba_b_curta', 'cabelo_topete']);
+      const dO = { id: 'p_olhos', base: 'kael', classe: 'guerreiro', aparencia: Object.assign(persAparenciaPadrao('guerreiro'), { corpoG: 0, rostoG: 0, cabeloG: 21, barbaG: 7, olhos: 7, corBarba: 7 }) };
+      const MO = Criacao3D.build(dO);
+      for (let i = 0; i < 100 && !(MO && !MO.criaVazio && Criacao3D.pintado(MO)); i++) await espera(50);
+      this.ok('olhos: a íris do rosto ganha a cor escolhida (os pixels da máscara feita pelo conversor)', MO && MO.cria && MO.cria.irisPx > 20, MO && MO.cria && MO.cria.irisPx);
+      this.ok('olhos: os rostos 3, 7 e 8 (íris não achada com segurança) ficam sem máscara e marcados no catálogo; os outros cinco têm a máscara',
+        ['rosto_3', 'rosto_7', 'rosto_8'].every((r) => Criacao3D.POR_ID[r].sem_iris) && [1, 2, 4, 5, 6].every((i) => !Criacao3D.POR_ID['rosto_' + i].sem_iris));
+      this.ok('barba do Blender (curta com bigode) na cor própria e o topete montados no corpo masculino',
+        MO && MO.cria && MO.cria.ids.barba === 'barba_b_curta' && MO.cria.ids.cabelo === 'cabelo_topete' && MO.cria.tinta.barba.join() !== MO.cria.tinta.cabelo.join(),
+        MO && MO.cria && `${MO.cria.ids.barba} ${MO.cria.ids.cabelo}`);
       // ------------------------------------------------ mundo: conjunto inicial (uma vez só, salvo)
       Perfis.ativar(id);
       grava(`${WORLD_SAVE_KEY}:${id}`, null);

@@ -1,6 +1,6 @@
 # Cabelo com física — Eclipse Zero
 
-Cabelos em mechas feitos no Blender, com cadeias de ossos que o jogo move por física. Ficam ao lado dos oito cabelos do Meshy (que continuam com a mola antiga de um osso só), como as opções 9 a 18 do campo **Cabelo** da tela de criação (estilo Realista).
+Cabelos em mechas feitos no Blender, com cadeias de ossos que o jogo move por física. Ficam ao lado dos oito cabelos do Meshy (que continuam com a mola antiga de um osso só), como as opções 9 a 23 do campo **Cabelo** da tela de criação (estilo Realista); as cinco últimas são cortes masculinos.
 
 ## Cortes
 
@@ -16,6 +16,11 @@ Cabelos em mechas feitos no Blender, com cadeias de ossos que o jogo move por f�
 | Tranças (mechas) | duas tranças atrás das orelhas | 2 cadeias | ~8,4 mil |
 | Franja (mechas) | médio com franja na testa | franja + 5 cadeias | ~5 mil |
 | Repicado (mechas) | três camadas de comprimentos diferentes | 7 cadeias | ~11,3 mil |
+| Raspado (mechas) | máquina: fios de menos de 1 cm sobre a touca | — | ~5,9 mil |
+| Militar (mechas) | laterais e nuca bem curtas, topo curto penteado para trás | — | ~5,4 mil |
+| Topete (mechas) | laterais curtas, topo que sobe da testa e vira para trás | — | ~7 mil |
+| Undercut (mechas) | laterais raspadas, topo comprido penteado para trás | — | ~8,8 mil |
+| Moicano (mechas) | laterais raspadas, crista no meio da testa até a nuca | — | ~6,2 mil |
 
 Os cortes servem nos dois corpos (masculino e feminino) com a mesma malha: a forma do corpo feminino vai numa shape key, como as armaduras. Trocar o cabelo não remonta o personagem.
 
@@ -37,7 +42,7 @@ Rodar: `python3 tools/blender/cabelos.py` (todos) ou `python3 tools/blender/cabe
 
 ## Cena de demonstração no Blender
 
-`cabelos_demo.blend` traz os dez cortes lado a lado, em cabeças de manequim. Cada um tem:
+`cabelos_demo.blend` traz todos os cortes lado a lado, em cabeças de manequim. Cada um tem:
 
 - a armadura com as cadeias e os grupos de vértices, para editar os pesos;
 - uma animação de 96 quadros com a cabeça girando e balançando, e as cadeias seguindo pelo mesmo algoritmo do jogo, já gravado em quadros-chave.
@@ -90,3 +95,21 @@ Parâmetros por corte (`fisica` no JSON):
 - **A cabeça de referência é uma só** (o Rosto 1 encaixado). Em rostos muito maiores, a pele recua só até 1 unidade sob a touca.
 - **Os oito cabelos do Meshy** continuam com a mola de um osso (`hair`).
 - **No Blender**, a física da demonstração é a mesma do jogo, simplificada (sem vento nem colisão), gravada em quadros-chave. Não é uma simulação de partículas de cabelo do Blender.
+
+## Cortes masculinos (raspado, militar, topete, undercut, moicano)
+
+Usam as mesmas regras com três recursos novos nas camadas: `la_abs` (latitude mínima absoluta: só o
+topo), `la_max` (só as laterais e a nuca) e `meio` / `meio_fora` (a faixa do meio da cabeça, da testa
+à nuca, para a crista do moicano). Dois fluxos novos: `topete` (sobe da testa e vira para trás) e
+`crista` (para fora da cabeça). Não têm cadeias: são curtos ou presos.
+
+## Barbas e bigodes (tools/blender/barbas.py)
+
+Nove estilos em mechas com as mesmas peças (fitas, textura de fios, crescimento desviando do rosto):
+por fazer, curta com bigode, média com bigode, cheia, longa, cavanhaque, contorno sem bigode, bigode e
+bigode guidão, em `assets/Criar_Personagem/Barbas_Blender/`. Regiões do rosto por latitude e longitude
+(bochechas e mandíbula, queixo, embaixo do queixo, buço; a boca fica livre); uma casca fina por baixo
+das mechas (a pele não aparece entre elas), menos na barba por fazer. O conversor
+(`processar_barba_blender`) põe a barba direto no espaço da cabeça e a leva da pele medida
+(`molde_rosto.json`) para o rosto de referência e para o corpo feminino; no jogo o rosto recua até
+0,35 unidade sob ela. A cor da barba é própria ou a do cabelo (campo **Cor da barba**).

@@ -78,7 +78,7 @@ Resposta à fase 1 do "Prompt mestre — expansão completa do mundo aberto". Tu
 - **Animação:** o motor não toca clipes. Criaturas novas recebem poses procedurais em código, como os heróis. Um tocador de clipes de GLB é possível, mas é trabalho de motor à parte.
 - **Visual "nova geração":** o R3D é WebGL 1 com pele na CPU. O realismo maior vem do Three.js na 3ª pessoa, por http. Geometria e texturas ficam dentro do orçamento (props até 1,5 mil triângulos, personagens até ~12 mil por peça).
 - **Interiores:** o mundo é feito de zonas. Um interior será uma zona fechada pequena, ligada à porta do prédio, como as masmorras.
-- **Armazenamento:** os GLB de origem no Git LFS já ocupam ~820 MB da cota gratuita de 1 GB. Modelos novos do Blender saem em GLB pequenos, fora do LFS.
+- **Armazenamento:** os GLB de origem no Git LFS ocupam ~1,3 GB; a cota gratuita das contas pessoais do GitHub é de 10 GB (a de 1 GB citada antes estava desatualizada). Modelos novos do Blender saem em GLB pequenos, fora do LFS.
 - **Escala do pedido:** é o escopo de meses de uma equipe. Cada fase abaixo entrega partes funcionando e testadas, e o estado de cada item fica registrado aqui.
 
 ## 4. Plano por fases

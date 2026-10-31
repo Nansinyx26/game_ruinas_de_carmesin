@@ -56,7 +56,8 @@ TAU = 2 * math.pi
 FRENTE, TRAS, CIMA, BAIXO = Vector((0, -1, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)), Vector((0, 0, -1))
 LADO_TEX = 512
 FAIXAS = 8                             # colunas da textura (variações de fios); a última é da touca
-CORTES_ORDEM = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado']
+CORTES_ORDEM = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado',
+                'raspado', 'militar', 'topete', 'undercut', 'moicano']   # (os cinco últimos: cortes masculinos)
 
 
 # ============================================================ a cabeça e o corpo medidos
@@ -140,6 +141,12 @@ def fluxo(tipo, corpo, P, alvo=None):
     if tipo == 'cima':
         n = (P - C).normalized()
         return (n * 0.55 + CIMA * 0.6 + TRAS * 0.35).normalized()
+    if tipo == 'topete':                 # sobe da testa e vira para trás (o topete)
+        n = (P - C).normalized()
+        return (CIMA * 0.35 + TRAS * 0.85 + n * 0.2).normalized()
+    if tipo == 'crista':                 # para fora da cabeça (a crista do moicano)
+        n = (P - C).normalized()
+        return (n * 0.85 + CIMA * 0.3 + TRAS * 0.18).normalized()
     if tipo == 'laco':
         d = alvo - P
         return d.normalized() if d.length > 1e-6 else BAIXO
@@ -325,6 +332,25 @@ def corte(nome):
                                                 dict(n=48, comp=(0.18, 0.28), larg=(0.02, 0.028), esp=0.34, fluxo='risca', folga=0.013, lift=0.35, la_min=12, afina=0.95, ponta=1.2),
                                                 dict(n=32, comp=(0.10, 0.17), larg=(0.018, 0.026), esp=0.34, fluxo='risca', folga=0.019, lift=0.45, la_min=30, afina=0.95, ponta=1.1)],
                        cadeias=[180, 140, -140, 102, -102, 80, -80], fisica=dict(rigidez=0.27, amortecimento=0.12, peso=1.0, limite=70)),
+        # cortes masculinos: máquina, militar, topete, undercut e moicano (laterais raspadas: fios
+        # de menos de 1 cm sobre a touca; la_abs: latitude mínima absoluta; meio: faixa do meio)
+        raspado=dict(nome='Raspado', camadas=[dict(n=420, comp=(0.007, 0.011), larg=(0.008, 0.011), esp=0.25, fluxo='tras', folga=0.002, rig=0.9, lift=0.05)],
+                     cadeias=[], fisica=None),
+        militar=dict(nome='Militar', camadas=[dict(n=240, comp=(0.012, 0.02), larg=(0.009, 0.012), esp=0.28, fluxo='tras', folga=0.003, rig=0.85, lift=0.08, la_max=58),
+                                              dict(n=190, comp=(0.018, 0.028), larg=(0.011, 0.015), esp=0.3, fluxo='tras', folga=0.006, rig=0.8, lift=0.35, la_abs=50)],
+                     cadeias=[], fisica=None),
+        topete=dict(nome='Topete', camadas=[dict(n=220, comp=(0.012, 0.02), larg=(0.009, 0.012), esp=0.28, fluxo='tras', folga=0.003, rig=0.85, lift=0.08, la_max=56),
+                                            dict(n=110, comp=(0.10, 0.13), larg=(0.02, 0.028), esp=0.4, fluxo='topete', folga=0.01, rig=0.45, lift=0.55, la_abs=48),
+                                            dict(n=60, comp=(0.07, 0.1), larg=(0.018, 0.026), esp=0.4, fluxo='topete', folga=0.019, rig=0.45, lift=0.5, la_abs=58)],
+                    cadeias=[], fisica=None),
+        undercut=dict(nome='Undercut', camadas=[dict(n=320, comp=(0.006, 0.009), larg=(0.007, 0.01), esp=0.25, fluxo='tras', folga=0.002, rig=0.9, lift=0.04, la_max=55),
+                                                dict(n=110, comp=(0.14, 0.19), larg=(0.02, 0.028), esp=0.36, fluxo='tras', folga=0.007, rig=0.55, lift=0.25, la_abs=54),
+                                                dict(n=60, comp=(0.11, 0.16), larg=(0.018, 0.026), esp=0.36, fluxo='tras', folga=0.014, rig=0.55, lift=0.3, la_abs=60)],
+                      cadeias=[], fisica=None),
+        moicano=dict(nome='Moicano', camadas=[dict(n=300, comp=(0.006, 0.009), larg=(0.007, 0.01), esp=0.25, fluxo='tras', folga=0.002, rig=0.9, lift=0.04, meio_fora=0.2),
+                                              dict(n=110, comp=(0.08, 0.12), larg=(0.022, 0.03), esp=0.45, fluxo='crista', folga=0.008, rig=0.97, lift=0.9, meio=0.15, afina=1.0, ponta=1.0),
+                                              dict(n=50, comp=(0.05, 0.08), larg=(0.02, 0.026), esp=0.45, fluxo='crista', folga=0.016, rig=0.97, lift=0.9, meio=0.1, afina=1.0, ponta=1.0)],
+                     cadeias=[], fisica=None),
     )
     return C[nome]
 
@@ -343,7 +369,10 @@ def raizes(corpo, cam, rng):
         la = math.degrees(math.asin(max(-1, min(1, z))))
         lo = ((i * 137.508) % 360) - 180
         lim = corpo.linha_do_cabelo(lo) + cam.get('la_min', 0)
-        if la < lim or la > cam.get('la_max', 91):
+        if la < lim or la > cam.get('la_max', 91) or la < cam.get('la_abs', -99):
+            continue
+        meio = abs(math.cos(math.radians(la)) * math.sin(math.radians(lo)))   # distância ao plano do meio da cabeça
+        if ('meio' in cam and meio > cam['meio']) or ('meio_fora' in cam and meio < cam['meio_fora']):
             continue
         if 'lo' in cam and not (cam['lo'][0] <= lo <= cam['lo'][1]):
             continue
@@ -925,7 +954,7 @@ def main(nomes):
         U.limpar_cena()
         gerar(nome)
         U.limpar_sobras()
-    demonstracao(CORTES_ORDEM)          # a cena de demonstração sempre com os dez cortes
+    demonstracao(CORTES_ORDEM)          # a cena de demonstração sempre com todos os cortes
 
 
 if __name__ == '__main__':

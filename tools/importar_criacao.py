@@ -63,12 +63,18 @@ PECAS = []
 for i, (a, m) in enumerate([('Rosto_1.glb', 'rosto_1.png'), ('rosto_2.glb', 'rosto_2.png'), ('rosto_3.glb', 'rosto_3.png'), ('rosto_4.glb', 'rosto_4.png'),
                             ('rosto_5.glb', 'rosto_5.png'), ('rosto_6.glb', 'rosto_6.png'), ('rosto_7.glb', 'rosto_7.png'), ('rosto_8.glb', 'rosto_8.png')]):
     PECAS.append(dict(id=f'rosto_{i + 1}', tipo='rosto', nome=f'Rosto {i + 1}', arq='Rosto/' + a, mini='Rosto/' + m, tri=9000, tex=1024))
+# rostos em que a íris não é achada com segurança (a cor dos olhos não se aplica neles)
+_SEM_IRIS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'criacao_iris.json'), encoding='utf-8'))['sem_iris']
+for _p in PECAS:
+    if _p['tipo'] == 'rosto' and _p['id'] in _SEM_IRIS:
+        _p['sem_iris'] = True
 for i, (a, m) in enumerate([('cabelo_1.glb', 'cabelo_1.png'), ('Cabelo_2.glb', 'cabelo_2.png'), ('Cabelo_3.glb', 'Cabelo_3.png'), ('Cabelo_4.glb', 'Cabelo_4.png'),
                             ('Cabelo_5.glb', 'cabelo_5.png'), ('Cabelo_6.glb', 'cabelo_6.png'), ('cabelo_7.glb', 'cabelo_7.png'), ('Cabelo_8.glb', 'cabelo_8.png')]):
     PECAS.append(dict(id=f'cabelo_{i + 1}', tipo='cabelo', nome=f'Cabelo {i + 1}', arq='Cabelo/' + a, mini='Cabelo/' + m, tri=12000, tex=512))
 # Cabelos com física feitos no Blender (tools/blender/cabelos.py): malha em mechas, cadeias de ossos
 # para a física do jogo (js/criacao/cabelo_fisica.js) e a mesma malha nos dois corpos (shape key)
-CORTES_FISICA = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado']
+CORTES_FISICA = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado',
+                 'raspado', 'militar', 'topete', 'undercut', 'moicano']   # (os cinco últimos: cortes masculinos)
 for _c in CORTES_FISICA:
     _j = os.path.join(ORIG, 'Cabelo_Fisica', _c + '.json')
     if os.path.exists(_j):
@@ -76,6 +82,13 @@ for _c in CORTES_FISICA:
 for b, n in [('Cacheada', 'Cacheada'), ('Curta', 'Curta'), ('Longa', 'Longa'), ('Média', 'Média'), ('Viking', 'Viking')]:
     PECAS.append(dict(id='barba_' + unicodedata.normalize('NFKD', b).encode('ascii', 'ignore').decode().lower(), tipo='barba', nome='Barba ' + n,
                       arq=f'Barbas/Barba_{b}.glb', mini=f'Barbas/Barba_{b}.png', tri=5000, tex=512))
+# barbas e bigodes em mechas feitos no Blender (tools/blender/barbas.py): o mesmo encaixe por cobertura
+BARBAS_BLENDER = ['por_fazer', 'curta', 'media', 'cheia', 'longa', 'cavanhaque', 'queixo', 'bigode', 'guidao']
+for _b in BARBAS_BLENDER:
+    _j = os.path.join(ORIG, 'Barbas_Blender', _b + '.json')
+    if os.path.exists(_j):
+        PECAS.append(dict(id=f'barba_b_{_b}', tipo='barba', blender_barba=True, nome=json.load(open(_j, encoding='utf-8'))['nome'],
+                          arq=f'Barbas_Blender/{_b}.glb', mini=f'Barbas_Blender/{_b}.png', tri=16000, tex=512))
 L1 = 'Armaduras_Inicial_Level_1/'
 PECAS += [
     dict(id='ini_capuz', tipo='peca', vaga='capacete', nome='Capuz do Iniciado', arq=L1 + 'Capuz_level_1.glb', mini=L1 + 'Capuz_level_1.png', nivel=1),
@@ -129,6 +142,9 @@ if os.path.exists(_PALETAS):
                     esconde_ombros = _vaga == 'peitoral' and not _REAIS[_cls][_nv].get('ombros')
                     if isinstance(_real, dict):
                         _base['girar'] = _real.get('girar', 0)
+                        for _k in ('costas', 'tri', 'tex'):   # enfeite das costas (asas); orçamento próprio
+                            if _k in _real:
+                                _base[_k] = _real[_k]
                         esconde_ombros = _vaga == 'peitoral' and _real.get('ombros', esconde_ombros)
                         _real = _real['arq']
                     _base.update(arq=os.path.dirname(_img) + '/' + _real, blender=False, real=True)
@@ -517,6 +533,67 @@ def cabeca_do_busto(arq):
     return V, UV, F, mapas, N, zn, top
 
 
+def mascara_iris(R, Po, m):
+    """Íris dos dois olhos na textura do rosto (o jogo pinta nela a cor de olhos escolhida). Os
+    olhos ficam picados entre pedaços diferentes da UV, então cada pixel da região dos olhos volta
+    para a sua posição na cabeça (as posições 3D rasterizadas na UV). De cada lado, a esclera (branca
+    e pouco saturada) dá a abertura do olho; o centro da íris é o meio dos pixels escuros dentro
+    dela, e o raio, 0,21 da largura do olho. A máscara (0 a 255, borda suave) pega os pixels até o
+    raio que não são esclera nem brilho. Devolve (máscara lado×lado, [[y, z, raio] de cada olho])."""
+    from escultor3d import rasterizar
+    cor = np.asarray(R['cor'], np.float64)
+    L = cor.shape[0]
+    Fo, Uo = R['Fo'], R['Uo']
+    hh = m['topo'] - m['pescoco']
+    frente = Po[:, 0].max()
+    zn = Po[np.argmax(Po[:, 0]), 2]
+    banda = (Po[:, 0] > frente - 0.32 * hh) & (Po[:, 2] > zn + 0.03 * hh) & (Po[:, 2] < zn + 0.28 * hh)
+    tri = Fo[banda[Fo].all(1)]
+    masc = np.zeros((L, L), np.uint8)
+    if not len(tri):
+        return masc, []
+    cant = tri.reshape(-1)
+    buf = np.zeros((L, L, 4))
+    rasterizar(Uo[cant] * L, np.arange(len(cant)).reshape(-1, 3), np.hstack([Po[cant], np.ones((len(cant), 1))]), L, L, buf)
+    cob = buf[:, :, 3] > 0.5
+    Y, Z = buf[:, :, 1], buf[:, :, 2]
+    lum = cor.mean(2)
+    mx = cor.max(2)
+    sat = (mx - cor.min(2)) / (mx + 1)
+    # a pele (fora da região dos olhos): a cor média, para não pintar a pálpebra
+    soma = cor.sum(2) + 1
+    cr, cg = cor[:, :, 2] / soma, cor[:, :, 1] / soma                 # (BGR: o vermelho é o canal 2)
+    pele = (~cob) & (lum > 60) & (cor[:, :, 2] > cor[:, :, 0] + 20)
+    pr, pg, pl = float(np.median(cr[pele])), float(np.median(cg[pele])), float(np.median(lum[pele]))
+    e_pele = (np.hypot(cr - pr, cg - pg) < 0.045) & (lum > 0.5 * pl)
+    olhos = []
+    for lado in (-1, 1):
+        aqui = cob & ((Y - m['cy']) * lado > 0.04 * hh)
+        esc = aqui & (lum > 130) & (sat < 0.26)
+        if esc.sum() < 12:
+            continue
+        y0, y1 = np.percentile(Y[esc], [4, 96])
+        z0, z1 = np.percentile(Z[esc], [4, 96])
+        ref = float(np.median(lum[esc]))
+        # altura: o meio da abertura (a esclera); os cílios e a dobra da pálpebra, escuros, puxavam
+        # o centro para cima. Na horizontal: os pixels escuros nessa faixa, que não são pele (o
+        # ponto mais para a frente, que seria o ápice da córnea, cai na sobrancelha ou na pálpebra
+        # nestes rostos: testado e descartado)
+        cz_ = float(np.median(Z[esc]))
+        faixa = aqui & (Y >= y0) & (Y <= y1) & (np.abs(Z - cz_) < 0.3 * max(z1 - z0, 0.08 * (y1 - y0)))
+        escuro = faixa & (lum < 0.62 * ref) & ~e_pele
+        if escuro.sum() < 8:
+            continue
+        cy_ = float(np.median(Y[escuro]))
+        r = 0.21 * (y1 - y0)
+        d = np.sqrt((Y - cy_) ** 2 + (Z - cz_) ** 2)
+        a = np.clip((r - d) / (0.25 * r), 0, 1) * aqui * ~((lum > 0.85 * ref) & (sat < 0.26)) * ~e_pele
+        masc = np.maximum(masc, (a * 255).astype(np.uint8))
+        olhos.append([round(cy_, 3), round(cz_, 3), round(float(r), 3)])
+    print(f"  íris: {len(olhos)} olhos, {int((masc > 0).sum())} pixels na máscara", flush=True)
+    return masc, olhos
+
+
 def processar_rosto(p, refs):
     t0 = time.time()
     V, UV, F, mapas, N, zn, top = cabeca_do_busto(p['arq'])
@@ -537,8 +614,15 @@ def processar_rosto(p, refs):
         Fo = R['Fo'][~np.all(Po[R['Fo']][:, :, 2] < m['corte'] - 1.2, axis=1)]
         porCorpo[cid] = pele_js(Po, Np[R['vmap']], R['Uo'], Fo, W[R['vmap']], ref['nomes'])
         info[cid] = dict(escala=round(float(s), 4))
+        if 'iris' not in info:
+            masc, olhos = mascara_iris(R, Po, m) if not p.get('sem_iris') else (None, [])
+            info['iris'] = olhos
     dados = dict(v=2, tipo='rosto', q=Q, porCorpo=porCorpo, ajuste=info, origem=p['arq'], pbr=1)
-    destino = gravar(p['id'], dados, mapas_js(R, p['tex']))
+    mp = mapas_js(R, p['tex'])
+    if info['iris']:
+        ok, buf = cv2.imencode('.png', cv2.resize(masc, (p['tex'], p['tex']), interpolation=cv2.INTER_AREA))
+        mp['iris'] = 'data:image/png;base64,' + base64.b64encode(buf.tobytes()).decode('ascii')
+    destino = gravar(p['id'], dados, mp)
     print(f"{p['id']}: {len(R['Fo'])} triângulos → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
 
 
@@ -825,6 +909,53 @@ def blender_para_jogo(P):
     return np.stack([-P[:, 1], -P[:, 0], P[:, 2]], 1) * ESCALA_BLENDER
 
 
+def processar_barba_blender(p, refs):
+    """Barba e bigode do Blender (tools/blender/barbas.py): feitos na pele medida da cabeça do corpo
+    masculino, vão direto para o espaço da cabeça (sem o ajuste por cobertura, que esticava o bigode
+    e o cavanhaque até cobrir a mandíbula inteira). Cada ponto anda (1) da pele medida do corpo
+    masculino para a do corpo pedido (a mesma grade de latitude e longitude de molde_rosto.json) e
+    (2) da pele medida para o rosto de referência do jogo (Rosto 1 encaixado), pela distância entre
+    as duas superfícies ao longo da normal, média dos 8 pontos da grade mais perto; o que ainda
+    ficar dentro do rosto sai até a margem. Peso todo na cabeça."""
+    t0 = time.time()
+    V, UV, F, mapas, N = ler_peca(p['arq'])
+    R = reduzir_e_assar(V, UV, F, N, mapas, p['tri'], p['tex'])
+    G = json.load(open(os.path.join(ORIG, 'Barbas_Blender', 'molde_rosto.json'), encoding='utf-8'))
+    Gm = blender_para_jogo(G['corpo_m']['p'])
+    kd_m = cKDTree(Gm)
+    porCorpo, info = {}, {}
+    for cid, ref in refs.items():
+        m = ref['medida']
+        hh = m['topo'] - m['pescoco']
+        Gc = blender_para_jogo(G[cid]['p'])
+        Nc = blender_para_jogo(G[cid]['n']) / ESCALA_BLENDER
+        P = R['Vr'] * ESCALA_BLENDER
+        d, j = kd_m.query(P, k=8)
+        w = 1 / (d + 0.05) ** 2
+        w /= w.sum(1, keepdims=True)
+        P = P + np.einsum('ik,ikj->ij', w, (Gc - Gm)[j])                     # (1) para o corpo pedido
+        HV, HN = cabeca_de_referencia(ref)
+        kH = cKDTree(HV)
+        _, jh = kH.query(Gc)
+        delta = np.einsum('ij,ij->i', HV[jh] - Gc, Nc)                       # rosto de referência − pele medida
+        delta = np.clip(delta, -0.08 * hh, 0.08 * hh)
+        d2, j2 = cKDTree(Gc).query(P, k=8)
+        w2 = 1 / (d2 + 0.05) ** 2
+        w2 /= w2.sum(1, keepdims=True)
+        P = P + np.einsum('ik,ik,ikj->ij', w2, delta[j2], Nc[j2])            # (2) para o rosto de referência
+        P = empurrar_para_fora(P, dict(V=HV, N=HN, kd=kH), 0.006 * hh)
+        Np = im.normais_vertices(P, R['Fr'])
+        nomes = ref['nomes']
+        W = np.zeros((len(P), len(nomes)))
+        W[:, nomes.index('head')] = 1.0
+        porCorpo[cid] = pele_js(P[R['vmap']], Np[R['vmap']], R['Uo'], R['Fo'], W[R['vmap']], nomes)
+        info[cid] = dict(desvio_medio=round(float(np.abs(delta).mean()), 3))
+        print(f"  barba {cid}: pele medida → rosto de referência, desvio médio {np.abs(delta).mean():.2f} (máx {np.abs(delta).max():.2f})", flush=True)
+    dados = dict(v=2, tipo='barba', q=Q, porCorpo=porCorpo, ajuste=info, origem=p['arq'], pbr=1)
+    destino = gravar(p['id'], dados, mapas_js(R, p['tex']))
+    print(f"{p['id']}: {len(R['Fo'])} triângulos → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
+
+
 def processar_cabelo_fisica(p, refs):
     """Cabelo do Blender com cadeias de ossos: a malha (com a forma do corpo feminino na shape key),
     os pesos que vêm nos atributos do GLB (_W0.._W3), os ossos novos de cada cadeia (presos à
@@ -1087,6 +1218,19 @@ def processar_armadura(p, refs):
             P = (Vr - np.array([(topo[:, 0].min() + topo[:, 0].max()) / 2, (topo[:, 1].min() + topo[:, 1].max()) / 2, mx[2]])) * sc
             P += np.array([(fb[:, 0].min() + fb[:, 0].max()) / 2, m['cy'], zb + 0.5])
             print(f"  capa: escala {sc:.2f}, colar {np.ptp(topo[:, 1]) * sc:.1f} de largura (pescoço {np.ptp(fb[:, 1]):.1f}) em z {zb:.1f}", flush=True)
+        elif vaga == 'acessorio' and p.get('costas'):
+            # enfeite das costas (asas de cristal): a face de dentro encosta no meio das costas, um
+            # pouco abaixo da linha dos ombros; envergadura de 2,4 ombros (com o giro de 180° do JSON
+            # o lado das gemas do arquivo fica virado para trás)
+            mn, mx = Vr.min(0), Vr.max(0)
+            V0 = ref['V']
+            ombros = V0[np.abs(V0[:, 2] - m['ombroZ']) < 0.4]
+            sc = np.ptp(ombros[:, 1]) * 2.4 / max(mx[1] - mn[1], 1e-6)
+            zc = m['ombroZ'] - 0.3 * (m['ombroZ'] - m['quadrilZ'])
+            costas = V0[(ref['reg'] == 'tronco') & (np.abs(V0[:, 2] - zc) < 1.0)][:, 0].min()
+            P = (Vr - np.array([mx[0], (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2])) * sc
+            P += np.array([costas - 0.4, m['cy'], zc])
+            print(f"  costas: escala {sc:.2f}, envergadura {(mx[1] - mn[1]) * sc:.1f}, centro em z {zc:.1f}", flush=True)
         elif vaga == 'acessorio':
             mn, mx = Vr.min(0), Vr.max(0)
             sc = 0.3 * (m['ombroZ'] - m['quadrilZ']) / max(mx[2] - mn[2], 1e-6)
@@ -1118,7 +1262,12 @@ def processar_armadura(p, refs):
             corpo['kd'] = cKDTree(corpo['V'])
         P = empurrar_para_fora(P, corpo, margem)
         Np = im.normais_vertices(P, R['Fr'])
-        W = transferir_pesos(P, ref)
+        if vaga == 'acessorio' and p.get('costas'):
+            # só o tronco: as pontas das asas passam dos ombros e não podem pegar o peso dos braços
+            so = ref['reg'] == 'tronco'
+            W = transferir_pesos(P, dict(ref, kd=cKDTree(ref['V'][so]), ordem=ref['ordem'][so], w=ref['w'][so]))
+        else:
+            W = transferir_pesos(P, ref)
         nomes = ref['nomes']
         if vaga == 'capa':
             W, nomes = pesos_capa(W, P, ref)
@@ -1138,7 +1287,7 @@ def gravar_catalogo():
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
     for p in PECAS:
         it = dict(id=p['id'], tipo=p['tipo'], nome=p['nome'], arq='assets/Criar_Personagem/' + p['arq'], mini='assets/Criar_Personagem/' + p['mini'], js='js/assets/criacao/' + p['id'] + '.js')
-        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica'):
+        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica', 'sem_iris'):
             if p.get(k) is not None:
                 it[k] = p[k]
         if 'esconde' in p or p.get('vaga') in ESCONDE:
@@ -1200,6 +1349,8 @@ def _tarefa(p):
             processar_rosto(p, refs)
         elif p.get('fisica'):
             processar_cabelo_fisica(p, refs)
+        elif p.get('blender_barba'):
+            processar_barba_blender(p, refs)
         elif p['tipo'] in ('cabelo', 'barba'):
             processar_cobertura(p, refs, p['tipo'])
         elif p.get('blender'):

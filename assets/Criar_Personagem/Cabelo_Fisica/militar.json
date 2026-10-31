@@ -1,0 +1,10 @@
+{
+ "corte": "militar",
+ "nome": "Militar",
+ "ossos": [
+  "head"
+ ],
+ "tris": 5388,
+ "fisica": null,
+ "cadeias": []
+}

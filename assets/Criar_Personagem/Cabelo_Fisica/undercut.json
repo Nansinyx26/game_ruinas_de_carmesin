@@ -1,0 +1,10 @@
+{
+ "corte": "undercut",
+ "nome": "Undercut",
+ "ossos": [
+  "head"
+ ],
+ "tris": 8796,
+ "fisica": null,
+ "cadeias": []
+}

@@ -145,8 +145,19 @@ def ler_glb(path):
 
     def acc(i):
         a = js['accessors'][i]
-        bv = js['bufferViews'][a['bufferView']]
         dt, k = np.dtype(TIPOS[a['componentType']]), LARG[a['type']]
+        if 'bufferView' not in a:
+            # sem dados: tudo zero (glTF 2.0, 3.6.2.2; o Blender exporta assim a forma alternativa
+            # igual à base); com 'sparse', só os índices listados mudam
+            arr = np.zeros((a['count'], k))
+            sp = a.get('sparse')
+            if sp:
+                ii, vv = sp['indices'], sp['values']
+                bi, bvv = js['bufferViews'][ii['bufferView']], js['bufferViews'][vv['bufferView']]
+                idx = np.frombuffer(binc, np.dtype(TIPOS[ii['componentType']]), sp['count'], bi.get('byteOffset', 0) + ii.get('byteOffset', 0))
+                arr[idx] = np.frombuffer(binc, dt, sp['count'] * k, bvv.get('byteOffset', 0) + vv.get('byteOffset', 0)).reshape(-1, k)
+            return arr
+        bv = js['bufferViews'][a['bufferView']]
         o = bv.get('byteOffset', 0) + a.get('byteOffset', 0)
         passo = bv.get('byteStride', dt.itemsize * k)
         arr = np.ndarray((a['count'], k), dt, binc, o, (passo, dt.itemsize)).astype(np.float64)

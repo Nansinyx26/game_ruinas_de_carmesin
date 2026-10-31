@@ -1,0 +1,10 @@
+{
+ "corte": "moicano",
+ "nome": "Moicano",
+ "ossos": [
+  "head"
+ ],
+ "tris": 6240,
+ "fisica": null,
+ "cadeias": []
+}

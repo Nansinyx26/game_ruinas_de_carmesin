@@ -1,0 +1,10 @@
+{
+ "corte": "topete",
+ "nome": "Topete",
+ "ossos": [
+  "head"
+ ],
+ "tris": 7048,
+ "fisica": null,
+ "cadeias": []
+}

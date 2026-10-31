@@ -1,0 +1,8 @@
+{
+ "_leia": "Rostos em que a íris não é achada com segurança pelo conversor (tools/importar_criacao.py, mascara_iris): a cor dos olhos não é aplicada neles (melhor sem tinta que com a pálpebra pintada). Conferido nas capturas com olhos violeta.",
+ "sem_iris": {
+  "rosto_3": "a esclera quase não aparece na textura: a máscara sai com ~40 pixels",
+  "rosto_7": "só um dos olhos é achado inteiro (o outro sai pela metade)",
+  "rosto_8": "a máscara cai na pálpebra maquiada"
+ }
+}

@@ -1,5 +1,5 @@
 {
- "_leia": "Peças de armadura que vêm prontas (GLB realista) no lugar das geradas pelo tools/blender/armaduras.py: classe → nível → vaga → GLB (relativo à pasta da classe). O gerador do Blender pula essas vagas e o tools/importar_criacao.py converte o GLB pelo caminho das peças do Meshy (reduz, reassa as texturas e encaixa no corpo). A vaga pode ter, no lugar do caminho, {\"arq\": caminho, \"girar\": graus}: meia-volta (ou outro giro) em torno do eixo vertical, para o GLB gerado de costas (as capas dos conjuntos de nível 50 vêm com o lado de fora das costas virado para a frente do arquivo). As ombreiras prontas vêm em par num GLB só e viram as duas peças (esquerda e direita); com elas, o peitoral pronto não esconde as ombreiras (no peitoral, {\"arq\": ..., \"ombros\": true} esconde mesmo assim).",
+ "_leia": "Peças de armadura que vêm prontas (GLB realista) no lugar das geradas pelo tools/blender/armaduras.py: classe → nível → vaga → GLB (relativo à pasta da classe). O gerador do Blender pula essas vagas e o tools/importar_criacao.py converte o GLB pelo caminho das peças do Meshy (reduz, reassa as texturas e encaixa no corpo). A vaga pode ter, no lugar do caminho, {\"arq\": caminho, \"girar\": graus}: meia-volta (ou outro giro) em torno do eixo vertical, para o GLB gerado de costas (as capas dos conjuntos de nível 50 vêm com o lado de fora das costas virado para a frente do arquivo). As ombreiras prontas vêm em par num GLB só e viram as duas peças (esquerda e direita); com elas, o peitoral pronto não esconde as ombreiras (no peitoral, {\"arq\": ..., \"ombros\": true} esconde mesmo assim). Enfeite das costas (asas): no acessório, {\"arq\": ..., \"costas\": true, \"girar\": 180}; \"tri\" e \"tex\" mudam o orçamento da peça.",
  "guerreiro": {
   "50": {
    "peitoral": "exemplo_glb/armor.glb",
@@ -52,6 +52,22 @@
     "girar": 180
    },
    "capacete": "exemplo_glb/Hood.glb"
+  },
+  "75": {
+   "peitoral": {
+    "arq": "exemplo_glb/Armored_Robe.glb",
+    "ombros": true
+   },
+   "calcas": "exemplo_glb/Blue_Ornate_Skirt.glb",
+   "botas": "exemplo_glb/Blue_Crystal_Greaves.glb",
+   "capacete": "exemplo_glb/Mystic_Hood.glb",
+   "capa": "exemplo_glb/Royal_Cape.glb",
+   "acessorio": {
+    "arq": "exemplo_glb/Blue_Gemstone_Wings.glb",
+    "costas": true,
+    "girar": 180,
+    "tri": 5000
+   }
   }
  },
  "patrulheiro": {
@@ -66,6 +82,16 @@
     "girar": 180
    },
    "capacete": "exemplo_glb/Fur-Lined_Hood.glb"
+  },
+  "75": {
+   "peitoral": {
+    "arq": "exemplo_glb/Fantasy_Armor.glb",
+    "ombros": true
+   },
+   "calcas": "exemplo_glb/Leaf_Armor_Legs.glb",
+   "botas": "exemplo_glb/Leaf_Boots.glb",
+   "capa": "exemplo_glb/Green_Druid_Cloak.glb",
+   "capacete": "exemplo_glb/Leaf_Cloak.glb"
   }
  },
  "guardiao": {
@@ -79,6 +105,15 @@
     "girar": 180
    },
    "capacete": "exemplo_glb/Arcane_Hood.glb"
+  },
+  "75": {
+   "peitoral": "exemplo_glb/fantasy_armor.glb",
+   "ombros": "exemplo_glb/crystal_shoulder_armor.glb",
+   "luvas": "exemplo_glb/Blue_Gauntlets.glb",
+   "calcas": "exemplo_glb/Fantasy_Armor_Pants.glb",
+   "botas": "exemplo_glb/Sci-Fi_Boots.glb",
+   "capa": "exemplo_glb/Blue_Cloak.glb",
+   "capacete": "exemplo_glb/Hood.glb"
   }
  }
 }
