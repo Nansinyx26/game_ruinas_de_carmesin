@@ -198,6 +198,7 @@ const Criacao3D = (function () {
     if (I.nrm && I.nrm.naturalWidth) gn.drawImage(I.nrm, x / 2, y / 2, h, h);
     else { gn.fillStyle = 'rgb(128,128,255)'; gn.fillRect(x / 2, y / 2, h, h); }
     C.pintadas[cel] = id;
+    m.tex.versao = (m.tex.versao || 0) + 1;   // o renderizador realista sobe o atlas de novo quando muda
     if (typeof R3D !== 'undefined' && R3D.freeTex) R3D.freeTex(m.tex);
   }
 

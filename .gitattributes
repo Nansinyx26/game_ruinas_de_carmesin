@@ -1,9 +1,6 @@
-# Git LFS (pedido do usuário) — DESLIGADO por enquanto: a rede deste ambiente na nuvem bloqueia
-# lfs.github.com, então os arquivos do LFS não sobem daqui. Para ligar: libere lfs.github.com no
-# acesso à rede do ambiente (ou envie do seu computador com o git lfs instalado) e tire o "#" das
-# linhas abaixo. Ficam no LFS os modelos de origem enviados prontos (GLB do Meshy e outros, 20–30 MB
-# cada) e os projetos do Blender: o jogo não carrega esses arquivos (usa os convertidos em
-# js/assets/), então o GitHub Pages e o CI não precisam deles.
-# assets/Criar_Personagem/**/exemplo_glb/*.glb filter=lfs diff=lfs merge=lfs -text
-# assets/fontes/** filter=lfs diff=lfs merge=lfs -text
-# *.blend filter=lfs diff=lfs merge=lfs -text
+# Git LFS: modelos de origem enviados prontos (GLB do Meshy e outros, 20–30 MB cada) e projetos do
+# Blender. O jogo não carrega esses arquivos (usa os convertidos em js/assets/), então o GitHub Pages
+# e os testes do CI não precisam deles. (A rede do ambiente na nuvem precisa liberar lfs.github.com.)
+assets/Criar_Personagem/**/exemplo_glb/*.glb filter=lfs diff=lfs merge=lfs -text
+assets/fontes/** filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text

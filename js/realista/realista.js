@@ -204,6 +204,7 @@ const R = {
       this.texs.set(tex, T);
     }
     const M = T.mat;
+    if (tex.versao !== T.versao) { T.versao = tex.versao; this.texSuja(tex); }   // atlas repintado (peças trocadas)
     if (!T.cor && pronta(T.imCor)) { T.cor = this.textura(T.imCor, true); M.map = T.cor; M.needsUpdate = true; }
     if (!T.nrm && T.imNrm && pronta(T.imNrm)) { T.nrm = this.textura(T.imNrm, false); M.normalMap = T.nrm; M.normalScale.set(1, -1); M.needsUpdate = true; }
     if (!T.mrFeito && T.imMat && pronta(T.imMat) && T.cor) {
