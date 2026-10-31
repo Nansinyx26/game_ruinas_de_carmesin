@@ -346,7 +346,8 @@ const ThirdView = {
     const place = (it, e) => {
       if (!it) return null;
       const o = it.o, sc = o.scale || 1, m = o.m3 || (o.m3 = M3.make());
-      M3.trs(m, [e.x, e.y, (e.z || 0) + (o.lift || 0)], [o.roll || 0, o.pitch || 0, o.yaw || 0], [sc, sc, sc]);
+      const lg = sc * (o.larg || 1);   // (porte do personagem criado)
+      M3.trs(m, [e.x, e.y, (e.z || 0) + (o.lift || 0)], [o.roll || 0, o.pitch || 0, o.yaw || 0], [lg, lg, sc]);
       o.m = m; it.ent = e;
       Q.push(it);
       return it;

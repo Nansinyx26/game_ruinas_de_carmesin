@@ -20,10 +20,11 @@ const CRIA_POSES = ['Parado', 'Guarda', 'Vitória', 'Correndo', 'Golpe'];
 const CRIA_ZOOM = [{ nome: 'Corpo inteiro', d: 150, z: 30 }, { nome: 'Busto', d: 82, z: 45 }, { nome: 'Rosto', d: 44, z: 53 }];
 // Categorias da aparência no estilo Realista (peças GLB) e as linhas (teclado) de cada uma
 const CRIA_CATS = [
-  { id: 'corpo', nome: 'CORPO', campos: ['corpoG', 'altura'] },
+  { id: 'corpo', nome: 'CORPO', campos: ['corpoG', 'altura', 'porte'] },
   { id: 'rosto', nome: 'ROSTO', campos: ['rostoG'] },
+  { id: 'forma', nome: 'FORMA', campos: ['rLargura', 'rMandibula', 'rQueixo', 'rNariz', 'rBoca', 'rOlhos', 'rSobrancelha'] },   // (deformações do rosto)
   { id: 'cabelo', nome: 'CABELO', campos: ['cabeloG'] },
-  { id: 'barba', nome: 'BARBA', campos: ['barbaG', 'corBarba'] },   // (barba e bigode; a cor, própria ou a do cabelo)
+  { id: 'barba', nome: 'BARBA', campos: ['barbaG', 'bigodeG', 'corBarba'] },   // (barba e bigode; a cor, própria ou a do cabelo)
   { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo', 'olhos'] },   // (olhos: a íris do rosto pintada na cor)
 ];
 const CRIA_LINHAS_GLB = ['estilo'].concat(...CRIA_CATS.map((c) => c.campos));
@@ -142,6 +143,7 @@ const CriacaoTela = {
     const U = this.ui, r = (n) => Math.floor(Math.random() * n);
     for (const k of PERS_CAMPOS) if (k !== 'estilo') U.A[k] = r(persNumOps(k, U.classe));
     U.A.altura = 1 + r(3);
+    for (const k of (typeof Criacao3D !== 'undefined' && Criacao3D.FORMA) || []) U.A[k] = 1 + r(3);   // formato do rosto: perto do original
     const silabas = ['ka', 'ri', 'on', 'va', 'el', 'dra', 'my', 'sor', 'tel', 'zan', 'lia', 'ven', 'ro', 'is', 'mar'];
     if (!U.nome) { let n = ''; for (let i = 0; i < 2 + r(2); i++) n += silabas[r(silabas.length)]; U.nome = n.charAt(0).toUpperCase() + n.slice(1); }
     U.sujo = true;
@@ -411,7 +413,7 @@ const CriacaoTela = {
       if (CRIA_MINI[k]) {
         // grade de miniaturas
         const ids = CRIA_MINI[k](), cols = k === 'corpoG' ? 2 : k === 'rostoG' ? 4 : 3, rows = Math.ceil(n / cols);
-        const cs = Math.min((w - 24 - (cols - 1) * 6) / cols, (fim - yy - (catAt.campos.length > 1 ? 70 : 0)) / rows - 6);
+        const cs = Math.min((w - 24 - (cols - 1) * 6) / cols, (fim - yy - (catAt.campos.length - 1) * 66) / rows - 6);   // (espaço para os outros campos da categoria)
         for (let i = 0; i < n; i++) {
           const cx = x + 12 + (i % cols) * (cs + 6), cy = yy + Math.floor(i / cols) * (cs + 6), sel = A[k] === i;
           const m = game.input.mouse, hov = m.x >= cx && m.x <= cx + cs && m.y >= cy && m.y <= cy + cs;
@@ -426,7 +428,10 @@ const CriacaoTela = {
           } else { ctx.fillStyle = 'rgba(200,190,230,0.4)'; ctx.font = `11px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.fillText('…', cx + cs / 2, cy + cs / 2); }
           ctx.fillStyle = 'rgba(6,5,10,0.7)'; ctx.fillRect(cx, cy + cs - 16, cs, 16);
           ctx.font = `${cs < 70 ? 9 : 10}px ${FONT_UI}`; ctx.fillStyle = sel ? '#ffffff' : 'rgba(215,205,240,0.85)'; ctx.textAlign = 'center';
-          ctx.fillText(ops[i], cx + cs / 2, cy + cs - 8);
+          // rótulo dentro da célula: sem o "(mechas)" (a miniatura já mostra) e cortado na largura
+          let rot = ops[i].replace(' (mechas)', '');
+          while (rot.length > 3 && ctx.measureText(rot).width > cs - 6) rot = rot.slice(0, -2) + '…';
+          ctx.fillText(rot, cx + cs / 2, cy + cs - 8);
           ctx.strokeStyle = sel ? rgba(rgb, 1) : hov ? 'rgba(200,180,255,0.7)' : 'rgba(150,130,210,0.3)'; ctx.lineWidth = sel ? 2 : 1;
           ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, cs - 1);
           U.rects.push({ id: 'opcao', v: { k, i }, x: cx, y: cy, w: cs, h: cs });
@@ -450,9 +455,13 @@ const CriacaoTela = {
       } else {
         // opções em botões (altura)
         const bw2 = (w - 24 - (n - 1) * 4) / n;
-        for (let i = 0; i < n; i++) this.botao(ctx, 'opcao', { k, i }, x + 12 + i * (bw2 + 4), yy, bw2, 26, ops[i].toUpperCase(), A[k] === i, rgb);
-        yy += 40;
+        for (let i = 0; i < n; i++) this.botao(ctx, 'opcao', { k, i }, x + 12 + i * (bw2 + 4), yy, bw2, 26, PERS_APAR[k].curtos ? PERS_APAR[k].curtos[i] : ops[i].toUpperCase(), A[k] === i, rgb);
+        yy += PERS_APAR[k].curtos ? 34 : 40;
       }
+    }
+    if (catAt.id === 'barba' && A.bigodeG > 0 && typeof Criacao3D !== 'undefined' && !Criacao3D.pecasDe({ aparencia: A }).bigode) {
+      ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,190,150,0.85)';
+      wrapText(ctx, 'O bigode separado combina com as barbas em mechas ou sem barba (as cinco primeiras barbas já vêm com o bigode delas).', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
     }
     if (catAt.id === 'cores') {
       ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';

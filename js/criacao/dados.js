@@ -103,7 +103,7 @@ const PERS_GLB = {
   // combinações de barba e bigode
   barbaG: ['Sem barba', 'Cacheada', 'Curta', 'Longa', 'Média', 'Viking',
     'Por fazer (mechas)', 'Curta com bigode (mechas)', 'Média com bigode (mechas)', 'Cheia (mechas)', 'Longa (mechas)',
-    'Cavanhaque (mechas)', 'Contorno sem bigode (mechas)', 'Bigode (mechas)', 'Bigode guidão (mechas)'],
+    'Cavanhaque (mechas)', 'Contorno sem bigode (mechas)', 'Bigode (mechas)', 'Bigode guidão (mechas)', 'Cheia sem bigode (mechas)', 'Cavanhaque sem bigode (mechas)'],
 };
 // id do catálogo da criação de cada opção de cabelo (null: sem cabelo)
 const PERS_CABELOS_GLB = [null, 'cabelo_1', 'cabelo_2', 'cabelo_3', 'cabelo_4', 'cabelo_5', 'cabelo_6', 'cabelo_7', 'cabelo_8',
@@ -115,14 +115,25 @@ const PERS_APAR = {
   rostoG: { nome: 'Rosto', ops: PERS_GLB.rostoG, glb: true },
   cabeloG: { nome: 'Cabelo', ops: PERS_GLB.cabeloG, glb: true },
   barbaG: { nome: 'Barba', ops: PERS_GLB.barbaG, glb: true },
+  // formato do rosto (estilo Realista): 5 passos, o do meio é o rosto como veio (js/criacao/montagem.js)
+  rLargura: { nome: 'Largura do rosto', ops: ['Bem estreito', 'Estreito', 'Como veio', 'Largo', 'Bem largo'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  rMandibula: { nome: 'Mandíbula', ops: ['Bem fina', 'Fina', 'Como veio', 'Larga', 'Bem larga'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  rQueixo: { nome: 'Queixo', ops: ['Bem recuado', 'Recuado', 'Como veio', 'Saliente', 'Bem saliente'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  rNariz: { nome: 'Nariz', ops: ['Bem pequeno', 'Pequeno', 'Como veio', 'Grande', 'Bem grande'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  rBoca: { nome: 'Boca', ops: ['Bem estreita', 'Estreita', 'Como veio', 'Larga', 'Bem larga'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  rOlhos: { nome: 'Tamanho dos olhos', ops: ['Bem pequenos', 'Pequenos', 'Como vieram', 'Grandes', 'Bem grandes'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  rSobrancelha: { nome: 'Altura das sobrancelhas', ops: ['Bem baixas', 'Baixas', 'Como vieram', 'Altas', 'Bem altas'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
   corpo: { nome: 'Tipo de corpo', ops: ['Esguio', 'Atlético', 'Robusto', 'Curvilíneo'] },
   altura: { nome: 'Altura', ops: ['Baixa', 'Mediana baixa', 'Mediana', 'Alta', 'Muito alta'] },
+  porte: { nome: 'Porte', ops: ['Esguio', 'Médio', 'Forte'], glb: true },   // largura do corpo (js/criacao/modelo.js, PORTE)
   pele: { nome: 'Tom de pele', ops: PERS_PELES.map((c, i) => `Tom ${i + 1}`), cores: PERS_PELES },
   rosto: { nome: 'Formato do rosto', ops: ['Oval', 'Anguloso', 'Redondo', 'Longo'] },
   olhos: { nome: 'Olhos', ops: PERS_OLHOS.map((o) => o[0]), cores: PERS_OLHOS.map((o) => o[1]) },
   sobrancelhas: { nome: 'Sobrancelhas', ops: ['Finas', 'Grossas', 'Arqueadas', 'Sem'] },
   cabelo: { nome: 'Cabelo', ops: ['Raspado', 'Curto', 'Topete', 'Longo', 'Rabo de cavalo', 'Moicano', 'Tranças', 'Coque'] },
   corCabelo: { nome: 'Cor do cabelo', ops: PERS_CABELOS.map((c) => c[0]), cores: PERS_CABELOS.map((c) => c[1]) },
+  // bigode separado (combina com as barbas em mechas e com 'sem barba'; com as do Meshy não aparece)
+  bigodeG: { nome: 'Bigode', ops: ['Nenhum', 'Bigode', 'Guidão', 'Fino', 'Ferradura'], curtos: ['—', 'BIGODE', 'GUIDÃO', 'FINO', 'FERRAD.'], glb: true },
   // (a primeira: a barba na mesma cor do cabelo; a amostra dela é desenhada meio a meio)
   corBarba: { nome: 'Cor da barba', ops: ['Como o cabelo'].concat(PERS_CABELOS.map((c) => c[0])), cores: [null].concat(PERS_CABELOS.map((c) => c[1])), glb: true },
   barba: { nome: 'Barba e bigode', ops: ['Sem', 'Por fazer', 'Cavanhaque', 'Bigode', 'Cheia'] },
@@ -136,7 +147,7 @@ const PERS_CAMPOS = Object.keys(PERS_APAR);
 function persAparenciaPadrao(classe = 'guerreiro') {
   const C = PERS_CLASSES[classe] || PERS_CLASSES.guerreiro;
   return { estilo: 0, corpoG: 0, rostoG: { guerreiro: 0, mago: 2, assassino: 3, patrulheiro: 1, guardiao: 2 }[classe] || 0, cabeloG: classe === 'mago' ? 8 : classe === 'assassino' ? 2 : 1, barbaG: classe === 'guerreiro' ? 2 : 0,
-    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, corBarba: 0, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
+    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, corBarba: 0, bigodeG: 0, porte: 1, rLargura: 2, rMandibula: 2, rQueixo: 2, rNariz: 2, rBoca: 2, rOlhos: 2, rSobrancelha: 2, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
 }
 // Personagem salvo antes das peças GLB: as escolhas do modelo paramétrico viram as mais parecidas
 // (corpo curvilíneo → feminino; o penteado e a barba pelo formato)

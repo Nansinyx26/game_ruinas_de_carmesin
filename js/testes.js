@@ -2018,6 +2018,12 @@ const EclipseTests = {
       this.igual('herói criado: luta com a base da classe (assassino → Orion)', heroBase(id), 'orion');
       this.ok('herói criado: árvores da base com progresso próprio', SKILL_SETS[id] && SKILL_SETS[id].trees === SKILL_SETS.orion.trees && SKILL_SETS[id].progress === 'party' && PartyProgress.of(id) !== PartyProgress.of('orion'));
       this.ok('herói criado: modelo 3D próprio', !!MODELS3D[def.model] && heroModelKey(def) === def.model);
+      {
+        const dp = Perfis.registrar({ id: 'p_porte', nome: 'Porte', classe: 'guerreiro', aparencia: Object.assign(persAparenciaPadrao('guerreiro'), { porte: 2, altura: 3 }) });
+        const oP = MODELS3D[dp.model].opts(null), oN = MODELS3D[def.model].opts(null);
+        this.ok('porte: o corpo forte fica mais largo e fundo, não mais alto (as peças acompanham; a altura continua a dela)', oP.larg === 1.07 && oP.scale === 1.04 && oN.larg === 1 && PERS_APAR.porte.ops.length === 3, `${oP.larg} ${oP.scale}`);
+        delete MODELS3D[dp.model]; delete CHARACTERS_BY_ID[dp.id];
+      }
       this.ok('herói criado: armas da base', def.weapons.length > 0 && def.weapons.every((w) => CHARACTERS_BY_ID.orion.weapons.includes(w)));
       // bônus reais da classe no Player.recalc (com e sem a classe)
       for (const c of PERS_ORDEM) {
@@ -2210,11 +2216,17 @@ const EclipseTests = {
     const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
-    this.igual('catálogo: 2 corpos, 8 rostos, 23 cabelos (8 do Meshy e 15 em mechas do Blender, 5 deles masculinos), 14 barbas (5 do Meshy e 9 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,23,14');
-    this.ok('opções da criação: 24 de cabelo, 15 de barba (com as combinações de barba e bigode), cor da barba (a do cabelo ou própria) e 12 cores de olhos',
-      PERS_GLB.cabeloG.length === 24 && PERS_CABELOS_GLB.length === 24 && PERS_GLB.barbaG.length === 15 && Criacao3D.BARBAS.length === 14 &&
+    this.igual('catálogo: 2 corpos, 8 rostos, 23 cabelos (8 do Meshy e 15 em mechas do Blender, 5 deles masculinos), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,23,18');
+    this.ok('opções da criação: 24 de cabelo, 17 de barba (com as combinações de barba e bigode), cor da barba (a do cabelo ou própria) e 12 cores de olhos',
+      PERS_GLB.cabeloG.length === 24 && PERS_CABELOS_GLB.length === 24 && PERS_GLB.barbaG.length === 17 && Criacao3D.BARBAS.length === 16 &&
       Criacao3D.BARBAS.every((id) => Criacao3D.POR_ID[id] && Criacao3D.POR_ID[id].tipo === 'barba') && PERS_APAR.corBarba.ops.length === PERS_CABELOS.length + 1 && PERS_OLHOS.length === 12,
       `${PERS_GLB.cabeloG.length} ${PERS_GLB.barbaG.length} ${PERS_OLHOS.length}`);
+    {
+      const pd = (ap) => Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('guerreiro'), ap) });
+      this.ok('bigode separado: com barba em mechas sem bigode ou sem barba, vira a peça; com barba do Meshy, não aparece (a célula do atlas é a da barba)',
+        pd({ barbaG: 16, bigodeG: 2 }).bigode === 'barba_b_guidao' && pd({ barbaG: 0, bigodeG: 3 }).bigode === 'barba_b_fino' && pd({ barbaG: 1, bigodeG: 1 }).bigode === null &&
+        pd({ barbaG: 7, bigodeG: 0 }).bigode === null && Criacao3D.BIGODES.every((id) => Criacao3D.POR_ID[id]) && Criacao3D.CEL.bigode.join() === Criacao3D.CEL.barba.join());
+    }
     this.igual('cortes masculinos em mechas no catálogo', ['raspado', 'militar', 'topete', 'undercut', 'moicano'].filter((c) => Criacao3D.POR_ID['cabelo_' + c] && Criacao3D.POR_ID['cabelo_' + c].fisica).length, 5);
     this.igual('catálogo: 7 peças do nível 1 (Armaduras_Inicial_Level_1/)', ini.filter((c) => c.arq.startsWith('assets/Criar_Personagem/Armaduras_Inicial_Level_1/') && c.arq.endsWith('.glb')).length, 7);
     this.ok('catálogo: 7 peças de nível 30 para cada uma das 5 classes (Armaduras_Level_30/<classe>/)', ARM_CLASSES.every((c) => n30.filter((q) => q.classe === c && q.arq.startsWith('assets/Criar_Personagem/Armaduras_Level_30/')).length === 7), n30.length);
@@ -2290,7 +2302,7 @@ const EclipseTests = {
     this.ok('força cresce com a faixa (defesa do peitoral 30 < 50 < 75 < 100)', ['30', '50', '75', '100'].map((n) => ARMADURAS_GLB[`n${n}_guerreiro_peitoral`].baseStats.defesa).every((v, i, a) => !i || v > a[i - 1]));
     this.igual('faixa do conjunto pelo nível da zona (20, 26, 47, 72, 96)', [20, 26, 47, 72, 96].map((n) => Arsenal.faixaClasse(n)).join(','), '0,30,50,75,100');
     this.ok('montagem: ombreiras com célula própria no atlas, sem sobrepor as outras', ['ombroE', 'ombroD'].every((v) => Criacao3D.VAGAS.includes(v) && Criacao3D.CEL[v]) && (() => {
-      const C = Object.values(Criacao3D.CEL);
+      const C = Object.entries(Criacao3D.CEL).filter(([k]) => k !== 'bigode').map(([, c]) => c);   // (o bigode divide a célula da barba de propósito)
       return C.every(([x, y, l]) => x + l <= 2048 && y + l <= 2048) && C.every((a, i) => C.every((b, j) => i === j || a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[2] <= b[1] || b[1] + b[2] <= a[1]));
     })());
     // ------------------------------------------------ raridades
@@ -2379,17 +2391,35 @@ const EclipseTests = {
         const ret = PersonagemModelo.retrato(def);
         this.ok('retrato do HUD do personagem GLB: 288×288', ret && ret.width === 288);
       }
+      // ------------------------------------------------ formato do rosto (deformação da malha do rosto e da barba)
+      {
+        const md = { topo: 61, pescoco: 54, cx: 1, cy: 0, largCabeca: 5.7, profCabeca: 7.1, profPescoco: 5.9, nariz: 56.5, corte: 54.1 };
+        const P0 = [4.3, 0, 54.5, 0, 0, 53.2, 1, 0, 61, 3.4, 2.2, 55.2], dq = new Float32Array(P0), dm = new Float32Array(P0);
+        Criacao3D.deformarRosto(dq, md, { rQueixo: 2 });
+        Criacao3D.deformarRosto(dm, md, { rMandibula: 2, rLargura: 2 });
+        this.ok('formato do rosto: o queixo vai para a frente e para baixo; a emenda do pescoço e o alto da cabeça não se movem; a mandíbula larga abre para o lado',
+          dq[0] > P0[0] + 0.3 && dq[2] < P0[2] && [3, 4, 5, 6, 7, 8].every((i) => dq[i] === Math.fround(P0[i])) && dm[10] > P0[10] + 0.1 && dm[5] === Math.fround(P0[5]),
+          `queixo ${dq[0].toFixed(2)}/${dq[2].toFixed(2)} mandíbula y ${dm[10].toFixed(2)}`);
+        this.ok('formato do rosto: os 7 campos salvos (padrão no meio) e na categoria FORMA da tela', Criacao3D.FORMA.every((k) => PERS_APAR[k] && PERS_APAR[k].ops.length === 5 && persAparenciaPadrao('mago')[k] === 2) &&
+          CRIA_CATS.some((c) => c.id === 'forma' && c.campos.length === 7));
+      }
       // ------------------------------------------------ olhos coloridos, barba do Blender com cor própria, corte masculino
       await carregar(['corpo_m', 'rosto_1', 'barba_b_curta', 'cabelo_topete']);
-      const dO = { id: 'p_olhos', base: 'kael', classe: 'guerreiro', aparencia: Object.assign(persAparenciaPadrao('guerreiro'), { corpoG: 0, rostoG: 0, cabeloG: 21, barbaG: 7, olhos: 7, corBarba: 7 }) };
+      await carregar(['barba_b_ferradura']);
+      const dO = { id: 'p_olhos', base: 'kael', classe: 'guerreiro', aparencia: Object.assign(persAparenciaPadrao('guerreiro'), { corpoG: 0, rostoG: 0, cabeloG: 21, barbaG: 7, bigodeG: 4, olhos: 7, corBarba: 7, rQueixo: 4 }) };
       const MO = Criacao3D.build(dO);
       for (let i = 0; i < 100 && !(MO && !MO.criaVazio && Criacao3D.pintado(MO)); i++) await espera(50);
       this.ok('olhos: a íris do rosto ganha a cor escolhida (os pixels da máscara feita pelo conversor)', MO && MO.cria && MO.cria.irisPx > 20, MO && MO.cria && MO.cria.irisPx);
       this.ok('olhos: os rostos 3, 7 e 8 (íris não achada com segurança) ficam sem máscara e marcados no catálogo; os outros cinco têm a máscara',
         ['rosto_3', 'rosto_7', 'rosto_8'].every((r) => Criacao3D.POR_ID[r].sem_iris) && [1, 2, 4, 5, 6].every((i) => !Criacao3D.POR_ID['rosto_' + i].sem_iris));
-      this.ok('barba do Blender (curta com bigode) na cor própria e o topete montados no corpo masculino',
-        MO && MO.cria && MO.cria.ids.barba === 'barba_b_curta' && MO.cria.ids.cabelo === 'cabelo_topete' && MO.cria.tinta.barba.join() !== MO.cria.tinta.cabelo.join(),
+      this.ok('barba do Blender (curta) com o bigode ferradura separado, na cor própria, e o topete montados no corpo masculino',
+        MO && MO.cria && MO.cria.ids.barba === 'barba_b_curta' && MO.cria.ids.bigode === 'barba_b_ferradura' && MO.cria.peles.bigode && MO.cria.ids.cabelo === 'cabelo_topete' && MO.cria.tinta.barba.join() !== MO.cria.tinta.cabelo.join(),
         MO && MO.cria && `${MO.cria.ids.barba} ${MO.cria.ids.cabelo}`);
+      {
+        const base = window.CRIA3D.rosto_1 && Criacao3D.carregar('rosto_1') && MO && MO.cria && MO.cria.peles.rosto;
+        this.ok('formato do rosto no modelo montado: o queixo saliente vira cópia deformada da malha (a original, compartilhada, fica intacta)',
+          !!(base && MO.cria.forma && MO.cria.forma.rQueixo === 2 && MO.cria.peles.rosto.every((S) => S.pos0 ? S.pos0.length === S.pos.length : true)));
+      }
       // ------------------------------------------------ mundo: conjunto inicial (uma vez só, salvo)
       Perfis.ativar(id);
       grava(`${WORLD_SAVE_KEY}:${id}`, null);

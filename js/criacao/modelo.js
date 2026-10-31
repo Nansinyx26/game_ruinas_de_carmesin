@@ -38,6 +38,7 @@ const PersonagemModelo = (function () {
     { w: 0.95, sh: 0.88, hp: 1.12, wa: 0.8, ch: 1.0, lb: 0.92, bu: 1 },      // curvilíneo
   ];
   const ALTURA = [0.92, 0.96, 1, 1.04, 1.08];
+  const PORTE = [0.94, 1, 1.07];   // largura e profundidade do corpo (as peças vestidas acompanham)
   // Formato do rosto: crânio (frente, trás, lado, alto, baixo), mandíbula que estreita (jn), queixo
   // (cq), maçãs (mc), arco das sobrancelhas (so), mandíbula quadrada (qd), nariz (nz)
   const FORMA = [
@@ -641,10 +642,10 @@ const PersonagemModelo = (function () {
   const SWORD = ['blade', 'hilt'];
   // Registra (ou refaz) o modelo de um personagem criado
   function registrar(def) {
-    const key = def.model, base = def.base, alt = ALTURA[def.aparencia.altura] || 1;
+    const key = def.model, base = def.base, alt = ALTURA[def.aparencia.altura] || 1, lg = PORTE[def.aparencia.porte] || 1;
     const velho = MODELS3D[key];
     if (velho && velho.model && velho.model.tex && typeof R3D !== 'undefined' && R3D.freeTex) R3D.freeTex(velho.model.tex);   // a textura do modelo anterior
-    const O = { 0: { scale: alt }, f: { flash: 0.85, scale: alt }, s: { emi: 1.25, scale: alt } };
+    const O = { 0: { scale: alt, larg: lg }, f: { flash: 0.85, scale: alt, larg: lg }, s: { emi: 1.25, scale: alt, larg: lg } };
     MODELS3D[key] = {
       // peças GLB da criação (estilo Realista), ou o modelo paramétrico
       build: () => (typeof Criacao3D !== 'undefined' && Criacao3D.usa(def) && Criacao3D.build(def)) || build(def),

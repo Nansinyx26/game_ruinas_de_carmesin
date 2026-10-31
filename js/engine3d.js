@@ -581,7 +581,7 @@ const R3D = {
       // o.m: matriz da raiz pronta (3×4), usada pelo inspetor 3D para as vistas ortográficas
       let root = this._m;
       if (o.m) root = o.m;
-      else { const sc = o.scale || 1; M3.trs(root, [0, 0, o.lift || 0], [o.roll || 0, o.pitch || 0, o.yaw || 0], [sc, sc, sc]); }
+      else { const sc = o.scale || 1, lg = sc * (o.larg || 1); M3.trs(root, [0, 0, o.lift || 0], [o.roll || 0, o.pitch || 0, o.yaw || 0], [lg, lg, sc]); }   // (larg: o porte do personagem criado, largura e profundidade)
       it.v0 = vo / 10;
       let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
       // Nível de detalhe: peças com lod > pixels por unidade deste modelo ficam de fora (lodForce: 1 tudo, 2 só o básico)

@@ -22,7 +22,11 @@ const Criacao3D = (function () {
   for (const c of CAT) POR_ID[c.id] = c;
   const CORPOS = ['corpo_m', 'corpo_f'];
   const BARBAS = ['barba_cacheada', 'barba_curta', 'barba_longa', 'barba_media', 'barba_viking',
-    'barba_b_por_fazer', 'barba_b_curta', 'barba_b_media', 'barba_b_cheia', 'barba_b_longa', 'barba_b_cavanhaque', 'barba_b_queixo', 'barba_b_bigode', 'barba_b_guidao'];
+    'barba_b_por_fazer', 'barba_b_curta', 'barba_b_media', 'barba_b_cheia', 'barba_b_longa', 'barba_b_cavanhaque', 'barba_b_queixo', 'barba_b_bigode', 'barba_b_guidao',
+    'barba_b_cheia_sem', 'barba_b_cavanhaque_sem'];
+  // Bigode separado (campo bigodeG): peças do Blender com a mesma textura de fios das barbas em
+  // mechas; divide a célula da barba no atlas (por isso não combina com as barbas do Meshy)
+  const BIGODES = ['barba_b_bigode', 'barba_b_guidao', 'barba_b_fino', 'barba_b_ferradura'];
   const VAGAS = ['capacete', 'peitoral', 'luvas', 'calcas', 'botas', 'capa', 'acessorio', 'ombroE', 'ombroD'];
   const LADO = 2048;
   // células do atlas: [x, y, lado] em pixels da textura de cor (material e normais na metade)
@@ -31,9 +35,10 @@ const Criacao3D = (function () {
     cabelo: [0, 1024, 512], capacete: [512, 1024, 512], peitoral: [1024, 1024, 512], calcas: [1536, 1024, 512],
     botas: [0, 1536, 512], luvas: [512, 1536, 512], capa: [1024, 1536, 512],
     barba: [1536, 1536, 256], acessorio: [1792, 1536, 256],
+    bigode: [1536, 1536, 256],   // (a mesma da barba: a textura de fios é a mesma nas peças em mechas)
     ombroE: [1536, 1792, 256], ombroD: [1792, 1792, 256],     // ombreiras dos conjuntos 50, 75 e 100
   };
-  const TINTA = { corpo: 'pele', rosto: 'pele', cabelo: 'cabelo', barba: 'barba' };
+  const TINTA = { corpo: 'pele', rosto: 'pele', cabelo: 'cabelo', barba: 'barba', bigode: 'barba' };
 
   // ------------------------------------------------------------ carregamento sob demanda
   const espera = {}, falhou = {}, pedido = {};
@@ -66,6 +71,12 @@ const Criacao3D = (function () {
 
   // ------------------------------------------------------------ peças da aparência
   // Corpo, rosto, cabelo e barba escolhidos (ids do catálogo)
+  // O bigode separado vale sem barba ou com uma barba em mechas (a do Meshy tem textura própria na célula)
+  function bigodeDe(A) {
+    if (!(A.bigodeG > 0)) return null;
+    const b = A.barbaG > 0 ? BARBAS[Math.min(BARBAS.length, A.barbaG) - 1] : null;
+    return !b || b.startsWith('barba_b_') ? BIGODES[Math.min(BIGODES.length, A.bigodeG) - 1] : null;
+  }
   function pecasDe(def) {
     const A = def.aparencia || {};
     return {
@@ -73,17 +84,18 @@ const Criacao3D = (function () {
       rosto: `rosto_${Math.max(0, Math.min(7, A.rostoG | 0)) + 1}`,
       cabelo: (typeof PERS_CABELOS_GLB !== 'undefined' ? PERS_CABELOS_GLB[A.cabeloG | 0] : A.cabeloG > 0 ? `cabelo_${Math.min(8, A.cabeloG)}` : null) || null,
       barba: A.barbaG > 0 ? BARBAS[Math.min(BARBAS.length, A.barbaG) - 1] : null,
+      bigode: bigodeDe(A),
     };
   }
   // O personagem usa o modelo com as peças GLB (estilo 'Realista') e as peças dele existem
   function usa(def) {
     if (!def || !def.aparencia || def.aparencia.estilo === 1 || !CAT.length) return false;
     const P = pecasDe(def);
-    return [P.corpo, P.rosto, P.cabelo, P.barba].every((id) => !id || disponivel(id));
+    return [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode].every((id) => !id || disponivel(id));
   }
   // Tudo da aparência carregado? (pede o que falta e chama cb quando completar)
   function pronto(def, cb) {
-    const P = pecasDe(def), ids = [P.corpo, P.rosto, P.cabelo, P.barba].filter(Boolean);
+    const P = pecasDe(def), ids = [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode].filter(Boolean);
     let falta = 0;
     for (const id of ids) if (!tem(id)) { falta++; carregar(id, () => { if (--falta === 0 && cb) cb(); }); }
     return falta === 0;
@@ -291,7 +303,7 @@ const Criacao3D = (function () {
   // corpo DESTE personagem recua para dentro dela (cópia própria das posições; as compartilhadas
   // ficam como estão). Refeito quando as peças mudam.
   const COBRE = ['peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas', 'capacete'];
-  const RECUA = ['corpo', 'rosto', 'barba'];
+  const RECUA = ['corpo', 'rosto', 'barba', 'bigode'];
   function recuarCorpo(m) {
     const C = m && m.cria;
     if (!C) return;
@@ -300,7 +312,7 @@ const Criacao3D = (function () {
     // (o cabelo em mechas do Blender também cobre: o couro cabeludo de rostos maiores que a cabeça
     // de referência atravessava as mechas curtas)
     // de referência atravessava as mechas curtas); ali o recuo é menor (a testa sob a franja)
-    const barbas = C.ids.barba ? C.peles.barba || [] : [];   // (a barba também cobre: o queixo e a mandíbula de rostos maiores atravessavam)
+    const barbas = (C.ids.barba ? C.peles.barba || [] : []).concat(C.ids.bigode ? C.peles.bigode || [] : []);   // (a barba também cobre: o queixo e a mandíbula de rostos maiores atravessavam)
     const mechas = (C.ids.cabelo && POR_ID[C.ids.cabelo] && POR_ID[C.ids.cabelo].fisica ? C.peles.cabelo || [] : []).concat(barbas);
     const pecas = COBRE.flatMap((v) => C.peles[v] || []).concat(mechas);
     if (!pecas.length) return;
@@ -343,6 +355,61 @@ const Criacao3D = (function () {
     }
   }
 
+  // ------------------------------------------------------------ formato do rosto
+  // Sete controles de 5 passos (−2 a +2; 0 = o rosto como veio): deformações suaves (gaussianas)
+  // em volta de pontos do rosto medidos no corpo (nariz, alto da cabeça, pescoço, largura e
+  // profundidade da cabeça). Mexem na malha do rosto e na da barba (que anda junto, sem descolar
+  // da mandíbula); o pescoço, onde o rosto emenda no corpo, não se move.
+  const FORMA = ['rLargura', 'rMandibula', 'rQueixo', 'rNariz', 'rBoca', 'rOlhos', 'rSobrancelha'];
+  function formaDe(def) {
+    const A = (def && def.aparencia) || {}, f = {};
+    let algum = false;
+    for (const k of FORMA) { const v = (Number.isInteger(A[k]) ? A[k] : 2) - 2; f[k] = v; if (v) algum = true; }
+    return algum ? f : null;
+  }
+  const passo01 = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function deformarRosto(P, md, f) {
+    const hh = md.topo - md.pescoco, L = md.largCabeca, cy = md.cy, frente = md.cx + md.profCabeca * 0.5;
+    const nz = md.nariz, frenteP = md.cx + md.profPescoco * 0.5;
+    const ga = (d2, r) => Math.exp(-d2 / (r * r));
+    const pts = {
+      queixo: [frente - 0.3, cy, nz - 0.3 * hh], nariz: [frente - 0.9, cy, nz + 0.02 * hh], boca: [frente - 0.4, cy, nz - 0.15 * hh],
+      olhos: [-1, 1].map((s) => [frente - 0.9, cy + s * 0.19 * L, nz + 0.16 * hh]), sobr: [-1, 1].map((s) => [frente - 0.6, cy + s * 0.2 * L, nz + 0.27 * hh]),
+    };
+    const zJ = nz - 0.22 * hh;
+    for (let i = 0; i < P.length; i += 3) {
+      let x = P[i], y = P[i + 1], z = P[i + 2];
+      // emenda do pescoço: parado embaixo, livre na frente do pescoço (o queixo) e acima dele
+      const w = Math.max(passo01(md.corte + 0.15, md.corte + 0.9, z), passo01(frenteP + 0.1, frenteP + 0.6, x));
+      if (w <= 0) continue;
+      const dy = y - cy, frenteW = passo01(md.cx - 0.1 * md.profCabeca, md.cx + 0.25 * md.profCabeca, x);
+      if (f.rLargura) y += dy * 0.05 * f.rLargura * w * frenteW * passo01(md.topo - 0.1 * hh, md.topo - 0.45 * hh, z);
+      if (f.rMandibula) y += dy * 0.11 * f.rMandibula * w * ga((z - zJ) ** 2, 0.15 * hh) * passo01(0.05 * L, 0.3 * L, Math.abs(dy));
+      if (f.rQueixo) {
+        const q = pts.queixo, g = w * ga((x - q[0]) ** 2 + (y - q[1]) ** 2 + (z - q[2]) ** 2, 0.2 * hh);
+        x += 0.32 * f.rQueixo * g; z -= 0.2 * f.rQueixo * g;
+      }
+      if (f.rBoca) { const b = pts.boca; y += dy * 0.15 * f.rBoca * w * frenteW * Math.exp(-((z - b[2]) ** 2) / (0.07 * hh) ** 2 - (dy * dy) / (0.25 * L) ** 2); }
+      if (f.rNariz) {
+        const n = pts.nariz, g = w * ga((x - n[0]) ** 2 + (y - n[1]) ** 2 + (z - n[2]) ** 2, 0.13 * hh), k = 0.18 * f.rNariz * g;
+        x += (x - n[0]) * k; y += (y - n[1]) * k; z += (z - n[2]) * k;
+      }
+      if (f.rOlhos) for (const e of pts.olhos) {
+        const g = w * ga((x - e[0]) ** 2 + (y - e[1]) ** 2 + (z - e[2]) ** 2, 0.09 * hh), k = 0.12 * f.rOlhos * g;
+        x += (x - e[0]) * k; y += (y - e[1]) * k; z += (z - e[2]) * k;
+      }
+      if (f.rSobrancelha) for (const e of pts.sobr) z += 0.17 * f.rSobrancelha * w * ga((x - e[0]) ** 2 + (y - e[1]) ** 2 + (z - e[2]) ** 2, 0.12 * hh);
+      P[i] = x; P[i + 1] = y; P[i + 2] = z;
+    }
+  }
+  // Aplica nas peles do rosto e da barba recém-postas (cópias: a geometria decodificada é
+  // compartilhada entre os personagens)
+  function formaNasPeles(m, L) {
+    const C = m.cria, f = C && C.forma, B = C && dados(C.corpo);
+    if (!f || !B || !B.medida) return;
+    for (const S of L) { const P = new Float32Array(S.pos); deformarRosto(P, B.medida, f); S.pos = P; }
+  }
+
   // ------------------------------------------------------------ montagem
   // Põe (ou troca) a peça da célula: as malhas dela no esqueleto deste modelo e a textura no atlas
   function por(m, cel, id) {
@@ -354,6 +421,7 @@ const Criacao3D = (function () {
     L.forEach((S, i) => { S.regiao = SK[i].regiao; });
     if (cel === 'cabelo' && m._cab) m._cab.peles = L;
     C.peles[cel] = L; C.ids[cel] = id;
+    if (cel === 'rosto' || cel === 'barba' || cel === 'bigode') formaNasPeles(m, L);   // formato do rosto escolhido
     if (C.pintadas[cel] !== id) comImagens(id, (I) => pintar(m, cel, id, I));
     return true;
   }
@@ -377,10 +445,11 @@ const Criacao3D = (function () {
     m.anchor('rosto', 'head', loc([md.cx + 1.4, md.cy, md.nariz + 0.7])).anchor('topo', 'head', loc([md.cx - 0.4, md.cy, md.topo + (P.cabelo ? 1.4 : 0.5)]));
     const at = { cor: tela(LADO, '#6a5a52'), mat: tela(LADO / 2, 'rgb(0,150,128)'), nrm: tela(LADO / 2, 'rgb(128,128,255)') };
     m.tex = { canvas: at.cor, mat: at.mat, nrm: at.nrm, bump: 0, pbr: true, glow: null };
-    m.cria = { def, corpo: P.corpo, at, ids: {}, peles: {}, pintadas: {}, tinta: tintas(def) };
+    m.cria = { def, corpo: P.corpo, at, ids: {}, peles: {}, pintadas: {}, tinta: tintas(def), forma: formaDe(def) };
     por(m, 'corpo', P.corpo); por(m, 'rosto', P.rosto);
     if (P.cabelo) por(m, 'cabelo', P.cabelo);
     if (P.barba) por(m, 'barba', P.barba);
+    if (P.bigode) por(m, 'bigode', P.bigode);
     juntar(m);
     recuarCorpo(m);
     m.sec = true;   // cabelo comprido e capa com movimento secundário (molas do rig do Kael)
@@ -455,5 +524,5 @@ const Criacao3D = (function () {
     return MINI[id].complete && MINI[id].naturalWidth ? MINI[id] : null;
   }
 
-  return { CAT, POR_ID, CEL, VAGAS, BARBAS, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
+  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
 })();

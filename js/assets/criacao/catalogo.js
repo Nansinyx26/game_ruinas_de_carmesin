@@ -446,6 +446,42 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "barba_b_fino",
+  "tipo": "barba",
+  "nome": "Bigode fino",
+  "arq": "assets/Criar_Personagem/Barbas_Blender/fino.glb",
+  "mini": "assets/Criar_Personagem/Barbas_Blender/fino.png",
+  "js": "js/assets/criacao/barba_b_fino.js",
+  "convertido": true
+ },
+ {
+  "id": "barba_b_ferradura",
+  "tipo": "barba",
+  "nome": "Bigode ferradura",
+  "arq": "assets/Criar_Personagem/Barbas_Blender/ferradura.glb",
+  "mini": "assets/Criar_Personagem/Barbas_Blender/ferradura.png",
+  "js": "js/assets/criacao/barba_b_ferradura.js",
+  "convertido": true
+ },
+ {
+  "id": "barba_b_cheia_sem",
+  "tipo": "barba",
+  "nome": "Cheia sem bigode",
+  "arq": "assets/Criar_Personagem/Barbas_Blender/cheia_sem.glb",
+  "mini": "assets/Criar_Personagem/Barbas_Blender/cheia_sem.png",
+  "js": "js/assets/criacao/barba_b_cheia_sem.js",
+  "convertido": true
+ },
+ {
+  "id": "barba_b_cavanhaque_sem",
+  "tipo": "barba",
+  "nome": "Cavanhaque sem bigode",
+  "arq": "assets/Criar_Personagem/Barbas_Blender/cavanhaque_sem.glb",
+  "mini": "assets/Criar_Personagem/Barbas_Blender/cavanhaque_sem.png",
+  "js": "js/assets/criacao/barba_b_cavanhaque_sem.js",
+  "convertido": true
+ },
+ {
   "id": "ini_capuz",
   "tipo": "peca",
   "nome": "Capuz do Iniciado",

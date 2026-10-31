@@ -45,7 +45,7 @@ Os rostos sem íris ficam em `tools/criacao_iris.json` (com o motivo); a tela av
 escolhido é um deles. Melhor sem cor que com a pálpebra pintada.
 
 Testado e descartado: achar o centro pelo ponto mais para a frente (o ápice da córnea); nestes
-rostos ele cai na sobrancelha ou na pálpebra.
+rostos ele cai na sobrancelha ou na pálpebra. Também testados ajustes por rosto (`ajustes` em `tools/criacao_iris.json`: limiar da esclera, deslocamento vertical e raio): o rosto 3 acerta um olho e não o outro, o 8 perde a íris e o 7 só pinta o centro dela; ficam sem cor.
 
 ## 4. Qualidade original das armaduras e desempenho (o limite real)
 
@@ -66,10 +66,10 @@ rostos ele cai na sobrancelha ou na pálpebra.
 
 | Pedido | Estado | Por quê |
 |---|---|---|
-| Bigode como vaga separada da barba | parcial | as combinações vêm prontas (curta/média com bigode, cavanhaque, contorno sem bigode, bigode, guidão); uma vaga própria precisa de outra célula no atlas, que está cheio em 2048 |
+| Bigode como vaga separada da barba | feito | campo **Bigode** (bigode, guidão, fino, ferradura) que combina com as barbas em mechas e com "sem barba"; as barbas e bigodes do Blender ficam com a malha e a textura de fios originais (sem reassar), então o bigode divide a célula da barba no atlas. Com as 5 barbas do Meshy (textura própria) o bigode separado não aparece, e a tela avisa. Barbas novas sem bigode: cheia e cavanhaque |
 | Barba acompanhando animações faciais | pendente | o esqueleto não tem ossos do rosto (sem boca ou mandíbula animadas); a barba segue a cabeça |
-| Formato do rosto, nariz, boca, queixo, mandíbula por controle deslizante | pendente | os rostos são 8 malhas prontas; deformar exige alvos de forma (shape keys) nos rostos |
-| Proporções do corpo além da altura | pendente | só corpo masculino/feminino e altura; as armaduras são encaixadas por corpo |
+| Formato do rosto, nariz, boca, queixo, mandíbula, olhos, sobrancelhas | feito | categoria **FORMA**: 7 controles de 5 passos (largura do rosto, mandíbula, queixo, nariz, boca, tamanho dos olhos, altura das sobrancelhas), deformações suaves em volta de pontos do rosto medidos no corpo, aplicadas no rosto e na barba (que acompanha); a emenda do pescoço não se move |
+| Proporções do corpo além da altura | feito (porte) | **Porte**: esguio, médio, forte (largura e profundidade do corpo inteiro, as peças vestidas acompanham; na vista isométrica, na 3ª pessoa e no retrato). Proporções por parte do corpo (ombros, quadris) continuam pendentes: escalar ossos isolados deformaria as armaduras encaixadas |
 | Braçadeiras e cinto como vagas | pendente | o Arsenal tem 9 vagas (capacete, peitoral, 2 ombreiras, luvas, calças, botas, capa, acessório) |
 | Física nas capas | existe | molas do rig do Kael (abas) |
 | Raspado como cabelo | feito | cabelo raspado em mechas curtas |

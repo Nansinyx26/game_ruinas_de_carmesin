@@ -33,7 +33,8 @@ import cabelos as C   # noqa: E402
 import utils as U     # noqa: E402
 
 PASTA = os.path.join(U.RAIZ, 'assets', 'Criar_Personagem', 'Barbas_Blender')
-ESTILOS_ORDEM = ['por_fazer', 'curta', 'media', 'cheia', 'longa', 'cavanhaque', 'queixo', 'bigode', 'guidao']
+ESTILOS_ORDEM = ['por_fazer', 'curta', 'media', 'cheia', 'longa', 'cavanhaque', 'queixo', 'bigode', 'guidao',
+                 'fino', 'ferradura', 'cheia_sem', 'cavanhaque_sem']   # (bigodes avulsos e barbas sem bigode: o bigode é vaga própria)
 
 
 # ------------------------------------------------------------ regiões do rosto (graus)
@@ -61,7 +62,16 @@ def buco(la, lo):
     return abs(lo) < 26 and -30 <= la <= -21
 
 
-REGIOES = dict(bochechas=bochechas, queixo=queixo, sob_queixo=sob_queixo, buco=buco)
+def buco_fino(la, lo):
+    return abs(lo) < 22 and -25 <= la <= -21
+
+
+def cantos(la, lo):
+    """Dos cantos da boca até a linha do queixo (o bigode ferradura)."""
+    return 22 <= abs(lo) <= 32 and -46 <= la <= -26
+
+
+REGIOES = dict(bochechas=bochechas, queixo=queixo, sob_queixo=sob_queixo, buco=buco, buco_fino=buco_fino, cantos=cantos)
 
 
 def na_regiao(nomes, la, lo):
@@ -116,8 +126,8 @@ def estilo(nome):
             dict(reg=['queixo', 'sob_queixo'], n=120, comp=(0.04, 0.06), larg=(0.012, 0.016), esp=0.34, fluxo='barba', folga=0.011, rig=0.45),
             dict(reg=['buco'], n=80, comp=(0.025, 0.04), larg=(0.009, 0.012), esp=0.3, fluxo='bigode', folga=0.005, rig=0.5)]),
         longa=dict(nome='Longa', base=B + ['buco'], camadas=[
-            dict(reg=B, n=360, comp=(0.06, 0.1), larg=(0.012, 0.017), esp=0.34, fluxo='barba', folga=0.005, rig=0.3),
-            dict(reg=['queixo', 'sob_queixo'], n=140, comp=(0.1, 0.15), larg=(0.013, 0.018), esp=0.34, fluxo='barba', folga=0.012, rig=0.25),
+            dict(reg=B, n=270, comp=(0.06, 0.1), larg=(0.013, 0.018), esp=0.34, fluxo='barba', folga=0.005, rig=0.3),
+            dict(reg=['queixo', 'sob_queixo'], n=110, comp=(0.1, 0.15), larg=(0.014, 0.019), esp=0.34, fluxo='barba', folga=0.012, rig=0.25),
             dict(reg=['buco'], n=80, comp=(0.03, 0.045), larg=(0.009, 0.012), esp=0.3, fluxo='bigode', folga=0.005, rig=0.45)]),
         cavanhaque=dict(nome='Cavanhaque', base=['queixo', 'buco'], camadas=[
             dict(reg=['queixo'], n=150, comp=(0.02, 0.035), larg=(0.009, 0.012), esp=0.32, fluxo='barba', folga=0.004, rig=0.5),
@@ -129,6 +139,16 @@ def estilo(nome):
         guidao=dict(nome='Bigode guidão', base=['buco'], camadas=[
             dict(reg=['buco'], n=70, comp=(0.016, 0.024), larg=(0.008, 0.011), esp=0.3, fluxo='bigode', folga=0.004, rig=0.6),
             dict(reg=['buco'], n=40, comp=(0.04, 0.055), larg=(0.009, 0.012), esp=0.34, fluxo='guidao', folga=0.006, rig=0.9, lo_min=12)]),
+        fino=dict(nome='Bigode fino', base=['buco_fino'], camadas=[
+            dict(reg=['buco_fino'], n=60, comp=(0.006, 0.01), larg=(0.005, 0.007), esp=0.3, fluxo='bigode', folga=0.003, rig=0.8)]),
+        ferradura=dict(nome='Bigode ferradura', base=['buco', 'cantos'], camadas=[
+            dict(reg=['buco'], n=80, comp=(0.018, 0.026), larg=(0.008, 0.011), esp=0.32, fluxo='bigode', folga=0.004, rig=0.6),
+            dict(reg=['cantos'], n=70, comp=(0.012, 0.02), larg=(0.008, 0.011), esp=0.32, fluxo='barba', folga=0.004, rig=0.6)]),
+        cheia_sem=dict(nome='Cheia sem bigode', base=B, camadas=[
+            dict(reg=B, n=420, comp=(0.035, 0.055), larg=(0.011, 0.016), esp=0.34, fluxo='barba', folga=0.005, rig=0.45),
+            dict(reg=['queixo', 'sob_queixo'], n=120, comp=(0.04, 0.06), larg=(0.012, 0.016), esp=0.34, fluxo='barba', folga=0.011, rig=0.45)]),
+        cavanhaque_sem=dict(nome='Cavanhaque sem bigode', base=['queixo'], camadas=[
+            dict(reg=['queixo'], n=150, comp=(0.02, 0.035), larg=(0.009, 0.012), esp=0.32, fluxo='barba', folga=0.004, rig=0.5)]),
     )
     return E[nome]
 
