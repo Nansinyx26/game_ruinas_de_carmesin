@@ -66,6 +66,13 @@ for i, (a, m) in enumerate([('Rosto_1.glb', 'rosto_1.png'), ('rosto_2.glb', 'ros
 for i, (a, m) in enumerate([('cabelo_1.glb', 'cabelo_1.png'), ('Cabelo_2.glb', 'cabelo_2.png'), ('Cabelo_3.glb', 'Cabelo_3.png'), ('Cabelo_4.glb', 'Cabelo_4.png'),
                             ('Cabelo_5.glb', 'cabelo_5.png'), ('Cabelo_6.glb', 'cabelo_6.png'), ('cabelo_7.glb', 'cabelo_7.png'), ('Cabelo_8.glb', 'cabelo_8.png')]):
     PECAS.append(dict(id=f'cabelo_{i + 1}', tipo='cabelo', nome=f'Cabelo {i + 1}', arq='Cabelo/' + a, mini='Cabelo/' + m, tri=12000, tex=512))
+# Cabelos com física feitos no Blender (tools/blender/cabelos.py): malha em mechas, cadeias de ossos
+# para a física do jogo (js/criacao/cabelo_fisica.js) e a mesma malha nos dois corpos (shape key)
+CORTES_FISICA = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado']
+for _c in CORTES_FISICA:
+    _j = os.path.join(ORIG, 'Cabelo_Fisica', _c + '.json')
+    if os.path.exists(_j):
+        PECAS.append(dict(id=f'cabelo_{_c}', tipo='cabelo', fisica=True, nome=json.load(open(_j, encoding='utf-8'))['nome'], arq=f'Cabelo_Fisica/{_c}.glb', mini=f'Cabelo_Fisica/{_c}.png', tri=16000, tex=512))
 for b, n in [('Cacheada', 'Cacheada'), ('Curta', 'Curta'), ('Longa', 'Longa'), ('Média', 'Média'), ('Viking', 'Viking')]:
     PECAS.append(dict(id='barba_' + unicodedata.normalize('NFKD', b).encode('ascii', 'ignore').decode().lower(), tipo='barba', nome='Barba ' + n,
                       arq=f'Barbas/Barba_{b}.glb', mini=f'Barbas/Barba_{b}.png', tri=5000, tex=512))
@@ -799,6 +806,102 @@ def pesos_capuz(W, P, ref, nomes):
     return W
 
 
+def dados_do_corpo(cid):
+    """O corpo já convertido (js/assets/criacao/<corpo>.js): matrizes inversas dos ossos e medidas."""
+    txt = open(os.path.join(DEST, cid + '.js'), encoding='utf-8').read()
+    i = txt.index('] = {') + 4
+    return json.JSONDecoder().raw_decode(txt[i:])[0]
+
+
+def m34(L):
+    M = np.eye(4)
+    M[:3, :] = np.asarray(L, float).reshape(3, 4)
+    return M
+
+
+def blender_para_jogo(P):
+    """Pontos do Blender (metros; frente −Y, direita −X, Z cima) no espaço do jogo."""
+    P = np.asarray(P, float)
+    return np.stack([-P[:, 1], -P[:, 0], P[:, 2]], 1) * ESCALA_BLENDER
+
+
+def processar_cabelo_fisica(p, refs):
+    """Cabelo do Blender com cadeias de ossos: a malha (com a forma do corpo feminino na shape key),
+    os pesos que vêm nos atributos do GLB (_W0.._W3), os ossos novos de cada cadeia (presos à
+    cabeça, com as matrizes inversas a partir da do osso da cabeça de cada corpo) e as esferas de
+    colisão (cabeça, pescoço, costas, peito e ombros) para a física do jogo."""
+    t0 = time.time()
+    V, UV, F, mapas, N = ler_peca(p['arq'])
+    info = json.load(open(os.path.join(ORIG, os.path.splitext(p['arq'])[0] + '.json'), encoding='utf-8'))
+    V = V * ESCALA_BLENDER
+    alvo = mapas.get('alvo')
+    Vf = V + (alvo @ R_JOGO.T) * ESCALA_BLENDER if alvo is not None else V
+    ossos = info['ossos']
+    A = mapas['atrib']
+    Wc = np.zeros((len(V), len(ossos)))
+    linhas = np.arange(len(V))
+    for q in range(4):
+        a = A[f'_W{q}'][:, 0]
+        ix = np.floor(a + 1e-6).astype(int)
+        w = np.clip((a - ix) / 0.999, 0, 1)
+        ok = (w > 1e-4) & (ix >= 0) & (ix < len(ossos))
+        np.add.at(Wc, (linhas[ok], ix[ok]), w[ok])
+    Wc[Wc.sum(1) < 1e-6, 0] = 1.0
+    Wc /= Wc.sum(1, keepdims=True)
+    Vs, Fs, inv = im.soldar(V, F)
+    Vfs = np.zeros_like(Vs)
+    Vfs[inv] = Vf
+    porCorpo, cadeias, invs, colis = {}, {}, {}, {}
+    for cid, ref in refs.items():
+        m = ref['medida']
+        B = dados_do_corpo(cid)
+        Wh = np.linalg.inv(m34(B['inv']['head']))
+        Rh = Wh[:3, :3]
+        Rhi = np.linalg.inv(Rh)
+        HV, HN = cabeca_de_referencia(ref)
+        hh = m['topo'] - m['pescoco']
+        P = (Vs if cid == 'corpo_m' else Vfs).copy()
+        P = empurrar_para_fora(P, dict(V=HV, N=HN, kd=cKDTree(HV)), 0.01 * hh)
+        Np = im.normais_vertices(P, Fs)[inv]
+        nomes = list(ref['nomes']) + ossos[1:]
+        W = np.zeros((len(V), len(nomes)))
+        W[:, ref['nomes'].index('head')] = Wc[:, 0]
+        W[:, len(ref['nomes']):] = Wc[:, 1:]
+        porCorpo[cid] = pele_js(P[inv], Np, UV, F, W, nomes)
+        # cadeias: nós novos presos à cabeça (posição de cada junta no espaço do osso pai)
+        cads, invc = [], {}
+        for c in info['cadeias']:
+            J = blender_para_jogo(c['juntas'][cid])
+            loc = [(np.linalg.inv(Wh) @ np.r_[J[0], 1])[:3]] + [Rhi @ (J[j] - J[j - 1]) for j in range(1, len(J))]
+            for j, nm in enumerate(c['ossos']):
+                Wj = np.eye(4)
+                Wj[:3, :3], Wj[:3, 3] = Rh, J[j]
+                invc[nm] = [round(float(x), 6) for x in np.linalg.inv(Wj)[:3, :].ravel()]
+            cads.append(dict(ossos=c['ossos'], p=[[round(float(x), 4) for x in v] for v in loc[:-1]], ponta=[round(float(x), 4) for x in loc[-1]]))
+        cadeias[cid], invs[cid] = cads, invc
+        # colisores: centro no espaço do osso (pela inversa do corpo) e raio
+        def esfera(osso, c, r):
+            return dict(osso=osso, c=[round(float(x), 3) for x in (m34(B['inv'][osso]) @ np.r_[c, 1])[:3]], r=round(float(r), 3))
+        cab = HV[HV[:, 2] > m['pescoco']]
+        cc = (cab.min(0) + cab.max(0)) / 2
+        rc = 0.5 * float(np.min(np.ptp(cab, 0)[:2])) * 0.98
+        V0, reg = ref['V'], ref['reg']
+        alto = V0[(reg == 'tronco') & (np.abs(V0[:, 2] - (m['axila'] + 0.5)) < 0.8)]
+        prof = np.ptp(alto[:, 0])
+        lista = [esfera('head', cc, rc), esfera('head', [cc[0], cc[1], cc[2] + 0.35 * rc], rc * 0.92),
+                 esfera('torso', [m['cx'], m['cy'], m['pescoco'] - 0.4], 0.5 * m['largPescoco'] * 1.15),
+                 esfera('torso', [alto[:, 0].min() + 0.5 * prof, m['cy'], m['axila'] + 0.5], 0.52 * prof),
+                 esfera('torso', [alto[:, 0].min() + 0.5 * prof, m['cy'], m['axila'] - 4.5], 0.5 * prof)]
+        for lado, nm in ((1, 'armRu'), (-1, 'armLu')):
+            Jb = np.asarray(ref['bones'][nm][0])
+            lista.append(esfera('torso', [alto[:, 0].min() + 0.5 * prof, Jb[1] * 0.55, m['axila'] + 0.8], 0.45 * prof))
+            lista.append(esfera(nm, Jb + np.array([0, 0, 0.3]), 0.36 * prof))
+        colis[cid] = lista
+    dados = dict(v=2, tipo='cabelo', fisica=info.get('fisica'), q=Q, porCorpo=porCorpo, inv=invs, cadeias=cadeias, colisores=colis, origem=p['arq'], pbr=1)
+    destino = gravar(p['id'], dados, mapas_js(dict(cor=mapas['cor'], mr=mapas.get('mr'), nrm=mapas.get('nrm')), p['tex']))
+    print(f"{p['id']}: {len(F)} triângulos, {len(info['cadeias'])} cadeias (Blender, física) → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
+
+
 def processar_blender(p, refs):
     """Peça feita no Blender sobre os corpos do jogo (tools/blender/armaduras.py): já está no lugar
     (metros → unidades do jogo), a forma do corpo feminino vem na shape key; aqui só os pesos do corpo,
@@ -1035,7 +1138,7 @@ def gravar_catalogo():
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
     for p in PECAS:
         it = dict(id=p['id'], tipo=p['tipo'], nome=p['nome'], arq='assets/Criar_Personagem/' + p['arq'], mini='assets/Criar_Personagem/' + p['mini'], js='js/assets/criacao/' + p['id'] + '.js')
-        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real'):
+        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica'):
             if p.get(k) is not None:
                 it[k] = p[k]
         if 'esconde' in p or p.get('vaga') in ESCONDE:
@@ -1095,6 +1198,8 @@ def _tarefa(p):
         refs = {c['id']: referencia(c['id']) for c in CORPOS}
         if p['tipo'] == 'rosto':
             processar_rosto(p, refs)
+        elif p.get('fisica'):
+            processar_cabelo_fisica(p, refs)
         elif p['tipo'] in ('cabelo', 'barba'):
             processar_cobertura(p, refs, p['tipo'])
         elif p.get('blender'):

@@ -93,9 +93,15 @@ const PERS_CORES = [['Ônix', '#1c1b20'], ['Aço', '#4a5260'], ['Floresta', '#2c
 const PERS_GLB = {
   corpoG: ['Masculino', 'Feminino'],
   rostoG: ['Rosto 1', 'Rosto 2', 'Rosto 3', 'Rosto 4', 'Rosto 5', 'Rosto 6', 'Rosto 7', 'Rosto 8'],
-  cabeloG: ['Sem cabelo', 'Cabelo 1', 'Cabelo 2', 'Cabelo 3', 'Cabelo 4', 'Cabelo 5', 'Cabelo 6', 'Cabelo 7', 'Cabelo 8'],
+  // 1 a 8: os do Meshy (só a ponta do comprido balança); 9 a 18: feitos no Blender, em mechas com
+  // física (js/criacao/cabelo_fisica.js)
+  cabeloG: ['Sem cabelo', 'Cabelo 1', 'Cabelo 2', 'Cabelo 3', 'Cabelo 4', 'Cabelo 5', 'Cabelo 6', 'Cabelo 7', 'Cabelo 8',
+    'Curto (mechas)', 'Médio (mechas)', 'Longo (mechas)', 'Espetado (mechas)', 'Ondulado (mechas)', 'Coque (mechas)', 'Rabo de cavalo (mechas)', 'Tranças (mechas)', 'Franja (mechas)', 'Repicado (mechas)'],
   barbaG: ['Sem barba', 'Cacheada', 'Curta', 'Longa', 'Média', 'Viking'],
 };
+// id do catálogo da criação de cada opção de cabelo (null: sem cabelo)
+const PERS_CABELOS_GLB = [null, 'cabelo_1', 'cabelo_2', 'cabelo_3', 'cabelo_4', 'cabelo_5', 'cabelo_6', 'cabelo_7', 'cabelo_8',
+  'cabelo_curto', 'cabelo_medio', 'cabelo_longo', 'cabelo_espetado', 'cabelo_ondulado', 'cabelo_coque', 'cabelo_rabo', 'cabelo_trancas', 'cabelo_franja', 'cabelo_repicado'];
 const PERS_APAR = {
   estilo: { nome: 'Estilo do modelo', ops: ['Realista', 'Estilizado'] },
   corpoG: { nome: 'Corpo', ops: PERS_GLB.corpoG, glb: true },

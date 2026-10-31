@@ -2196,7 +2196,7 @@ const EclipseTests = {
     const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
-    this.igual('catálogo: 2 corpos, 8 rostos, 8 cabelos, 5 barbas', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,8,5');
+    this.igual('catálogo: 2 corpos, 8 rostos, 18 cabelos (8 do Meshy e 10 com física), 5 barbas', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,18,5');
     this.igual('catálogo: 7 peças do nível 1 (Armaduras_Inicial_Level_1/)', ini.filter((c) => c.arq.startsWith('assets/Criar_Personagem/Armaduras_Inicial_Level_1/') && c.arq.endsWith('.glb')).length, 7);
     this.ok('catálogo: 7 peças de nível 30 para cada uma das 5 classes (Armaduras_Level_30/<classe>/)', ARM_CLASSES.every((c) => n30.filter((q) => q.classe === c && q.arq.startsWith('assets/Criar_Personagem/Armaduras_Level_30/')).length === 7), n30.length);
     const campos = ['itemLevel', 'rarity', 'requiredLevel', 'allowedClasses', 'equipmentSlot', 'baseStats', 'bonusStats', 'modelPath', 'iconPath', 'description', 'sellValue', 'setId'];
@@ -2217,6 +2217,32 @@ const EclipseTests = {
       reais('n50_patrulheiro_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && !Criacao3D.POR_ID.n50_patrulheiro_peitoral.ombros &&
       reais('n50_guardiao_', ['peitoral', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && Criacao3D.POR_ID.n50_guardiao_peitoral.ombros && Criacao3D.POR_ID.n50_guardiao_ombroE.blender &&
       reais('n75_assassino_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capacete', 'luvas', 'acessorio']) && Criacao3D.POR_ID.n75_assassino_capa.blender);
+    // ------------------------------------------------ cabelo com física (Blender + js/criacao/cabelo_fisica.js)
+    const cabF = CRIA_CATALOGO.filter((c) => c.tipo === 'cabelo' && c.fisica);
+    this.ok('cabelo com física: os dez cortes do Blender no catálogo e nas opções da criação (curto, médio, longo, espetado, ondulado, coque, rabo, tranças, franja, repicado)',
+      cabF.length === 10 && cabF.every((c) => c.convertido && c.arq.startsWith('assets/Criar_Personagem/Cabelo_Fisica/') && PERS_CABELOS_GLB.includes(c.id)) && PERS_CABELOS_GLB.length === PERS_GLB.cabeloG.length, cabF.map((c) => c.id).join(','));
+    this.ok('cabelo com física: a opção escolhida vira a peça do catálogo', Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('mago'), { cabeloG: 11 }) }).cabelo === 'cabelo_longo' && Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('mago'), { cabeloG: 3 }) }).cabelo === 'cabelo_3');
+    {
+      // modelo mínimo: cabeça e uma cadeia de dois ossos; a cabeça anda de lado e para
+      const root = new N3('root'), head = root.add(new N3('head'));
+      head.p = [0, 0, 50];
+      const m = new Model3(root);
+      CabeloFisica.preparar(m, { cadeias: { corpo_m: [{ ossos: ['cabT_0', 'cabT_1'], p: [[0, 0, -1], [0, 0, -3]], ponta: [0, 0, -3] }] }, colisores: { corpo_m: [{ osso: 'head', c: [4, 0, -4], r: 1.5 }] }, fisica: { rigidez: 0.2, amortecimento: 0.08, peso: 1, limite: 80 } }, 'corpo_m');
+      const anda = (nd, P) => { M3.mul(nd.w, P, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); };
+      const quadro = () => { anda(m.root, M3.make()); m._cab.t -= 1 / 60; CabeloFisica.passo(m, null, 8); };
+      const criou = !!m.nodes.cabT_1 && m.nodes.head.kids.includes(m.nodes.cabT_0) && !!m.rest.cabT_1;
+      for (let i = 0; i < 30; i++) quadro();
+      const parado0 = CabeloFisica.desvio(m);
+      let maxMov = 0;
+      for (let i = 0; i < 20; i++) { head.p[1] += 1.2; quadro(); maxMov = Math.max(maxMov, CabeloFisica.desvio(m)); }
+      for (let i = 0; i < 240; i++) quadro();
+      const volta = CabeloFisica.desvio(m), c = m._cab.cadeias[0];
+      const comp = Math.hypot(c.X[3] - c.X[0], c.X[4] - c.X[1], c.X[5] - c.X[2]);
+      this.ok('cabelo com física: os ossos das mechas entram presos à cabeça; a ponta fica para trás quando a cabeça anda e volta quando para; o osso não estica',
+        criou && maxMov > parado0 + 0.4 && volta < maxMov * 0.5 && Math.abs(comp - c.L[1]) < 0.05, `criou ${criou} parado ${parado0.toFixed(2)} andando ${maxMov.toFixed(2)} depois ${volta.toFixed(2)} osso ${comp.toFixed(2)}/${c.L[1].toFixed(2)}`);
+      CabeloFisica.preparar(m, null, 'corpo_m');
+      this.ok('cabelo com física: trocar o cabelo tira os ossos do anterior', !m.nodes.cabT_0 && !m.rest.cabT_0 && !m.nodes.head.kids.length && !m._cab);
+    }
     this.ok('nomes das peças: os das imagens (manifesto)', ARMADURAS_GLB.n75_guerreiro_peitoral.nome === 'Peitoral de Placas' && ARMADURAS_GLB.n100_mago_acessorio.nome === 'Amuleto do Astral' && ARMADURAS_GLB.n50_assassino_ombroE.nome.startsWith('Ombreiras Leves'));
     this.ok('força cresce com a faixa (defesa do peitoral 30 < 50 < 75 < 100)', ['30', '50', '75', '100'].map((n) => ARMADURAS_GLB[`n${n}_guerreiro_peitoral`].baseStats.defesa).every((v, i, a) => !i || v > a[i - 1]));
     this.igual('faixa do conjunto pelo nível da zona (20, 26, 47, 72, 96)', [20, 26, 47, 72, 96].map((n) => Arsenal.faixaClasse(n)).join(','), '0,30,50,75,100');

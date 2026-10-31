@@ -125,7 +125,8 @@ def ler_obj(path):
 def ler_glb(path):
     """GLB (glTF 2.0) → (posições, uv, triângulos, mapas): mapas = {'cor', 'mr' (metal/aspereza),
     'nrm' (normais no espaço tangente), 'emi' (emissão), 'normais' (normais dos vértices, se o arquivo tiver),
-    'alvo' (deslocamento do primeiro morph target, se houver)}."""
+    'alvo' (deslocamento do primeiro morph target, se houver), 'atrib' (atributos próprios dos
+    vértices, os de nome começado por '_', como os pesos dos ossos do cabelo do Blender)}."""
     raw = open(path, 'rb').read()
     magic, ver, _ = struct.unpack_from('<4sII', raw, 0)
     if magic != b'glTF' or ver != 2:
@@ -176,7 +177,7 @@ def ler_glb(path):
         M[:3, 3] = t
         return M
 
-    V, UV, F, NV, ALVO, mapas = [], [], [], [], [], {}
+    V, UV, F, NV, ALVO, mapas, ATR = [], [], [], [], [], {}, {}
     cena = js['scenes'][js.get('scene', 0)]
 
     def visita(i, P):
@@ -207,6 +208,13 @@ def ler_glb(path):
                 alvo = acc(pr['targets'][0]['POSITION']) if not draco and pr.get('targets') and 'POSITION' in pr['targets'][0] else np.zeros((len(pos), 3))
                 ALVO.append(alvo @ M[:3, :3].T)
                 base = sum(len(v) for v in V)
+                for nome, ai in pr['attributes'].items():
+                    if nome.startswith('_') and not draco:
+                        a_ = acc(ai)
+                        ATR.setdefault(nome, [np.zeros((base, a_.shape[1]))] if base else []).append(a_)
+                for nome, L in ATR.items():   # (primitivas sem o atributo: zeros)
+                    if sum(len(x) for x in L) < base + len(pos):
+                        L.append(np.zeros((base + len(pos) - sum(len(x) for x in L), L[-1].shape[1])))
                 V.append((np.c_[pos, np.ones(len(pos))] @ M.T)[:, :3])
                 NV.append(nv @ np.linalg.inv(M[:3, :3]))          # normais: inversa transposta
                 UV.append(uv)
@@ -228,6 +236,8 @@ def ler_glb(path):
     ALVO = np.concatenate(ALVO)
     if np.abs(ALVO).sum() > 0:
         mapas['alvo'] = ALVO                                 # deslocamento de cada vértice na forma alternativa
+    if ATR:
+        mapas['atrib'] = {k: np.concatenate(L) for k, L in ATR.items()}
     return np.concatenate(V), np.concatenate(UV), np.concatenate(F), mapas
 
 

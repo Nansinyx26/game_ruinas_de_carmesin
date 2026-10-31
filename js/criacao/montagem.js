@@ -70,7 +70,7 @@ const Criacao3D = (function () {
     return {
       corpo: CORPOS[A.corpoG === 1 ? 1 : 0],
       rosto: `rosto_${Math.max(0, Math.min(7, A.rostoG | 0)) + 1}`,
-      cabelo: A.cabeloG > 0 ? `cabelo_${Math.min(8, A.cabeloG)}` : null,
+      cabelo: (typeof PERS_CABELOS_GLB !== 'undefined' ? PERS_CABELOS_GLB[A.cabeloG | 0] : A.cabeloG > 0 ? `cabelo_${Math.min(8, A.cabeloG)}` : null) || null,
       barba: A.barbaG > 0 ? BARBAS[Math.min(5, A.barbaG) - 1] : null,
     };
   }
@@ -112,7 +112,8 @@ const Criacao3D = (function () {
     if (!D || !B) return null;
     const fonte = D.tipo === 'corpo' ? D.skins : D.porCorpo && D.porCorpo[corpo];
     if (!fonte) return null;
-    const SK = decodePeles3D({ q: D.q, inv: B.inv, skins: fonte });
+    // (o cabelo com física traz os ossos das mechas, com as matrizes inversas de cada corpo)
+    const SK = decodePeles3D({ q: D.q, inv: D.inv && D.inv[corpo] ? Object.assign({}, B.inv, D.inv[corpo]) : B.inv, skins: fonte });
     const [x, y, s] = CEL[cel], a = (x + 0.5) / LADO, b = (y + 0.5) / LADO, e = (s - 1) / LADO;
     SK.forEach((S, i) => {
       S.regiao = fonte[i].regiao || null;
@@ -267,19 +268,23 @@ const Criacao3D = (function () {
     if (!C) return;
     const pele = RECUA.flatMap((k) => C.peles[k] || []);
     for (const S of pele) if (S.pos0) S.pos.set(S.pos0);
-    const pecas = COBRE.flatMap((v) => C.peles[v] || []);
+    // (o cabelo em mechas do Blender também cobre: o couro cabeludo de rostos maiores que a cabeça
+    // de referência atravessava as mechas curtas)
+    // de referência atravessava as mechas curtas); ali o recuo é menor (a testa sob a franja)
+    const mechas = C.ids.cabelo && POR_ID[C.ids.cabelo] && POR_ID[C.ids.cabelo].fisica ? C.peles.cabelo || [] : [];
+    const pecas = COBRE.flatMap((v) => C.peles[v] || []).concat(mechas);
     if (!pecas.length) return;
     const H = 1.2, G = new Map(), chave = (i, j, k) => (i * 92837111) ^ (j * 689287499) ^ (k * 283923481);
     for (const P of pecas) {
-      const p = P.pos, n = P.nor;
+      const p = P.pos, n = P.nor, mx = mechas.includes(P) ? 1.0 : 3.0;
       for (let i = 0; i < p.length; i += 3) {
         const c = chave(Math.floor(p[i] / H), Math.floor(p[i + 1] / H), Math.floor(p[i + 2] / H));
         let L = G.get(c);
         if (!L) G.set(c, (L = []));
-        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2]);
+        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2], mx);
       }
     }
-    const MARGEM = 0.28, R2 = 2.3 * 2.3, LAT2 = 1.7 * 1.7, MAX = 3.0;
+    const MARGEM = 0.28, R2 = 2.3 * 2.3, LAT2 = 1.7 * 1.7;
     for (const S of pele) {
       if (!S.pos0) { S.pos0 = S.pos; S.pos = new Float32Array(S.pos0); }
       const p = S.pos, nb = S.nor;
@@ -289,7 +294,7 @@ const Criacao3D = (function () {
         for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
           const L = G.get(chave(ci + a, cj + b, ck + c));
           if (!L) continue;
-          for (let t = 0; t < L.length; t += 6) {
+          for (let t = 0; t < L.length; t += 7) {
             const dx = X - L[t], dy = Y - L[t + 1], dz = Z - L[t + 2], d2 = dx * dx + dy * dy + dz * dz;
             if (d2 < best) { best = d2; q = L; qo = t; }
           }
@@ -299,7 +304,7 @@ const Criacao3D = (function () {
         if (nx * nb[i] + ny * nb[i + 1] + nz * nb[i + 2] < 0) { nx = -nx; ny = -ny; nz = -nz; }   // a face de dentro da peça
         const dx = X - q[qo], dy = Y - q[qo + 1], dz = Z - q[qo + 2], d = dx * nx + dy * ny + dz * nz;
         if (best - d * d > LAT2 || d <= -MARGEM) continue;            // fora da sombra da peça ou já por dentro
-        const k = Math.min(MAX, d + MARGEM);
+        const k = Math.min(q[qo + 6], d + MARGEM);
         p[i] = X - nx * k; p[i + 1] = Y - ny * k; p[i + 2] = Z - nz * k;
       }
     }
@@ -310,8 +315,11 @@ const Criacao3D = (function () {
   function por(m, cel, id) {
     const C = m.cria, SK = id && geo(id, C.corpo, cel);
     if (!SK) { delete C.peles[cel]; delete C.ids[cel]; return false; }
+    // cabelo com física: os ossos das mechas entram no esqueleto antes da pele
+    if (cel === 'cabelo' && typeof CabeloFisica !== 'undefined') CabeloFisica.preparar(m, dados(id), C.corpo);
     const L = instPeles3D(SK, m);
     L.forEach((S, i) => { S.regiao = SK[i].regiao; });
+    if (cel === 'cabelo' && m._cab) m._cab.peles = L;
     C.peles[cel] = L; C.ids[cel] = id;
     if (C.pintadas[cel] !== id) comImagens(id, (I) => pintar(m, cel, id, I));
     return true;
@@ -341,6 +349,7 @@ const Criacao3D = (function () {
     if (P.cabelo) por(m, 'cabelo', P.cabelo);
     if (P.barba) por(m, 'barba', P.barba);
     juntar(m);
+    recuarCorpo(m);
     m.sec = true;   // cabelo comprido e capa com movimento secundário (molas do rig do Kael)
     // medidas para as peças procedurais do Arsenal (as que não têm GLB): corpo e cabeça
     if (typeof PecasRig !== 'undefined' && PecasRig.medidas) {

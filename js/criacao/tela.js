@@ -31,7 +31,7 @@ const CRIA_LINHAS_GLB = ['estilo'].concat(...CRIA_CATS.map((c) => c.campos));
 const CRIA_MINI = {
   corpoG: () => ['corpo_m', 'corpo_f'],
   rostoG: () => [1, 2, 3, 4, 5, 6, 7, 8].map((i) => `rosto_${i}`),
-  cabeloG: () => [null, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (i ? `cabelo_${i}` : null)),
+  cabeloG: () => PERS_CABELOS_GLB.slice(),
   barbaG: () => [null].concat(typeof Criacao3D !== 'undefined' ? Criacao3D.BARBAS : []),
 };
 const CriacaoTela = {

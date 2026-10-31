@@ -1,0 +1,10 @@
+{
+ "corte": "espetado",
+ "nome": "Espetado",
+ "ossos": [
+  "head"
+ ],
+ "tris": 3664,
+ "fisica": null,
+ "cadeias": []
+}

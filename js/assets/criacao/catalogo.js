@@ -167,6 +167,106 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "cabelo_curto",
+  "tipo": "cabelo",
+  "nome": "Curto",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/curto.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/curto.png",
+  "js": "js/assets/criacao/cabelo_curto.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_medio",
+  "tipo": "cabelo",
+  "nome": "Médio",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/medio.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/medio.png",
+  "js": "js/assets/criacao/cabelo_medio.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_longo",
+  "tipo": "cabelo",
+  "nome": "Longo",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/longo.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/longo.png",
+  "js": "js/assets/criacao/cabelo_longo.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_espetado",
+  "tipo": "cabelo",
+  "nome": "Espetado",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/espetado.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/espetado.png",
+  "js": "js/assets/criacao/cabelo_espetado.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_ondulado",
+  "tipo": "cabelo",
+  "nome": "Ondulado",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/ondulado.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/ondulado.png",
+  "js": "js/assets/criacao/cabelo_ondulado.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_coque",
+  "tipo": "cabelo",
+  "nome": "Coque",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/coque.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/coque.png",
+  "js": "js/assets/criacao/cabelo_coque.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_rabo",
+  "tipo": "cabelo",
+  "nome": "Rabo de cavalo",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/rabo.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/rabo.png",
+  "js": "js/assets/criacao/cabelo_rabo.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_trancas",
+  "tipo": "cabelo",
+  "nome": "Tranças",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/trancas.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/trancas.png",
+  "js": "js/assets/criacao/cabelo_trancas.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_franja",
+  "tipo": "cabelo",
+  "nome": "Franja",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/franja.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/franja.png",
+  "js": "js/assets/criacao/cabelo_franja.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
+  "id": "cabelo_repicado",
+  "tipo": "cabelo",
+  "nome": "Repicado",
+  "arq": "assets/Criar_Personagem/Cabelo_Fisica/repicado.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Fisica/repicado.png",
+  "js": "js/assets/criacao/cabelo_repicado.js",
+  "fisica": true,
+  "convertido": true
+ },
+ {
   "id": "barba_cacheada",
   "tipo": "barba",
   "nome": "Barba Cacheada",

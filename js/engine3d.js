@@ -602,6 +602,9 @@ const R3D = {
         }
         for (let k = nd.kids.length - 1; k >= 0; k--) stack.push([nd.kids[k], nd.w, em]);
       }
+      // Depois das matrizes dos ossos e antes das peles: movimento simulado (a física do cabelo,
+      // js/criacao/cabelo_fisica.js, troca as matrizes dos ossos das mechas)
+      if (m.depoisPose) { try { m.depoisPose(m, it.arg, det); } catch (err) { if (!m.errFis) { m.errFis = true; console.error(err); } } }
       // Malhas com pele: cada vértice é levado pela soma ponderada das matrizes dos seus ossos
       if (m.skins) {
         for (const sk of m.skins) {
