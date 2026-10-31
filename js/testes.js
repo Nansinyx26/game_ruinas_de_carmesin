@@ -2231,6 +2231,9 @@ const EclipseTests = {
       reais('n50_patrulheiro_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && !Criacao3D.POR_ID.n50_patrulheiro_peitoral.ombros &&
       reais('n50_guardiao_', ['peitoral', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && Criacao3D.POR_ID.n50_guardiao_peitoral.ombros && Criacao3D.POR_ID.n50_guardiao_ombroE.blender &&
       reais('n75_assassino_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capacete', 'luvas', 'acessorio']) && Criacao3D.POR_ID.n75_assassino_capa.blender);
+    this.ok('Guerreiro 75: peitoral (com as ombreiras), calça, botas, elmo e manto são os GLB realistas enviados; luvas, ombreiras e amuleto continuam os do Blender',
+      reais('n75_guerreiro_', ['peitoral', 'calcas', 'botas', 'capa', 'capacete']) && Criacao3D.POR_ID.n75_guerreiro_peitoral.ombros &&
+      ['ombroE', 'ombroD', 'luvas', 'acessorio'].every((v) => Criacao3D.POR_ID[`n75_guerreiro_${v}`].blender));
     // ------------------------------------------------ rig: pele por quatérnios duplos (R3D.skin, personagens principais)
     if (R3D.data) {
       const osso = (rz) => { const n = new N3('osso'); M3.trs(n.w, [0, 0, 0], [0, 0, rz], [1, 1, 1]); return n; };

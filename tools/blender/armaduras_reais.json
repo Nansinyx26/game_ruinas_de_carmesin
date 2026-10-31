@@ -10,6 +10,13 @@
     "girar": 180
    },
    "capacete": "exemplo_glb/knight_helmet.glb"
+  },
+  "75": {
+   "peitoral": "exemplo_glb/Dark_Fantasy_Armor.glb",
+   "calcas": "exemplo_glb/Fantasy_Armor_Legs.glb",
+   "botas": "exemplo_glb/armor_boots_2.glb",
+   "capacete": "exemplo_glb/Demon_Helm.glb",
+   "capa": "exemplo_glb/Crimson_Robe.glb"
   }
  },
  "assassino": {
