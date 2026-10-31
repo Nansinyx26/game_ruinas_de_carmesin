@@ -12,6 +12,7 @@ const SETTINGS_DEFAULT = {
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
   display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, fpsLimit: 0, postfx: 2, brightness: 0,
+  render3d: 'realista', realQual: 2,
   // Áudio
   master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
   // Controles (gamepad)
@@ -41,6 +42,10 @@ const SETTINGS_TABS = [
     { key: 'renderScale', label: 'Resolução interna', type: 'choice', values: [50, 75, 100, 150], names: ['50%', '75%', '100% (nativa)', '150% (ultra)'], hint: 'Menos deixa o jogo mais leve em aparelhos fracos; 150% desenha acima da resolução da tela (placa de vídeo forte).' },
     { key: 'kaelLook', label: 'Visual do Kael', type: 'choice', values: ['3d', 'art'], names: ['3D com a arte oficial', 'Sprites 2D da arte'], hint: '3D: modelo com a textura das vistas oficiais. Sprites: os quadros da folha de personagem.' },
     { key: 'gfx3d', label: 'Inimigos e NPCs em 3D', type: 'bool', hint: 'Modelos 3D (WebGL) ou desenho 2D. Tecla G alterna durante o jogo.' },
+    { key: 'render3d', label: 'Renderizador da 3ª pessoa', type: 'choice', values: ['realista', 'classico'], names: ['Realista (Three.js)', 'Clássico'],
+      hint: 'Realista: sol com sombras projetadas, materiais PBR, reflexos, névoa, oclusão ambiente e brilho. Precisa abrir o jogo por http (GitHub Pages ou servidor local); abrindo o arquivo do disco, fica o Clássico.' },
+    { key: 'realQual', label: 'Qualidade realista', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Baixo', 'Médio', 'Alto', 'Ultra', 'Cinematográfico'],
+      hint: 'Sombras (1024 a 4096), oclusão ambiente, brilho, multiamostragem e resolução (70% no Baixo, 125% no Cinematográfico).' },
     { key: 'quality', label: 'Qualidade dos efeitos', type: 'choice', values: [0, 1, 2], names: ['Baixa', 'Média', 'Alta'], hint: 'Quantidade de partículas, faíscas e fumaça.' },
     { key: 'clima', label: 'Efeitos de clima', type: 'choice', values: [0, 1, 2], names: ['Leves', 'Médios', 'Completos'], hint: 'Poças, pegadas, neve e bancos de neblina desenhados, gotas no chão e o ar tremendo no calor. O efeito no jogo (frio, calor, roupa molhada) é o mesmo em todos.' },
     { key: 'fpsLimit', label: 'Limite de FPS', type: 'choice', values: [0, 60, 30], names: ['Sem limite', '60', '30'] },

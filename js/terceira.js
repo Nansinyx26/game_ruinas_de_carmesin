@@ -311,8 +311,11 @@ const ThirdView = {
     this.camera(p, R);
     // fundo: céu do bioma e da hora, horizonte e terra distante (ou o teto dos interiores);
     // a luz e a névoa combinam com ele (js/terceira_ambiente.js)
-    ctx.fillStyle = '#02040a'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    const C = Ambiente3P.ceu(ctx, R, g.realTime);
+    // renderizador realista (js/realista/realista.js, Three.js): o céu vai para o fundo da cena dele
+    const real = typeof Realista3D !== 'undefined' && Realista3D.ativo(), ctxCeu = real ? Realista3D.ceuCtx() : ctx;
+    if (real) ctx.clearRect(0, 0, VIEW_W, VIEW_H);   // a cena do Three.js aparece por baixo (Realista3D.camada)
+    ctxCeu.fillStyle = '#02040a'; ctxCeu.fillRect(0, 0, VIEW_W, VIEW_H);
+    const C = Ambiente3P.ceu(ctxCeu, R, g.realTime);
     this.view.fog = Ambiente3P.luzes(R, C, this.view);
     if (g.world && World.zone) Clima.nevoa3P(this.view.fog);   // neblina densa, nevasca e areia fecham a visão
     g.use3D = true;
@@ -380,9 +383,14 @@ const ThirdView = {
       if (key) it.spr = place(g.queue3(key, it, g.opts3(it, 0)), it);
     }
     const W = Math.max(2, Math.round(VIEW_W * g.scale)), H = Math.max(2, Math.round(VIEW_H * g.scale));
-    let res = null;
-    try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
+    let res = null, rr = null;
+    if (real) {
+      try { rr = Realista3D.render(this, W, H); } catch (err) { console.error(err); Realista3D.ok = false; Realista3D.erro = String(err && err.message || err); }
+    } else {
+      try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
+    }
     Ambiente3P.fim();   // a luz do sol volta ao padrão (a vista isométrica usa a mesma luz)
+    if (real && !rr) ctx.drawImage(Realista3D.ceuCanvas, 0, 0, VIEW_W, VIEW_H);   // sem cena neste quadro: só o céu
     if (res) {
       ctx.drawImage(R3D.canvas, 0, 0, res.w, res.h, 0, 0, VIEW_W, VIEW_H);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';

@@ -1212,6 +1212,7 @@ class Game {
 
   render(dt) {
     const ctx = this.ctx;
+    if (typeof Realista3D !== 'undefined') Realista3D.camada(false);   // volta a aparecer se a 3ª pessoa realista desenhar
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';

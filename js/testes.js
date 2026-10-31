@@ -1384,6 +1384,17 @@ const EclipseTests = {
     try { ThirdView.roomFor(g.room); baixo = ThirdView.chaoModel; } catch (e) { baixo = e.message; }
     Settings.v.quality = q0; ThirdView.room = null;
     this.ok('qualidade baixa: piso sem textura (ladrilhos)', baixo === null, baixo);
+    // renderizador realista (Three.js, js/realista/realista.js): módulo carregado por http, opções no
+    // vídeo, e numa placa de vídeo emulada por software (a dos testes) ele mesmo cede ao clássico
+    const vid = SETTINGS_TABS.find((t) => t.id === 'video').opts;
+    this.ok('realista: opções de renderizador e cinco qualidades (Baixo a Cinematográfico) no vídeo', vid.some((o) => o.key === 'render3d') && vid.find((o) => o.key === 'realQual').names.join(',') === 'Baixo,Médio,Alto,Ultra,Cinematográfico');
+    const RL = typeof window !== 'undefined' ? window.Realista3D : null, atv = RL ? RL.ativo() : false;
+    this.ok('realista: módulo do Three.js carregado (por http) e pronto ou cedendo ao clássico com o motivo', !!RL && RL.QUAL.length === 5 && (RL.ok || /software|WebGL 2/.test(RL.erro || '')), RL ? `ok=${RL.ok} erro=${RL.erro}` : 'sem módulo');
+    if (RL && !atv) {
+      // cedeu: a 3ª pessoa desenha pelo motor clássico e a camada do Three.js fica escondida
+      ThirdView.set(true, true); g.render(); ThirdView.set(false, true);
+      this.ok('realista: sem ele, a 3ª pessoa segue no clássico (camada escondida)', !RL.canvas || !RL.canvas.isConnected || RL.canvas.style.display === 'none');
+    }
     // câmera em mola: correndo, o herói inclina para a frente, entra na curva e a câmera balança
     const sv = { st: p.state, vx: p.vx, vy: p.vy, f: p.facing, air: p.air };
     ThirdView.set(true, true);

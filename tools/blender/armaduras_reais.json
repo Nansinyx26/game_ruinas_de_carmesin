@@ -11,5 +11,17 @@
    },
    "capacete": "exemplo_glb/knight_helmet.glb"
   }
+ },
+ "assassino": {
+  "50": {
+   "peitoral": "exemplo_glb/Dark_Leather_Armor.glb",
+   "luvas": "exemplo_glb/Gauntlets.glb",
+   "capacete": "exemplo_glb/Hooded_Figure.glb",
+   "botas": "exemplo_glb/Purple_Gem_Boots.glb",
+   "capa": {
+    "arq": "exemplo_glb/Feathered_Cloak.glb",
+    "girar": 180
+   }
+  }
  }
 }
