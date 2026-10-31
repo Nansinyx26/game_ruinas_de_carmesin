@@ -756,6 +756,20 @@ const EclipseTests = {
       try { World.loadZone('velmora_trilha', null); g.renderWorld(g.ctx); WorldTime.drawOverlay(g.ctx); } catch (e) { erro = e.message; }
       this.ok('mundo: zona de Velmora carrega e desenha', !erro && World.zone.id === 'velmora_trilha' && g.enemies.length > 0, erro);
       this.ok('mundo: árvores no lugar dos pilares', g.room.theme.pillar === 'tree' && g.room.pillars.length > 0 && g.room.pillars[0].hw > g.room.pillars[0].r);
+      {
+        // kit medieval e natural do Blender (tools/blender/natureza.py, js/mundo/natureza3d.js)
+        const R = g.room, kit = R.pillars.filter((p) => p.kit), enf = R.pillars.filter((p) => p.enfeite);
+        this.ok('floresta: obstáculos viram carvalhos, pinheiros, bétulas, árvores mortas, tocos e pedras do kit do Blender, com enfeites no chão',
+          typeof Natureza3D !== 'undefined' && kit.length >= R.pillars.length * 0.8 && kit.some((p) => ['carvalho', 'pinheiro', 'betula'].includes(p.kit.id)) && enf.length > 5, `${kit.length}/${R.pillars.length} enfeites ${enf.length}`);
+        const todos = R.pillars, sem = todos.filter((q) => !q.enfeite), mede = (p) => `${R.blocksPoint(p.x, p.y, 4)}${R.linhaLivre(p.x - 30, p.y, p.x + 30, p.y)}`;
+        this.ok('floresta: os enfeites (arbustos, samambaias, cogumelos…) não bloqueiam passagem nem linha de visão', enf.every((p) => { R.pillars = sem; const a = mede(p); R.pillars = todos; return p.deco && a === mede(p); }));
+        R.pillars = todos;
+        this.ok('floresta: as 16 peças do kit no motor (PROPS3D e modelos cen_*)', ['carvalho', 'pinheiro', 'betula', 'arvore_seca', 'arbusto', 'samambaia', 'pedra_musgo', 'rochedo', 'tronco_caido', 'toco', 'cogumelos', 'cerca', 'carroca', 'placa_estrada', 'fardo_feno', 'poco'].every((id) => PROPS3D[id] && PROPS3D[id].uv && MODELS3D['cen_' + id]));
+        const f = R3D.active ? R3D.foto(g.model3('cen_carvalho'), { yaw: 0, scale: 1, lift: 0, roll: 0, pitch: 0, flash: 0, emi: 1, holo: false, ghost: null, tint: null }, 1) : { canvas: { width: 1 } };
+        this.ok('motor: foto de um modelo parado vira sprite (as árvores da vista isométrica)', !!f && f.canvas.width > 0);
+        this.ok('floresta: a vila da clareira (carroça, feno, poço, cerca, placa) nas zonas do cenário', ['carroca', 'fardo_feno', 'poco', 'cerca', 'placa_estrada'].every((id) => Cenario.ZONAS.velmora_clareira.some((q) => q[0] === id)));
+        this.ok('floresta: fora da floresta o kit não entra', Natureza3D.escolha({ seed: 5 }, THEMES.neve) === null);
+      }
       this.campoAberto();
       this.campanhas();
       this.mapa();
@@ -1114,7 +1128,7 @@ const EclipseTests = {
   campoAberto() {
     const g = game, p = g.player, R = g.room, z = World.zone;
     this.ok('campo aberto: a trilha de Velmora é aberta, com margem de paisagem', z.aberto && R.aberto && R.margem > 0, R.margem);
-    const deco = R.pillars.filter((q) => q.deco), obst = R.pillars.filter((q) => !q.deco);
+    const deco = R.pillars.filter((q) => q.deco && !q.enfeite), obst = R.pillars.filter((q) => !q.deco);   // (enfeites do chão da floresta: dentro, js/mundo/natureza3d.js)
     this.ok('campo aberto: paisagem em volta (fora da área de jogo)', deco.length > 20 && deco.every((q) => q.x < 0 || q.y < 0 || q.x > R.w || q.y > R.h), deco.length);
     if (deco.length) {
       // a paisagem nunca colide: mesmo trazida para o meio da área (onde não há obstáculos), não bloqueia

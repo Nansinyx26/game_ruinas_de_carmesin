@@ -248,6 +248,8 @@ const ThirdView = {
     const pc = hex(wh, ws * 0.8, 17), kind = th.pillar;
     R.pillars.forEach((q, i) => {
       if (q.cenario) return;   // colisor de um objeto de cenário (o modelo vem de js/mundo/cenario.js)
+      if (typeof Natureza3D !== 'undefined' && Natureza3D.escolha(q, th)) return;   // peça do kit da floresta (Natureza3D.fila3P)
+      if (q.enfeite) return;
       const pil = new G3(), rr = mulberry32(q.seed || i + 1);
       if (kind === 'tree') {
         // tronco e copa em tufos (as cores das folhas vêm do tema)
@@ -339,6 +341,7 @@ const ThirdView = {
     const ri = R3D.queue(rm, hideNear, null, this.roomO);
     ri.ent = null; Q.push(ri);
     if (this.chaoModel) { M3.trs(this.chaoO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]); const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi); }
+    if (typeof Natureza3D !== 'undefined') Natureza3D.fila3P(R, Q, E, T, p);   // árvores, rochas e enfeites da floresta (kit do Blender)
     // modelos (as mesmas chaves e poses da vista isométrica), já no lugar do mundo
     const place = (it, e) => {
       if (!it) return null;

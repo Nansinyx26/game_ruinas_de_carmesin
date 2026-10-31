@@ -564,6 +564,16 @@ const R3D = {
     let vo = 0;
     for (let i = 0; i < n; i++) {
       const it = this.items[i], m = it.model, o = it.o;
+      // Objeto fixo (cenário parado da 3ª pessoa, como as árvores do kit da floresta, o.fixo): os
+      // vértices já levados ao mundo ficam guardados e só são copiados nos quadros seguintes
+      const F = o.fixo ? o._fixo : null;
+      if (F && F.m === m) {
+        if (vo + F.d.length > this.data.length) { const nd2 = new Float32Array(Math.max(this.data.length * 2, vo + F.d.length + 1024)); nd2.set(this.data.subarray(0, vo)); this.data = nd2; }
+        this.data.set(F.d, vo);
+        it.v0 = vo / 10; vo += F.d.length; it.vn = F.d.length / 10;
+        it.minX = F.minX; it.minY = F.minY; it.w = F.w; it.h = F.h;
+        continue;
+      }
       m.reset();
       // Um erro numa pose nunca deve derrubar o quadro: o modelo fica na pose de repouso
       if (it.pose) { try { it.pose(m, it.arg, o); } catch (err) { if (!m.err) { m.err = true; console.error(err); } } }
@@ -617,6 +627,7 @@ const R3D = {
       it.vn = vo / 10 - it.v0;
       if (!it.vn) continue;
       it.minX = minX - 2; it.minY = minY - 2; it.w = maxX - minX + 4; it.h = maxY - minY + 4;
+      if (o.fixo) o._fixo = { m, d: this.data.slice(it.v0 * 10, vo), minX: it.minX, minY: it.minY, w: it.w, h: it.h };
       // Pontos de referência projetados (relativos aos pés, em unidades de tela do mundo)
       for (const k in m.anchors) {
         const a = m.anchors[k], w = a.node.w, p = a.p;
@@ -888,6 +899,23 @@ const R3D = {
   freeTex(tex) {
     if (!tex || !this.gl) return;
     for (const t of [tex, tex.matTex, tex.nrmTex]) if (t && t.gl) { this.gl.deleteTexture(t.gl); t.gl = null; }
+  },
+
+  // Foto de um modelo parado (vista isométrica) num canvas próprio, para virar sprite fixo (as
+  // árvores do kit da natureza, js/mundo/natureza3d.js). Só com a fila vazia (começo do quadro):
+  // devolve { canvas, minX, minY, s } (s: pixels por unidade) ou null
+  foto(model, o, scale) {
+    if (!this.active || this.used) return null;
+    const it = this.queue(model, null, null, o);
+    const vo = this.poseAll(1, scale);
+    this.pack(1, scale);
+    this.drawAtlas(1, vo);
+    this.used = 0;
+    if (!it.ok) return null;
+    const c = document.createElement('canvas');
+    c.width = it.cw; c.height = it.ch;
+    c.getContext('2d').drawImage(this.canvas, it.cx, it.cy, it.cw, it.ch, 0, 0, it.cw, it.ch);
+    return { canvas: c, minX: it.minX, minY: it.minY, s: this.scale };
   },
 
   // Desenha a passada de cor do sprite com os pés em (sx, sy) (coordenadas do mundo isométrico)

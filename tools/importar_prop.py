@@ -11,9 +11,15 @@ px nos objetos grandes e 512 nos pequenos. Sem elas, o formato das armas (js/her
 Eixos do jogo: +X frente, +Y direita, +Z cima; 1 m = 34 unidades (o Kael, ~1,8 m, tem ~62).
 Também grava o raio de colisão (pela base) e a altura de cada objeto.
 
+Grupos: 'cenario' (as cidades: assets/models/cenario/ → js/assets/props3d.js, const PROPS3D) e
+'natureza' (o kit medieval e natural das florestas, tools/blender/natureza.py:
+assets/models/natureza/ → js/assets/natureza3d.js, que junta os objetos ao PROPS3D; texturas de
+512 px).
+
 Uso (na pasta do projeto):
   python3 tools/importar_prop.py                   # todos os .glb de assets/models/cenario/
   python3 tools/importar_prop.py torre_neon        # só alguns (os outros ficam como estão)
+  python3 tools/importar_prop.py --grupo natureza  # o kit da natureza
 """
 import argparse
 import base64
@@ -31,8 +37,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from importar_modelo import amostra, ler_glb  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PASTA = os.path.join('assets', 'models', 'cenario')
-SAIDA = os.path.join('js', 'assets', 'props3d.js')
+GRUPOS = {'cenario': (os.path.join('assets', 'models', 'cenario'), os.path.join('js', 'assets', 'props3d.js'), 1024),
+          'natureza': (os.path.join('assets', 'models', 'natureza'), os.path.join('js', 'assets', 'natureza3d.js'), 512)}
 ESCALA = 34.0
 R_JOGO = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]], float)   # linhas: frente, direita, cima do jogo no glTF
 
@@ -89,6 +95,8 @@ def converter(caminho, lado_max=1024):
     if tex:
         # textura no jogo: 1024 nos objetos grandes (mais de 4 m), 512 nos pequenos
         lado = min(lado_max, 1024 if ext.max() / ESCALA > 4 else 512)
+        if lado_max < 1024 and ext.max() / ESCALA < 1.6:
+            lado = 256                                     # (kit da natureza: as peças pequenas, de chão)
         mr = mapas['mr']                                   # BGR: B metal, G aspereza, R oclusão
         em = mapas['emi'].max(2) if mapas.get('emi') is not None else np.zeros(mr.shape[:2], np.uint8)
         if em.shape != mr.shape[:2]:
@@ -105,22 +113,31 @@ def converter(caminho, lado_max=1024):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('ids', nargs='*', help='ids (nome do .glb sem extensão); padrão: todos')
+    ap.add_argument('--grupo', default='cenario', choices=sorted(GRUPOS))
     a = ap.parse_args()
+    PASTA, SAIDA, lado_max = GRUPOS[a.grupo]
+    junta = a.grupo != 'cenario'
     arqs = sorted(glob.glob(os.path.join(RAIZ, PASTA, '*.glb')))
     if a.ids:
         arqs = [x for x in arqs if os.path.splitext(os.path.basename(x))[0] in a.ids]
     destino = os.path.join(RAIZ, SAIDA)
     atuais = {}
     if os.path.exists(destino):
-        m = re.search(r'PROPS3D = (\{.*\});', open(destino, encoding='utf-8').read(), re.S)
+        m = re.search(r'Object\.assign\(PROPS3D, (\{.*\})\);' if junta else r'PROPS3D = (\{.*\});', open(destino, encoding='utf-8').read(), re.S)
         if m:
             atuais = json.loads(m.group(1))
     for arq in arqs:
-        atuais[os.path.splitext(os.path.basename(arq))[0]] = converter(arq)
+        atuais[os.path.splitext(os.path.basename(arq))[0]] = converter(arq, lado_max)
     with open(destino, 'w', encoding='utf-8') as f:
-        f.write("'use strict';\n// ECLIPSE ZERO · Cenário 3D das cidades, modelado no Blender (tools/blender/asset_*.py → assets/models/cenario/*.glb)\n"
-                '// e convertido por tools/importar_prop.py; não edite à mão. Uso: js/mundo/cenario.js\n')
-        f.write('const PROPS3D = ' + json.dumps(dict(sorted(atuais.items())), separators=(',', ':')) + ';\n')
+        if junta:
+            f.write("'use strict';\n// ECLIPSE ZERO · Kit medieval e natural das florestas, modelado no Blender (tools/blender/natureza.py →\n"
+                    '// assets/models/natureza/*.glb) e convertido por tools/importar_prop.py --grupo natureza; não edite à mão.\n'
+                    '// Junta os objetos ao PROPS3D (js/assets/props3d.js). Uso: js/mundo/cenario.js e js/mundo/natureza3d.js\n')
+            f.write('Object.assign(PROPS3D, ' + json.dumps(dict(sorted(atuais.items())), separators=(',', ':')) + ');\n')
+        else:
+            f.write("'use strict';\n// ECLIPSE ZERO · Cenário 3D das cidades, modelado no Blender (tools/blender/asset_*.py → assets/models/cenario/*.glb)\n"
+                    '// e convertido por tools/importar_prop.py; não edite à mão. Uso: js/mundo/cenario.js\n')
+            f.write('const PROPS3D = ' + json.dumps(dict(sorted(atuais.items())), separators=(',', ':')) + ';\n')
     print('gravado', SAIDA, os.path.getsize(destino) // 1024, 'KB,', len(atuais), 'objetos')
 
 

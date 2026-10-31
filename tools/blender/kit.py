@@ -72,7 +72,7 @@ class Obj:
         bpy.ops.object.transform_apply(location=True)
         return self._fim(o, cel, rot)
 
-    def finalizar(self, celulas, angulo=(60, 0, 35), semente=1, assado=True, lado=1024, bisel=0.03):
+    def finalizar(self, celulas, angulo=(60, 0, 35), semente=1, assado=True, lado=1024, bisel=0.03, pasta='cenario'):
         """Fecha o objeto. assado=True (padrão): cada célula vira um material procedural
         (utils.material_procedural: desgaste, bordas, padrão, chanfro) e tudo é assado em texturas
         lado×lado numa UV sem sobreposição (utils.assar): cor com oclusão, ORM, normais, emissão.
@@ -100,7 +100,7 @@ class Obj:
         if assado:
             U.assar(obj, lado)
         U.limpar_sobras()
-        glb = U.exportar_glb(os.path.join(U.MODELOS, 'cenario', f'{self.nome}.glb'), [obj], imagens='JPEG' if assado else 'AUTO')
+        glb = U.exportar_glb(os.path.join(U.MODELOS, pasta, f'{self.nome}.glb'), [obj], imagens='JPEG' if assado else 'AUTO')
         prev = U.renderizar_previa(os.path.join(U.MODELOS, 'previews', f'{self.nome}.png'), [obj], angulo=angulo)
         return U.registrar(self.nome, self.tipo, glb, prev, [obj], extra={'texturas': f'{lado}px assadas' if assado else 'atlas 512px'})
 

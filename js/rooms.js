@@ -200,6 +200,7 @@ class Room {
     for (let x = -M + 40; x < w + M; x += 95 + r() * 55) { anel.push([x, -M * (0.2 + 0.65 * r())]); anel.push([x, h + M * (0.25 + 0.6 * r())]); }
     for (let y = -M + 40; y < h + M; y += 95 + r() * 55) { anel.push([-M * (0.2 + 0.65 * r()), y]); anel.push([w + M * (0.25 + 0.6 * r()), y]); }
     for (const [x, y] of anel) { const p = this.makePillar(r, x, y, r() < 0.75); p.deco = true; this.pillars.push(p); }
+    if (typeof Natureza3D !== 'undefined') Natureza3D.espalhar(this, r);   // floresta: arbustos, samambaias, pedras… (não bloqueiam)
   }
 
   makePillar(r, x, y, tall) {
@@ -795,6 +796,9 @@ class Room {
   // Árvore, rocha ou cristal no lugar do pilar (biomas do mundo aberto). A colisão continua a do
   // pilar (o tronco ou a base); p.hw = meia largura do desenho (a copa), para a transparência
   renderNature(p, scale) {
+    // floresta: a peça do kit medieval e natural do Blender, fotografada pelo motor 3D (js/mundo/natureza3d.js)
+    if (typeof Natureza3D !== 'undefined' && Natureza3D.sprite(p, this.theme, scale)) return;
+    if (p.enfeite) { p.sprite = null; return; }   // enfeite do chão: só com a foto do kit
     const th = this.theme, kind = th.pillar, r = mulberry32(p.seed), tall = !p.broken;
     const rx = p.r * ISO_RX, ry = p.r * ISO_RY;
     const crown = kind === 'tree' ? p.r * (tall ? 2.7 : 1.9) : 0;

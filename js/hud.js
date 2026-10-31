@@ -662,7 +662,7 @@ class HUD {
     g.strokeStyle = 'rgba(160,205,255,0.3)'; g.lineWidth = 1; g.beginPath();
     g.moveTo(...P(w, 0)); g.lineTo(...P(w, w)); g.lineTo(...P(0, w)); g.stroke();
     g.fillStyle = 'rgba(175,195,225,0.5)';
-    for (const pl of room.pillars) { const [x, y] = P(pl.x, pl.y); g.beginPath(); g.arc(x, y, Math.max(1.6, pl.r * s), 0, TAU); g.fill(); }
+    for (const pl of room.pillars) { if (pl.enfeite) continue; const [x, y] = P(pl.x, pl.y); g.beginPath(); g.arc(x, y, Math.max(1.6, pl.r * s), 0, TAU); g.fill(); }
   }
   paintRadarSweep(g, R) {
     const n = 20, span = 1.1;

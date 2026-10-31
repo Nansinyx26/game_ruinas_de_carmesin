@@ -30,6 +30,14 @@ const Cenario = (function () {
     rc_mercado: [['coluna_rachada', 0.15, 0.15, 0, 1], ['coluna_rachada', 0.85, 0.2, 1, 0.9], ['braseiro_rubro', 0.5, 0.5, 0, 1], ['arco_partido', 0.5, 0.88, 0, 1]],
     rc_jardins: [['estatua_rei', 0.5, 0.12, 3.14, 0.9], ['coluna_rachada', 0.2, 0.5, 0.2, 1], ['coluna_rachada', 0.8, 0.5, 2.2, 1], ['braseiro_rubro', 0.5, 0.75, 0, 1]],
     rc_trono: [['coluna_rachada', 0.2, 0.2, 0, 1.2], ['coluna_rachada', 0.8, 0.2, 0, 1.2], ['coluna_rachada', 0.2, 0.8, 0, 1.2], ['coluna_rachada', 0.8, 0.8, 0, 1.2], ['braseiro_rubro', 0.5, 0.12, 0, 1.2]],
+    // Floresta de Velmora (kit medieval e natural, tools/blender/natureza.py): a vila de estrada da
+    // clareira (carroça, feno, poço, cerca e placa) e o que sobrou pelas trilhas
+    velmora_clareira: [['carroca', 0.26, 0.3, 0.5, 1], ['fardo_feno', 0.16, 0.38, 0.2, 1], ['fardo_feno', 0.2, 0.22, 1.4, 0.9], ['poco', 0.72, 0.28, 0, 1],
+      ['placa_estrada', 0.6, 0.76, 0.8, 1], ['cerca', 0.22, 0.72, 0, 1], ['cerca', 0.33, 0.72, 0, 1], ['cerca', 0.78, 0.66, 1.57, 1], ['tronco_caido', 0.82, 0.82, 0.6, 1]],
+    velmora_trilha: [['placa_estrada', 0.42, 0.2, 2.2, 1], ['tronco_caido', 0.7, 0.35, 1.1, 1.1], ['cerca', 0.25, 0.8, 0.4, 1], ['fardo_feno', 0.78, 0.78, 0.3, 0.9]],
+    velmora_ruinas: [['tronco_caido', 0.3, 0.7, 2.4, 1], ['carroca', 0.75, 0.25, 2.6, 0.95], ['placa_estrada', 0.2, 0.25, 0.5, 1]],
+    velmora_raizes: [['tronco_caido', 0.25, 0.3, 0.9, 1.2], ['tronco_caido', 0.75, 0.7, 2.0, 1.1]],
+    velmora_lago: [['poco', 0.2, 0.75, 0, 1], ['cerca', 0.7, 0.2, 0.3, 1], ['cerca', 0.81, 0.2, 0.3, 1]],
     // Nexus Zero: monólitos de dados, servidores, anéis e cristais de código
     nz_santuario: [['anel_dados', 0.5, 0.15, 0, 1.1], ['monolito_dados', 0.12, 0.15, 0.4, 1], ['monolito_dados', 0.88, 0.15, -0.4, 1], ['cristal_codigo', 0.2, 0.82, 0, 1], ['cristal_codigo', 0.8, 0.82, 1, 1],
       ['rack_servidor', 0.1, 0.5, 1.57, 1], ['rack_servidor', 0.9, 0.5, -1.57, 1]],
@@ -121,12 +129,19 @@ const Cenario = (function () {
     let n = 0;
     for (const [id, fx, fy, giro, esc] of L) {
       if (!PROPS3D[id]) continue;
-      const W = PROPS3D[id], r = W.r * esc, x = R.w * fx, y = R.h * fy;
-      if (!R.canStand(x, y, r)) continue;
-      if (g.npcs.some((q) => dist(q.x, q.y, x, y) < r + 70)) continue;   // passagens, portal, moradores, baús
+      const W = PROPS3D[id], r = W.r * esc;
+      // o lugar pedido ou o mais perto livre em volta (passagens, portal, moradores, baús, obstáculos)
+      const livre = (x, y) => R.canStand(x, y, r) && !g.npcs.some((q) => dist(q.x, q.y, x, y) < r + 70);
+      let x = R.w * fx, y = R.h * fy;
+      if (!livre(x, y)) {
+        let achou = false;
+        for (let d = 50; d <= 200 && !achou; d += 50) for (let k = 0; k < 8 && !achou; k++) { const a = k * Math.PI / 4, nx = x + Math.cos(a) * d, ny = y + Math.sin(a) * d; if (livre(nx, ny)) { x = nx; y = ny; achou = true; } }
+        if (!achou) continue;
+      }
       const o = new Objeto(id, x, y, giro, esc);
       g.npcs.push(o);
       R.pillars.push({ x, y, r: r * 0.85, h: W.h * esc, cenario: true, sprite: null });
+      for (let i = R.pillars.length - 1; i >= 0; i--) { const q = R.pillars[i]; if (q.enfeite && dist(q.x, q.y, x, y) < r + 24) R.pillars.splice(i, 1); }   // sem enfeite do chão por baixo
       n++;
     }
     return n;
