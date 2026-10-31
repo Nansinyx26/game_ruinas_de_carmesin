@@ -123,7 +123,7 @@ if os.path.exists(_PALETAS):
                         _base['girar'] = _real.get('girar', 0)
                         _real = _real['arq']
                     _base.update(arq=os.path.dirname(_img) + '/' + _real, blender=False, real=True)
-                    if _vaga == 'peitoral':
+                    if _vaga == 'peitoral' and not _REAIS[_cls][_nv].get('ombros'):
                         _base['ombros'] = True
                 if _vaga == 'ombros':
                     for _lado, _v, _n in (('E', 'ombroE', 'esquerda'), ('D', 'ombroD', 'direita')):
@@ -609,6 +609,121 @@ def ajuste_cobertura(Vp, Fp, ref, modo):
     return s, t, (HV, HN, kdH, hh)
 
 
+def ajuste_peitoral(Vp, Fp, ref):
+    """Escala e posição do peitoral pronto (GLB realista) pela cobertura do tronco e dos ombros do
+    corpo. A caixa da região esticava a peça entre o quadril e os ombros: a gola alta ficava no meio
+    do peito e as ombreiras nos braços (no corpo feminino o colo atravessava por cima da gola)."""
+    m, V0, N0, reg = ref['medida'], ref['V'], ref['N'], ref['reg']
+    alvo = ((reg == 'tronco') & (V0[:, 2] > m['quadrilZ'] + 1) & (V0[:, 2] < m['ombroZ'] + 1.5)) | ((reg == 'bracos') & (V0[:, 2] > m['axila'] - 3))
+    A, AN = V0[alvo], N0[alvo]
+    rng = np.random.default_rng(5)
+    if len(A) > 2000:
+        s_ = rng.choice(len(A), 2000, replace=False)
+        A, AN = A[s_], AN[s_]
+    peito = V0[(reg == 'tronco') & (np.abs(V0[:, 2] - (m['axila'] - 1.5)) < 1.0)]
+    xc, yc = (peito[:, 0].min() + peito[:, 0].max()) / 2, (peito[:, 1].min() + peito[:, 1].max()) / 2
+    Pp = amostras_superficie(Vp, Fp, 150000, rng)
+    mn, mx = Vp.min(0), Vp.max(0)
+    G = Grade(Pp, (mx - mn).max() / 80)
+    passos = np.linspace(0.05, 2.5, 14)
+    amo0 = Pp[::40]
+    s0 = (m['pescoco'] - m['quadrilZ'] + 2) / (mx[2] - mn[2])
+    melhor = None
+    raios = (A[:, None, :] + AN[:, None, :] * passos[None, :, None]).reshape(-1, 3)
+    for s in s0 * np.linspace(0.7, 1.3, 13):
+        for topo in np.linspace(m['ombroZ'] - 1, m['pescoco'] + 3, 10):
+            for dx in np.linspace(-3, 1.5, 7):
+                t = np.array([xc + dx - s * (mn[0] + mx[0]) / 2, yc - s * (mn[1] + mx[1]) / 2, topo - s * mx[2]])
+                hit = G.ocupado((raios - t) / s).reshape(len(A), -1)
+                tem = hit.any(1)
+                cob = tem.mean()
+                folga = passos[np.argmax(hit[tem], 1)].mean() if tem.any() else passos[-1]   # distância até a peça
+                amo = amo0 * s + t
+                _, j = ref['kd'].query(amo)
+                dentro = (np.einsum('ij,ij->i', amo - V0[j], N0[j]) < -0.4).mean()
+                queixo = (amo[:, 2] > m['pescoco'] + 1.0).mean()
+                nota = cob - 2.5 * dentro - 3 * queixo - 0.15 * folga
+                if melhor is None or nota > melhor[0]:
+                    melhor = (nota, s, t, cob, dentro, queixo, folga)
+    nota, s, t, cob, dentro, queixo, folga = melhor
+    print(f"  ajuste peitoral: escala {s:.2f} (caixa {s0:.2f}) topo {s * mx[2] + t[2]:.1f} (ombro {m['ombroZ']:.1f}, pescoço {m['pescoco']:.1f}) cobertura {cob:.2f} dentro {dentro:.3f} queixo {queixo:.3f} folga {folga:.2f}", flush=True)
+    return s, t
+
+
+def ajuste_ombreira(pares, ref):
+    """Ombreiras prontas (GLB realista, o par) nos ombros do corpo: escala, inclinação (o braço do
+    corpo abre em A; a do arquivo pende reta) e posição pela cobertura do alto do braço, com os
+    mesmos parâmetros espelhados nos dois lados (o par fica simétrico). pares: {lado: (V, F)} com
+    lado +1 = direita (+Y do jogo). Devolve {lado: função que leva os vértices daquele lado ao lugar}."""
+    m, V0, N0, reg = ref['medida'], ref['V'], ref['N'], ref['reg']
+    rng = np.random.default_rng(7)
+    lados = {}
+    for lado, (Vp, Fp) in pares.items():
+        nm = 'R' if lado > 0 else 'L'
+        J, E = (np.asarray(x, float) for x in ref['bones']['arm' + nm + 'u'])
+        comp = np.linalg.norm(E - J)
+        eixo = (E - J) / comp
+        rel = V0 - J
+        ao_longo = rel @ eixo
+        mesmo = np.sign(V0[:, 1] - m['cy']) == lado
+        braco = (reg == 'bracos') & mesmo & (ao_longo > -1) & (ao_longo < 0.55 * comp)
+        alto = (reg == 'tronco') & mesmo & (np.linalg.norm(rel, axis=1) < 4) & (V0[:, 2] > J[2] - 0.5)
+        A, AN = V0[braco | alto], N0[braco | alto]
+        if len(A) > 700:
+            s_ = rng.choice(len(A), 700, replace=False)
+            A, AN = A[s_], AN[s_]
+        perto = V0[(reg == 'bracos') & mesmo & (ao_longo > 0.1 * comp) & (ao_longo < 0.35 * comp)]
+        c0 = (Vp.min(0) + Vp.max(0)) / 2
+        org = np.array([c0[0], c0[1], Vp[:, 2].max()])   # origem no alto da ombreira, no meio
+        lados[lado] = dict(J=J, eixo=eixo, comp=comp, A=A, AN=AN, prof=np.ptp(perto[:, 0]), org=org,
+                           Pp=amostras_superficie(Vp - org, Fp, 40000, rng), dx=np.ptp(Vp[:, 0]), dy=np.ptp(Vp[:, 1]),
+                           ang=np.arctan2(abs(eixo[1]), -eixo[2]))
+    # A ombreira fina de frente para trás e larga para o lado foi modelada com a face larga virada
+    # para a frente do arquivo: no corpo ela gira um quarto de volta (as duas voltas são tentadas,
+    # a cobertura escolhe a face de dentro); a escala inicial cobre o braço de frente a trás com folga
+    fina = all(L['dx'] < 0.6 * L['dy'] for L in lados.values())
+    voltas = (np.pi / 2, -np.pi / 2) if fina else (0.0,)
+    s0 = float(np.mean([1.25 * L['prof'] / max(L['dy'] if fina else L['dx'], 1e-6) for L in lados.values()]))
+    ang = float(np.mean([L['ang'] for L in lados.values()]))
+    passos = np.linspace(0.05, 2.0, 12)
+    for lado, L in lados.items():
+        L['raios'] = (L['A'][:, None, :] + L['AN'][:, None, :] * passos[None, :, None]).reshape(-1, 3)
+    def giro(f, lado, vz=0.0):
+        a, b = f * ang * lado, vz * lado                 # inclina em torno do X (a ponta de baixo vai para fora) depois do quarto de volta em Z
+        ca, sa, cb, sb = np.cos(a), np.sin(a), np.cos(b), np.sin(b)
+        return np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]]) @ np.array([[cb, -sb, 0], [sb, cb, 0], [0, 0, 1]])
+    melhor = None
+    for vz, f in [(vz, f) for vz in voltas for f in (0.0, 0.5, 1.0)]:
+        prep = {}
+        for lado, L in lados.items():
+            Pp = L['Pp'] @ giro(f, lado, vz).T
+            prep[lado] = (Grade(Pp, np.ptp(Pp, 0).max() / 60), Pp[::25])
+        for s in s0 * np.linspace(0.75, 1.3, 6):
+            for dz in np.linspace(-1.5, 3.0, 7):
+                for dy in np.linspace(-1.0, 2.5, 6):
+                    for dx in np.linspace(-1.5, 1.5, 5):
+                        nota_t, med = 0.0, []
+                        for lado, L in lados.items():
+                            Grd, amo0 = prep[lado]
+                            t = L['J'] + np.array([dx, dy * lado, dz])
+                            hit = Grd.ocupado((L['raios'] - t) / s).reshape(len(L['A']), -1)
+                            tem = hit.any(1)
+                            cob = tem.mean()
+                            folga = passos[np.argmax(hit[tem], 1)].mean() if tem.any() else passos[-1]
+                            amo = amo0 * s + t
+                            _, j = ref['kd'].query(amo)
+                            dentro = (np.einsum('ij,ij->i', amo - V0[j], N0[j]) < -0.3).mean()
+                            cotovelo = (((amo - L['J']) @ L['eixo']) > 0.8 * L['comp']).mean()   # não desce até o cotovelo
+                            nota_t += cob - 2.5 * dentro - 0.2 * folga - 1.5 * cotovelo
+                            med.append((cob, dentro, folga, cotovelo))
+                        if melhor is None or nota_t > melhor[0]:
+                            melhor = (nota_t, vz, f, s, dz, dy, dx, med)
+    nota, vz, f, s, dz, dy, dx, med = melhor
+    cob, dentro, folga, cotovelo = np.mean(med, 0)
+    print(f"  ombreiras: escala {s:.2f} (inicial {s0:.2f}) volta {np.degrees(vz):.0f}° inclinação {np.degrees(f * ang):.0f}° alto {dz:+.1f} fora {dy:+.1f} frente {dx:+.1f} · cobertura {cob:.2f} dentro {dentro:.3f} folga {folga:.2f} cotovelo {cotovelo:.2f}", flush=True)
+    return {lado: (lambda V, L=L, lado=lado: ((V - L['org']) @ giro(f, lado, vz).T) * s + L['J'] + np.array([dx, dy * lado, dz])) for lado, L in lados.items()}
+
+
 def processar_cobertura(p, refs, modo):
     t0 = time.time()
     V, UV, F, mapas, N = ler_peca(p['arq'])
@@ -788,14 +903,25 @@ def encaixar_caixa(P, alvo_min, alvo_max, banda=0.15, fixo=None):
 def processar_armadura(p, refs):
     t0 = time.time()
     V, UV, F, mapas, N = ler_peca(p['arq'])
-    R = reduzir_e_assar(V, UV, F, N, mapas, p['tri'], p['tex'])
     vaga = p['vaga']
+    if vaga in ('ombroE', 'ombroD'):
+        # as duas ombreiras vêm no mesmo arquivo: fica a do lado pedido (direita = +Y do jogo); o vão
+        # entre as duas dá a escala inicial (o par foi modelado na largura dos ombros)
+        lados = dict(separar_par(V, F))
+        pares = {}
+        for s_, Fs in lados.items():
+            Vs_, Fs_ = im.reduzir(*compacta(V, UV, N, Fs)[::3], 3000)
+            pares[s_] = (Vs_, Fs_)
+        lado = 1 if p['lado'] == 'D' else -1
+        V, UV, N, F = compacta(V, UV, N, lados[lado])
+    R = reduzir_e_assar(V, UV, F, N, mapas, p['tri'], p['tex'])
     porCorpo = {}
     if p.get('girar'):
         # giro em torno do eixo vertical (o GLB foi gerado olhando a peça de costas)
         a = np.radians(p['girar'])
         c0 = (R['Vr'].min(0) + R['Vr'].max(0)) / 2
         R['Vr'] = girar_z(R['Vr'], a, c0)
+    capacete_m = None
     for cid, ref in refs.items():
         m = ref['medida']
         Vr = R['Vr'].copy()
@@ -830,6 +956,11 @@ def processar_armadura(p, refs):
                     Pi = (Pi - np.array([Pi[:, 0].min(), Pi[:, 1].mean(), Pi[:, 2].min()])) * sc
                     Pi += np.array([amn[0] - 0.1, (amn[1] + amx[1]) / 2, ref['V'][:, 2].min() - 0.05])
                 P[idx] = Pi
+        elif vaga in ('ombroE', 'ombroD'):
+            P = ajuste_ombreira(pares, ref)[lado](Vr)
+        elif vaga == 'peitoral' and p.get('real'):
+            s, t = ajuste_peitoral(Vr, R['Fr'], ref)
+            P = Vr * s + t
         elif vaga in ('peitoral', 'calcas'):
             amn, amx = caixa_regiao(ref, 'saia' if p.get('saia') else vaga)
             P = encaixar_caixa(Vr, amn, amx, 0.12)
@@ -858,9 +989,23 @@ def processar_armadura(p, refs):
             frente = ref['V'][(ref['reg'] == 'tronco') & (np.abs(ref['V'][:, 2] - (m['pescoco'] - 2)) < 1.0)][:, 0].max()
             P += np.array([frente + 0.2, m['cy'], m['pescoco'] - 0.2])
         elif vaga == 'capacete':
-            s, t, _ = ajuste_cobertura(Vr, R['Fr'], ref, 'capuz')
-            P = Vr * s + t
-        margem = {'peitoral': 0.3, 'calcas': 0.22, 'botas': 0.2, 'luvas': 0.12, 'capa': 0.4, 'acessorio': 0.18, 'capacete': 0.15}[vaga]
+            HVc, _ = cabeca_de_referencia(ref)
+            cab = HVc[HVc[:, 2] > m['pescoco']]
+            caixa = (cab.min(0), cab.max(0))
+            if cid != 'corpo_m' and capacete_m is not None:
+                # os outros corpos partem do encaixe do masculino (o ajuste por cobertura na cabeça
+                # menor do corpo feminino chegava a deixar o elmo para trás e o rosto atravessando a
+                # viseira): escala pelo tamanho da cabeça, centro e topo alinhados
+                (Pm, cm0, cm1) = capacete_m
+                esc = float(np.mean((caixa[1] - caixa[0]) / np.maximum(cm1 - cm0, 1e-6)))
+                ancora_m = np.array([(cm0[0] + cm1[0]) / 2, (cm0[1] + cm1[1]) / 2, cm1[2]])
+                ancora = np.array([(caixa[0][0] + caixa[1][0]) / 2, (caixa[0][1] + caixa[1][1]) / 2, caixa[1][2]])
+                P = (Pm - ancora_m) * esc + ancora
+            else:
+                s, t, _ = ajuste_cobertura(Vr, R['Fr'], ref, 'capuz')
+                P = Vr * s + t
+                capacete_m = (P.copy(), caixa[0], caixa[1])
+        margem = {'peitoral': 0.3, 'calcas': 0.22, 'botas': 0.2, 'luvas': 0.12, 'capa': 0.4, 'acessorio': 0.18, 'capacete': 0.15, 'ombroE': 0.25, 'ombroD': 0.25}[vaga]
         corpo = dict(V=ref['V'], N=ref['N'], kd=ref['kd'])
         if vaga == 'capacete':
             HV, HN = cabeca_de_referencia(ref)

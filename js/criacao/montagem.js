@@ -198,8 +198,111 @@ const Criacao3D = (function () {
     if (I.nrm && I.nrm.naturalWidth) gn.drawImage(I.nrm, x / 2, y / 2, h, h);
     else { gn.fillStyle = 'rgb(128,128,255)'; gn.fillRect(x / 2, y / 2, h, h); }
     C.pintadas[cel] = id;
+    if (cel === 'corpo') {
+      // a célula do corpo limpa (para a roupa de baixo poder sair de novo)
+      C.corpoLimpo = { cor: gc.getImageData(x, y, s, s), mat: gm.getImageData(x / 2, y / 2, h, h), nrm: gn.getImageData(x / 2, y / 2, h, h) };
+    }
+    if (cel === 'corpo' || cel === 'peitoral') roupaDeBaixo(m, false);
+    subir(m);
+  }
+  function subir(m) {
     m.tex.versao = (m.tex.versao || 0) + 1;   // o renderizador realista sobe o atlas de novo quando muda
     if (typeof R3D !== 'undefined' && R3D.freeTex) R3D.freeTex(m.tex);
+  }
+
+  // ------------------------------------------------------------ o corpo por baixo da roupa
+  // Com um peitoral vestido, a pele do tronco e dos braços vira, no atlas deste personagem, uma
+  // roupa de baixo de tecido escuro na cor da peça (gibão e mangas): nas frestas entre as peças
+  // (ombreira e manopla, gola, cintura) aparece tecido, não a pele nem a roupa íntima da textura
+  // do corpo. Tirando o peitoral, a célula do corpo volta a ser a limpa.
+  function roupaDeBaixo(m, subirJa = true) {
+    const C = m && m.cria;
+    if (!C || !C.corpoLimpo || C.pintadas.corpo !== C.ids.corpo) return;
+    const [x, y, s] = CEL.corpo, h = s / 2, gc = C.at.cor.getContext('2d'), gm = C.at.mat.getContext('2d'), gn = C.at.nrm.getContext('2d');
+    gc.putImageData(C.corpoLimpo.cor, x, y); gm.putImageData(C.corpoLimpo.mat, x / 2, y / 2); gn.putImageData(C.corpoLimpo.nrm, x / 2, y / 2);
+    const pe = C.ids.peitoral;
+    C.roupaDeBaixo = !!(pe && C.pintadas.peitoral === pe);
+    if (C.roupaDeBaixo) {
+      // cor: a média da célula do peitoral (sem os brilhos nem os pretos), escurecida
+      const [px, py, ps] = CEL.peitoral, d = gc.getImageData(px, py, ps, ps).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4 * 37) { const l = d[i] + d[i + 1] + d[i + 2]; if (l > 45 && l < 560) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
+      const k = 0.62, cor = n ? [r / n * k, g / n * k, b / n * k] : [44, 38, 36];
+      const P = new Path2D(), P2 = new Path2D();
+      for (const S of C.peles.corpo || []) {
+        if (S.regiao !== 'tronco' && S.regiao !== 'bracos') continue;
+        const A = S.att, I = S.idx;
+        for (let t = 0; t < I.length; t += 3) {
+          for (let j = 0; j < 3; j++) {
+            const v = I[t + j], u = A[v * 4] * LADO, w = A[v * 4 + 1] * LADO;
+            if (j) { P.lineTo(u, w); P2.lineTo(u / 2, w / 2); } else { P.moveTo(u, w); P2.moveTo(u / 2, w / 2); }
+          }
+          P.closePath(); P2.closePath();
+        }
+      }
+      gc.save(); gc.clip(P);
+      gc.fillStyle = `rgb(${cor.map((v) => Math.round(v)).join(',')})`; gc.fillRect(x, y, s, s);
+      // trama do tecido: fios finos cruzados, um pouco mais claros e mais escuros
+      gc.globalAlpha = 0.16;
+      for (let i = -s; i < s; i += 3) {
+        gc.strokeStyle = i % 6 ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,0.6)';
+        gc.beginPath(); gc.moveTo(x + i, y); gc.lineTo(x + i + s, y + s); gc.stroke();
+        gc.beginPath(); gc.moveTo(x + i + s, y); gc.lineTo(x + i, y + s); gc.stroke();
+      }
+      gc.restore();
+      // material: tecido (sem metal, áspero) e relevo liso, sem os músculos da pele
+      gm.save(); gm.clip(P2); gm.fillStyle = 'rgb(0,225,128)'; gm.fillRect(x / 2, y / 2, h, h); gm.restore();
+      gn.save(); gn.clip(P2); gn.fillStyle = 'rgb(128,128,255)'; gn.fillRect(x / 2, y / 2, h, h); gn.restore();
+    }
+    if (subirJa) subir(m);
+  }
+  // A malha reduzida das peças não acompanha cada curva do corpo: onde a pele passaria por fora
+  // de uma peça vestida (o peito sob o peitoral, os ombros, os joelhos, o rosto sob o elmo), o
+  // corpo DESTE personagem recua para dentro dela (cópia própria das posições; as compartilhadas
+  // ficam como estão). Refeito quando as peças mudam.
+  const COBRE = ['peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas', 'capacete'];
+  const RECUA = ['corpo', 'rosto', 'barba'];
+  function recuarCorpo(m) {
+    const C = m && m.cria;
+    if (!C) return;
+    const pele = RECUA.flatMap((k) => C.peles[k] || []);
+    for (const S of pele) if (S.pos0) S.pos.set(S.pos0);
+    const pecas = COBRE.flatMap((v) => C.peles[v] || []);
+    if (!pecas.length) return;
+    const H = 1.2, G = new Map(), chave = (i, j, k) => (i * 92837111) ^ (j * 689287499) ^ (k * 283923481);
+    for (const P of pecas) {
+      const p = P.pos, n = P.nor;
+      for (let i = 0; i < p.length; i += 3) {
+        const c = chave(Math.floor(p[i] / H), Math.floor(p[i + 1] / H), Math.floor(p[i + 2] / H));
+        let L = G.get(c);
+        if (!L) G.set(c, (L = []));
+        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2]);
+      }
+    }
+    const MARGEM = 0.28, R2 = 2.3 * 2.3, LAT2 = 1.7 * 1.7, MAX = 3.0;
+    for (const S of pele) {
+      if (!S.pos0) { S.pos0 = S.pos; S.pos = new Float32Array(S.pos0); }
+      const p = S.pos, nb = S.nor;
+      for (let i = 0; i < p.length; i += 3) {
+        const X = p[i], Y = p[i + 1], Z = p[i + 2], ci = Math.floor(X / H), cj = Math.floor(Y / H), ck = Math.floor(Z / H);
+        let best = R2, q = null, qo = 0;
+        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+          const L = G.get(chave(ci + a, cj + b, ck + c));
+          if (!L) continue;
+          for (let t = 0; t < L.length; t += 6) {
+            const dx = X - L[t], dy = Y - L[t + 1], dz = Z - L[t + 2], d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 < best) { best = d2; q = L; qo = t; }
+          }
+        }
+        if (!q) continue;
+        let nx = q[qo + 3], ny = q[qo + 4], nz = q[qo + 5];
+        if (nx * nb[i] + ny * nb[i + 1] + nz * nb[i + 2] < 0) { nx = -nx; ny = -ny; nz = -nz; }   // a face de dentro da peça
+        const dx = X - q[qo], dy = Y - q[qo + 1], dz = Z - q[qo + 2], d = dx * nx + dy * ny + dz * nz;
+        if (best - d * d > LAT2 || d <= -MARGEM) continue;            // fora da sombra da peça ou já por dentro
+        const k = Math.min(MAX, d + MARGEM);
+        p[i] = X - nx * k; p[i + 1] = Y - ny * k; p[i + 2] = Z - nz * k;
+      }
+    }
   }
 
   // ------------------------------------------------------------ montagem
@@ -284,7 +387,11 @@ const Criacao3D = (function () {
       if (!tem(id)) { carregar(id); continue; }   // chega num dos próximos quadros
       por(m, v, id); mudou = true;
     }
-    if (mudou) juntar(m);
+    if (mudou) {
+      juntar(m);
+      recuarCorpo(m);
+      if (!C.ids.peitoral !== !C.roupaDeBaixo) roupaDeBaixo(m);   // tirou o peitoral (vestir pinta quando a peça chega)
+    }
     const esc = {};
     for (const v of VAGAS) { const c = C.ids[v] && POR_ID[C.ids[v]]; if (c && c.esconde) for (const r of c.esconde) esc[r] = true; }
     for (const S of C.peles.corpo) S.hide = !!esc[S.regiao];

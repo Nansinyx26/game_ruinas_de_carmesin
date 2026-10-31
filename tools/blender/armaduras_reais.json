@@ -1,5 +1,5 @@
 {
- "_leia": "Peças de armadura que vêm prontas (GLB realista) no lugar das geradas pelo tools/blender/armaduras.py: classe → nível → vaga → GLB (relativo à pasta da classe). O gerador do Blender pula essas vagas e o tools/importar_criacao.py converte o GLB pelo caminho das peças do Meshy (reduz, reassa as texturas e encaixa no corpo). A vaga pode ter, no lugar do caminho, {\"arq\": caminho, \"girar\": graus}: meia-volta (ou outro giro) em torno do eixo vertical, para o GLB gerado de costas (a capa do Guerreiro 50 tem o lado bordado na frente do arquivo).",
+ "_leia": "Peças de armadura que vêm prontas (GLB realista) no lugar das geradas pelo tools/blender/armaduras.py: classe → nível → vaga → GLB (relativo à pasta da classe). O gerador do Blender pula essas vagas e o tools/importar_criacao.py converte o GLB pelo caminho das peças do Meshy (reduz, reassa as texturas e encaixa no corpo). A vaga pode ter, no lugar do caminho, {\"arq\": caminho, \"girar\": graus}: meia-volta (ou outro giro) em torno do eixo vertical, para o GLB gerado de costas (as capas dos conjuntos de nível 50 vêm com o lado de fora das costas virado para a frente do arquivo). As ombreiras prontas vêm em par num GLB só e viram as duas peças (esquerda e direita); com elas, o peitoral pronto não esconde as ombreiras.",
  "guerreiro": {
   "50": {
    "peitoral": "exemplo_glb/armor.glb",
@@ -22,6 +22,20 @@
     "arq": "exemplo_glb/Feathered_Cloak.glb",
     "girar": 180
    }
+  }
+ },
+ "mago": {
+  "50": {
+   "peitoral": "exemplo_glb/Blue_Robe.glb",
+   "ombros": "exemplo_glb/Shoulder_Armor.glb",
+   "luvas": "exemplo_glb/Blue_and_Gold_Gauntlets.glb",
+   "calcas": "exemplo_glb/blue_skirt.glb",
+   "botas": "exemplo_glb/Blue_Armored_Boots.glb",
+   "capa": {
+    "arq": "exemplo_glb/Blue_Cloak.glb",
+    "girar": 180
+   },
+   "capacete": "exemplo_glb/Hood.glb"
   }
  }
 }
