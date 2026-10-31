@@ -130,6 +130,7 @@ function instPeles3D(SK, m) {
       m.nodes.blade.geo = null; m.nodes.hilt.geo = null;
     }
     m.sec = true;              // movimento secundário do casaco, do capuz e do cabelo
+    m.dqs = true;              // pele por quatérnios duplos (juntas sem perder volume; R3D.skin)
     return m;
   }
 

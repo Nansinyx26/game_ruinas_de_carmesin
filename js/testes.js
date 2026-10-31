@@ -2231,6 +2231,23 @@ const EclipseTests = {
       reais('n50_patrulheiro_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && !Criacao3D.POR_ID.n50_patrulheiro_peitoral.ombros &&
       reais('n50_guardiao_', ['peitoral', 'calcas', 'botas', 'capa', 'capacete', 'luvas']) && Criacao3D.POR_ID.n50_guardiao_peitoral.ombros && Criacao3D.POR_ID.n50_guardiao_ombroE.blender &&
       reais('n75_assassino_', ['peitoral', 'ombroE', 'ombroD', 'calcas', 'botas', 'capacete', 'luvas', 'acessorio']) && Criacao3D.POR_ID.n75_assassino_capa.blender);
+    // ------------------------------------------------ rig: pele por quatérnios duplos (R3D.skin, personagens principais)
+    if (R3D.data) {
+      const osso = (rz) => { const n = new N3('osso'); M3.trs(n.w, [0, 0, 0], [0, 0, rz], [1, 1, 1]); return n; };
+      const id12 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], inv = new Float32Array(24);
+      inv.set(id12); inv.set(id12, 12);
+      // um ponto a 2 unidades do eixo, metade em cada osso, com a junta dobrada 150°
+      const sk = { bones: [osso(0), osso(2.6)], inv, pos: new Float32Array([2, 0, 0]), nor: new Float32Array([1, 0, 0]), att: new Float32Array(4), bi: new Uint8Array([0, 1, 0, 0]), bw: new Float32Array([0.5, 0.5, 0, 0]), idx: new Uint16Array([0, 0, 0]) };
+      R3D.skin(sk, 0, false);
+      const lin = Math.hypot(sk.P[0], sk.P[1]);
+      R3D.skin(sk, 0, true);
+      const dq = Math.hypot(sk.P[0], sk.P[1]);
+      this.ok('rig: na junta dobrada, a pele por quatérnios duplos mantém o volume (a linear encolhe)', lin < 0.7 && Math.abs(dq - 2) < 0.02, `linear ${lin.toFixed(2)} · duplos ${dq.toFixed(2)}`);
+      sk.bones[1].w[0] *= 1.3;   // escala diferente nos eixos (o achatamento do pulo): volta para a linear
+      R3D.skin(sk, 0, true);
+      this.ok('rig: osso com escala não uniforme usa a pele linear (sem erro)', Number.isFinite(sk.P[0]) && !R3D.quatDuplos(sk, sk.S, 2));
+      this.ok('rig: herói e personagem criado usam a pele por quatérnios duplos', !!game.model3(heroModelKey({ id: 'kael', model: 'kael' }, true)).dqs);
+    }
     // ------------------------------------------------ cabelo com física (Blender + js/criacao/cabelo_fisica.js)
     const cabF = CRIA_CATALOGO.filter((c) => c.tipo === 'cabelo' && c.fisica);
     this.ok('cabelo com física: os dez cortes do Blender no catálogo e nas opções da criação (curto, médio, longo, espetado, ondulado, coque, rabo, tranças, franja, repicado)',

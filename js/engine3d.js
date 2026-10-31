@@ -619,7 +619,7 @@ const R3D = {
       if (m.skins) {
         for (const sk of m.skins) {
           if (sk.hide || (sk.lod && sk.lod > det) || (sk.owner && !sk.owner.vis)) continue;
-          vo = this.skin(sk, vo);
+          vo = this.skin(sk, vo, m.dqs);
           const B = sk.box;
           if (B[0] < minX) minX = B[0]; if (B[1] > maxX) maxX = B[1]; if (B[2] < minY) minY = B[2]; if (B[3] > maxY) maxY = B[3];
         }
@@ -813,7 +813,35 @@ const R3D = {
   // Float32Array(4·v) (os 4 últimos campos do vértice do motor), bi: Uint8Array(4·v), bw:
   // Float32Array(4·v) (pesos somando 1), idx: índices dos triângulos }. Escreve os triângulos
   // a partir de vo e devolve o novo vo; sk.box recebe a caixa na tela.
-  skin(sk, vo) {
+  // Quatérnio duplo (rotação, translação) e escala de cada osso da pele a partir das matrizes S
+  // (3×4); false se algum osso não for rígido (escala diferente nos eixos, cisalhamento ou espelho)
+  quatDuplos(sk, S, nb) {
+    const Q = sk.Q && sk.Q.length === nb * 8 ? sk.Q : (sk.Q = new Float32Array(nb * 8)), SC = sk.SC && sk.SC.length === nb ? sk.SC : (sk.SC = new Float32Array(nb));
+    for (let b = 0; b < nb; b++) {
+      const o = b * 12;
+      const a0 = S[o], a1 = S[o + 1], a2 = S[o + 2], a4 = S[o + 4], a5 = S[o + 5], a6 = S[o + 6], a8 = S[o + 8], a9 = S[o + 9], a10 = S[o + 10];
+      const l0 = Math.hypot(a0, a4, a8), l1 = Math.hypot(a1, a5, a9), l2 = Math.hypot(a2, a6, a10), s = (l0 + l1 + l2) / 3;
+      if (!(s > 1e-6) || Math.abs(l0 - s) > 0.02 * s || Math.abs(l1 - s) > 0.02 * s || Math.abs(l2 - s) > 0.02 * s) return false;
+      if (Math.abs(a0 * a1 + a4 * a5 + a8 * a9) > 0.02 * s * s || Math.abs(a0 * a2 + a4 * a6 + a8 * a10) > 0.02 * s * s || Math.abs(a1 * a2 + a5 * a6 + a9 * a10) > 0.02 * s * s) return false;
+      const k = 1 / s, m00 = a0 * k, m01 = a1 * k, m02 = a2 * k, m10 = a4 * k, m11 = a5 * k, m12 = a6 * k, m20 = a8 * k, m21 = a9 * k, m22 = a10 * k;
+      if (m00 * (m11 * m22 - m12 * m21) - m01 * (m10 * m22 - m12 * m20) + m02 * (m10 * m21 - m11 * m20) < 0) return false;   // espelho
+      let x, y, z, w;
+      const tr = m00 + m11 + m22;
+      if (tr > 0) { const q = Math.sqrt(tr + 1) * 2; w = 0.25 * q; x = (m21 - m12) / q; y = (m02 - m20) / q; z = (m10 - m01) / q; }
+      else if (m00 > m11 && m00 > m22) { const q = Math.sqrt(1 + m00 - m11 - m22) * 2; w = (m21 - m12) / q; x = 0.25 * q; y = (m01 + m10) / q; z = (m02 + m20) / q; }
+      else if (m11 > m22) { const q = Math.sqrt(1 + m11 - m00 - m22) * 2; w = (m02 - m20) / q; x = (m01 + m10) / q; y = 0.25 * q; z = (m12 + m21) / q; }
+      else { const q = Math.sqrt(1 + m22 - m00 - m11) * 2; w = (m10 - m01) / q; x = (m02 + m20) / q; y = (m12 + m21) / q; z = 0.25 * q; }
+      const L = 1 / Math.hypot(x, y, z, w);
+      x *= L; y *= L; z *= L; w *= L;
+      const tx = S[o + 3], ty = S[o + 7], tz = S[o + 11], q8 = b * 8;
+      Q[q8] = x; Q[q8 + 1] = y; Q[q8 + 2] = z; Q[q8 + 3] = w;
+      // parte dual: ½ · (t, 0) · q
+      Q[q8 + 4] = 0.5 * (w * tx + ty * z - tz * y); Q[q8 + 5] = 0.5 * (w * ty + tz * x - tx * z); Q[q8 + 6] = 0.5 * (w * tz + tx * y - ty * x); Q[q8 + 7] = -0.5 * (tx * x + ty * y + tz * z);
+      SC[b] = s;
+    }
+    return true;
+  },
+  skin(sk, vo, dqs) {
     const nb = sk.bones.length, S = sk.S || (sk.S = new Float32Array(nb * 12)), E = sk.E || (sk.E = new Float32Array(nb));
     const nv = sk.pos.length / 3, P = sk.P || (sk.P = new Float32Array(nv * 3)), N = sk.N || (sk.N = new Float32Array(nv * 3));
     const tmp = this._m2 || (this._m2 = M3.make()), inv = sk.inv;
@@ -833,7 +861,40 @@ const R3D = {
     }
     const pos = sk.pos, nor = sk.nor, bi = sk.bi, bw = sk.bw;
     let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-    for (let v = 0; v < nv; v++) {
+    // Pele por quatérnios duplos (os personagens principais, m.dqs): a mistura dos ossos gira em
+    // vez de encolher, e cotovelos, joelhos, ombros e quadris dobram sem perder volume nem torcer o
+    // punho como embrulho de bala. Só quando todos os ossos são rígidos (escala igual nos três eixos
+    // e sem espelho); no achatamento do pulo, a pele linear de sempre
+    if (dqs && this.dqs !== false && this.quatDuplos(sk, S, nb)) {
+      const Q = sk.Q, SC = sk.SC;
+      for (let v = 0; v < nv; v++) {
+        const v4 = v * 4, b0 = bi[v4] * 8;
+        let rx = 0, ry = 0, rz = 0, rw = 0, dx = 0, dy = 0, dz = 0, dw = 0, sc = 0;
+        for (let j = 0; j < 4; j++) {
+          const wt = bw[v4 + j];
+          if (wt <= 0) continue;
+          const o = bi[v4 + j] * 8;
+          const k = Q[o] * Q[b0] + Q[o + 1] * Q[b0 + 1] + Q[o + 2] * Q[b0 + 2] + Q[o + 3] * Q[b0 + 3] < 0 ? -wt : wt;   // o mesmo hemisfério
+          rx += k * Q[o]; ry += k * Q[o + 1]; rz += k * Q[o + 2]; rw += k * Q[o + 3];
+          dx += k * Q[o + 4]; dy += k * Q[o + 5]; dz += k * Q[o + 6]; dw += k * Q[o + 7];
+          sc += wt * SC[bi[v4 + j]];
+        }
+        const L = 1 / (Math.hypot(rx, ry, rz, rw) || 1);
+        rx *= L; ry *= L; rz *= L; rw *= L; dx *= L; dy *= L; dz *= L; dw *= L;
+        // translação: 2 · (rw·d − dw·r + r × d)
+        const tx = 2 * (rw * dx - dw * rx + ry * dz - rz * dy), ty = 2 * (rw * dy - dw * ry + rz * dx - rx * dz), tz = 2 * (rw * dz - dw * rz + rx * dy - ry * dx);
+        // ponto (com a escala) e normal girados: v + 2·r × (r × v + rw·v)
+        let x = pos[v * 3] * sc, y = pos[v * 3 + 1] * sc, z = pos[v * 3 + 2] * sc;
+        let cx = ry * z - rz * y + rw * x, cy = rz * x - rx * z + rw * y, cz = rx * y - ry * x + rw * z;
+        const X = x + 2 * (ry * cz - rz * cy) + tx, Y = y + 2 * (rz * cx - rx * cz) + ty, Z = z + 2 * (rx * cy - ry * cx) + tz;
+        x = nor[v * 3]; y = nor[v * 3 + 1]; z = nor[v * 3 + 2];
+        cx = ry * z - rz * y + rw * x; cy = rz * x - rx * z + rw * y; cz = rx * y - ry * x + rw * z;
+        P[v * 3] = X; P[v * 3 + 1] = Y; P[v * 3 + 2] = Z;
+        N[v * 3] = x + 2 * (ry * cz - rz * cy); N[v * 3 + 1] = y + 2 * (rz * cx - rx * cz); N[v * 3 + 2] = z + 2 * (rx * cy - ry * cx);
+        const sx = X - Y, sy = (X + Y) * 0.5 - Z;
+        if (sx < minX) minX = sx; if (sx > maxX) maxX = sx; if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
+      }
+    } else for (let v = 0; v < nv; v++) {
       const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2], nx = nor[v * 3], ny = nor[v * 3 + 1], nz = nor[v * 3 + 2];
       let X = 0, Y = 0, Z = 0, NX = 0, NY = 0, NZ = 0;
       for (let j = 0; j < 4; j++) {

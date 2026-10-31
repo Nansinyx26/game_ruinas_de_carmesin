@@ -351,6 +351,7 @@ const Criacao3D = (function () {
     juntar(m);
     recuarCorpo(m);
     m.sec = true;   // cabelo comprido e capa com movimento secundário (molas do rig do Kael)
+    m.dqs = true;   // pele por quatérnios duplos: cotovelos, joelhos, ombros e quadris sem perder volume (R3D.skin)
     // medidas para as peças procedurais do Arsenal (as que não têm GLB): corpo e cabeça
     if (typeof PecasRig !== 'undefined' && PecasRig.medidas) {
       const R = PecasRig.medidas({ skins: m.cria.peles.corpo.concat(m.cria.peles.rosto) });

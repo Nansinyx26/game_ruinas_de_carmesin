@@ -85,6 +85,12 @@ Fase 1 (auditoria, sem mudar nada) e Fase 2 (escolha da tecnologia) dos pedidos 
 - Cenário das cidades com texturas assadas no Blender (cor com oclusão, metal/aspereza, normais, emissão).
 - Armaduras dos níveis 50, 75 e 100: 120 peças geradas no Blender sobre o corpo medido, com a mesma malha nos corpos masculino e feminino. O Guerreiro nível 50 usa os cinco GLB realistas que você mandou (peitoral com ombreiras, calça com saiote de placas, capa com gola de pelo, botas e elmo).
 
+## 8b. Rig: o que já mudou
+
+- **Pele por quatérnios duplos** (`R3D.skin`, `R3D.quatDuplos`): nos personagens principais (os heróis e o personagem criado; `m.dqs`), cada vértice mistura as rotações dos ossos em vez das matrizes. Cotovelos, joelhos, ombros e quadris dobram sem perder volume e o punho não torce como embrulho de bala. Teste: numa junta dobrada 150°, a pele linear deixa o ponto a 0,5 do eixo; a de quatérnios duplos, a 2,0 (o raio original). No achatamento do pulo (escala diferente nos eixos), volta à pele linear naquele quadro. Moradores e inimigos continuam com a pele linear, mais barata.
+- **Cabelo e roupa com movimento:** cadeias de ossos do cabelo com física (`docs/CABELO_FISICA.md`); capas e abas do casaco com molas.
+- **Encaixe das peças nos dois corpos:** peitoral pela cobertura do tronco, elmo pelo encaixe do corpo masculino, ombreiras simétricas e a pele que recua para dentro das peças.
+
 ## 9. O que não dá para fazer só com código
 
 Personagens, rostos e cenários no nível dos jogos AAA vêm de escultura, escaneamento e captura de movimento. Dá para integrar esse material no jogo (conversores, rig, materiais, render), mas não para inventá-lo por script com a mesma qualidade. Com o Three.js e GLB realistas (seus, do Meshy ou de bancos de assets com licença), o salto visual é grande; sem assets novos, o ganho fica em luz, sombra e materiais.

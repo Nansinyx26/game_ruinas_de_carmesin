@@ -55,6 +55,7 @@
           if (!GEO) GEO = decodePeles3D(H);
           m.skins = instPeles3D(GEO, m);
           m.sec = true;
+          m.dqs = true;   // pele por quatérnios duplos (R3D.skin)
         } else {
           if (!GEO) GEO = decode(H);
           for (const name in GEO) if (m.nodes[name]) m.nodes[name].geo = GEO[name];   // só leitura: compartilhada
