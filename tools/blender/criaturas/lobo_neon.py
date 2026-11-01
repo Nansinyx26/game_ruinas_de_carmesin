@@ -109,6 +109,92 @@ def fazer_mapa(M):
     return mapa, dict(escala_z=round(s, 3), cabeca_dz=round(dcab, 3))
 
 
+# Pelagens derivadas da mesma malha, esqueleto e animações: a cor assada é remapeada pela luminância
+# (escuro → médio → claro, o detalhe do pelo fica) e as linhas acesas da arte ganham a cor da
+# pelagem (com emissão) ou viram marcas no pelo (sem emissão). id: (pasta, escuro, médio, claro,
+# cor das linhas, força da emissão; 0 = marcas sem brilho)
+PELAGENS = {
+    'lobo_raiz': ('Enemies', (0.07, 0.08, 0.05), (0.24, 0.27, 0.16), (0.62, 0.66, 0.48), (0.45, 1.0, 0.22), 2.2),
+    'lobo_neve': ('Enemies', (0.40, 0.45, 0.53), (0.72, 0.77, 0.84), (0.95, 0.97, 1.0), (0.62, 0.88, 1.0), 1.4),
+    'lobo_cinzento': ('Wildlife/Mammals', (0.15, 0.14, 0.13), (0.42, 0.40, 0.37), (0.86, 0.83, 0.77), (0.10, 0.09, 0.08), 0),
+    'cao_aurora': ('Pets/Dogs', (0.20, 0.12, 0.06), (0.55, 0.36, 0.18), (0.93, 0.88, 0.80), (0.16, 0.09, 0.05), 0),
+    'cao_neve': ('Pets/Dogs', (0.19, 0.20, 0.23), (0.50, 0.52, 0.56), (0.96, 0.96, 0.97), (0.12, 0.12, 0.14), 0),
+}
+
+
+def remapear(cor, mascara, escuro, medio, claro, linha, k):
+    """Cor nova (sRGB 0–1, H×W×4) e emissão a partir da cor assada e da máscara das linhas."""
+    L = cor[..., 0] * 0.3 + cor[..., 1] * 0.59 + cor[..., 2] * 0.11
+    t = np.clip((L - 0.04) / 0.86, 0, 1)[..., None]
+    e, m, c = (np.array(x, np.float32) for x in (escuro, medio, claro))
+    pelo = np.where(t < 0.45, e + (m - e) * (t / 0.45), m + (c - m) * ((t - 0.45) / 0.55))
+    li = np.array(linha, np.float32) * (0.65 + 0.35 * t) if k else np.array(linha, np.float32) + 0 * t
+    M = mascara[..., None]
+    out = cor.copy()
+    out[..., :3] = pelo * (1 - M) + li * M
+    emi = np.zeros_like(cor)
+    emi[..., 3] = 1
+    if k:
+        emi[..., :3] = li * M
+    return out, emi
+
+
+def pelagens(arm, objs, lod0, cache, so=None):
+    """Exporta cada pelagem com a mesma malha e animações (texturas novas no material)."""
+    mat = lod0.active_material
+    nos = {n.image.name: n for n in mat.node_tree.nodes if n.type == 'TEX_IMAGE' and n.image}
+    ncor = next(n for k, n in nos.items() if k.endswith('_cor'))
+    nemi = next(n for k, n in nos.items() if k.endswith('_emissao'))
+    P = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    i0, e0, k0 = ncor.image, nemi.image, P.inputs['Emission Strength'].default_value
+    W, H = i0.size
+    cor = np.array(i0.pixels[:], dtype=np.float32).reshape(H, W, 4)
+    emi0 = np.array(e0.pixels[:], dtype=np.float32).reshape(H, W, 4)
+    mascara = np.clip(emi0[..., :3].max(-1) / np.maximum(cor[..., :3].max(-1), 1e-3), 0, 1)
+    feitos = []
+    for pid, (pasta_rel, esc, med, cla, lin, k) in PELAGENS.items():
+        if so and pid not in so:
+            continue
+        nc, ne = remapear(cor, mascara, esc, med, cla, lin, k)
+        ic = bpy.data.images.new(f'{pid}_cor', W, H, alpha=False)
+        ic.colorspace_settings.name = 'sRGB'
+        ic.pixels[:] = nc.reshape(-1)
+        ie = bpy.data.images.new(f'{pid}_emissao', W, H, alpha=False)
+        ie.pixels[:] = ne.reshape(-1)
+        ic.pack()
+        ie.pack()
+        ncor.image, nemi.image = ic, ie
+        P.inputs['Emission Strength'].default_value = k or 0.0
+        pasta = B.pasta(pasta_rel, pid)
+        glb = B.exportar(os.path.join(pasta, f'{pid}.glb'), objs)
+        prev = os.path.join(pasta, f'{pid}.png')
+        zerar(arm)
+        U.renderizar_previa(prev, [lod0], lado=640, amostras=20, angulo=(68, 0, 55))
+        U.registrar(pid, 'criatura', glb, prev, [lod0], extra={'base': ID, 'blend': os.path.relpath(os.path.join(B.pasta('Enemies', ID), f'{ID}.blend'), B.RAIZ),
+                    'pelagem': [esc, med, cla, lin, k]})
+        feitos.append(glb)
+    ncor.image, nemi.image = i0, e0
+    P.inputs['Emission Strength'].default_value = k0
+    return feitos
+
+
+def sem_mandibula(arm):
+    """A boca da malha do Meshy é fechada (não há mandíbula separada): girar o osso só esticaria a
+    pele. As chaves da mandíbula saem de todas as ações (a mordida fica no bote da cabeça)."""
+    for a in bpy.data.actions:
+        colecoes = []
+        try:
+            colecoes.append(a.fcurves)
+        except AttributeError:
+            for lay in a.layers:
+                for st in lay.strips:
+                    for bag in st.channelbags:
+                        colecoes.append(bag.fcurves)
+        for col in colecoes:
+            for fc in [fc for fc in col if 'mandibula' in fc.data_path]:
+                col.remove(fc)
+
+
 def zerar(arm):
     """Pose de repouso (uma ação só mexe nos ossos dela; os outros guardariam a pose anterior)."""
     for pb in arm.pose.bones:
@@ -172,7 +258,9 @@ def construir():
     R.copiar_pesos(lod0, L, arm)
     rel['lods'] = [dict(nome=o.name, triangulos=R.diagnosticar(o)['triangulos'], sem_osso=R.sem_peso(o, arm)) for o in [lod0] + L]
     lobo.animacoes(arm)
+    sem_mandibula(arm)
     glb = B.exportar(os.path.join(pasta, f'{ID}.glb'), [lod0, arm] + L)
+    rel['pelagens'] = [os.path.relpath(g, B.RAIZ) for g in pelagens(arm, [lod0, arm] + L, lod0, cache)]
     prev = os.path.join(pasta, f'{ID}.png')
     for o in L:
         o.hide_render = True

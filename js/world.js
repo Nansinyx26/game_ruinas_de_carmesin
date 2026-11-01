@@ -427,6 +427,7 @@ const World = {
     Rotina.aoCarregar(z);       // quem está aqui agora pela agenda do dia, e onde (js/mundo/rotina.js)
     if (typeof Criaturas3D !== 'undefined') Criaturas3D.aoCarregar();   // criaturas do Blender dos inimigos da zona (js/mundo/criaturas3d.js)
     if (typeof Pets !== 'undefined') Pets.aoCarregar(z);   // o animal de companhia chega junto; a vitrine do viveiro (js/mundo/pets.js)
+    if (typeof AnimaisCidade !== 'undefined') AnimaisCidade.aoCarregar(z);   // os animais domésticos da cidade (js/mundo/animais_cidade.js)
     Povo.aoCarregar(z);         // rotinas e quadro de contratos (js/mundo/povo.js)
     Cidade.aoCarregar(z);       // estações, bancas, monumento e portões da cidade principal (js/mundo/cidade.js)
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)

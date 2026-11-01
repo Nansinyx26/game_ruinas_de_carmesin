@@ -6,17 +6,22 @@ Estado real em 01/11/2026. Este documento lista o que foi feito e verificado, e 
 
 | criatura | uso no jogo | origem da malha | LOD 0 → 3 (triângulos) | ossos | animações | GLB / .blend |
 |---|---|---|---|---|---|---|
-| **Lobo Sombra Neon** | inimigo `lobo_neon` na **Metrópole Tecnológica** (traços matilha e teleporta) | GLB do Meshy enviado (127.298 tri), com **retopologia, rig e animações no Blender** | 11.056 → 5.528 → 2.764 → 1.104 | 31 | 10 | `assets/Creatures/Enemies/lobo_sombra_neon/` |
-| **Asa Noturna** (Azure Nightwing) | ave exótica rara: modelo pronto para o **pet de companhia** (o sistema de pets é a próxima etapa) | GLB do Meshy enviado (128.844 tri), com **retopologia, rig de ave e animações no Blender** | 11.222 → 5.610 → 2.804 → 1.122 | 26 | 13 | `assets/Creatures/Pets/Exotic/asa_noturna/` |
-| Lobo de Raiz | inimigo `lobo_raiz` em **Velmora** | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Enemies/lobo_raiz/` |
-| Lobo das Neves | inimigo `lobo_neve` em **Asterion** | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Enemies/lobo_neve/` |
-| Lobo Cinzento | **Lobo da Muralha**, o animal de companhia comum do viveiro; também serve de fauna (ainda sem comportamento de fauna) | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Wildlife/Mammals/lobo_cinzento/` |
+| **Lobo Sombra Neon** | inimigo `lobo_neon` na **Metrópole Tecnológica** (traços matilha e teleporta) | GLB do Meshy enviado (127.298 tri), com **retopologia, rig e animações no Blender** — é a **base** das pelagens abaixo | 11.056 → 5.528 → 2.764 → 1.104 | 31 | 15 | `assets/Creatures/Enemies/lobo_sombra_neon/` |
+| **Asa Noturna** (Azure Nightwing) | pet raro do viveiro e ave de neon nos telhados da Metrópole | GLB do Meshy enviado (128.844 tri), com **retopologia, rig de ave e animações no Blender** | 11.222 → 5.610 → 2.804 → 1.122 | 26 | 13 | `assets/Creatures/Pets/Exotic/asa_noturna/` |
+| Lobo de Raiz | inimigo `lobo_raiz` em **Velmora** | pelagem da base (musgo e linhas verdes acesas) | como a base | 31 | 15 | `assets/Creatures/Enemies/lobo_raiz/` |
+| Lobo das Neves | inimigo `lobo_neve` em **Asterion** | pelagem da base (branco gelo, linhas azul-claro) | como a base | 31 | 15 | `assets/Creatures/Enemies/lobo_neve/` |
+| Lobo Cinzento | **Lobo da Muralha** (pet) e os **cães de caça** de Velmora | pelagem da base (cinza, sem brilho) | como a base | 31 | 15 | `assets/Creatures/Wildlife/Mammals/lobo_cinzento/` |
+| **Cão da Aurora** | pet do viveiro e **cães de rua** do Refúgio (adotáveis) | pelagem da base (marrom e creme) | como a base | 31 | 15 | `assets/Creatures/Pets/Dogs/cao_aurora/` |
+| **Cão das Neves** | pet do viveiro e cães de trenó de Asterion | pelagem da base (cinza e branco) | como a base | 31 | 15 | `assets/Creatures/Pets/Dogs/cao_neve/` |
+
+**As pelagens** (`tools/blender/criaturas/lobo_neon.py → PELAGENS`): a mesma malha com retopologia, o mesmo esqueleto e as mesmas animações da base, com a cor assada **remapeada pela luminância** (o detalhe do pelo continua) e as linhas acesas recoloridas (com brilho) ou viradas em marcas no pelo. Os arquivos do jogo das pelagens trazem **só as texturas** (cerca de 0,6 MB em vez de 1,8 MB); o motor usa a malha da base, carregada uma vez. As pelagens são materiais do `.blend` da base. Os lobos feitos antes por script (`lobo.py`, qualidade inferior) foram movidos para `assets/Creatures/Prototypes/`; o script continua como **molde** do esqueleto e das animações.
+
+**Boca fechada:** a malha do Meshy não tem mandíbula separada, então as chaves da mandíbula saíram das animações. A mordida fica no bote da cabeça, sem esticar a pele.
 
 Cada pasta tem o `.glb` final (texturas embutidas, armadura, animações com nome), o `.blend` editável (no Git LFS) e uma prévia `.png`. As criaturas do Meshy também têm o relatório `*_topologia.json` (antes e depois) e a fonte original intacta em `fonte/` (Git LFS).
 
 **Animações:**
-- Lobos: `idle`, `andar`, `trotar`, `correr`, `atacar` (bote com mordida), `saltar` (investida), `dano`, `atordoado`, `morte`, `uivar`.
-- Só o Lobo Cinzento (o animal de companhia) tem também `sentar`, `dormir` (deitado), `comer`, `brincar` e `carinho`.
+- Lobos e cães: `idle`, `andar`, `trotar`, `correr`, `atacar` (bote), `saltar` (investida), `dano`, `atordoado`, `morte`, `uivar`, e as de companhia: `sentar`, `dormir` (deitado), `comer`, `brincar` (o convite) e `carinho`. As posturas foram conferidas na vista lateral.
 - Asa Noturna: `idle` (pousada, asas meio dobradas), `andar` (saltita), `voar`, `planar`, `decolar`, `pousar`, `comer`, `dormir`, `sentar`, `brincar`, `carinho`, `chamar` (comando) e `dano`.
 
 ## 1b. Animais de companhia (`js/mundo/pets.js`)
@@ -26,7 +31,9 @@ O projeto separa os animais em três categorias: **companhia** (seguem o herói)
 | espécie | modelo | preço | raridade | comportamento |
 |---|---|---|---|---|
 | **Asa Noturna** | `asa_noturna` (malha do Meshy, retopologia e rig de ave) | 2.400 células | rara | voa atrás do herói, pousa ao lado, senta, dorme, come, brinca, carinho, chamado |
-| **Lobo da Muralha** | `lobo_cinzento` (Blender) | 900 células | comum | anda, trota e corre atrás do herói, senta, deita para dormir, come, brinca (o convite), carinho, uivo |
+| **Cão da Aurora** | `cao_aurora` (pelagem da base) | 600 células | comum | como o lobo; também adotável na rua |
+| **Cão das Neves** | `cao_neve` (pelagem da base) | 1.100 células | incomum | como o lobo |
+| **Lobo da Muralha** | `lobo_cinzento` (pelagem da base) | 900 células | comum | anda, trota e corre atrás do herói, senta, deita para dormir, come, brinca (o convite), carinho, uivo |
 
 - **Loja física:** o **Viveiro dos Alves**, no Bairro da Muralha (a antiga Casa dos Alves, agora com interior 3D). Os atendentes são a tratadora **Cora** (vendedora) e o aprendiz **Davi**. Os animais da **vitrine** ficam lá dentro, em 3D: dá para chegar perto e ver o preço.
 - **Fluxo de compra:** catálogo → ficha do animal com o preço → **confirmação** → cobrança em **células** (`Oficios.cobrar`, a mesma moeda do jogo; nenhuma economia nova) → escolha do **nome** (sugestões da espécie ou digitado; até 16 letras, sem símbolos). A Cora também **guarda e devolve** os animais (até 6 por personagem).
@@ -39,6 +46,21 @@ O projeto separa os animais em três categorias: **companhia** (seguem o herói)
 - **Necessidades:** fome (sobe com o tempo de jogo), humor (cai com fome, sobe ao brincar) e afinidade (sobe ao alimentar, brincar e fazer carinho). Aparecem no **HUD**, embaixo da temperatura, e no texto do menu.
 - **Salvamento:** `World.state.pets`, no mundo de cada personagem.
 - **Testes:** `js/testes.js → pets()` (veja a seção 4).
+
+## 1c. Animais domésticos das cidades (`js/mundo/animais_cidade.js`)
+
+Cada cidade tem os seus animais, pela cultura e pelo clima. Não são todas as espécies em todo lugar:
+
+| cidade | animais | comportamento |
+|---|---|---|
+| Refúgio da Aurora (praça e Bairro da Muralha) | cães de rua (Cão da Aurora) | vagam, farejam o herói, sentam, dormem à noite; **podem ser adotados** |
+| Clareira dos Sinais (Velmora) | cães de caça cinzentos dos caçadores | ficam perto do posto do caçador |
+| Acampamento e Fortaleza de Asterion | cães das neves (trenós da Vigília) | o mesmo dos cães |
+| Praça Central da Metrópole | Asas Noturnas nos telhados | pousadas; levantam voo quando o herói chega perto ou começa uma luta |
+
+- **Em comum:** fogem da luta e voltam depois. [E] serve para afagar.
+- **Adoção:** o cão de rua vira animal de companhia, com nome à escolha e chegando com fome. Ele sai da rua para sempre (`World.state.adotados`).
+- **Desempenho:** 2 ou 3 animais por zona, com LOD e pose guardada fora da tela.
 
 ## 2. O tocador de animações do motor (`js/mundo/criaturas3d.js`)
 
@@ -136,18 +158,15 @@ Também verifiquei no navegador, na isométrica e na 3ª pessoa: `capturas_armad
 
 ## 5. Limites conhecidos (o que ainda não está feito)
 
-- **Pets:** feitos para as duas espécies com modelo. **Ainda faltam:**
-  - **cães, gatos, galinhas, patos, cabras, ovelhas, cavalos e as aves pequenas**: cada espécie precisa ser modelada, ganhar rig e animações no Blender antes de entrar (o catálogo só mostra o que tem modelo);
-  - a **adoção** de animais encontrados no mundo;
-  - as **coleiras e acessórios** (precisam de peças 3D por espécie);
-  - os **animais domésticos circulando pelas cidades** com identidade por região;
-  - as **montarias** (cavalo com sela e o herói montado: animação de montar e câmera).
+- **Ainda faltam:**
+  - **gatos, galinhas, patos, gansos, cabras, ovelhas, cavalos e as aves pequenas**: cada espécie tem anatomia própria e precisa de malha, rig e animações. Com um GLB de origem (por exemplo do Meshy), o mesmo processo do lobo faz retopologia, rig e animações em poucos minutos; sem malha de origem, cada uma é modelada do zero;
+  - as **montarias**: o cavalo, a sela, o herói montado (animação e câmera);
+  - as **coleiras e acessórios** (peças 3D por espécie).
+- **Os cães são pelagens do lobo:** saem como cães de porte e focinho de lobo (do tipo husky ou cão-lobo). Raças pequenas e de focinho curto precisam de malha própria.
 - **Pets no bairro em renderização por software:** o bairro já é pesado nesse modo (cada quadro passa de 4 s no SwiftShader, por causa dos moradores com 50 mil triângulos). Numa placa de vídeo comum, isso não acontece.
 - **Retopologia aplicada só às duas criaturas do Meshy.** Armaduras, cabelos, rostos e personagens estão no relatório com a recomendação, mas não foram alterados. Cada um exige validação individual (troca de equipamento, pesos existentes), e mexer em massa iria contra a regra de não fazer alterações destrutivas em lote.
 - **Loops de topologia:** o QuadriFlow alinha os quads à curvatura, mas não desenha à mão os anéis em volta de olhos, boca e articulações (como no rosto de referência). Para os humanoides, isso fica para uma etapa com guias por região.
 - Mesmo com 11 mil triângulos, as pontas finas de pelo e pena ficam mais arredondadas que na fonte. A textura e o mapa de normais compensam só em parte.
-- **A boca do lobo neon é fechada na malha:** a mandíbula estica a pele em vez de abrir.
-- **Os lobos procedurais** (`lobo.py`) têm qualidade inferior à malha do Meshy (corpo em tubos, garras um pouco soltas sob as patas).
 - **A Asa Noturna em `comer`** torce bastante o corpo.
 
 ## 6. Como refazer

@@ -1,4 +1,9 @@
-"""Lobo de Eclipse Zero (quadrúpede), feito no Blender por regras: a criatura piloto.
+"""Lobo de Eclipse Zero (quadrúpede), feito no Blender por regras: a criatura piloto (PROTÓTIPO).
+
+O jogo usa hoje os lobos feitos sobre a malha do Meshy com retopologia (lobo_neon.py: as pelagens
+lobo_raiz, lobo_neve, lobo_cinzento e os cães). Este script continua valendo como MOLDE: o
+esqueleto de 31 ossos (esqueleto) e as animações (animacoes) que as outras malhas usam. As saídas
+dele vão para assets/Creatures/Prototypes/ (não sobrescrevem as do jogo).
 
 Três pelagens do mesmo corpo, esqueleto e animações:
   lobo_cinzento  o lobo selvagem das florestas (fauna)            → assets/Creatures/Wildlife/Mammals/
@@ -134,11 +139,11 @@ def pecas():
 
 PELAGENS = {   # cores em sRGB
     'lobo_cinzento': dict(dorso=(0.24, 0.22, 0.2), flanco=(0.47, 0.43, 0.38), barriga=(0.74, 0.7, 0.62), patas=(0.55, 0.5, 0.43), aspereza=0.84,
-                          olho=(0.85, 0.55, 0.12), olho_k=0.6, pasta='Wildlife/Mammals'),
+                          olho=(0.85, 0.55, 0.12), olho_k=0.6, pasta='Prototypes'),
     'lobo_raiz': dict(dorso=(0.14, 0.17, 0.1), flanco=(0.27, 0.31, 0.18), barriga=(0.4, 0.42, 0.3), patas=(0.22, 0.2, 0.14), aspereza=0.88,
-                      veias=(0.45, 1.0, 0.22, 1), veias_k=2.2, z_veias=0.6, olho=(0.55, 1.0, 0.25), olho_k=3.0, pasta='Enemies'),
+                      veias=(0.45, 1.0, 0.22, 1), veias_k=2.2, z_veias=0.6, olho=(0.55, 1.0, 0.25), olho_k=3.0, pasta='Prototypes'),
     'lobo_neve': dict(dorso=(0.66, 0.7, 0.76), flanco=(0.84, 0.87, 0.91), barriga=(0.94, 0.95, 0.97), patas=(0.76, 0.8, 0.85), aspereza=0.8,
-                      olho=(0.55, 0.85, 1.0), olho_k=2.2, pasta='Enemies'),
+                      olho=(0.55, 0.85, 1.0), olho_k=2.2, pasta='Prototypes'),
 }
 
 

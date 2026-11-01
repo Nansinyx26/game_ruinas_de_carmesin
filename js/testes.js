@@ -51,6 +51,7 @@ const EclipseTests = {
       await this.bairroFotos();
       await this.criaturas();
       await this.pets();
+      await this.animaisCidade();
       await this.criacaoGLB();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -2028,6 +2029,8 @@ const EclipseTests = {
       this.ok('criaturas: Lobo Sombra Neon com 4 LODs (malha retopologizada) e as 10 animações', N && N.lods === 4 && CL.every((k) => N.clipes[k]), N && N.lods);
       const tr = N ? N.SK.map((s) => s.idx.length / 3) : [];
       this.ok('criaturas: LODs cada vez mais leves e o LOD 0 no orçamento (até 12 mil triângulos)', tr.length === 4 && tr[0] <= 12000 && tr.every((t, i) => !i || t < tr[i - 1]), tr.join(' > '));
+      const RZ = Criaturas3D.dados.lobo_raiz;
+      this.ok('criaturas: as pelagens (raiz, neve, cinzento, cães) usam a malha e as animações do lobo neon (o arquivo só traz texturas)', RZ && RZ.base === 'lobo_sombra_neon' && RZ.SK === N.SK && RZ.clipes === N.clipes && RZ.tex.src !== N.tex.src);
       this.ok('criaturas: o lobo neon está na Metrópole', ENEMY_VARIANTS.lobo_neon.modelo === 'lobo_sombra_neon' && Object.values(WORLD_ZONES).some((z) => z.region === 'metropole' && (z.camps || []).some((c) => c.mobs && c.mobs.lobo_neon)));
       const AV = ['idle', 'andar', 'voar', 'planar', 'decolar', 'pousar', 'comer', 'dormir', 'sentar', 'brincar', 'carinho', 'chamar', 'dano'];
       this.ok('criaturas: Asa Noturna (ave) com esqueleto de ave, 4 LODs e 13 animações', A && A.nb >= 24 && A.lods === 4 && AV.every((k) => A.clipes[k]), A && Object.keys(A.clipes).join(','));
@@ -2098,9 +2101,10 @@ const EclipseTests = {
       const cora = g.npcs.find((n) => n instanceof Morador && n.name === 'CORA ALVES');
       this.ok('pets: a Cora atende no Viveiro dos Alves (Bairro da Muralha)', !!cora && WORLD_ZONES.aurora_animais.distrito === 'interior');
       const vit = g.npcs.filter((n) => n instanceof VitrinePet);
-      this.igual('pets: 3 animais na vitrine do viveiro', vit.length, 3);
-      for (const id of ['asa_noturna', 'lobo_cinzento']) Criaturas3D.carregar(id);
-      for (let i = 0; i < 150 && !(Criaturas3D.pronto('asa_noturna') && Criaturas3D.pronto('lobo_cinzento')); i++) await new Promise((r) => setTimeout(r, 100));
+      this.igual('pets: 5 animais na vitrine do viveiro (ave, lobo e os dois cães)', vit.length, 5);
+      const mods = [...new Set(Object.values(PETS_ESPECIES).map((E) => E.modelo))];
+      for (const id of mods) Criaturas3D.carregar(id);
+      for (let i = 0; i < 200 && !mods.every((id) => Criaturas3D.pronto(id)); i++) await new Promise((r) => setTimeout(r, 100));
       for (const v of vit) v.update(0.016);
       this.ok('pets: a vitrine usa os modelos 3D do Blender', vit.every((v) => v.key && v.key.startsWith('cri_')), vit.map((v) => v.key).join(','));
       // catálogo e compra (só espécies com modelo; preço em células)
@@ -2108,7 +2112,7 @@ const EclipseTests = {
       Povo.conversar(cora);
       this.ok('pets: a Cora oferece o catálogo', Dialogo.temId('catalogo'));
       Dialogo.escolherId('catalogo');
-      this.ok('pets: o catálogo lista as duas espécies', Dialogo.temId('ver_asa_noturna') && Dialogo.temId('ver_lobo_manso'));
+      this.ok('pets: o catálogo lista as quatro espécies (ave, lobo e dois cães)', ['asa_noturna', 'lobo_manso', 'cao_aurora', 'cao_neve'].every((e) => Dialogo.temId('ver_' + e)));
       g.stats.soulsBank = 100;
       Dialogo.escolherId('ver_asa_noturna');
       this.ok('pets: sem células, a compra fica desativada', Dialogo.opcoes.find((o) => o.id === 'comprar').off);
@@ -2170,6 +2174,72 @@ const EclipseTests = {
     if (Dialogo.aberto) Dialogo.fechar();
     World.state.pets = S0 === 'null' ? undefined : JSON.parse(S0);
     g.stats.soulsBank = b0;
+    if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
+  },
+
+  // Animais domésticos das cidades (js/mundo/animais_cidade.js): identidade por região, vagar,
+  // farejar o herói, sentar e dormir, fugir da luta, a ave que levanta voo e a adoção dos cães de rua
+  async animaisCidade() {
+    const g = game, p = g.player, z0 = World.zone && World.zone.id, S0 = JSON.stringify(World.state.pets || null), A0 = JSON.stringify(World.state.adotados || []), h0 = World.state.hora;
+    let erro = null;
+    const cA = g.combatActive;
+    try {
+      World.state.pets = { lista: [], ativo: null, uid: 1 }; World.state.adotados = []; World.state.hora = 12;
+      const conta = (zona) => { World.loadZone(zona, null); return g.npcs.filter((n) => n instanceof AnimalCidade).map((n) => n.T.nome); };
+      const q = { aurora_bairro: conta('aurora_bairro'), metro_centro: conta('metro_centro'), asterion_acampamento: conta('asterion_acampamento'), velmora_clareira: conta('velmora_clareira'), velmora_trilha: conta('velmora_trilha') };
+      this.ok('animais: cães de rua no Refúgio, aves de neon na Metrópole, cães das neves em Asterion e de caça em Velmora',
+        q.aurora_bairro.length === 2 && q.aurora_bairro.every((n) => n === 'Cão de rua') && q.metro_centro.length === 3 && q.metro_centro.every((n) => n === 'Asa Noturna')
+        && q.asterion_acampamento.length === 3 && q.velmora_clareira.every((n) => n === 'Cão de caça'), JSON.stringify(q));
+      this.igual('animais: fora das cidades, nenhum', q.velmora_trilha.length, 0);
+      World.loadZone('aurora_bairro', null);
+      for (const id of ['cao_aurora', 'asa_noturna']) Criaturas3D.carregar(id);
+      for (let i = 0; i < 150 && !(Criaturas3D.pronto('cao_aurora') && Criaturas3D.pronto('asa_noturna')); i++) await new Promise((r) => setTimeout(r, 100));
+      const caes = g.npcs.filter((n) => n instanceof AnimalCidade), c = caes[0];
+      c.update(0.016);
+      this.ok('animais: o cão usa o modelo do Blender (Cão da Aurora)', c.key === 'cri_cao_aurora');
+      // curioso: chega perto do herói
+      p.x = c.x + 140; p.y = c.y;
+      const d0 = Math.hypot(p.x - c.x, p.y - c.y);
+      for (let i = 0; i < 40; i++) c.update(0.05);
+      this.ok('animais: o cão chega para farejar o herói', Math.hypot(p.x - c.x, p.y - c.y) < d0 - 30, `${Math.round(d0)} → ${Math.round(Math.hypot(p.x - c.x, p.y - c.y))}`);
+      // parado, senta; à noite, dorme
+      const C = Criaturas3D.dados.cao_aurora, S = { fl: 0, fi: 0 };
+      c.vx = c.vy = 0; c.paradoT = 8; c.noite = false;
+      this.igual('animais: parado, senta', c.petClipe(S, C, 0.016)[0], 'sentar');
+      c.noite = true;
+      this.igual('animais: à noite, dorme', c.petClipe(S, C, 0.016)[0], 'dormir');
+      // luta: foge
+      g.combatActive = () => true;
+      const dl = Math.hypot(p.x - c.x, p.y - c.y);
+      for (let i = 0; i < 30; i++) c.update(0.05);
+      this.ok('animais: na luta, foge do herói e dos inimigos', Math.hypot(p.x - c.x, p.y - c.y) > dl + 40, `${Math.round(dl)} → ${Math.round(Math.hypot(p.x - c.x, p.y - c.y))}`);
+      g.combatActive = cA;
+      // adoção
+      Dialogo.fechar();
+      AnimaisCidade.conversar(caes[1]);
+      this.ok('animais: [E] no cão de rua: afagar e adotar', Dialogo.temId('afagar') && Dialogo.temId('adotar'));
+      Dialogo.escolherId('adotar');
+      Dialogo.escolherId('n0'); Dialogo.fechar();
+      const P = Pets.ativo();
+      this.ok('animais: adotado vira companheiro (Cão da Aurora) e sai da rua', P && P.especie === 'cao_aurora' && P.adotado && !g.npcs.includes(caes[1]) && !!Pets.companheiro());
+      World.loadZone('aurora_bairro', null);
+      this.igual('animais: não volta para a rua depois de adotado', g.npcs.filter((n) => n instanceof AnimalCidade).length, 1);
+      // a ave da Metrópole levanta voo quando o herói chega perto
+      World.loadZone('metro_centro', null);
+      const ave = g.npcs.find((n) => n instanceof AnimalCidade);
+      for (let i = 0; i < 5; i++) ave.update(0.05);
+      p.x = ave.x + 30; p.y = ave.y;
+      for (let i = 0; i < 20; i++) ave.update(0.05);
+      this.ok('animais: a Asa Noturna levanta voo quando o herói chega perto', ave.alt > 15, ave.alt);
+      let e3 = null; try { g.renderWorld(g.ctx); } catch (e) { e3 = e.message; }
+      this.ok('animais: desenha com as aves', !e3, e3);
+    } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
+    g.combatActive = cA;
+    this.ok('animais: sem exceção', !erro, erro);
+    if (Dialogo.aberto) Dialogo.fechar();
+    if (typeof Pets !== 'undefined') Pets.tirarDaZona();
+    World.state.pets = S0 === 'null' ? undefined : JSON.parse(S0); World.state.adotados = JSON.parse(A0); World.state.hora = h0;
     if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
     g.state = 'playing';
   },

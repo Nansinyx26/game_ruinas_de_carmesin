@@ -41,11 +41,27 @@ const Criaturas3D = {
   carregado(id) {
     const D = typeof CRIATURAS3D !== 'undefined' && CRIATURAS3D[id];
     if (!D || this.dados[id] || typeof decodePeles3D !== 'function') return;
+    // pelagem de outra criatura (D.base): o arquivo só traz as texturas; malha, esqueleto e
+    // animações vêm da base (carregada uma vez e compartilhada)
+    if (D.base) {
+      if (!this.dados[D.base]) {
+        (this.esperando[D.base] || (this.esperando[D.base] = [])).push(id);
+        this.carregar(D.base);
+        if (this.estado[D.base] === 'falhou') this.estado[id] = 'falhou';
+        return;
+      }
+      try { this.registrar(id, D, this.dados[D.base]); } catch (err) { this.estado[id] = 'falhou'; console.error(err); return; }
+      this.estado[id] = 'pronto';
+      return;
+    }
     try { this.registrar(id, D); } catch (err) { this.estado[id] = 'falhou'; console.error(err); return; }
     this.estado[id] = 'pronto';
     D.peles = null;   // (os dados brutos já viraram as malhas)
     for (const k in D.clipes) { D.clipes[k].p = null; D.clipes[k].q = null; }
+    for (const v of this.esperando[id] || []) this.carregado(v);   // as pelagens que esperavam por esta base
+    delete this.esperando[id];
   },
+  esperando: {},
 
   // ------------------------------------------------------------------ decodificação
   bytes(b64) {
@@ -71,7 +87,13 @@ const Criaturas3D = {
     if (Math.abs(sy) < 0.99999) { r[0] = Math.atan2(r21, r22); r[2] = Math.atan2(r10, r00); }
     else { r[0] = Math.atan2(-2 * (y * z - w * x), 1 - 2 * (x * x + z * z)); r[2] = 0; }
   },
-  registrar(id, D) {
+  registrar(id, D, base) {
+    if (base) {
+      const C0 = base;
+      const C = this.dados[id] = Object.assign({}, C0, { id, base: C0.id, tex: { src: D.tc, mat: D.tm, nrm: D.tn, pbr: true, bump: 0, emiB: true } });
+      this.modelo(id, C);
+      return;
+    }
     const nb = D.ossos.length, idx = {};
     D.ossos.forEach((b, i) => { idx[b.n] = i; });
     const rest = new Float32Array(nb * 7);
@@ -87,6 +109,11 @@ const Criaturas3D = {
     const lods = Math.max(...SK.map((s) => s.nivel)) + 1;
     const C = this.dados[id] = { id, nb, ossos: D.ossos, rest, clipes, SK, lods, fps: D.fps || 30, w: D.w, d: D.d, h: D.h, r: D.r,
       tex: { src: D.tc, mat: D.tm, nrm: D.tn, pbr: true, bump: 0, emiB: true } };
+    this.modelo(id, C);
+  },
+
+  // O modelo do motor (MODELS3D['cri_' + id]) de uma criatura decodificada
+  modelo(id, C) {
     const self = this;
     MODELS3D['cri_' + id] = {
       criatura: id,

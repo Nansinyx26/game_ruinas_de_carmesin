@@ -103,6 +103,13 @@
    "sem_osso": 0
   }
  ],
+ "pelagens": [
+  "assets/Creatures/Enemies/lobo_raiz/lobo_raiz.glb",
+  "assets/Creatures/Enemies/lobo_neve/lobo_neve.glb",
+  "assets/Creatures/Wildlife/Mammals/lobo_cinzento/lobo_cinzento.glb",
+  "assets/Creatures/Pets/Dogs/cao_aurora/cao_aurora.glb",
+  "assets/Creatures/Pets/Dogs/cao_neve/cao_neve.glb"
+ ],
  "glb": "assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.glb",
  "blend": "assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.blend",
  "previa": "assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.png",
@@ -119,13 +126,18 @@
   "andar",
   "atacar",
   "atordoado",
+  "brincar",
+  "carinho",
+  "comer",
   "correr",
   "dano",
+  "dormir",
   "idle",
   "morte",
   "saltar",
+  "sentar",
   "trotar",
   "uivar"
  ],
- "segundos": 62
+ "segundos": 154
 }

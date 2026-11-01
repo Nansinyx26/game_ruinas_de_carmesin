@@ -29,6 +29,18 @@ const PETS_ESPECIES = {
     nomes: ['Brasa', 'Trovão', 'Cinza', 'Fumaça', 'Farol'],
     clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' },
   },
+  cao_aurora: {
+    nome: 'Cão da Aurora', categoria: 'companhia', modelo: 'cao_aurora', preco: 600, raridade: 'comum', voa: false, escala: 0.7,
+    desc: 'Cão de pelo marrom e creme, dos becos do Refúgio. Esperto, faminto e fiel a quem divide o pão.',
+    nomes: ['Pão', 'Ferrugem', 'Bolota', 'Rex', 'Canela'],
+    clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' },
+  },
+  cao_neve: {
+    nome: 'Cão das Neves', categoria: 'companhia', modelo: 'cao_neve', preco: 1100, raridade: 'incomum', voa: false, escala: 0.78,
+    desc: 'Cão de trenó da Vigília de Asterion, pelo duplo cinza e branco. Aguenta o frio e não aguenta ficar parado.',
+    nomes: ['Nevasca', 'Geada', 'Lobo', 'Fiorde', 'Prata'],
+    clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' },
+  },
 };
 const PET_PETISCO = 6;   // células por petisco
 
@@ -139,7 +151,7 @@ const Pets = {
   },
   vitrine() {
     const R = game.room;
-    for (const [esp, fx, fy, pose] of [['asa_noturna', 0.45, 0.4, 'sentar'], ['lobo_manso', 0.7, 0.2, 'dormir'], ['asa_noturna', 0.64, 0.64, 'parado']]) {
+    for (const [esp, fx, fy, pose] of [['asa_noturna', 0.45, 0.4, 'sentar'], ['lobo_manso', 0.7, 0.2, 'dormir'], ['cao_aurora', 0.36, 0.62, 'sentar'], ['cao_neve', 0.82, 0.36, 'parado'], ['asa_noturna', 0.64, 0.64, 'parado']]) {
       const v = new VitrinePet(esp, R.w * fx, R.h * fy, pose);
       game.npcs.push(v);
     }

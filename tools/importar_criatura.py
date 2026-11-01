@@ -340,12 +340,30 @@ def main():
     ap.add_argument('glb')
     ap.add_argument('--id')
     ap.add_argument('--tex', type=int, default=1024)
+    ap.add_argument('--base', help='pelagem de outra criatura já convertida: grava só as texturas (malha, esqueleto e animações da base)')
     a = ap.parse_args()
     ident = a.id or os.path.splitext(os.path.basename(a.glb))[0]
     info = converter(os.path.join(RAIZ, a.glb) if not os.path.isabs(a.glb) else a.glb, ident, a.tex)
     pasta = os.path.join(RAIZ, 'js', 'assets', 'criaturas')
     os.makedirs(pasta, exist_ok=True)
     destino = os.path.join(pasta, f'{ident}.js')
+    if a.base:
+        # confere que é mesmo a mesma malha/esqueleto/animações da base antes de cortar os dados
+        with open(os.path.join(pasta, f'{a.base}.js'), encoding='utf-8') as f:
+            txt = f.read()
+        B0 = json.loads(txt[txt.index('= {') + 2:txt.rindex('};') + 1])
+        assert [o['n'] for o in B0['ossos']] == [o['n'] for o in info['ossos']], 'esqueleto diferente da base'
+        assert sorted(B0['clipes']) == sorted(info['clipes']), 'animações diferentes da base'
+        assert [p_['tris'] for p_ in B0['peles']] == [p_['tris'] for p_ in info['peles']], 'malha diferente da base'
+        slim = dict(v=1, id=ident, base=a.base, tc=info['tc'], tm=info['tm'], tn=info['tn'], w=info['w'], d=info['d'], h=info['h'], r=info['r'], src=info['src'])
+        with open(destino, 'w', encoding='utf-8') as f:
+            f.write("'use strict';\n// ECLIPSE ZERO · Pelagem de criatura do Blender (tools/blender/criaturas/), convertida por tools/importar_criatura.py;\n"
+                    f'// não edite à mão. Só as texturas: a malha, o esqueleto e as animações vêm de {a.base}.js (js/mundo/criaturas3d.js).\n')
+            f.write('var CRIATURAS3D = typeof CRIATURAS3D !== "undefined" ? CRIATURAS3D : {};\n')
+            f.write(f'CRIATURAS3D[{json.dumps(ident)}] = ' + json.dumps(slim, separators=(',', ':')) + ';\n')
+            f.write(f"if (typeof Criaturas3D !== 'undefined') Criaturas3D.carregado({json.dumps(ident)});\n")
+        print(f'{ident}: pelagem de {a.base} (mesma malha, esqueleto e {len(info["clipes"])} animações), {os.path.getsize(destino) // 1024} KB → {os.path.relpath(destino, RAIZ)}')
+        return
     with open(destino, 'w', encoding='utf-8') as f:
         f.write("'use strict';\n// ECLIPSE ZERO · Criatura do Blender (tools/blender/criaturas/), convertida por tools/importar_criatura.py;\n"
                 '// não edite à mão. Carregada sob demanda por js/mundo/criaturas3d.js.\n')
