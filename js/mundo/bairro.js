@@ -39,7 +39,7 @@ const BAIRRO_PREDIOS = [
   { id: 'taverna', lado: 'N', nome: 'TAVERNA DO JAVALI DOURADO', curto: 'TAVERNA', interior: 'aurora_taverna', luz: '255,196,110', cor: '#5a4a36', tel: '#4a2016', alt: 420 },
   { id: 'conselho', lado: 'N', nome: 'CONSELHO DA AURORA', curto: 'CONSELHO', interior: 'aurora_conselho', luz: '255,220,160', cor: '#5c5650', tel: '#1c2028', alt: 440 },
   { id: 'hospedaria', lado: 'W', nome: 'HOSPEDARIA DA CHAMA', curto: 'HOSPEDARIA', interior: 'aurora_hospedaria', luz: '255,170,120', cor: '#5e5240', tel: '#1c2028', alt: 470 },
-  { id: 'casa_a', lado: 'W', nome: 'CASA DOS ALVES', curto: 'CASA', casa: 'Ninguém atende. Pela janela, um gato te encara com desprezo.', cor: '#5a4c3a', tel: '#4a2016', alt: 270 },
+  { id: 'casa_a', lado: 'W', nome: 'VIVEIRO DOS ALVES', curto: 'VIVEIRO', interior: 'aurora_animais', luz: '255,210,150', cor: '#5a4c3a', tel: '#4a2016', alt: 270 },
   { id: 'casa_b', lado: 'W', nome: 'CASA DE DONA CÉLIA', curto: 'CASA', casa: '"Já vai! …Ah, não é o padeiro. Volte de dia, querido."', cor: '#5e5444', tel: '#1c2028', alt: 380 },
   { id: 'casa_c', lado: 'W', nome: 'CASA DO VELHO ARNALDO', curto: 'CASA', casa: '"Se for cobrança, eu morri. Se for visita, também."', cor: '#584a38', tel: '#4a2016', alt: 380 },
 ];
@@ -81,9 +81,24 @@ const BAIRRO_INTERIORES = {
       ['cama', 0.065, 0.55, 0, 1], ['cama', 0.065, 0.68, 0, 1], ['cama', 0.065, 0.81, 0, 1],
       ['mesa', 0.32, 0.32, P2, 1], ['banco', 0.32, 0.265, P2, 1], ['banco', 0.32, 0.375, P2, 1],
       ['barril', 0.88, 0.1, 0, 1], ['caixote', 0.93, 0.18, 0.5, 1], ['caixote', 0.86, 0.17, 1.2, 1]] },
+  // a loja de animais (js/mundo/pets.js): balcão da Cora, cercado de palha e caixotes de ração; os
+  // animais da vitrine entram por Pets.vitrine()
+  aurora_animais: { predio: 'casa_a', name: 'Viveiro dos Alves', theme: 'interior', tiles: 10,
+    moveis: [['balcao', 0.2, 0.62, 0, 0.85], ['caixote', 0.07, 0.08, 0.3, 1], ['caixote', 0.12, 0.07, 1.1, 1], ['barril', 0.06, 0.2, 0, 1],
+      ['cama', 0.62, 0.075, P2, 1], ['cama', 0.78, 0.075, P2, 1], ['estante', 0.025, 0.45, 0, 1], ['mesa', 0.8, 0.5, P2, 1],
+      ['caixote', 0.93, 0.3, 0.6, 1], ['barril', 0.94, 0.8, 0, 1], ['lareira', 0.05, 0.84, 0, 1]] },
 };
 // Quem mora e trabalha no bairro e nos prédios
 const BAIRRO_POVO = [
+  { id: 'aur_cora', nome: 'CORA ALVES', zona: 'aurora_animais', at: [0.2, 0.7], model: 'civil', variant: 3, facing: 4.7, papel: 'Tratadora de animais', servicos: ['animais'],
+    personalidade: 'Calma e direta; fala com os bichos antes de falar com gente.',
+    ola: ['Devagar ao entrar: a Asa Noturna estranha gente nova.', 'Veio adotar ou só matar a saudade de bicho?'],
+    temas: [['Que lugar é este?', 'O Viveiro dos Alves. Meu avô criava os lobos da guarda; eu cuido de quem chega: lobos, aves, o gato da janela que não é de ninguém.'],
+      ['Como cuido de um companheiro?', 'Petisco quando tiver fome, brincadeira quando estiver abatido, carinho sempre. Com fome e sozinho, ele murcha. E não leve para a briga: eles não são soldados.']] },
+  { id: 'aur_davi', nome: 'DAVI ALVES', zona: 'aurora_animais', at: [0.7, 0.32], model: 'civil', variant: 2, facing: 1.6, papel: 'Aprendiz do viveiro',
+    personalidade: 'Menino curioso; jura que entende o que os lobos dizem.',
+    ola: ['O Farol uivou três vezes hoje. Vai chover, pode escrever.', 'A Asa Noturna brilha mais quando está feliz. Repara!'],
+    temas: [['O que você faz aqui?', 'Troco a palha, dou comida e escovo os lobos. A Cora diz que um dia eu fico com o viveiro. Se eu não esquecer o portão aberto de novo.']] },
   { id: 'aur_rui', nome: 'GUARDA RUI', zona: BAIRRO_ID, at: [0.34, 0.33], model: 'civil', variant: 0, facing: 1.2, papel: 'Guarda da muralha', rota: [[0.34, 0.33], [0.62, 0.3], [0.34, 0.62], [0.3, 0.86]],
     personalidade: 'Sério e cansado; conta os passos da ronda.',
     ola: ['Ronda da muralha. Tudo calmo. Por enquanto.', 'Se ouvir o sino do conselho, corra para dentro.'],
@@ -452,6 +467,7 @@ const Bairro = {
 
   // ------------------------------------------------------------ serviços (Povo.servico)
   servico(npc, s, o, volta) {
+    if (typeof Pets !== 'undefined' && Pets.servico(npc, s, o, volta)) return true;   // a tratadora do viveiro (js/mundo/pets.js)
     if (s !== 'refeicao') return false;
     const preco = this.precoRefeicao();
     o.push({ id: 'refeicao', tag: '♨', txt: `Pedir o ensopado do dia (${preco} células: vida, energia e o corpo aquecido)`, fn: () => volta(this.refeicao()) });

@@ -426,6 +426,7 @@ const World = {
     Campanhas.aoCarregar(id);   // sinal do capítulo da campanha do herói, se for esta zona (js/mundo/campanhas.js)
     Rotina.aoCarregar(z);       // quem está aqui agora pela agenda do dia, e onde (js/mundo/rotina.js)
     if (typeof Criaturas3D !== 'undefined') Criaturas3D.aoCarregar();   // criaturas do Blender dos inimigos da zona (js/mundo/criaturas3d.js)
+    if (typeof Pets !== 'undefined') Pets.aoCarregar(z);   // o animal de companhia chega junto; a vitrine do viveiro (js/mundo/pets.js)
     Povo.aoCarregar(z);         // rotinas e quadro de contratos (js/mundo/povo.js)
     Cidade.aoCarregar(z);       // estações, bancas, monumento e portões da cidade principal (js/mundo/cidade.js)
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
@@ -497,6 +498,7 @@ const World = {
     Aventuras.update(dt);   // lugares escondidos e quem volta para casa
     Eventos.update(dt);     // eventos dinâmicos da região
     Rotina.update(dt);      // moradores do bairro: chegam, saem e mudam de lugar com a hora
+    if (typeof Pets !== 'undefined') Pets.update(dt);   // fome e humor do animal de companhia
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }
   },

@@ -12,7 +12,8 @@ orelhas em ponta, mandíbula separada (morde), caninos e incisivos, garras, olho
 Esqueleto (31 ossos): raiz, quadril, 2 da coluna, peito, 2 do pescoço, cabeça, mandíbula, 2 orelhas,
 4 da cauda, e em cada perna escápula, braço, antebraço e mão (frente) ou coxa, canela, metatarso e pé.
 Animações (24 q/s, no lugar): idle, uivar, andar, trotar, correr (galope), atacar (bote com
-mordida), saltar (investida), dano, atordoado e morte.
+mordida), saltar (investida), dano, atordoado e morte; e as do animal de companhia: sentar,
+dormir (deitado), comer, brincar (o convite) e carinho.
 
 Rode: python3 tools/blender/criaturas/lobo.py [forma] (forma: só a malha e a prévia, sem assar)
 """
@@ -352,6 +353,41 @@ def animacoes(arm):
              'canela.L': (12, 0, 0), 'canela.R': (6, 0, 0), 'pescoco1': (-10, 0, 14), 'cabeca': (-14, 0, 10), 'mandibula': (-14, 0, 0), 'cauda1': (-6, 0, 10)},
         40: {'raiz': ((0, 86, 0), A(-0.34, 0)), 'braco.L': (28, 0, 0), 'braco.R': (10, 0, 0), 'antebraco.L': (-18, 0, 0), 'antebraco.R': (-10, 0, 0), 'coxa.L': (8, 0, 0), 'coxa.R': (-4, 0, 0),
              'canela.L': (10, 0, 0), 'canela.R': (4, 0, 0), 'pescoco1': (-8, 0, 18), 'cabeca': (-16, 0, 12), 'mandibula': (-12, 0, 0), 'cauda1': (-4, 0, 12)}})
+    # --- animal de companhia (js/mundo/pets.js): sentar, dormir deitado, comer, brincar e carinho
+    # (sinais conferidos na vista lateral: quadril + ergue a frente; coxa + leva o joelho à frente;
+    # canela − dobra o jarrete para trás; metatarso + apoia a pata; braço − leva a pata da frente para trás)
+    # sentar: a garupa desce, peito erguido, as patas da frente retas; olha em volta
+    ciclo(arm, 'sentar', 48, lambda t: {
+        'raiz': ((0, 0, 0), A(-0.2, 0.1)), 'quadril': (24, 0, 0), 'coluna1': (2, 0, 0), 'peito': (2 + 1.2 * S(t * 2 * math.pi * 2), 0, 0),
+        'braco.L': (-28, 0, 0), 'braco.R': (-28, 0, 0), 'antebraco.L': (2, 0, 0), 'antebraco.R': (2, 0, 0),
+        'coxa.L': (30, 0, 0), 'coxa.R': (30, 0, 0), 'canela.L': (-100, 0, 0), 'canela.R': (-100, 0, 0), 'metatarso.L': (72, 0, 0), 'metatarso.R': (72, 0, 0),
+        'pescoco1': (-12, 0, 0), 'cabeca': (-2, 0, 12 * S(t * 2 * math.pi)), 'cauda1': (-6, 0, 6 * S(t * 2 * math.pi)), 'cauda2': (10, 0, 0)})
+    # dormir: deitado de barriga, as patas dobradas, a cabeça à frente sobre as patas, respiração lenta
+    ciclo(arm, 'dormir', 72, lambda t: {
+        'raiz': ((0, 0, 0), A(-0.36 + 0.006 * S(t * 2 * math.pi * 2), 0.02)), 'peito': (1.5 * S(t * 2 * math.pi * 2), 0, 0),
+        'braco.L': (-30, 0, 0), 'braco.R': (-30, 0, 0), 'antebraco.L': (100, 0, 0), 'antebraco.R': (100, 0, 0), 'mao.L': (-20, 0, 0), 'mao.R': (-20, 0, 0),
+        'coxa.L': (70, 0, 0), 'coxa.R': (70, 0, 0), 'canela.L': (-120, 0, 0), 'canela.R': (-120, 0, 0), 'metatarso.L': (60, 0, 0), 'metatarso.R': (60, 0, 0),
+        'pescoco1': (-22, 0, 6), 'cabeca': (-10, 0, 8), 'orelha.L': (-30, 0, 0), 'orelha.R': (-30, 0, 0),
+        'cauda1': (-20, 0, 30), 'cauda2': (-8, 0, 24), 'cauda3': (0, 0, 18)})
+    # comer: a cabeça no chão, mastiga
+    unica(arm, 'comer', 36, {
+        1: {'pescoco1': (0, 0, 0), 'pescoco2': (0, 0, 0), 'cabeca': (0, 0, 0), 'mandibula': (0, 0, 0), 'braco.L': (0, 0, 0), 'braco.R': (0, 0, 0)},
+        8: {'pescoco1': (-46, 0, 0), 'pescoco2': (-20, 0, 0), 'cabeca': (-16, 0, 0), 'mandibula': (-14, 0, 0), 'braco.L': (14, 0, 0), 'braco.R': (14, 0, 0)},
+        14: {'mandibula': (-2, 0, 0)}, 20: {'mandibula': (-14, 0, 0)}, 26: {'mandibula': (-2, 0, 0), 'pescoco1': (-40, 0, 0)},
+        36: {'pescoco1': (0, 0, 0), 'pescoco2': (0, 0, 0), 'cabeca': (0, 0, 0), 'mandibula': (0, 0, 0), 'braco.L': (0, 0, 0), 'braco.R': (0, 0, 0)}})
+    # brincar: o convite (peito no chão, garupa alta, cauda abanando) e pulinhos de lado
+    ciclo(arm, 'brincar', 24, lambda t: {
+        'raiz': ((0, 6 * S(t * 2 * math.pi), 0), A(-0.06 + 0.05 * abs(S(t * 2 * math.pi)), 0)), 'peito': (-16, 0, 0), 'quadril': (8, 0, 0),
+        'braco.L': (40, 0, 0), 'braco.R': (40, 0, 0), 'antebraco.L': (-34, 0, 0), 'antebraco.R': (-34, 0, 0),
+        'pescoco1': (10 + 6 * S(t * 2 * math.pi * 2), 0, 0), 'cabeca': (0, 10 * S(t * 2 * math.pi), 0), 'mandibula': (-12, 0, 0),
+        'cauda1': (8, 0, 34 * S(t * 2 * math.pi * 3)), 'cauda2': (4, 0, 24 * S(t * 2 * math.pi * 3 - 0.8))})
+    # carinho: inclina a cabeça, orelhas para trás, a cauda abana forte
+    unica(arm, 'carinho', 48, {
+        1: {'cabeca': (0, 0, 0), 'pescoco1': (0, 0, 0), 'orelha.L': (0, 0, 0), 'orelha.R': (0, 0, 0), 'cauda1': (0, 0, 0), 'cauda2': (0, 0, 0)},
+        10: {'cabeca': (-6, 16, 10), 'pescoco1': (-10, 0, 8), 'orelha.L': (-34, 0, 0), 'orelha.R': (-34, 0, 0), 'cauda1': (10, 0, 30), 'cauda2': (6, 0, 22)},
+        18: {'cauda1': (10, 0, -30), 'cauda2': (6, 0, -22)}, 26: {'cauda1': (10, 0, 30), 'cauda2': (6, 0, 22), 'cabeca': (-8, -12, 12)},
+        34: {'cauda1': (10, 0, -30), 'cauda2': (6, 0, -22)},
+        48: {'cabeca': (0, 0, 0), 'pescoco1': (0, 0, 0), 'orelha.L': (0, 0, 0), 'orelha.R': (0, 0, 0), 'cauda1': (0, 0, 0), 'cauda2': (0, 0, 0)}})
     # uivar: senta um pouco, ergue a cabeça e abre a boca devagar
     unica(arm, 'uivar', 72, {
         1: {'pescoco1': (0, 0, 0), 'pescoco2': (0, 0, 0), 'cabeca': (0, 0, 0), 'mandibula': (0, 0, 0), 'coxa.L': (0, 0, 0), 'coxa.R': (0, 0, 0), 'canela.L': (0, 0, 0), 'canela.R': (0, 0, 0), 'raiz': ((0, 0, 0), A()), 'quadril': (0, 0, 0)},
@@ -387,7 +423,10 @@ def construir(pel, assar=True):
     prev = os.path.join(pasta, f'{pel}.png')
     U.renderizar_previa(prev, [lobo], lado=640, amostras=24, angulo=(68, 0, 55))
     folha = []
-    for nm, q in (('andar', 8), ('correr', 5), ('atacar', 11), ('uivar', 50), ('morte', 40)):
+    for nm, q in (('andar', 8), ('correr', 5), ('atacar', 11), ('uivar', 50), ('morte', 40), ('sentar', 10), ('dormir', 10), ('comer', 8), ('brincar', 6)):
+        for pb in arm.pose.bones:
+            pb.location = (0, 0, 0)
+            pb.rotation_euler = (0, 0, 0)
         arm.animation_data.action = bpy.data.actions[nm]
         bpy.context.scene.frame_set(q)
         f = os.path.join(B.RAIZ, '.cache_criacao', f'{pel}_{nm}.png')

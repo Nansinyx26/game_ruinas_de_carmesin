@@ -116,6 +116,7 @@ const Criaturas3D = {
   // ------------------------------------------------------------------ escolha do clipe
   dur(C, nome) { const c = C.clipes[nome]; return c ? c.d : 1; },
   escolher(e, S, C, dt, agora) {
+    if (e.petClipe) return e.petClipe(S, C, dt, agora);   // animais de companhia e da vitrine (js/mundo/pets.js)
     const st = e.state, d = (n) => this.dur(C, n);
     const cl = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
     if (st === 'dying' || st === 'dead') return ['morte', Math.min(d('morte'), (e.stateTime || 0) * d('morte') / ((e.morteDur || 0.45) * 0.8))];
@@ -208,7 +209,7 @@ const Criaturas3D = {
   // Opções do desenho: LOD e pose reaproveitada fora da tela
   opcoes(e, C) {
     const O = e._oCri || (e._oCri = {});
-    O.cache = 0; O.lodCri = 0;
+    O.cache = 0; O.lodCri = 0; O.lift = e.alt || 0;   // (alt: a ave de companhia voando)
     const g = typeof game !== 'undefined' ? game : null;
     if (!g || !g.player) return O;
     if (typeof ThirdView !== 'undefined' && ThirdView.on) {

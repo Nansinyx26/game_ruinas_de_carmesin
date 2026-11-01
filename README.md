@@ -408,7 +408,7 @@ Entre os setores, Kael também escolhe **evoluções** (Fio Monomolecular, Condu
 ## Inimigos
 Criaturas feitas no Blender (esqueleto, animações e LODs; veja `docs/CRIATURAS_E_TOPOLOGIA.md`):
 - **Lobo Sombra Neon** (Metrópole Tecnológica), **Lobo de Raiz** (Velmora) e **Lobo das Neves** (Asterion), com passada, bote com mordida, investida, dano, atordoamento, morte e uivo.
-- A **Asa Noturna** (ave exótica) está pronta como modelo para os pets.
+- **Animais de companhia** (`js/mundo/pets.js`): no **Viveiro dos Alves** (Bairro da Muralha), a tratadora Cora vende a **Asa Noturna** (ave rara) e o **Lobo da Muralha** (em células, com confirmação e escolha do nome), e guarda e devolve os animais. O companheiro segue o herói (a ave voa), senta, dorme, come e brinca. [E] nele: petisco, brincar, carinho, ficar/seguir, nome, guardar. Fome, humor e afinidade aparecem no HUD. Ele não luta.
 - A topologia de todos os modelos é diagnosticada por `tools/topologia/diagnostico.py`. A retopologia em quads e os LOD 0–3 são feitos por `tools/blender/topologia/retopologia.py`.
 
 - **Rastejador**: aranha mecânica de NEXUS que ataca em bando.
@@ -580,7 +580,8 @@ js/
                     Blender, as portas, os quatro interiores mobiliados, os moradores e a refeição)
                     rotina.js (ROTINA, CONVERSAS, Rotina: a agenda por hora dos moradores do bairro),
                     npc3d.js (NPC3D, NpcModelo: os moradores importantes com as peças da criação),
-                    criaturas3d.js (Criaturas3D: as criaturas do Blender — carga, clipes por estado, LOD)
+                    criaturas3d.js (Criaturas3D: as criaturas do Blender — carga, clipes por estado, LOD),
+                    pets.js (PETS_ESPECIES, Pets, CompanheiroPet, VitrinePet: o viveiro e o companheiro)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   criacao/          criação de personagem: dados.js (PERS_CLASSES, PERS_APAR, PersClasse, Perfis,
                     PersCriacao: classes, aparência, validação, perfis locais e equipamento inicial),

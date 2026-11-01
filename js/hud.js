@@ -177,6 +177,7 @@ class HUD {
     // Painéis fixos
     this.drawVitals(ctx, p);
     if (game.world && World.zone) Clima.desenharHud(ctx, HUDV.x, HUDV.bottom + 2);   // temperatura do corpo, roupa molhada
+    if (game.world && World.zone && typeof Pets !== 'undefined') Pets.desenharHud(ctx, HUDV.x, HUDV.bottom + 26);   // o animal de companhia e as necessidades
     this.drawRadar(ctx, p, L);
     this.drawScore(ctx, L);
     this.drawObjective(ctx, L);

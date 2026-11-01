@@ -10,13 +10,35 @@ Estado real em 01/11/2026. Este documento lista o que foi feito e verificado, e 
 | **Asa Noturna** (Azure Nightwing) | ave exótica rara: modelo pronto para o **pet de companhia** (o sistema de pets é a próxima etapa) | GLB do Meshy enviado (128.844 tri), com **retopologia, rig de ave e animações no Blender** | 11.222 → 5.610 → 2.804 → 1.122 | 26 | 13 | `assets/Creatures/Pets/Exotic/asa_noturna/` |
 | Lobo de Raiz | inimigo `lobo_raiz` em **Velmora** | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Enemies/lobo_raiz/` |
 | Lobo das Neves | inimigo `lobo_neve` em **Asterion** | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Enemies/lobo_neve/` |
-| Lobo Cinzento | fauna (pronto, ainda sem comportamento de fauna) | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Wildlife/Mammals/lobo_cinzento/` |
+| Lobo Cinzento | **Lobo da Muralha**, o animal de companhia comum do viveiro; também serve de fauna (ainda sem comportamento de fauna) | modelado no Blender por script (`lobo.py`) | 7.856 | 31 | 10 | `assets/Creatures/Wildlife/Mammals/lobo_cinzento/` |
 
 Cada pasta tem o `.glb` final (texturas embutidas, armadura, animações com nome), o `.blend` editável (no Git LFS) e uma prévia `.png`. As criaturas do Meshy também têm o relatório `*_topologia.json` (antes e depois) e a fonte original intacta em `fonte/` (Git LFS).
 
 **Animações:**
 - Lobos: `idle`, `andar`, `trotar`, `correr`, `atacar` (bote com mordida), `saltar` (investida), `dano`, `atordoado`, `morte`, `uivar`.
+- Só o Lobo Cinzento (o animal de companhia) tem também `sentar`, `dormir` (deitado), `comer`, `brincar` e `carinho`.
 - Asa Noturna: `idle` (pousada, asas meio dobradas), `andar` (saltita), `voar`, `planar`, `decolar`, `pousar`, `comer`, `dormir`, `sentar`, `brincar`, `carinho`, `chamar` (comando) e `dano`.
+
+## 1b. Animais de companhia (`js/mundo/pets.js`)
+
+O projeto separa os animais em três categorias: **companhia** (seguem o herói), **domésticos das cidades** e **montarias**. Nesta etapa está pronta a de **companhia**, com os dois modelos do Blender que já existem.
+
+| espécie | modelo | preço | raridade | comportamento |
+|---|---|---|---|---|
+| **Asa Noturna** | `asa_noturna` (malha do Meshy, retopologia e rig de ave) | 2.400 células | rara | voa atrás do herói, pousa ao lado, senta, dorme, come, brinca, carinho, chamado |
+| **Lobo da Muralha** | `lobo_cinzento` (Blender) | 900 células | comum | anda, trota e corre atrás do herói, senta, deita para dormir, come, brinca (o convite), carinho, uivo |
+
+- **Loja física:** o **Viveiro dos Alves**, no Bairro da Muralha (a antiga Casa dos Alves, agora com interior 3D). Os atendentes são a tratadora **Cora** (vendedora) e o aprendiz **Davi**. Os animais da **vitrine** ficam lá dentro, em 3D: dá para chegar perto e ver o preço.
+- **Fluxo de compra:** catálogo → ficha do animal com o preço → **confirmação** → cobrança em **células** (`Oficios.cobrar`, a mesma moeda do jogo; nenhuma economia nova) → escolha do **nome** (sugestões da espécie ou digitado; até 16 letras, sem símbolos). A Cora também **guarda e devolve** os animais (até 6 por personagem).
+- **O companheiro:**
+  - segue atrás e de lado; a ave voa;
+  - na luta, fica longe (a ave sobe mais) e não ataca: **nenhuma vantagem de combate**;
+  - parado, senta; à noite ou depois de muito tempo parado, dorme;
+  - se ficar muito para trás, aparece perto; na troca de zona, chega junto.
+- **[E] no companheiro:** dar um petisco (6 células), brincar, fazer carinho, ficar/seguir, chamar (comando), ver como está, mudar o nome e deixar no viveiro.
+- **Necessidades:** fome (sobe com o tempo de jogo), humor (cai com fome, sobe ao brincar) e afinidade (sobe ao alimentar, brincar e fazer carinho). Aparecem no **HUD**, embaixo da temperatura, e no texto do menu.
+- **Salvamento:** `World.state.pets`, no mundo de cada personagem.
+- **Testes:** `js/testes.js → pets()` (veja a seção 4).
 
 ## 2. O tocador de animações do motor (`js/mundo/criaturas3d.js`)
 
@@ -114,7 +136,13 @@ Também verifiquei no navegador, na isométrica e na 3ª pessoa: `capturas_armad
 
 ## 5. Limites conhecidos (o que ainda não está feito)
 
-- **Sistema de pets, animais das cidades e montarias:** ainda não implementado. A Asa Noturna já está pronta como modelo, mas não há loja, adoção nem companheiro seguindo o herói. É a próxima etapa.
+- **Pets:** feitos para as duas espécies com modelo. **Ainda faltam:**
+  - **cães, gatos, galinhas, patos, cabras, ovelhas, cavalos e as aves pequenas**: cada espécie precisa ser modelada, ganhar rig e animações no Blender antes de entrar (o catálogo só mostra o que tem modelo);
+  - a **adoção** de animais encontrados no mundo;
+  - as **coleiras e acessórios** (precisam de peças 3D por espécie);
+  - os **animais domésticos circulando pelas cidades** com identidade por região;
+  - as **montarias** (cavalo com sela e o herói montado: animação de montar e câmera).
+- **Pets no bairro em renderização por software:** o bairro já é pesado nesse modo (cada quadro passa de 4 s no SwiftShader, por causa dos moradores com 50 mil triângulos). Numa placa de vídeo comum, isso não acontece.
 - **Retopologia aplicada só às duas criaturas do Meshy.** Armaduras, cabelos, rostos e personagens estão no relatório com a recomendação, mas não foram alterados. Cada um exige validação individual (troca de equipamento, pesos existentes), e mexer em massa iria contra a regra de não fazer alterações destrutivas em lote.
 - **Loops de topologia:** o QuadriFlow alinha os quads à curvatura, mas não desenha à mão os anéis em volta de olhos, boca e articulações (como no rosto de referência). Para os humanoides, isso fica para uma etapa com guias por região.
 - Mesmo com 11 mil triângulos, as pontas finas de pelo e pena ficam mais arredondadas que na fonte. A textura e o mapa de normais compensam só em parte.

@@ -50,6 +50,7 @@ const EclipseTests = {
       this.mundo();   // por último: troca a partida pelo modo mundo
       await this.bairroFotos();
       await this.criaturas();
+      await this.pets();
       await this.criacaoGLB();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -846,7 +847,7 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
     this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
@@ -1837,7 +1838,7 @@ const EclipseTests = {
     try {
       const Z = WORLD_ZONES[BAIRRO_ID], ints = Object.keys(BAIRRO_INTERIORES);
       this.ok('bairro: zona da cidade, fora da grade e do mapa', Z && Z.cidade && Z.distrito === 'bairro' && !worldZonesOf('nexus').includes(Z) && !World.mapTargets().includes(BAIRRO_ID));
-      this.ok('bairro: 4 interiores (taverna, hospedaria, conselho, quartel)', ints.length === 4 && ints.every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].distrito === 'interior' && THEMES[WORLD_ZONES[id].theme]));
+      this.ok('bairro: 5 interiores (taverna, hospedaria, conselho, quartel e o viveiro)', ints.length === 5 && ints.every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].distrito === 'interior' && THEMES[WORLD_ZONES[id].theme]));
       this.ok('bairro: cada interior tem quem trabalhe nele (2+ moradores)', ints.every((id) => WORLD_ZONES[id].npcs.length >= 2));
       this.ok('bairro: o kit de arquitetura carregou (prédios e mobília no PROPS3D)', Bairro.pronto() && BAIRRO_PREDIOS.every((B) => PROPS3D[B.id]) && ['mesa', 'banco', 'cadeira', 'cama', 'barril', 'balcao', 'estante', 'lareira', 'caixote', 'boneco_treino', 'armeiro', 'lampiao_rua', 'estandarte_rubro'].every((id) => PROPS3D[id] && MODELS3D['cen_' + id]), Bairro.estado);
       this.ok('bairro: mobília dos interiores existe no kit', ints.every((id) => BAIRRO_INTERIORES[id].moveis.every((m) => PROPS3D[m[0]])));
@@ -1849,7 +1850,7 @@ const EclipseTests = {
       const R = g.room;
       this.ok('bairro: chega no bairro (sala própria, não a da praça)', World.zone.id === BAIRRO_ID && R.bairro && !R.cidade);
       const portas = g.npcs.filter((n) => n instanceof PortaBairro);
-      this.igual('bairro: 7 portas (4 prédios com interior e 3 casas)', portas.length, 7);
+      this.igual('bairro: 7 portas (5 prédios com interior e 2 casas)', portas.length, 7);
       this.ok('bairro: volta para a praça', g.npcs.some((n) => n instanceof WorldProp && n.kind === 'gate' && n.data.to === CIDADE_ID));
       this.igual('bairro: ao meio-dia, 5 moradores na rua (guarda, Nina, Jorge, o bardo e o viajante no banco)', g.npcs.filter((n) => n instanceof Morador).length, 5);
       this.ok('bairro: lampiões, poço, carroça e o resto da rua (objetos do Blender com colisão)', Bairro.objetos.length >= 15 && R.pillars.filter((q) => q.cenario).length >= Bairro.objetos.length, Bairro.objetos.length);
@@ -1872,7 +1873,7 @@ const EclipseTests = {
       try { g.renderWorld(g.ctx); ThirdView.buildRoom(R); Bairro.desenharPlanta(g.ctx, 20, 20, 300, 240); World.openMap(false); World.drawMap(g.ctx, 1); World.closeMap(); } catch (e) { e2 = e.message; }
       this.ok('bairro: desenha (isométrica, 3ª pessoa, planta e mapa)', !e2, e2);
       // interiores: entrar, mobília, moradores e serviços, sair na porta certa
-      const servicos = { aurora_taverna: ['BENTO', 'refeicao'], aurora_hospedaria: ['ROSA', 'descansar'], aurora_conselho: ['CONSELHEIRA HELENA', 'painel'], aurora_quartel: ['CAPITÃ IRENE', 'treinar'] };
+      const servicos = { aurora_taverna: ['BENTO', 'refeicao'], aurora_hospedaria: ['ROSA', 'descansar'], aurora_conselho: ['CONSELHEIRA HELENA', 'painel'], aurora_quartel: ['CAPITÃ IRENE', 'treinar'], aurora_animais: ['CORA ALVES', 'catalogo'] };
       for (const id of ints) {
         const porta = g.npcs.find((n) => n instanceof PortaBairro && n.B.interior === id);
         porta.talk(); fade();
@@ -2055,9 +2056,9 @@ const EclipseTests = {
       e.state = 'idle'; e.vx = 0; for (let i = 0; i < 40; i++) clipe(() => {});
       const ang = (n) => m.nodes[n].r.slice();
       const parado = ang('braco.L');
-      e.vx = 240; for (let i = 0; i < 30; i++) clipe(() => {});
-      const correndo = ang('braco.L');
-      this.ok('criaturas: correndo, a perna da frente sai da pose parada', Math.hypot(parado[0] - correndo[0], parado[1] - correndo[1], parado[2] - correndo[2]) > 0.08, `${parado} / ${correndo}`);
+      e.vx = 240; let desvio = 0;
+      for (let i = 0; i < 40; i++) { clipe(() => {}); const c2 = ang('braco.L'); desvio = Math.max(desvio, Math.hypot(parado[0] - c2[0], parado[1] - c2[1], parado[2] - c2[2])); }   // (um passo inteiro)
+      this.ok('criaturas: correndo, a perna da frente sai da pose parada', desvio > 0.15, desvio);
       // mistura: logo depois da troca de clipe, a pose fica entre as duas (k < 1)
       e.vx = 0; clipe(() => {});
       this.ok('criaturas: a troca de clipe mistura (não pula)', e._cri.k < 1, e._cri.k);
@@ -2083,6 +2084,94 @@ const EclipseTests = {
     } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
     this.ok('criaturas: sem exceção', !erro, erro);
     if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
+  },
+
+  // Animais de companhia (js/mundo/pets.js): o viveiro (vendedora, vitrine 3D, catálogo, preço em
+  // células, confirmação), o nome, o companheiro que segue (anda, voa, senta, dorme), os cuidados
+  // (fome, humor, afinidade), guardar e chamar de volta, troca de zona e o salvamento
+  async pets() {
+    const g = game, p = g.player, z0 = World.zone && World.zone.id, b0 = g.stats.soulsBank, S0 = JSON.stringify(World.state.pets || null);
+    let erro = null;
+    try {
+      World.state.pets = { lista: [], ativo: null, uid: 1 };
+      World.loadZone('aurora_animais', null);
+      const cora = g.npcs.find((n) => n instanceof Morador && n.name === 'CORA ALVES');
+      this.ok('pets: a Cora atende no Viveiro dos Alves (Bairro da Muralha)', !!cora && WORLD_ZONES.aurora_animais.distrito === 'interior');
+      const vit = g.npcs.filter((n) => n instanceof VitrinePet);
+      this.igual('pets: 3 animais na vitrine do viveiro', vit.length, 3);
+      for (const id of ['asa_noturna', 'lobo_cinzento']) Criaturas3D.carregar(id);
+      for (let i = 0; i < 150 && !(Criaturas3D.pronto('asa_noturna') && Criaturas3D.pronto('lobo_cinzento')); i++) await new Promise((r) => setTimeout(r, 100));
+      for (const v of vit) v.update(0.016);
+      this.ok('pets: a vitrine usa os modelos 3D do Blender', vit.every((v) => v.key && v.key.startsWith('cri_')), vit.map((v) => v.key).join(','));
+      // catálogo e compra (só espécies com modelo; preço em células)
+      this.ok('pets: o catálogo só tem animais com modelo pronto', Object.values(PETS_ESPECIES).every((E) => Criaturas3D.pronto(E.modelo) || Criaturas3D.estado[E.modelo] !== 'falhou'));
+      Povo.conversar(cora);
+      this.ok('pets: a Cora oferece o catálogo', Dialogo.temId('catalogo'));
+      Dialogo.escolherId('catalogo');
+      this.ok('pets: o catálogo lista as duas espécies', Dialogo.temId('ver_asa_noturna') && Dialogo.temId('ver_lobo_manso'));
+      g.stats.soulsBank = 100;
+      Dialogo.escolherId('ver_asa_noturna');
+      this.ok('pets: sem células, a compra fica desativada', Dialogo.opcoes.find((o) => o.id === 'comprar').off);
+      Dialogo.fechar();
+      g.stats.soulsBank = 5000;
+      Povo.conversar(cora); Dialogo.escolherId('catalogo'); Dialogo.escolherId('ver_asa_noturna'); Dialogo.escolherId('comprar');
+      this.ok('pets: pede confirmação antes de cobrar', Dialogo.temId('sim') && g.stats.soulsBank === 5000);
+      Dialogo.escolherId('sim');
+      this.igual('pets: cobra o preço em células (a mesma moeda)', g.stats.soulsBank, 5000 - PETS_ESPECIES.asa_noturna.preco);
+      this.ok('pets: depois da compra, escolhe o nome', Dialogo.temId('n0'));
+      const nomeEsc = Dialogo.opcoes.find((o) => o.id === 'n0').txt;
+      Dialogo.escolherId('n0'); Dialogo.fechar();
+      const P = Pets.ativo();
+      this.ok('pets: a ave é sua, com o nome escolhido, e vem junto', P && P.especie === 'asa_noturna' && P.nome === nomeEsc && !!Pets.companheiro());
+      this.igual('pets: nome limpo (sem símbolos, até 16 letras)', Pets.nomeLimpo('  <Lume>!!  da Noite Azul Eterna '), 'Lume da Noite Az');
+      // segue o herói e voa; pousa e senta quando o herói para
+      World.loadZone('aurora_bairro', null);
+      const c = Pets.companheiro();
+      this.ok('pets: o companheiro chega junto na troca de zona', !!c && c.pet === P);
+      p.x += 300; p.facing = 0;
+      for (let i = 0; i < 10; i++) c.update(0.05);
+      this.ok('pets: longe do herói, a ave voa atrás dele', c.alt > 8 && Math.hypot(c.vx, c.vy) > 20, `alt ${c.alt.toFixed(1)}, v ${Math.hypot(c.vx, c.vy).toFixed(0)}`);
+      for (let i = 0; i < 200; i++) c.update(0.05);
+      this.ok('pets: chega perto e pousa', Math.hypot(c.x - p.x, c.y - p.y) < 130 && c.alt < 6, `${Math.round(Math.hypot(c.x - p.x, c.y - p.y))} / alt ${c.alt.toFixed(1)}`);
+      const C = Criaturas3D.dados.asa_noturna, S = { fl: 0, fi: 0 };
+      World.state.hora = 12;
+      this.igual('pets: parado um tempo, senta', c.petClipe(S, C, 0.016)[0], 'sentar');
+      World.state.hora = 23; c.paradoT = 20;
+      this.igual('pets: à noite, dorme', c.petClipe(S, C, 0.016)[0], 'dormir');
+      World.state.hora = 12;
+      // cuidados
+      P.fome = 60; P.humor = 40; const a0 = P.afinidade, cel = g.stats.soulsBank;
+      Pets.alimentar(P);
+      this.ok('pets: o petisco tira a fome, custa células e aumenta a afinidade', P.fome === 15 && g.stats.soulsBank === cel - PET_PETISCO && P.afinidade > a0);
+      this.igual('pets: e o companheiro come (clipe comer)', c.petClipe(S, C, 0.016)[0], 'comer');
+      this.ok('pets: satisfeito, recusa o petisco (sem cobrar)', /satisfeito/.test(Pets.alimentar(P)) && g.stats.soulsBank === cel - PET_PETISCO);
+      const h0 = P.humor; Pets.brincar(P);
+      this.ok('pets: brincar melhora o humor', P.humor > h0 && c.acao === 'brincar');
+      for (let i = 0; i < 200; i++) Pets.update(1);
+      this.ok('pets: com o tempo, a fome volta', P.fome > 15);
+      Pets.conversar(c);
+      this.ok('pets: [E] no companheiro: alimentar, brincar, carinho, ficar, nome, guardar', ['alimentar', 'brincar', 'carinho', 'ficar', 'nome', 'guardar'].every((i) => Dialogo.temId(i)) && /Fome/.test(Dialogo.texto));
+      Dialogo.escolherId('ficar');
+      this.igual('pets: "fica aqui" deixa ele parado', c.modo, 'ficar');
+      Dialogo.escolherId('guardar');
+      this.ok('pets: guardar no viveiro tira da zona', !Pets.companheiro() && !Pets.ativo() && Pets.S().lista.length === 1);
+      // salvar e voltar
+      const salvo = JSON.parse(JSON.stringify(World.state.pets));
+      this.ok('pets: fica no salvamento do mundo', salvo.lista[0].nome === P.nome && salvo.lista[0].especie === 'asa_noturna');
+      Pets.chamar(P.uid);
+      this.ok('pets: chamar de volta', !!Pets.companheiro() && Pets.ativo() === P);
+      // a vida não ganha nada com o pet (sem vantagem de combate)
+      this.ok('pets: o companheiro não luta (sem dano nem alvo)', !c.dmg && !g.enemies.includes(c));
+      let e3 = null; try { g.renderWorld(g.ctx); } catch (e) { e3 = e.message; }
+      this.ok('pets: desenha com o companheiro e o HUD', !e3, e3);
+      Pets.guardar();
+    } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
+    this.ok('pets: sem exceção', !erro, erro);
+    if (Dialogo.aberto) Dialogo.fechar();
+    World.state.pets = S0 === 'null' ? undefined : JSON.parse(S0);
+    g.stats.soulsBank = b0;
+    if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
   },
 
   // Bairro da Muralha na vista isométrica: o laço do jogo fotografa os 7 prédios com o motor 3D
