@@ -406,6 +406,11 @@ O combate é o mesmo em qualquer lugar — campanha, mundo aberto, masmorras, ev
 Entre os setores, Kael também escolhe **evoluções** (Fio Monomolecular, Condutor Iônico, Fase Quântica…) e pode aprender o Colapso Magnético (Pesado · Pesado) e o Relâmpago Ascendente (Leve · Pesado).
 
 ## Inimigos
+Criaturas feitas no Blender (esqueleto, animações e LODs; veja `docs/CRIATURAS_E_TOPOLOGIA.md`):
+- **Lobo Sombra Neon** (Metrópole Tecnológica), **Lobo de Raiz** (Velmora) e **Lobo das Neves** (Asterion), com passada, bote com mordida, investida, dano, atordoamento, morte e uivo.
+- A **Asa Noturna** (ave exótica) está pronta como modelo para os pets.
+- A topologia de todos os modelos é diagnosticada por `tools/topologia/diagnostico.py`. A retopologia em quads e os LOD 0–3 são feitos por `tools/blender/topologia/retopologia.py`.
+
 - **Rastejador**: aranha mecânica de NEXUS que ataca em bando.
 - **Drone Sentinela**: mantém distância e dispara lasers.
 - **Legionário de Ferro**: blindado, com martelo de impacto e super armadura.
@@ -574,7 +579,8 @@ js/
                     bairro.js (BAIRRO_*, Bairro, PortaBairro: o Bairro da Muralha com os prédios do
                     Blender, as portas, os quatro interiores mobiliados, os moradores e a refeição)
                     rotina.js (ROTINA, CONVERSAS, Rotina: a agenda por hora dos moradores do bairro),
-                    npc3d.js (NPC3D, NpcModelo: os moradores importantes com as peças da criação)
+                    npc3d.js (NPC3D, NpcModelo: os moradores importantes com as peças da criação),
+                    criaturas3d.js (Criaturas3D: as criaturas do Blender — carga, clipes por estado, LOD)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   criacao/          criação de personagem: dados.js (PERS_CLASSES, PERS_APAR, PersClasse, Perfis,
                     PersCriacao: classes, aparência, validação, perfis locais e equipamento inicial),

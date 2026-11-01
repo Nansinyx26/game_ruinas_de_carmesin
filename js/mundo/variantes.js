@@ -18,16 +18,20 @@
 //   regenera    recupera vida quando passa um tempo sem apanhar
 // As zonas pedem variantes pelo nome (js/mundo/regioes.js, js/mundo/campanhas.js); a missão
 // de abate de um tipo conta a variante dele (ex.: lobos de raiz contam como rastejadores).
+// modelo: a criatura feita no Blender que a variante usa no lugar do modelo do tipo base
+// (js/mundo/criaturas3d.js, carregada sob demanda; sem ela, o modelo de sempre com a tinta).
 // ---------------------------------------------------------------------------
 const ENEMY_VARIANTS = {
   enxame: { base: 'rastejador', nome: 'Enxame Carmesim', tint: [0.55, 0.08, 0.12, 0.85], glow: '255,40,70', escala: 0.82, vida: 0.7, dano: 0.9, vel: 1.2, tracos: ['divide'] },
-  lobo_raiz: { base: 'rastejador', nome: 'Lobo de Raiz', tint: [0.28, 0.4, 0.14, 0.9], glow: '160,255,90', escala: 1.18, vida: 1.3, dano: 1.1, vel: 1.15, tracos: ['matilha', 'veneno'] },
+  lobo_raiz: { base: 'rastejador', nome: 'Lobo de Raiz', tint: [0.28, 0.4, 0.14, 0.9], glow: '160,255,90', escala: 1.18, vida: 1.3, dano: 1.1, vel: 1.15, tracos: ['matilha', 'veneno'],
+    modelo: 'lobo_raiz', organico: true, sangue: '70,110,30' },
   esporo: { base: 'sacerdote', nome: 'Sentinela de Esporos', tint: [0.3, 0.42, 0.16, 0.9], glow: '190,255,110', escala: 1.05, vida: 1.2, dano: 0.9, vel: 0.9, tracos: ['esporos', 'regenera'] },
   medusa: { base: 'drone', nome: 'Medusa Elétrica', tint: [0.2, 0.45, 0.6, 0.85], glow: '120,240,255', escala: 1.1, vida: 0.9, dano: 1, vel: 1, tracos: ['explode'] },
   carangueijo: { base: 'legionario', nome: 'Caranguejo de Cristal', tint: [0.25, 0.55, 0.65, 0.85], glow: '120,235,255', escala: 0.9, vida: 1.1, dano: 0.9, vel: 1.1, tracos: ['carapaca'] },
   atirador: { base: 'cacador', nome: 'Agente Corporativo', tint: [0.18, 0.2, 0.3, 0.7], glow: '90,200,255', escala: 1, vida: 1, dano: 1.15, vel: 1.05, tracos: ['teleporta'] },
   escorpiao: { base: 'cacador', nome: 'Escorpião de Sucata', tint: [0.55, 0.38, 0.16, 0.9], glow: '255,190,80', escala: 1.12, vida: 1.25, dano: 1.05, vel: 0.95, tracos: ['veneno', 'enterra'] },
-  lobo_neve: { base: 'rastejador', nome: 'Lobo das Neves', tint: [0.75, 0.82, 0.95, 0.85], glow: '170,220,255', escala: 1.2, vida: 1.35, dano: 1.1, vel: 1.15, tracos: ['matilha', 'congela'] },
+  lobo_neve: { base: 'rastejador', nome: 'Lobo das Neves', tint: [0.75, 0.82, 0.95, 0.85], glow: '170,220,255', escala: 1.2, vida: 1.35, dano: 1.1, vel: 1.15, tracos: ['matilha', 'congela'],
+    modelo: 'lobo_neve', organico: true, sangue: '120,18,24' },
   golem_gelo: { base: 'legionario', nome: 'Golem de Gelo', tint: [0.55, 0.72, 0.9, 0.9], glow: '160,220,255', escala: 1.15, vida: 1.4, dano: 1.15, vel: 0.8, tracos: ['congela', 'rastro'], rastro: 'gelo' },
   magma: { base: 'sacerdote', nome: 'Elemental de Magma', tint: [0.6, 0.18, 0.05, 0.9], glow: '255,120,40', escala: 1.12, vida: 1.3, dano: 1.1, vel: 0.95, tracos: ['rastro', 'divide'], rastro: 'fogo' },
   diabrete: { base: 'drone', nome: 'Diabrete de Cinza', tint: [0.4, 0.2, 0.12, 0.85], glow: '255,140,50', escala: 0.85, vida: 0.6, dano: 1.4, vel: 1.5, tracos: ['kamikaze'] },
@@ -38,6 +42,9 @@ const ENEMY_VARIANTS = {
   espectro: { base: 'sacerdote', nome: 'Espectro da Capital', tint: [0.42, 0.12, 0.2, 0.7], glow: '255,90,120', escala: 1.05, vida: 1.1, dano: 1.2, vel: 1.1, tracos: ['teleporta', 'rastro'], rastro: 'fogo' },
   fragmento: { base: 'drone', nome: 'Fragmento de Código', tint: [0.36, 0.26, 0.6, 0.8], glow: '170,140,255', escala: 0.95, vida: 1, dano: 1.2, vel: 1.25, tracos: ['divide', 'explode'] },
   arauto_nulo: { base: 'cacador', nome: 'Arauto Nulo', tint: [0.24, 0.18, 0.42, 0.85], glow: '120,255,240', escala: 1.08, vida: 1.3, dano: 1.3, vel: 1.1, tracos: ['teleporta', 'regenera'] },
+  // Lobo Sombra Neon: a malha do Meshy enviada, com retopologia, rig e animações no Blender (tools/blender/criaturas/lobo_neon.py)
+  lobo_neon: { base: 'rastejador', nome: 'Lobo Sombra Neon', tint: [0.1, 0.5, 0.62, 0.8], glow: '80,240,255', escala: 1.12, vida: 1.3, dano: 1.15, vel: 1.25, tracos: ['matilha', 'teleporta'],
+    modelo: 'lobo_sombra_neon', organico: true, sangue: '60,200,255' },
   golem_dados: { base: 'legionario', nome: 'Golem de Dados', tint: [0.3, 0.28, 0.55, 0.9], glow: '150,130,255', escala: 1.25, vida: 1.7, dano: 1.25, vel: 0.85, tracos: ['carapaca', 'congela'] },
 };
 const POCAS = { fogo: { rgb: '255,110,40', dmg: 6 }, gelo: { rgb: '150,215,255', dmg: 3, lento: 2 } };
@@ -57,6 +64,7 @@ const EnemyTraits = {
     e.variante = id; e.varNome = V.nome; e.tracos = V.tracos.slice(); e.rastro = V.rastro || null;
     e.tint = V.tint; e.escala = V.escala;
     e.T = Object.assign({}, e.T, { glow: V.glow, name: V.nome });
+    if (V.organico) { e.T.mech = false; e.T.blood = V.sangue || '130,16,24'; }   // criatura de carne (sem faíscas de máquina)
     e.maxHp = e.hp = Math.round(e.hp * V.vida);
     e.dmg *= V.dano; e.speed *= V.vel; e.velBase = e.speed;
     e.radius = Math.round(e.radius * V.escala); e.height = Math.round(e.height * V.escala);

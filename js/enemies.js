@@ -51,6 +51,10 @@ class Enemy extends Entity {
 
   canBeHit() { return this.alive && this.state !== 'spawn' && this.state !== 'dying' && !this.invulnerable; }
   setState(s) { this.state = s; this.stateTime = 0; }
+  // Modelo 3D: o do chefe, a criatura do Blender da variante (js/mundo/criaturas3d.js) ou o do tipo
+  modelo3() { return this.isBoss ? 'nexus' : (typeof Criaturas3D !== 'undefined' && Criaturas3D.chave(this)) || this.type; }
+  // Transparência da morte: some no fim (quem tem animação de morte própria demora mais)
+  morteAlfa() { const D = this.morteDur || 0.45; return clamp((D - this.stateTime) / Math.min(D, 0.45), 0, 1); }
   releaseToken() { if (this.hasToken) game.director.release(this); }
   interrupt() { this.telegraph = null; this.superArmor = false; this.releaseToken(); }
 
@@ -88,7 +92,7 @@ class Enemy extends Entity {
     }
 
     if (this.state === 'dying') {
-      if (this.stateTime >= 0.45) this.alive = false;
+      if (this.stateTime >= (this.morteDur || 0.45)) this.alive = false;
     } else if (this.state === 'stun') {
       this.stun -= dt;
       const k = Math.exp(-10 * dt); this.vx *= k; this.vy *= k;
@@ -231,6 +235,7 @@ class Enemy extends Entity {
     this.hp = 0;
     if (this.tracos) EnemyTraits.morreu(this);   // explode, divide
     this.setState('dying');
+    if (this.cri) this.morteDur = Criaturas3D.MORTE;   // a criatura cai com a animação de morte
     this.flash = 0.18;
     this.kbx += (h.kx || 0) * 260 / this.mass; this.kby += (h.ky || 0) * 260 / this.mass;
     if (this.launchable) this.vz = Math.max(this.vz, 160);
@@ -249,7 +254,7 @@ class Enemy extends Entity {
       ctx.globalAlpha = 0.3 + 0.7 * k;
       ctx.beginPath(); ctx.rect(sx - 120, sy - 260, 240, 260); ctx.clip();   // emerge do chão
     } else if (this.state === 'dying') {
-      ctx.globalAlpha = clamp(1 - this.stateTime / 0.45, 0, 1);
+      ctx.globalAlpha = this.morteAlfa();
     }
     const use3D = game.use3D && this.spr && this.spr.ok;
     if (use3D) R3D.blit(ctx, this.spr, sx, sy + rise);
@@ -258,7 +263,7 @@ class Enemy extends Entity {
       this.drawBody(ctx, 0, 0, this.flash > 0 ? FLASH_PAL : this.pal);
     } else this.drawBody(ctx, sx, sy + rise, this.flash > 0 ? FLASH_PAL : this.pal);
     ctx.restore();
-    if (use3D && this.state !== 'spawn') game.glows3D(ctx, this.type, this, this.spr, sx, sy);
+    if (use3D && this.state !== 'spawn') game.glows3D(ctx, this.modelo3(), this, this.spr, sx, sy);
     // Atordoamento forte: centelhas elétricas girando sobre a cabeça
     if (this.state === 'stun' && this.stun > 0.25 && this.z <= 0) {
       for (let i = 0; i < 3; i++) {
@@ -279,7 +284,7 @@ class Enemy extends Entity {
       rise = (1 - easeOutCubic(k)) * (this.height + 6);
       a = 0.3 + 0.7 * k;
       ctx.beginPath(); ctx.rect(sx - 120, sy - 260, 240, 260); ctx.clip();
-    } else if (this.state === 'dying') a = clamp(1 - this.stateTime / 0.45, 0, 1);
+    } else if (this.state === 'dying') a = this.morteAlfa();
     R3D.blitEmissive(ctx, this.spr, sx, sy + rise, a);
     ctx.restore();
   }

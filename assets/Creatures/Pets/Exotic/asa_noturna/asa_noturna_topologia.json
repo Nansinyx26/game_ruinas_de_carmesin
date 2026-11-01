@@ -1,0 +1,114 @@
+{
+ "id": "asa_noturna",
+ "fonte": "assets/Creatures/Pets/Exotic/asa_noturna/fonte/Meshy_AI_Azure_Nightwing_1101011952_texture.glb",
+ "antes": {
+  "vertices": 78510,
+  "faces": 128844,
+  "triangulos": 128844,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 26762,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 707,
+  "finos_pct": 0.1
+ },
+ "limpeza": {
+  "soldados": 14108,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 64402,
+  "faces": 128844,
+  "triangulos": 128844,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.1
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 5614,
+  "faces": 5611,
+  "triangulos": 11222,
+  "quads": 5611,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 18,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 8.68
+ },
+ "medidas": {
+  "envergadura": 1.897,
+  "comprimento": 1.128,
+  "altura": 0.741
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 11222,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 5610,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 2804,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 1122,
+   "sem_osso": 0
+  }
+ ],
+ "glb": "assets/Creatures/Pets/Exotic/asa_noturna/asa_noturna.glb",
+ "blend": "assets/Creatures/Pets/Exotic/asa_noturna/asa_noturna.blend",
+ "previa": "assets/Creatures/Pets/Exotic/asa_noturna/asa_noturna.png",
+ "folha": [
+  ".cache_criacao/asa_noturna/asa_noturna_idle1.png",
+  ".cache_criacao/asa_noturna/asa_noturna_voar5.png",
+  ".cache_criacao/asa_noturna/asa_noturna_voar15.png",
+  ".cache_criacao/asa_noturna/asa_noturna_planar1.png",
+  ".cache_criacao/asa_noturna/asa_noturna_comer8.png",
+  ".cache_criacao/asa_noturna/asa_noturna_dormir1.png",
+  ".cache_criacao/asa_noturna/asa_noturna_brincar9.png",
+  ".cache_criacao/asa_noturna/asa_noturna_chamar20.png",
+  ".cache_criacao/asa_noturna/asa_noturna_andar5.png"
+ ],
+ "ossos": 26,
+ "animacoes": [
+  "andar",
+  "brincar",
+  "carinho",
+  "chamar",
+  "comer",
+  "dano",
+  "decolar",
+  "dormir",
+  "idle",
+  "planar",
+  "pousar",
+  "sentar",
+  "voar"
+ ],
+ "segundos": 58
+}

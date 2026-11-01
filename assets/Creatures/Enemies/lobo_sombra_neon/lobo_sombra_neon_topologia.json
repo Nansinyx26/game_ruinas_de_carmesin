@@ -1,0 +1,131 @@
+{
+ "id": "lobo_sombra_neon",
+ "fonte": "assets/Creatures/Enemies/lobo_sombra_neon/fonte/Meshy_AI_Neon_Shadow_Wolf_1101011401_texture.glb",
+ "antes": {
+  "vertices": 74407,
+  "faces": 127298,
+  "triangulos": 127298,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 20696,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 410,
+  "finos_pct": 0.1
+ },
+ "limpeza": {
+  "soldados": 10761,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 63646,
+  "faces": 127296,
+  "triangulos": 127296,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.1
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 5530,
+  "faces": 5528,
+  "triangulos": 11056,
+  "quads": 5528,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 3.75
+ },
+ "ajuste_esqueleto": {
+  "escala_z": 1.275,
+  "cabeca_dz": -0.275,
+  "comprimento": 1.898,
+  "altura": 0.964,
+  "patas": {
+   "FL": [
+    0.184,
+    -0.657,
+    0.023
+   ],
+   "HL": [
+    0.188,
+    0.028,
+    0.021
+   ],
+   "FR": [
+    -0.186,
+    -0.656,
+    0.023
+   ],
+   "HR": [
+    -0.188,
+    0.029,
+    0.021
+   ]
+  }
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 11056,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 5528,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 2764,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 1104,
+   "sem_osso": 0
+  }
+ ],
+ "glb": "assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.glb",
+ "blend": "assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.blend",
+ "previa": "assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.png",
+ "folha": [
+  ".cache_criacao/lobo_sombra_neon/lobo_sombra_neon_andar.png",
+  ".cache_criacao/lobo_sombra_neon/lobo_sombra_neon_correr.png",
+  ".cache_criacao/lobo_sombra_neon/lobo_sombra_neon_atacar.png",
+  ".cache_criacao/lobo_sombra_neon/lobo_sombra_neon_uivar.png",
+  ".cache_criacao/lobo_sombra_neon/lobo_sombra_neon_morte.png",
+  ".cache_criacao/lobo_sombra_neon/lobo_sombra_neon_saltar.png"
+ ],
+ "ossos": 31,
+ "animacoes": [
+  "andar",
+  "atacar",
+  "atordoado",
+  "correr",
+  "dano",
+  "idle",
+  "morte",
+  "saltar",
+  "trotar",
+  "uivar"
+ ],
+ "segundos": 62
+}

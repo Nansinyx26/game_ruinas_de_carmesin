@@ -62,7 +62,7 @@
       { id: 'obsidiano_nucleo', name: 'Núcleo de Obsidiana', theme: 'vulcao', lv: 39, boss: true },
     ] },
     // ------------------------------------------------ faixa 25–50: a megacidade (centro: a cidade)
-    metropole: { mobs: ['sentinela_neon', 'atirador', 'executor', 'drone', 'cacador', 'legionario'], zones: [
+    metropole: { mobs: ['sentinela_neon', 'lobo_neon', 'atirador', 'executor', 'drone', 'cacador', 'legionario'], zones: [
       { id: 'metro_porto', name: 'Porto Aéreo', theme: 'metropole', lv: 27, portal: true },
       { id: 'metro_torres', name: 'Torres de Vidro', theme: 'tower', lv: 30, terminal: ['Andar 212: a diretoria ainda recebe relatórios. Ninguém lê.', 'Os elevadores sobem sozinhos às 03:11. Todos os dias.'] },
       { id: 'metro_trilhos', name: 'Trilhos Suspensos', theme: 'metropole', lv: 33 },

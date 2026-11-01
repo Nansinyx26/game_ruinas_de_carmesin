@@ -371,7 +371,7 @@ const ThirdView = {
     for (const e of g.enemies) {
       if ((e.state === 'spawn' && e.stateTime < e.spawnDur * 0.5) || e.oculto > 0) continue;   // enterrado: some
       sombra(e, (e.radius || 16) * 1.3);
-      e.spr = place(g.queue3(e.isBoss ? 'nexus' : e.type, e, g.opts3(e, e.flash > 0 ? 0.85 : 0)), e);
+      e.spr = place(g.queue3(e.modelo3(), e, g.opts3(e, e.flash > 0 ? 0.85 : 0)), e);
     }
     for (const n of g.npcs) {
       if (n.kind) { this.queueProp(n, place); continue; }   // baús, terminais (as placas vão por cima)
@@ -408,7 +408,7 @@ const ThirdView = {
     for (const it of Q) {
       const e = it.ent;
       if (!e) continue;
-      const key = e === p ? mk : e.isBoss ? 'nexus' : e.type || e.key, def = MODELS3D[key];
+      const key = e === p ? mk : e.modelo3 ? e.modelo3() : e.type || e.key, def = MODELS3D[key];
       if (!def || !def.glows) continue;
       def.glows(e, (name, r, rgb, a) => {
         const q = it.anchors[name];

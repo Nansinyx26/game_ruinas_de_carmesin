@@ -1278,7 +1278,7 @@ class Game {
     if (def.opts) Object.assign(o, def.opts(e));
     if (e.elite) o.scale = (o.scale || 1) * 1.18;
     if (e.escala) o.scale = (o.scale || 1) * e.escala;   // variantes de inimigos (js/mundo/variantes.js): tamanho e cor
-    if (e.tint) o.vart = e.tint;
+    if (e.tint && !def.semTinta) o.vart = e.tint;   // (semTinta: criaturas com textura própria)
     // clima no corpo (molhado, neve, geada) e o tremor de frio (js/mundo/clima.js)
     if (this.world && World.zone) { o.clima = Clima.roupa(e); Clima.tremor(e, o); } else o.clima = null;
     // recuo do inimigo atingido: o corpo tomba um pouco na direção do golpe e volta (Enemy.takeHit)
@@ -1329,7 +1329,7 @@ class Game {
       o.yaw = g.f; o.ghost = p.kit ? p.kit.ghostRgb : heroGhostRgb(p.def); o.flash = 0; o.emi = undefined; o.holo = false; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0;
       g.spr = this.queue3(MODELS3D[mk0] ? mk0 : 'kael', gp, o);   // fantasmas: o modelo procedural do herói
     }
-    for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
+    for (const e of this.enemies) e.spr = this.queue3(e.modelo3(), e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
     for (const n of this.npcs) n.spr = n.foto3d ? null : this.queue3(n.key, n, this.opts3(n, 0));   // (foto3d: a foto do morador, js/mundo/npc3d.js)
     let cells = 0;
     for (let i = 0; i < this.pickups.count; i++) {

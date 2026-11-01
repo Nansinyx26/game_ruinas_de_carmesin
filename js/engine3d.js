@@ -510,7 +510,7 @@ const R3D = {
   // Só a pose: posição, colisão e golpes não mudam.
   MIX_DUR: { attack: 0.05, dash: 0.05, charge: 0.08, special: 0.08, block: 0.06, hurt: 0.06, plunge: 0.06, windup: 0.1, stun: 0.05, dying: 0.08, dead: 0.1 },
   misturar(m, e) {
-    if (typeof e !== 'object' || typeof e.state !== 'string' || e.vitrine) return;
+    if (typeof e !== 'object' || typeof e.state !== 'string' || e.vitrine || m.mixProprio) return;   // (mixProprio: criaturas, js/mundo/criaturas3d.js)
     const keys = m.mixKeys || (m.mixKeys = Object.keys(m.nodes)), n = keys.length, N = m.nodes;
     const now = typeof e.animTime === 'number' ? e.animTime : 0;
     const A = e.state === 'attack' && e.attack ? e.attack : null, golpe = A ? (A.serial !== undefined ? A.serial : A.id) : 0;

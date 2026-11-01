@@ -49,6 +49,7 @@ const EclipseTests = {
       this.pendencias();
       this.mundo();   // por último: troca a partida pelo modo mundo
       await this.bairroFotos();
+      await this.criaturas();
       await this.criacaoGLB();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -2001,6 +2002,87 @@ const EclipseTests = {
     World.state.hora = h0; g.stats.soulsBank = b0;
     if (World.zone.id !== z0) World.loadZone(z0, null);
     g.state = 'playing';
+  },
+
+  // Criaturas do Blender (js/mundo/criaturas3d.js): carga sob demanda, esqueleto e clipes, o
+  // inimigo da variante troca de modelo, a escolha do clipe pelo estado, a mistura em quatérnios,
+  // a pose diferente em cada clipe, o LOD e a morte mais longa
+  async criaturas() {
+    const g = game, z0 = World.zone && World.zone.id;
+    let erro = null;
+    try {
+      const ids = ['lobo_cinzento', 'lobo_raiz', 'lobo_neve'];
+      for (const id of ids) Criaturas3D.carregar(id);
+      for (let i = 0; i < 150 && !ids.every((id) => Criaturas3D.pronto(id) || Criaturas3D.estado[id] === 'falhou'); i++) await new Promise((r) => setTimeout(r, 100));
+      this.ok('criaturas: os 3 lobos do Blender carregados (js/assets/criaturas)', ids.every((id) => Criaturas3D.pronto(id)), ids.map((id) => Criaturas3D.estado[id]).join(' '));
+      const C = Criaturas3D.dados.lobo_raiz, CL = ['idle', 'andar', 'trotar', 'correr', 'atacar', 'saltar', 'dano', 'atordoado', 'morte', 'uivar'];
+      this.ok('criaturas: 31 ossos e as 10 animações do Blender', C.nb === 31 && CL.every((k) => C.clipes[k] && C.clipes[k].n > 1), Object.keys(C.clipes).join(','));
+      const m = g.model3('cri_lobo_raiz');
+      this.ok('criaturas: modelo montado (pele com textura PBR e quatérnios duplos)', !!m && m.skins.length >= 1 && m.tex && m.tex.pbr && m.dqs && m.mixProprio);
+      this.ok('criaturas: as variantes Lobo de Raiz e Lobo das Neves apontam para os modelos', ENEMY_VARIANTS.lobo_raiz.modelo === 'lobo_raiz' && ENEMY_VARIANTS.lobo_neve.modelo === 'lobo_neve');
+      // as malhas do Meshy com retopologia no Blender: o Lobo Sombra Neon (inimigo da Metrópole) e a Asa Noturna (ave)
+      for (const id of ['lobo_sombra_neon', 'asa_noturna']) Criaturas3D.carregar(id);
+      for (let i = 0; i < 150 && !(Criaturas3D.pronto('lobo_sombra_neon') && Criaturas3D.pronto('asa_noturna')); i++) await new Promise((r) => setTimeout(r, 100));
+      const N = Criaturas3D.dados.lobo_sombra_neon, A = Criaturas3D.dados.asa_noturna;
+      this.ok('criaturas: Lobo Sombra Neon com 4 LODs (malha retopologizada) e as 10 animações', N && N.lods === 4 && CL.every((k) => N.clipes[k]), N && N.lods);
+      const tr = N ? N.SK.map((s) => s.idx.length / 3) : [];
+      this.ok('criaturas: LODs cada vez mais leves e o LOD 0 no orçamento (até 12 mil triângulos)', tr.length === 4 && tr[0] <= 12000 && tr.every((t, i) => !i || t < tr[i - 1]), tr.join(' > '));
+      this.ok('criaturas: o lobo neon está na Metrópole', ENEMY_VARIANTS.lobo_neon.modelo === 'lobo_sombra_neon' && Object.values(WORLD_ZONES).some((z) => z.region === 'metropole' && (z.camps || []).some((c) => c.mobs && c.mobs.lobo_neon)));
+      const AV = ['idle', 'andar', 'voar', 'planar', 'decolar', 'pousar', 'comer', 'dormir', 'sentar', 'brincar', 'carinho', 'chamar', 'dano'];
+      this.ok('criaturas: Asa Noturna (ave) com esqueleto de ave, 4 LODs e 13 animações', A && A.nb >= 24 && A.lods === 4 && AV.every((k) => A.clipes[k]), A && Object.keys(A.clipes).join(','));
+      World.loadZone('velmora_trilha', null);
+      for (const e of g.enemies) e.alive = false;
+      g.enemies.length = 0; World.camps = [];
+      const p = g.player, e = criarInimigo('lobo_raiz', p.x + 120, p.y, 9);
+      e.state = 'idle'; g.enemies.push(e);
+      this.igual('criaturas: o lobo de raiz usa o modelo do Blender', e.modelo3(), 'cri_lobo_raiz');
+      this.ok('criaturas: carne, não máquina (sem faíscas, sangue próprio)', e.T.mech === false && e.T.blood === ENEMY_VARIANTS.lobo_raiz.sangue);
+      const o = g.opts3(e, 0); Object.assign(o, MODELS3D.cri_lobo_raiz.opts(e));
+      const clipe = (prep) => { prep(); e.animTime += 0.016; m.reset(); MODELS3D.cri_lobo_raiz.pose(m, e, o); return e._cri.clipe; };
+      const casos = [
+        ['parado → idle', () => { e.state = 'idle'; e.vx = e.vy = 0; e.recuoT = 0; }, 'idle'],
+        ['devagar → andar', () => { e.vx = 50; }, 'andar'],
+        ['perseguindo → trotar', () => { e.vx = 120; }, 'trotar'],
+        ['em disparada → correr', () => { e.vx = 240; }, 'correr'],
+        ['preparo do bote → atacar', () => { e.vx = 0; e.state = 'windup'; e.tgProgress = 0.5; }, 'atacar'],
+        ['golpe → atacar', () => { e.state = 'attack'; e.stateTime = 0.05; }, 'atacar'],
+        ['atordoado', () => { e.state = 'stun'; }, 'atordoado'],
+        ['atingido → dano', () => { e.state = 'idle'; e.recuoT = 0.1; e.recuoDur = 0.3; }, 'dano'],
+        ['investida → saltar', () => { e.recuoT = 0; e.state = 'dash'; e.stateTime = 0.1; }, 'saltar'],
+      ];
+      for (const [nome, prep, esp] of casos) this.igual('criaturas: ' + nome, clipe(prep), esp);
+      // a pose muda de verdade entre os clipes (a perna da frente no passo e no bote)
+      e.state = 'idle'; e.vx = 0; for (let i = 0; i < 40; i++) clipe(() => {});
+      const ang = (n) => m.nodes[n].r.slice();
+      const parado = ang('braco.L');
+      e.vx = 240; for (let i = 0; i < 30; i++) clipe(() => {});
+      const correndo = ang('braco.L');
+      this.ok('criaturas: correndo, a perna da frente sai da pose parada', Math.hypot(parado[0] - correndo[0], parado[1] - correndo[1], parado[2] - correndo[2]) > 0.08, `${parado} / ${correndo}`);
+      // mistura: logo depois da troca de clipe, a pose fica entre as duas (k < 1)
+      e.vx = 0; clipe(() => {});
+      this.ok('criaturas: a troca de clipe mistura (não pula)', e._cri.k < 1, e._cri.k);
+      // LOD: só uma malha por pose
+      o.lodCri = 0; m.reset(); MODELS3D.cri_lobo_raiz.pose(m, e, o);
+      this.igual('criaturas: uma malha visível por vez (LOD)', m.skins.filter((s) => !s.hide).length, 1);
+      // morte: a animação de morte inteira antes de sumir
+      e.state = 'idle'; e.die({ kx: 1, ky: 0 });
+      this.ok('criaturas: a morte dura o clipe (1,3 s) em vez de 0,45 s', e.morteDur === Criaturas3D.MORTE);
+      for (let i = 0; i < 40; i++) e.update(0.016);
+      this.ok('criaturas: aos 0,64 s ainda caindo (visível)', e.alive && e.morteAlfa() === 1 && e._cri && clipe(() => {}) === 'morte');
+      for (let i = 0; i < 60; i++) e.update(0.016);
+      this.ok('criaturas: e então some', !e.alive);
+      // inimigo sem modelo próprio segue o de sempre
+      const r = criarInimigo('rastejador', p.x, p.y + 90, 9);
+      this.igual('criaturas: o rastejador segue com o modelo dele', r.modelo3(), 'rastejador');
+      // desenho: o laço do jogo põe o lobo na fila do motor 3D sem erro
+      const e2 = criarInimigo('lobo_neve', p.x + 80, p.y + 40, 9); e2.state = 'idle'; g.enemies.push(e2);
+      g.state = 'playing';
+      for (let i = 0; i < 30 && !(e2.spr && e2.spr.ok); i++) await new Promise((r) => setTimeout(r, 100));   // (o próximo quadro do laço do jogo)
+      this.ok('criaturas: o lobo das neves desenhado pelo motor 3D', !g.use3D || (e2.spr && e2.spr.ok), e2.spr && e2.spr.ok);
+      e2.alive = false;
+    } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
+    this.ok('criaturas: sem exceção', !erro, erro);
+    if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
   },
 
   // Bairro da Muralha na vista isométrica: o laço do jogo fotografa os 7 prédios com o motor 3D
