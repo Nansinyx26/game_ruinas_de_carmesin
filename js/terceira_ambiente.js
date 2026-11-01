@@ -268,10 +268,12 @@ const Ambiente3P = {
   // Ajusta a luz do motor 3D para esta passada (restaurada em fim()); devolve a névoa
   luzes(R, C, view) {
     const th = R.theme, L = R3D.light, tipo = this.tipo(R), P = AMB3P[tipo];
-    this.salva = this.salva || { key: L.key.slice() };
+    this.salva = this.salva || { key: L.key.slice(), rim: L.rim.slice() };
+    L.rim = this.salva.rim.slice();
     if (!C || !P.amb) {
       const lc = th.lamp.split(',').map((v) => v / 255), dia = game.world && typeof WorldTime !== 'undefined' ? WorldTime.ambiente(th) : 1;
-      L.amb = [(0.34 + lc[0] * 0.16) * dia, (0.38 + lc[1] * 0.16) * dia, (0.5 + lc[2] * 0.16) * dia];
+      L.amb = th.amb3p ? th.amb3p.map((v) => v * dia) : [(0.34 + lc[0] * 0.16) * dia, (0.38 + lc[1] * 0.16) * dia, (0.5 + lc[2] * 0.16) * dia];   // (amb3p: luz própria do tema, js/mundo/bairro.js)
+      if (th.amb3p) { L.key = [1.0, 0.86, 0.68]; L.rim = [0.62, 0.42, 0.26]; }   // luz de lareira e lampião: contorno quente no lugar do azul
       const dk = th.dark.split(',').map((v) => v / 255);
       return C ? [C.chao[0] / 255, C.chao[1] / 255, C.chao[2] / 255, 330] : [dk[0] * 1.4 + 0.01, dk[1] * 1.4 + 0.01, dk[2] * 1.4 + 0.015, 300];
     }
@@ -291,7 +293,7 @@ const Ambiente3P = {
     // névoa: a cor da terra distante; começa mais perto com o céu fechado
     return [C.chao[0] / 255, C.chao[1] / 255, C.chao[2] / 255, (tipo === 'cidade' ? 300 : 360) * (1 - F * 0.45)];
   },
-  fim() { if (this.salva) { R3D.light.key = this.salva.key.slice(); } },
+  fim() { if (this.salva) { R3D.light.key = this.salva.key.slice(); R3D.light.rim = this.salva.rim.slice(); } },
 
   // ------------------------------------------------------------ chão: até o horizonte e detalhes
   // Acrescenta ao modelo da sala o chão distante e os detalhes do bioma (sem colisão)

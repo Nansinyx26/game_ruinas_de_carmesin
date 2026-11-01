@@ -103,8 +103,12 @@ class Room {
     this.w = this.h = this.def.tiles * TILE;
     this.seed = 9973 * (index + 1) + Math.floor(Math.random() * 100000);
     // cidade principal (js/mundo/cidade.js): muralha alta atrás das fachadas dos distritos
-    this.cidade = !!this.def.cidade;
-    this.wallH = this.cidade ? 330 : 150;
+    // (os distritos da cidade, js/mundo/bairro.js, são zonas da cidade com sala própria: o Bairro
+    // da Muralha, com os prédios do Blender, e os interiores dos prédios)
+    this.cidade = !!this.def.cidade && !this.def.distrito;
+    this.bairro = !!this.def.bairro;
+    this.interior = this.def.distrito === 'interior';
+    this.wallH = this.cidade || this.bairro ? 330 : this.interior ? 190 : 150;
     // campo aberto (zonas de bioma do mundo, def.aberto): sem paredes nem plataforma; o chão segue
     // além da borda (a margem) com árvores, rochas ou cristais de paisagem, que não colidem
     this.aberto = !!this.def.aberto;
@@ -131,6 +135,7 @@ class Room {
     }
     for (let y = TILE * 1.5; y < h - TILE; y += TILE * 3) this.torches.push({ x: 0, y, ph: r() * 10 });
     if (this.cidade) this.torches = Cidade.postes(this);   // na cidade, postes de rua no lugar das luminárias
+    if (this.bairro) this.torches = [];   // no bairro, a luz vem dos lampiões de rua e das janelas dos prédios (Bairro.luzes)
     // Enfeites das paredes (telas, letreiros neon, vitrais, painéis holográficos)
     for (const side of ['L', 'R']) {
       for (let i = 0; i < n; i++) {
@@ -232,8 +237,8 @@ class Room {
       if (inDoor) e.x = clamp(e.x, d.x - d.halfW + r, d.x + d.halfW - r);   // atravessando a porta
       else { e.y = r; hit = true; }
     }
-    if (this.cidade) {   // fachadas dos distritos ao longo das duas paredes do fundo
-      const m = CIDADE_RECUO + r;
+    if (this.cidade || this.bairro) {   // fachadas dos distritos (ou os prédios do bairro) ao longo das duas paredes do fundo
+      const m = (this.bairro ? BAIRRO_RECUO : CIDADE_RECUO) + r;
       if (e.x < m) { e.x = m; hit = true; }
       if (e.y < m) { e.y = m; hit = true; }
     }
@@ -255,6 +260,7 @@ class Room {
   blocksPoint(x, y, r) {
     if (x < 0 || y < 0 || x > this.w || y > this.h) return true;
     if (this.cidade && (x < CIDADE_RECUO + r || y < CIDADE_RECUO + r)) return true;
+    if (this.bairro && (x < BAIRRO_RECUO + r || y < BAIRRO_RECUO + r)) return true;
     for (const p of this.pillars) if (!p.deco && dist2(x, y, p.x, p.y) < (p.r + r) * (p.r + r)) return true;
     return false;
   }
@@ -331,9 +337,10 @@ class Room {
     const r = mulberry32(this.seed + 17);
     if (!this.aberto) this.drawLedges(ctx, r);
     this.drawFloor(ctx, r);
-    if (!this.aberto) this.drawSigil(ctx);
+    if (!this.aberto && !this.def.distrito) this.drawSigil(ctx);
     if (!this.aberto) this.drawWalls(ctx, r);
     if (this.cidade) Cidade.desenharFundo(ctx, this);   // praça, ruas e as fachadas dos distritos
+    if (this.bairro) Bairro.desenharFundo(ctx, this);   // calçamento, a praça do poço e o bastião do canto
     for (const d of this.decals) this.paintDecal(ctx, d);
     for (const p of this.pillars) if (!p.cenario) this.renderPillar(p, scale);
   }
@@ -375,7 +382,7 @@ class Room {
         // Escurece perto das bordas para dar profundidade
         const edge = Math.min(i, j, n - 1 - i, n - 1 - j);
         const dark = edge === 0 ? 0.65 : edge === 1 ? 0.85 : 1;
-        const missing = v < 0.035;
+        const missing = v < 0.035 && deco !== 'madeira' && deco !== 'lajes';   // (tábuas e lajes inteiras)
         const l = (missing ? 5 : fl + r() * 5) * dark;
         ctx.fillStyle = `hsl(${fh + r() * 10},${fs + r() * 6}%,${l.toFixed(1)}%)`;
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
@@ -549,6 +556,31 @@ class Room {
         } else if (d < 0.3) crack();
         else if (d < 0.38) stain('20,12,6', 0.35);
         break;
+      case 'madeira': {
+        // tábuas corridas (na direção x), com as emendas desencontradas e os pregos
+        ctx.strokeStyle = 'rgba(0,0,0,0.38)'; ctx.lineWidth = 1;
+        for (let k = 1; k < 4; k++) {
+          const a = [lerp(pts[0][0], pts[3][0], k / 4), lerp(pts[0][1], pts[3][1], k / 4)], b = [lerp(pts[1][0], pts[2][0], k / 4), lerp(pts[1][1], pts[2][1], k / 4)];
+          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        }
+        const e = (i * 7 + j * 3) % 4, u = 0.25 + 0.5 * r();
+        const t0 = [lerp(pts[0][0], pts[3][0], e / 4), lerp(pts[0][1], pts[3][1], e / 4)], t1 = [lerp(pts[1][0], pts[2][0], e / 4), lerp(pts[1][1], pts[2][1], e / 4)];
+        const t2 = [lerp(pts[0][0], pts[3][0], (e + 1) / 4), lerp(pts[0][1], pts[3][1], (e + 1) / 4)], t3 = [lerp(pts[1][0], pts[2][0], (e + 1) / 4), lerp(pts[1][1], pts[2][1], (e + 1) / 4)];
+        ctx.beginPath(); ctx.moveTo(lerp(t0[0], t1[0], u), lerp(t0[1], t1[1], u)); ctx.lineTo(lerp(t2[0], t3[0], u), lerp(t2[1], t3[1], u)); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,220,170,0.05)';
+        ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1] + 1); ctx.lineTo(pts[1][0], pts[1][1] + 1); ctx.stroke();
+        if (d < 0.18) stain('30,16,6', 0.22);
+        else if (d < 0.26) crack();
+        break;
+      }
+      case 'lajes':
+        // lajes de pedra: junta em cruz no meio da placa e manchas de desgaste
+        ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo((pts[0][0] + pts[3][0]) / 2, (pts[0][1] + pts[3][1]) / 2); ctx.lineTo((pts[1][0] + pts[2][0]) / 2, (pts[1][1] + pts[2][1]) / 2); ctx.stroke();
+        if ((i + j) % 2) { ctx.beginPath(); ctx.moveTo((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2); ctx.lineTo((pts[3][0] + pts[2][0]) / 2, (pts[3][1] + pts[2][1]) / 2); ctx.stroke(); }
+        if (d < 0.16) crack();
+        else if (d < 0.3) stain('20,16,12', 0.18);
+        break;
       case 'stone':
         if (d < 0.2) crack();
         else if (d < 0.26) {
@@ -613,7 +645,7 @@ class Room {
     for (let j = n - 1; j >= 0; j--) segs.push({ ax: 0, ay: (j + 1) * TILE, bx: 0, by: j * TILE, side: 'L' });
     for (let i = 0; i < n; i++) segs.push({ ax: i * TILE, ay: 0, bx: (i + 1) * TILE, by: 0, side: 'R' });
     for (const s of segs) {
-      const isDoor = s.side === 'R' && Math.abs((s.ax + s.bx) / 2 - this.door.x) < TILE;
+      const isDoor = s.side === 'R' && !this.def.distrito && Math.abs((s.ax + s.bx) / 2 - this.door.x) < TILE;   // (o bairro e os interiores não têm a comporta)
       const hh = isDoor ? this.wallH + 20 : this.wallH - (r() < th.ruined ? 20 + r() * 50 : r() * 6);
       const ax = isoX(s.ax, s.ay), ay = isoY(s.ax, s.ay), bx = isoX(s.bx, s.by), by = isoY(s.bx, s.by);
       // Face da parede com gradiente vertical
@@ -685,7 +717,18 @@ class Room {
       }
       ctx.restore();
     }
-    // Moldura da comporta: batentes metálicos e faixa de advertência no topo
+    // Moldura da comporta: batentes metálicos e faixa de advertência no topo (o bairro e os interiores não têm)
+    if (!this.def.distrito) this.drawDoorFrame(ctx);
+    // Suportes das luminárias
+    for (const tc of this.torches) {
+      if (tc.chao || tc.poste) continue;
+      const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y) - 64;
+      ctx.fillStyle = '#14171d'; ctx.fillRect(sx - 3, sy, 6, 14);
+      ctx.fillStyle = '#3a404c'; ctx.fillRect(sx - 6, sy - 3, 12, 5);
+    }
+  }
+
+  drawDoorFrame(ctx) {
     const d = this.door;
     const lx = isoX(d.x - d.halfW, 0), ly = isoY(d.x - d.halfW, 0), rx = isoX(d.x + d.halfW, 0), ry = isoY(d.x + d.halfW, 0);
     const dh = 112;
@@ -703,13 +746,6 @@ class Room {
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 8, y - 20); ctx.stroke();
     }
     ctx.restore();
-    // Suportes das luminárias
-    for (const tc of this.torches) {
-      if (tc.chao || tc.poste) continue;
-      const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y) - 64;
-      ctx.fillStyle = '#14171d'; ctx.fillRect(sx - 3, sy, 6, 14);
-      ctx.fillStyle = '#3a404c'; ctx.fillRect(sx - 6, sy - 3, 12, 5);
-    }
   }
 
   // Sprite pré-renderizado de cada pilar (pilone metálico, concreto ou pedra)
@@ -922,11 +958,12 @@ class Room {
     if (!this.canvas) return;
     const b = this.bounds();
     ctx.drawImage(this.canvas, b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY);
+    if (this.bairro) Bairro.desenharPredios(ctx, this);   // os prédios do Blender (atrás de tudo que anda)
   }
 
   // Comporta blindada: duas folhas que deslizam para os lados ao abrir
   drawDoor(ctx) {
-    if (this.aberto) return;
+    if (this.aberto || this.def.distrito) return;   // (o bairro e os interiores saem por portas e passagens próprias)
     const d = this.door, dh = 112;
     const lx = isoX(d.x - d.halfW, 0), ly = isoY(d.x - d.halfW, 0), rx = isoX(d.x + d.halfW, 0), ry = isoY(d.x + d.halfW, 0);
     ctx.save();
@@ -1033,7 +1070,8 @@ class Room {
     // Luz de status da comporta: vermelha fechada, azul aberta
     ctx.globalAlpha = 1;
     if (this.cidade) Cidade.desenharLuzes(ctx, this, time);   // janelas, portas, letreiros e o farol
-    if (this.aberto || this.cidade) { ctx.restore(); return; }
+    if (this.bairro) Bairro.desenharLuzes(ctx, this, time);   // janelas e lampiões dos prédios do bairro
+    if (this.aberto || this.cidade || this.def.distrito) { ctx.restore(); return; }
     const d = this.door;
     const mx = isoX(d.x, 0), my = isoY(d.x, 0);
     GlowCache.draw(ctx, d.open > 0 ? '90,200,255' : '255,50,70', mx, my - 130, 16, 0.9);
@@ -1060,6 +1098,7 @@ class Room {
     }
     if (this.door.open > 0) lighting.add(isoX(this.door.x, 20), isoY(this.door.x, 20) - 40, 260, 0.8 * this.door.open);
     if (this.cidade) Cidade.luzes(lighting, this);   // a luz que sai das portas dos distritos
+    if (this.bairro) Bairro.luzes(lighting, this);   // portas, janelas e lampiões do bairro
   }
 
   drawDebug(ctx) {

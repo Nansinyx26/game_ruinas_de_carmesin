@@ -85,6 +85,7 @@ const Clima = {
     if (!R) return 0;
     if (this.exposicao() < 1) return 1;
     if (R.cidade) return x < CIDADE_RECUO + 70 || y < CIDADE_RECUO + 70 ? 1 : 0;
+    if (R.bairro) return x < BAIRRO_RECUO + 60 || y < BAIRRO_RECUO + 60 ? 1 : 0;   // beirais dos prédios do bairro
     if (!R.aberto && (x < 80 || y < 80)) return 0.8;
     let a = 0;
     for (const p of R.pillars) {
@@ -295,6 +296,9 @@ const Clima = {
         if (B.lado === 'N') tenta(clamp(x + rand(-40, 40), C.x0 + 30, C.x1 - 30), C.y1 + 34);
         else tenta(C.x1 + 34, clamp(y + rand(-40, 40), C.y0 + 30, C.y1 - 30));
       }
+    } else if (R.bairro) {
+      tenta(clamp(x + rand(-40, 40), BAIRRO_RECUO + 30, R.w - 40), BAIRRO_RECUO + 30);
+      tenta(BAIRRO_RECUO + 30, clamp(y + rand(-40, 40), BAIRRO_RECUO + 30, R.h - 40));
     } else if (R.theme.pillar === 'tree') {
       for (const p of R.pillars) { if (p.deco) continue; const a = Math.atan2(y - p.y, x - p.x); tenta(p.x + Math.cos(a) * (p.r + 18), p.y + Math.sin(a) * (p.r + 18)); }
     } else if (!R.aberto) { tenta(x, 56); tenta(56, y); }
@@ -713,7 +717,7 @@ const Clima = {
     U.ventoBp.frequency.setTargetAtTime(320 + 380 * rajada * Math.min(1, w), t, 0.4);
     const nd = this.neblina();
     U.abafa.frequency.setTargetAtTime(nd > 0.05 || this.nevando() > 0.5 ? Math.max(1800, 20000 * (1 - nd * 1.2) - this.nevando() * 6000) : 20000, t, 0.5);
-    U.eco.gain.setTargetAtTime(expo < 1 ? 0.22 : game.room && game.room.cidade ? 0.08 : 0.02, t, 0.5);
+    U.eco.gain.setTargetAtTime(expo < 1 ? 0.22 : game.room && (game.room.cidade || game.room.bairro) ? 0.08 : 0.02, t, 0.5);
   },
   // Fora do mundo (World.stop): silencia a chuva e o vento
   silenciar() {

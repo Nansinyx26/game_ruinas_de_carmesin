@@ -976,7 +976,11 @@ const R3D = {
     const c = document.createElement('canvas');
     c.width = it.cw; c.height = it.ch;
     c.getContext('2d').drawImage(this.canvas, it.cx, it.cy, it.cw, it.ch, 0, 0, it.cw, it.ch);
-    return { canvas: c, minX: it.minX, minY: it.minY, s: this.scale };
+    // a passada emissiva (metade de baixo do atlas): janelas e lampiões acesos, somados depois da escuridão
+    const e = document.createElement('canvas');
+    e.width = it.cw; e.height = it.ch;
+    e.getContext('2d').drawImage(this.canvas, it.cx, it.cy + this.H / 2, it.cw, it.ch, 0, 0, it.cw, it.ch);
+    return { canvas: c, emi: e, minX: it.minX, minY: it.minY, s: this.scale };
   },
 
   // Desenha a passada de cor do sprite com os pés em (sx, sy) (coordenadas do mundo isométrico)

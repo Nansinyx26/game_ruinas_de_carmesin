@@ -1,6 +1,7 @@
 """Kit modular de arquitetura medieval da cidade principal (Refúgio da Aurora), feito no Blender.
 
-ESTADO: em desenvolvimento (fase 2 da expansão) — ainda não executado nem conferido; nada do jogo usa este arquivo.
+ESTADO: entregue na fase 2 da expansão. Os prédios e a mobília vão para o jogo pelo js/assets/arquitetura3d.js
+(Bairro da Muralha e os interiores, js/mundo/bairro.js); os módulos ficam como kit para montar outros prédios.
 
 Fase 2 da expansão do mundo aberto (docs/EXPANSAO_MUNDO_ABERTO.md). Tudo é montado aqui, por regras:
 
@@ -25,6 +26,7 @@ para a porta de entrada do interior.
 Materiais: até seis células procedurais por objeto (utils.material_procedural: pedra em blocos,
 reboco, madeira com veio, telha, ardósia, ferro, vidro aceso, tecido), assadas em texturas (cor com
 oclusão, ORM, normais e emissão): 1024 px nos prédios, 512 nas peças.
+Orçamento: 8 mil triângulos por prédio (fotografado uma vez na vista isométrica), 1,5 mil por peça.
 
 Rode: python3 tools/blender/arquitetura.py (tudo), ou com nomes: python3 tools/blender/arquitetura.py taverna mesa
 Depois: python3 tools/importar_prop.py --grupo arquitetura
@@ -45,7 +47,7 @@ import utils as U   # noqa: E402
 from kit import Obj, rad   # noqa: E402
 
 TAU = 2 * math.pi
-U.ORCAMENTO.update({'predio': 6000, 'movel': 1500, 'modulo': 1500})
+U.ORCAMENTO.update({'predio': 8000, 'movel': 1500, 'modulo': 1500})   # (os prédios: fotografados uma vez na vista isométrica)
 PASTA = 'arquitetura'
 
 # ------------------------------------------------------------ materiais (células)
@@ -99,14 +101,22 @@ class Montagem(Obj):
         objs = [ob for L in self.partes.values() for ob in L]
         mn, mx = U.medidas(objs)
         base = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
-        if self.marcas['janelas'] or self.marcas['portas']:
+        if self.tipo == 'predio' and (self.marcas['janelas'] or self.marcas['portas']):
             out = {k: [dict(m, p=[round(m['p'][0] - base.x, 3), round(m['p'][1] - base.y, 3), round(m['p'][2] - base.z, 3)]) for m in v] for k, v in self.marcas.items()}
             out['tamanho_m'] = [round(v, 3) for v in (mx - mn)]
-            caminho = os.path.join(U.MODELOS, PASTA, f'{self.nome}.json')
+            caminho = os.path.join(U.MODELOS, kw.get('pasta', PASTA), f'{self.nome}.json')   # ao lado do GLB
             os.makedirs(os.path.dirname(caminho), exist_ok=True)
             with open(caminho, 'w', encoding='utf-8') as f:
                 json.dump(out, f, ensure_ascii=False, indent=1)
         return super().finalizar(celulas, **kw)
+
+
+def cil_h(o, cel, r, comp, centro, eixo='x', lados=8, giro_z=0.0):
+    """Cilindro deitado (eixo X ou Y) com o CENTRO em 'centro' (o cilindro do kit tem a base em pos
+    e gira em volta do próprio centro: passar a ponta como pos o deixava fora do lugar)."""
+    cx, cy, cz = centro
+    rot = (0, rad(90), giro_z) if eixo == 'x' else (rad(90), 0, giro_z)
+    return o.cilindro(cel, r, comp, (cx, cy, cz - comp / 2), lados=lados, rot=rot)
 
 
 def prisma_tri(o, cel, larg, alt, esp, pos=(0, 0, 0), giro=0.0, topo=0.0):
@@ -239,9 +249,9 @@ def telhado(o, larg=8.0, prof=5.0, alt=2.6, beiral=0.45, cel_telha=3, cel_empena
             t = (k + 0.5) * passo
             y = s * (d - t * math.cos(th))
             z = -beiral * math.tan(th) + t * math.sin(th) + 0.05 + 0.012 * (k % 2)
-            o.caixa(cel_telha, W, passo * 1.32, 0.06, (0, y, z - 0.03), rot=(s * th, 0, 0))
+            o.caixa(cel_telha, W, passo * 1.32, 0.06, (0, y, z - 0.03), rot=(-s * th, 0, 0))   # (a fiada deitada na água do telhado)
         o.caixa(cel_madeira, W + 0.04, 0.06, 0.2, (0, s * (d - 0.02), -beiral * math.tan(th) - 0.12))   # testeira
-    o.cilindro(cel_telha, 0.13, W + 0.1, (-(W + 0.1) / 2, 0, alt + 0.06), lados=8, rot=(0, rad(90), 0))     # cumeeira
+    cil_h(o, cel_telha, 0.13, W + 0.1, (0, 0, alt + 0.04), 'x', lados=8)     # cumeeira
     if empenas:
         for s in (-1, 1):
             prisma_tri(o, cel_empena, prof, alt, 0.3, (s * (larg / 2 - 0.15), 0, 0), giro=rad(90))
@@ -275,11 +285,14 @@ def ameias(o, larg=8.0, prof=5.0, cel=0, alt=0.7):
 
 # ------------------------------------------------------------ peças avulsas
 def escada(o, larg=1.6, degraus=4, alt_d=0.17, prof_d=0.32, cel=0):
-    """Degraus de pedra subindo para +Y, com as muretas dos lados."""
+    """Degraus de pedra subindo para +Y (o degrau k começa k passos para dentro), com as muretas dos
+    lados. A escada ocupa y de −degraus·prof_d/2 a +degraus·prof_d/2."""
+    P = degraus * prof_d
     for k in range(degraus):
-        o.caixa(cel, larg, prof_d * (degraus - k), alt_d, (0, prof_d * (degraus - k) / 2 + prof_d * k - prof_d * degraus / 2 + prof_d * (degraus - k) / 2 - prof_d * (degraus - k) / 2, alt_d * k), chanfro=0.015)
+        d = P - k * prof_d
+        o.caixa(cel, larg, d, alt_d * (k + 1), (0, P / 2 - d / 2, 0), chanfro=0.015)
     for s in (-1, 1):
-        prisma_tri(o, cel, prof_d * degraus, alt_d * degraus + 0.25, 0.22, (s * (larg / 2 + 0.11), 0, 0), giro=rad(90), topo=prof_d)
+        o.caixa(cel, 0.22, P, alt_d * degraus + 0.2, (s * (larg / 2 + 0.11), 0, 0), chanfro=0.02)
 
 
 def coluna(o, alt=3.0, r=0.22, cel=0):
@@ -330,7 +343,7 @@ def placa_pendurada(o, emblema='caneca', cel_madeira=2, cel_ferro=4, cor_emblema
         o.caixa(cel_ferro, 0.02, 0.02, 0.2, (0, y, -0.2))
     o.caixa(cel_madeira, 0.08, 0.86, 0.6, (0, -0.52, -0.82), chanfro=0.02)
     if emblema == 'caneca':
-        o.cilindro(cor_emblema, 0.13, 0.26, (0.05, -0.52, -0.66), lados=10, rot=(0, rad(90), 0))
+        cil_h(o, cor_emblema, 0.13, 0.26, (0.05, -0.52, -0.53), 'x', lados=10)
     elif emblema == 'cama':
         o.caixa(cor_emblema, 0.05, 0.5, 0.12, (0.05, -0.52, -0.62))
         o.caixa(cor_emblema, 0.05, 0.14, 0.1, (0.05, -0.68, -0.52))
@@ -351,7 +364,7 @@ def estandarte(o, alt=3.2, cel_pau=2, cel_tecido=3, cel_ferro=4, mastro=True, pa
     o.caixa(cel_pau, 0.9, 0.06, 0.06, (0, -0.06 if parede else 0, top - 0.06), rot=(0, 0, 0))
     o.caixa(cel_tecido, 0.8, 0.025, 1.3, (0, -0.06 if parede else 0.0, top - 1.42))
     for s in (-1, 1):
-        prisma_tri(o, cel_tecido, 0.4, 0.28, 0.025, (s * 0.2, -0.06 if parede else 0.0, top - 1.42), giro=0, topo=0)
+        o.caixa(cel_tecido, 0.36, 0.025, 0.3, (s * 0.21, -0.06 if parede else 0.0, top - 1.72))   # as pontas da barra (rabo de andorinha)
     o.caixa(cel_ferro, 0.12, 0.08, 0.12, (0, -0.06 if parede else 0, top - 0.8))
 
 
@@ -468,7 +481,7 @@ def balcao(o, larg=3.4, prof=0.7, alt=1.1, cel=0, cel2=1, cel_ferro=2):
     for k in range(n):
         x = -larg / 2 + (k + 0.5) * larg / n
         o.caixa(cel, larg / n - 0.1, 0.04, alt - 0.4, (x, -prof / 2 - 0.02, 0.2), chanfro=0.01)
-    o.cilindro(cel_ferro, 0.025, larg - 0.2, (-(larg - 0.2) / 2, -prof / 2 - 0.16, 0.22), lados=6, rot=(0, rad(90), 0))
+    cil_h(o, cel_ferro, 0.025, larg - 0.2, (0, -prof / 2 - 0.16, 0.22), 'x', lados=6)
     for x in (-larg / 2 + 0.2, 0, larg / 2 - 0.2):
         o.caixa(cel_ferro, 0.03, 0.16, 0.03, (x, -prof / 2 - 0.08, 0.21))
     for k, x in enumerate((-1.0, -0.2, 0.7)):
@@ -496,17 +509,17 @@ def estante(o, larg=1.6, alt=2.0, prof=0.4, cel=0, cel_livros=1, cel_livros2=2):
 def lareira(o, larg=2.0, alt=2.6, cel=0, cel_fogo=1, cel_ferro=2, cel_madeira=3):
     """Lareira de pedra (encosta na parede, frente para -Y), com fogo aceso e a lenha."""
     o.caixa(cel, larg, 0.7, 1.15, (0, 0.0, 0), chanfro=0.03)
-    o.caixa(cel, larg * 0.6, 0.06, 0.8, (0, -0.33, 0.12))       # a boca (escura) vai pintada pela oclusão
+    o.caixa(cel_ferro, larg * 0.6, 0.05, 0.78, (0, -0.37, 0.12))   # a boca da lareira (ferro escuro, fuligem)
     o.caixa(cel, larg + 0.3, 0.86, 0.14, (0, -0.06, 1.15), chanfro=0.02)
     prisma_tri(o, cel, larg, 0.6, 0.6, (0, 0.04, 1.29), topo=larg * 0.5)
     o.caixa(cel, larg * 0.5, 0.5, alt - 1.89, (0, 0.08, 1.89))
     o.caixa(cel, larg + 0.5, 0.9, 0.12, (0, -0.5, 0), chanfro=0.02)   # soleira
     for k in range(3):
-        o.cilindro(cel_madeira, 0.07, 0.62, (-0.31, -0.18 + k * 0.03, 0.2 + k * 0.06), lados=6, rot=(0, rad(90), rad(15 * (k - 1))))
-    o.esfera(cel_fogo, 0.26, (0, -0.2, 0.42), seg=8, aneis=5, esc=(1.2, 0.6, 1.2))
-    o.cilindro(cel_fogo, 0.2, 0.42, (0, -0.2, 0.45), lados=6, r2=0.02)
+        cil_h(o, cel_madeira, 0.07, 0.62, (0, -0.55 + k * 0.03, 0.2 + k * 0.08), 'x', lados=6, giro_z=rad(15 * (k - 1)))
+    o.esfera(cel_fogo, 0.26, (0, -0.55, 0.42), seg=8, aneis=5, esc=(1.2, 0.6, 1.2))
+    o.cilindro(cel_fogo, 0.2, 0.42, (0, -0.55, 0.45), lados=6, r2=0.02)
     o.caixa(cel_ferro, 0.03, 0.4, 0.03, (larg * 0.3, -0.4, 0.15))
-    o.marcar('janelas', (0, -0.3, 0.5), larg=0.6, alt=0.5, fogo=True)
+    o.marcar('janelas', (0, -0.55, 0.5), larg=0.6, alt=0.5, fogo=True)
 
 
 def caixote(o, l=0.7, cel=0, cel2=1):
@@ -546,7 +559,7 @@ def armeiro(o, cel_madeira=0, cel_ferro=1, cel_couro=2):
         o.caixa(cel_ferro, 0.06, 0.02, 0.9, (x + 0.18, -0.12, 0.35))
         o.caixa(cel_couro, 0.22, 0.05, 0.05, (x + 0.18, -0.12, 1.25))
         o.cilindro(cel_couro, 0.025, 0.2, (x + 0.18, -0.12, 1.3), lados=6)
-    o.cilindro(cel_ferro, 0.32, 0.06, (0.0, 0.15, 1.0), lados=12, rot=(rad(90), 0, 0))
+    cil_h(o, cel_ferro, 0.32, 0.06, (0.0, 0.15, 1.0), 'y', lados=12)
 
 
 # ------------------------------------------------------------ prédios
@@ -609,8 +622,8 @@ def hospedaria(rng):
     o.modulo(sacada, (0, -P / 2 - 0.36, 3.2 + 2.7), 0, larg=7.0, prof=0.8)
     o.modulo(telhado, (0, 0, z), 0, larg=Lt, prof=Pt, alt=3.0, beiral=0.5, cel_telha=3)
     # água-furtada (janela no telhado)
-    o.modulo(parede_enxaimel, (0, -Pt / 4, z + 0.3), 0, larg=1.6, alt=1.4, esp=1.4, vaos=['j'])
-    o.modulo(telhado, (0, -Pt / 4 + 0.6, z + 1.7), rad(90), larg=1.6, prof=1.8, alt=0.7, beiral=0.2, empenas=False)
+    o.modulo(parede_enxaimel, (0, -Pt / 2 + 0.55, z + 0.2), 0, larg=1.6, alt=2.0, esp=1.6, vaos=['j'])
+    o.modulo(telhado, (0, -Pt / 2 + 1.25, z + 2.2), rad(90), larg=1.9, prof=1.8, alt=0.75, beiral=0.15)
     chamine(o, 2.4, 0, (L * 0.3, 0.8, z + 1.0))
     o.modulo(placa_pendurada, (-2.0, -P / 2, 3.0), 0, emblema='cama', cor_emblema=1)
     o.modulo(lampiao, (1.3, -P / 2, 2.55), 0, rua=False)
@@ -621,18 +634,19 @@ def conselho(rng):
     """Conselho da Aurora: prédio público todo de pedra clara, pórtico de colunas com arco, escadaria,
     janelões em arco, torre do sino com telhado em pirâmide, estandartes (11 × 5,2 m)."""
     o = Montagem('conselho', 'predio')
-    L, P, H = 10.4, 4.4, 6.2
+    L, P, H = 10.4, 4.0, 6.2
     o.modulo(parede_pedra, (0, -P / 2, 0), 0, larg=L, alt=H, esp=P, cel=0)
     o.caixa(0, L + 0.3, P + 0.3, 0.5, (0, 0, 0), chanfro=0.04)                 # embasamento
     for s in (-1, 1):
         o.caixa(0, 0.6, 0.6, H + 0.2, (s * (L / 2 - 0.25), -P / 2 + 0.25, 0), chanfro=0.03)
     o.caixa(0, L + 0.4, P + 0.4, 0.3, (0, 0, 3.15), chanfro=0.03)              # friso entre os andares
     # pórtico: escadaria, duas colunas e o arco da entrada
-    o.modulo(escada, (0, -P / 2 - 0.62, 0), rad(180), larg=3.2, degraus=3, alt_d=0.17, prof_d=0.38)
+    o.caixa(0, 3.6, 0.7, 0.5, (0, -P / 2 - 0.35, 0), chanfro=0.03)                 # patamar
+    o.modulo(escada, (0, -P / 2 - 0.7 - 0.45, 0), 0, larg=3.0, degraus=3, alt_d=0.165, prof_d=0.3)
     for x in (-1.45, 1.45):
-        o.modulo(coluna, (x, -P / 2 - 0.55, 0.5), 0, alt=3.0, r=0.2)
-    o.caixa(0, 3.6, 0.95, 0.42, (0, -P / 2 - 0.42, 3.5), chanfro=0.03)
-    prisma_tri(o, 0, 3.8, 0.9, 0.95, (0, -P / 2 - 0.42, 3.92))
+        o.modulo(coluna, (x, -P / 2 - 0.4, 0.5), 0, alt=3.0, r=0.2)
+    o.caixa(0, 3.6, 0.8, 0.42, (0, -P / 2 - 0.35, 3.5), chanfro=0.03)
+    prisma_tri(o, 0, 3.8, 0.9, 0.8, (0, -P / 2 - 0.35, 3.92))
     o.modulo(porta, (0, -P / 2, 0.5), 0, larg=1.6, alt=2.5, dupla=True, cel_moldura=0)
     for x in (-3.7, -2.5, 2.5, 3.7):
         o.modulo(janela, (x, -P / 2, 1.25), 0, larg=0.8, alt=1.6, venezianas=False, arco=True)
@@ -666,8 +680,9 @@ def quartel(rng):
     L, P, H = 9.6, 4.6, 6.4
     o.modulo(parede_pedra, (0, -P / 2, 0), 0, larg=L, alt=H, esp=P, cel=0, cornija=False)
     o.caixa(0, L + 0.5, P + 0.5, 0.6, (0, 0, 0), chanfro=0.05)                 # talude
-    o.caixa(0, L + 0.3, P + 0.3, 0.3, (0, 0, H - 0.3), chanfro=0.03)
-    o.modulo(ameias, (0, 0, H), 0, larg=L + 0.2, prof=P + 0.2, cel=0, alt=0.75)
+    o.caixa(0, L + 0.3, P + 0.3, 0.36, (0, 0, H - 0.3), chanfro=0.03)          # terraço (o topo 6 cm acima da parede)
+    o.caixa(3, 0.9, 0.9, 0.05, (L * 0.22, 0.4, H + 0.06))                       # alçapão do terraço
+    o.modulo(ameias, (0, 0, H + 0.06), 0, larg=L + 0.2, prof=P + 0.2, cel=0, alt=0.75)
     # torre de canto
     tx, ty = -L / 2 + 0.6, P / 2 - 1.0
     o.cilindro(0, 1.45, H + 2.4, (tx, ty, 0), lados=12, r2=1.35)

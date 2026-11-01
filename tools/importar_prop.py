@@ -38,7 +38,8 @@ from importar_modelo import amostra, ler_glb  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRUPOS = {'cenario': (os.path.join('assets', 'models', 'cenario'), os.path.join('js', 'assets', 'props3d.js'), 1024),
-          'natureza': (os.path.join('assets', 'models', 'natureza'), os.path.join('js', 'assets', 'natureza3d.js'), 512)}
+          'natureza': (os.path.join('assets', 'models', 'natureza'), os.path.join('js', 'assets', 'natureza3d.js'), 512),
+          'arquitetura': (os.path.join('assets', 'models', 'arquitetura'), os.path.join('js', 'assets', 'arquitetura3d.js'), 1024)}
 ESCALA = 34.0
 R_JOGO = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]], float)   # linhas: frente, direita, cima do jogo no glTF
 
@@ -60,7 +61,8 @@ def converter(caminho, lado_max=1024):
         raise SystemExit(f'{caminho}: sem normais')
     N = N @ R_JOGO.T
     N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-9
-    V[:, 2] -= V[:, 2].min()                 # base no chão
+    z0 = V[:, 2].min()
+    V[:, 2] -= z0                            # base no chão
     c = F.reshape(-1)
     uv = UV[c]
     cor = amostra(mapas['cor'], uv)[:, ::-1] if mapas.get('cor') is not None else np.full((len(c), 3), 160.0)   # BGR → RGB
@@ -91,6 +93,13 @@ def converter(caminho, lado_max=1024):
         glow = ','.join(str(int(v)) for v in cg)
     info = dict(n=int(len(F)), q=round(float(q), 4), w=round(float(ext[0]), 1), d=round(float(ext[1]), 1), h=round(float(ext[2]), 1),
                 r=round(raio, 1), glow=glow, src=os.path.relpath(caminho, RAIZ).replace(os.sep, '/'))
+    # marcas do prédio (tools/blender/arquitetura.py grava <id>.json: portas e janelas em metros,
+    # eixos do Blender): no espaço do jogo, para a porta de entrada e a luz das janelas
+    lado_json = os.path.splitext(caminho)[0] + '.json'
+    if os.path.exists(lado_json):
+        M = json.load(open(lado_json, encoding='utf-8'))
+        conv = lambda p: [round(-p[1] * ESCALA, 1), round(-p[0] * ESCALA, 1), round(p[2] * ESCALA, 1)]   # as marcas já vêm com a base em 0
+        info['marcas'] = {k: [dict(m, p=conv(m['p'])) for m in v] for k, v in M.items() if k in ('portas', 'janelas')}
     kb_tex = 0
     if tex:
         # textura no jogo: 1024 nos objetos grandes (mais de 4 m), 512 nos pequenos
@@ -129,11 +138,18 @@ def main():
     for arq in arqs:
         atuais[os.path.splitext(os.path.basename(arq))[0]] = converter(arq, lado_max)
     with open(destino, 'w', encoding='utf-8') as f:
-        if junta:
+        if a.grupo == 'arquitetura':
+            f.write("'use strict';\n// ECLIPSE ZERO · Kit de arquitetura medieval da cidade (tools/blender/arquitetura.py → assets/models/arquitetura/*.glb),\n"
+                    '// convertido por tools/importar_prop.py --grupo arquitetura; não edite à mão. Carregado sob demanda por\n'
+                    '// js/mundo/bairro.js (prédios do Bairro da Muralha e a mobília dos interiores); junta os objetos ao PROPS3D.\n')
+        elif junta:
             f.write("'use strict';\n// ECLIPSE ZERO · Kit medieval e natural das florestas, modelado no Blender (tools/blender/natureza.py →\n"
                     '// assets/models/natureza/*.glb) e convertido por tools/importar_prop.py --grupo natureza; não edite à mão.\n'
                     '// Junta os objetos ao PROPS3D (js/assets/props3d.js). Uso: js/mundo/cenario.js e js/mundo/natureza3d.js\n')
+        if junta:
             f.write('Object.assign(PROPS3D, ' + json.dumps(dict(sorted(atuais.items())), separators=(',', ':')) + ');\n')
+            if a.grupo == 'arquitetura':
+                f.write("if (typeof Bairro !== 'undefined') Bairro.carregado();\n")
         else:
             f.write("'use strict';\n// ECLIPSE ZERO · Cenário 3D das cidades, modelado no Blender (tools/blender/asset_*.py → assets/models/cenario/*.glb)\n"
                     '// e convertido por tools/importar_prop.py; não edite à mão. Uso: js/mundo/cenario.js\n')

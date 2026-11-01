@@ -34,7 +34,7 @@ class Obj:
         o.scale = (dx, dy, dz)
         if chanfro:
             U.ativar(o)
-            bpy.ops.object.transform_apply(scale=True)
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)   # (só a escala: com a posição aplicada, o giro de _fim era em volta da origem da cena)
             m = o.modifiers.new('chanfro', 'BEVEL')
             m.width = chanfro
             m.segments = 1

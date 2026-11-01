@@ -104,7 +104,7 @@ const Cidade = {
   frente(B, R) { const C = this.caixa(B, R); return B.lado === 'N' ? { x: (C.x0 + C.x1) / 2, y: C.y1 + 46 } : { x: C.x1 + 46, y: (C.y0 + C.y1) / 2 }; },
   // ------------------------------------------------------------ montagem da zona (World.loadZone → aoCarregar)
   aoCarregar(z) {
-    if (!z.cidade) return;
+    if (!z.cidade || z.distrito) return;   // (o bairro e os interiores: js/mundo/bairro.js)
     const g = game, R = g.room, spot = (at) => npcSpot(R, at[0], at[1]);
     for (const B of CIDADE_PREDIOS) { const f = this.frente(B, R); g.npcs.push(new CidadeProp('estacao', f.x, f.y, { est: B.est, predio: B })); }
     g.npcs.push(new CidadeProp('monumento', R.w * 0.42, R.h * 0.42, {}));

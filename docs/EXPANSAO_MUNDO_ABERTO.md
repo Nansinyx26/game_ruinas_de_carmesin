@@ -84,7 +84,7 @@ Resposta à fase 1 do "Prompt mestre — expansão completa do mundo aberto". Tu
 ## 4. Plano por fases
 
 1. **Fase 1 — análise (este documento).** Concluída.
-2. **Fase 2 — cidade principal:**
+2. **Fase 2 — cidade principal:** concluída (relatório na seção 5).
    - kit modular de arquitetura no Blender (paredes de pedra e madeira, portas, janelas, telhados, escadas, arcos, colunas, sacadas, cercas, ponte, mobília, lampiões) e prédios montados com ele;
    - taverna, hospedaria, conselho, quartel e casas no Refúgio da Aurora, com **interiores** (zonas fechadas com mobília, quem trabalha ali e serviços);
    - a praça e as ruas com mobiliário.
@@ -108,3 +108,57 @@ Resposta à fase 1 do "Prompt mestre — expansão completa do mundo aberto". Tu
 8. **Fase 8 — testes no jogo:** suíte automática e capturas.
 
 Ao fim de cada fase, este documento recebe o que foi feito, os arquivos e os problemas.
+
+## 5. Fase 2 — cidade principal: o que foi feito
+
+Entregue em 31/10/2026. Tudo abaixo funciona no jogo, tem teste na suíte (`js/testes.js`: `bairro()` e
+`bairroFotos()`, 1073/1073 passando) e foi conferido em capturas (vista isométrica de dia e de noite,
+3ª pessoa e os quatro interiores).
+
+### Kit modular de arquitetura no Blender (`tools/blender/arquitetura.py`)
+
+| Grupo | Peças | Onde fica |
+|---|---|---|
+| Módulos (o kit) | parede de pedra, parede de enxaimel (reboco, vigas, mãos-francesas), porta, janela (caixilho, vidro aceso, venezianas), telhado de duas águas (fiadas de telhas, cumeeira, empenas), escada, coluna, arco (aduelas e fecho), sacada, ponte, chaminé, ameias | `assets/models/arquitetura/modulos/*.glb` (para montar outros prédios) |
+| Prédios montados com os módulos | taverna, hospedaria, conselho, quartel, três casas (2,4 a 7,7 mil triângulos, texturas assadas de 1024 px) | `assets/models/arquitetura/<id>.glb` + `<id>.json` (portas e janelas marcadas) |
+| Mobília e objetos de rua | mesa, banco, cadeira, cama, barril, balcão, estante, lareira, caixote, boneco de treino, armeiro, lampião de rua, estandarte (96 a 912 triângulos, 512 px) | `assets/models/arquitetura/<id>.glb` |
+
+Tudo sai de regras em código (nada modelado à mão, nada de bloco no lugar de peça): o prédio é uma
+`Montagem` que posiciona os módulos (giro e translação), com seis células de material procedural
+(pedra em blocos, reboco, madeira com veio, telha, ardósia, ferro, vidro aceso, tecido) assadas em cor
+com oclusão, metal/aspereza, normais e emissão. `python3 tools/blender/arquitetura.py [nomes]` gera e
+`python3 tools/importar_prop.py --grupo arquitetura` converte (marcas incluídas) para
+`js/assets/arquitetura3d.js` (10 MB, carregado sob demanda).
+
+### Bairro da Muralha e interiores (`js/mundo/bairro.js`)
+
+| Pedido | Estado | Como |
+|---|---|---|
+| Taverna, hospedaria, conselho, quartel, área residencial | existe | zona nova da cidade, o **Bairro da Muralha** (passagem na borda leste da praça): quartel, taverna e conselho na muralha de cima; hospedaria e três casas na da esquerda, distribuídos pelas larguras reais dos modelos |
+| Arquitetura 3D com identidade por prédio | existe | os modelos do Blender: na isométrica, uma foto de cada prédio pelo motor 3D (com a passada emissiva das janelas, mais forte à noite); na 3ª pessoa, os modelos na cena (o que tem a câmera dentro some) |
+| **Entrar nas construções** | existe | porta de cada prédio público ([E] Entrar) leva à sala do interior; a saída na frente da sala volta para a porta do prédio no bairro; as casas respondem à porta e ficam fechadas |
+| Interiores mobiliados | existe | taverna (balcão, barris, mesas com bancos e cadeiras, estante, lareira), hospedaria (recepção, camas, lareira), conselho (mesa do conselho, estantes, estandartes) e quartel (armeiros, bonecos de treino, beliches); piso de tábuas ou lajes, colisão em fileira para os móveis compridos (dá para chegar ao balcão) |
+| Quem trabalha ali e os serviços | existe | Bento (refeição: vida, energia e o corpo aquecido por 5 min; rumores que marcam masmorras e tesouros) e o bardo Cosme; Rosa (descanso até de manhã e o armário) e um viajante; a Conselheira Helena (missões e contratos da Guilda) e o escriba; a Capitã Irene (treino, desafio da arena, árvore de habilidades) e um soldado; na rua, um guarda em ronda, uma moradora e um carroceiro |
+| Praça e ruas com mobiliário | existe | calçamento diante dos prédios, praça do poço, carroça e feno, lampiões nos vãos entre os prédios, barris, caixotes, estandartes, boneco de treino e armeiro diante do quartel |
+| Zona segura, clima e mapa | existe | sem inimigos nem eventos (os eventos nunca caem numa zona da cidade); abrigo da chuva junto aos prédios e dentro das salas; no mapa, o bairro e os interiores contam como a cidade, e a planta (M) mostra o bairro |
+
+### Arquivos
+
+- novos: `tools/blender/arquitetura.py`, `js/mundo/bairro.js`, `js/assets/arquitetura3d.js`,
+  `assets/models/arquitetura/` (20 GLB do jogo, 7 JSON de marcas, 12 módulos), prévias em `assets/models/previews/`;
+- alterados: `tools/blender/kit.py` (chanfro aplicado antes de girar), `tools/importar_prop.py` (grupo
+  arquitetura e as marcas), `js/engine3d.js` (`R3D.foto` devolve a passada emissiva),
+  `js/mundo/cenario.js` (`registrarModelos` para kits carregados depois), `js/rooms.js` (sala do bairro
+  e dos interiores, pisos de tábuas e lajes), `js/world.js`, `js/mundo/cidade.js`, `js/mundo/clima.js`,
+  `js/mundo/eventos.js`, `js/mundo/povo.js`, `js/game.js`, `js/terceira.js`,
+  `js/terceira_ambiente.js` (luz quente nas salas do bairro), `index.html`, `js/testes.js`.
+
+### Problemas encontrados e limites
+
+- O terraço do quartel saía preto no assado (faces coincidentes no topo) e a água-furtada da
+  hospedaria ficava enterrada no telhado: corrigidos e refeitos.
+- Os prédios da muralha da esquerda não cabiam lado a lado em 26 ladrilhos: o bairro tem 28 e os
+  prédios são distribuídos pelas larguras medidas dos modelos.
+- Os interiores são maiores que os prédios por fora (18 a 20 m de lado), como é comum em jogos; a
+  entrada é por troca de zona (com o escurecimento), não sem costura.
+- Os moradores ainda não sentam, comem nem dormem: são as atividades da Fase 3.

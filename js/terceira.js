@@ -203,7 +203,7 @@ const ThirdView = {
     }
     // frestas acesas entre os ladrilhos (cor de destaque), uma a cada duas
     const acc = rgbHex(th.accent);
-    for (let i = 2; i < n && th.deco !== 'natural'; i += 2) {   // (nos biomas, chão sem ladrilhos acesos)
+    for (let i = 2; i < n && th.deco !== 'natural' && !R.def.distrito; i += 2) {   // (nos biomas, no bairro e nos interiores, chão sem ladrilhos acesos)
       floor.quad([i * T - 0.6, 0, 0.12], [i * T + 0.6, 0, 0.12], [i * T + 0.6, h, 0.12], [i * T - 0.6, h, 0.12], hex(fh, fs, fl * 1.4), 0.08);
       floor.quad([0, i * T - 0.6, 0.12], [w, i * T - 0.6, 0.12], [w, i * T + 0.6, 0.12], [0, i * T + 0.6, 0.12], hex(fh, fs, fl * 1.4), 0.08);
     }
@@ -342,6 +342,7 @@ const ThirdView = {
     ri.ent = null; Q.push(ri);
     if (this.chaoModel) { M3.trs(this.chaoO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]); const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi); }
     if (typeof Natureza3D !== 'undefined') Natureza3D.fila3P(R, Q, E, T, p);   // árvores, rochas e enfeites da floresta (kit do Blender)
+    if (typeof Bairro !== 'undefined') Bairro.fila3P(R, Q, E);   // prédios do Bairro da Muralha (kit de arquitetura do Blender)
     // modelos (as mesmas chaves e poses da vista isométrica), já no lugar do mundo
     const place = (it, e) => {
       if (!it) return null;

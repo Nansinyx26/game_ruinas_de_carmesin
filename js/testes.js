@@ -26,6 +26,9 @@ const EclipseTests = {
     // malha de uma armadura especial (carregada por <script>, como no jogo; espera até 15 s)
     ArmorModels.ensure('lyra_n1');
     for (let i = 0; i < 150 && ArmorModels.estado.lyra_n1 === 'carregando'; i++) await new Promise((r) => setTimeout(r, 100));
+    // kit de arquitetura do Bairro da Muralha (carregado sob demanda, como no jogo)
+    Bairro.carregar();
+    for (let i = 0; i < 200 && Bairro.estado === 'carregando'; i++) await new Promise((r) => setTimeout(r, 100));
     try {
       this.armas();
       this.encaixes();
@@ -45,6 +48,7 @@ const EclipseTests = {
       this.puloDefesa();
       this.pendencias();
       this.mundo();   // por último: troca a partida pelo modo mundo
+      await this.bairroFotos();
       await this.criacaoGLB();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -779,6 +783,7 @@ const EclipseTests = {
       this.arsenal();
       this.fabricacao();
       this.cidade();
+      this.bairro();
       this.climaMundo();
       this.criacao(salvar);   // por último: troca o herói pelo personagem criado e volta ao Kael
     } finally {
@@ -839,7 +844,7 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js)
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
     this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
@@ -1817,6 +1822,112 @@ const EclipseTests = {
     World.state.hora = h0; g.stats.soulsBank = b0; g.activeProgress().level = lv0;
     if (World.zone.id !== z0) World.loadZone(z0, null);
     g.state = 'playing';
+  },
+
+  // Bairro da Muralha e os interiores (js/mundo/bairro.js, kit de arquitetura do Blender): zonas,
+  // prédios (medidas, portas, recuo), passagens, portas e saídas, mobília com colisão, moradores e
+  // serviços (refeição, descanso, missões, treino), desenho nas três vistas e no mapa
+  bairro() {
+    const g = game, p = g.player, z0 = World.zone.id, b0 = g.stats.soulsBank;
+    const fade = () => { if (g.fadeCb) { const cb = g.fadeCb; g.fadeCb = null; cb(); } };
+    let erro = null;
+    try {
+      const Z = WORLD_ZONES[BAIRRO_ID], ints = Object.keys(BAIRRO_INTERIORES);
+      this.ok('bairro: zona da cidade, fora da grade e do mapa', Z && Z.cidade && Z.distrito === 'bairro' && !worldZonesOf('nexus').includes(Z) && !World.mapTargets().includes(BAIRRO_ID));
+      this.ok('bairro: 4 interiores (taverna, hospedaria, conselho, quartel)', ints.length === 4 && ints.every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].distrito === 'interior' && THEMES[WORLD_ZONES[id].theme]));
+      this.ok('bairro: cada interior tem quem trabalhe nele (2+ moradores)', ints.every((id) => WORLD_ZONES[id].npcs.length >= 2));
+      this.ok('bairro: o kit de arquitetura carregou (prédios e mobília no PROPS3D)', Bairro.pronto() && BAIRRO_PREDIOS.every((B) => PROPS3D[B.id]) && ['mesa', 'banco', 'cadeira', 'cama', 'barril', 'balcao', 'estante', 'lareira', 'caixote', 'boneco_treino', 'armeiro', 'lampiao_rua', 'estandarte_rubro'].every((id) => PROPS3D[id] && MODELS3D['cen_' + id]), Bairro.estado);
+      this.ok('bairro: mobília dos interiores existe no kit', ints.every((id) => BAIRRO_INTERIORES[id].moveis.every((m) => PROPS3D[m[0]])));
+      // a passagem da praça
+      World.loadZone(CIDADE_ID, null);
+      const ida = g.npcs.find((n) => n instanceof WorldProp && n.kind === 'gate' && n.data.to === BAIRRO_ID);
+      this.ok('bairro: a praça tem a passagem para o bairro', !!ida);
+      World.go(ida.data.to, null, null, ida.data.chegada); fade();
+      const R = g.room;
+      this.ok('bairro: chega no bairro (sala própria, não a da praça)', World.zone.id === BAIRRO_ID && R.bairro && !R.cidade);
+      const portas = g.npcs.filter((n) => n instanceof PortaBairro);
+      this.igual('bairro: 7 portas (4 prédios com interior e 3 casas)', portas.length, 7);
+      this.ok('bairro: volta para a praça', g.npcs.some((n) => n instanceof WorldProp && n.kind === 'gate' && n.data.to === CIDADE_ID));
+      this.igual('bairro: 3 moradores na rua', g.npcs.filter((n) => n instanceof Morador).length, 3);
+      this.ok('bairro: lampiões, poço, carroça e o resto da rua (objetos do Blender com colisão)', Bairro.objetos.length >= 15 && R.pillars.filter((q) => q.cenario).length >= Bairro.objetos.length, Bairro.objetos.length);
+      // prédios: dentro da sala, sem sobrepor, o fundo dentro do recuo, a porta na frente
+      const Ls = BAIRRO_PREDIOS.map((B) => ({ B, L: Bairro.lugar(B, R), m: Bairro.medidas(B) }));
+      const sobre = Ls.some((a, i) => Ls.some((b, j) => j > i && a.L.x0 < b.L.x1 - 1 && b.L.x0 < a.L.x1 - 1 && a.L.y0 < b.L.y1 - 1 && b.L.y0 < a.L.y1 - 1));
+      this.ok('bairro: prédios sem sobrepor e dentro da sala', !sobre && Ls.every(({ L }) => L.x0 >= -1 && L.y0 >= -1 && L.x1 <= R.w + 1 && L.y1 <= R.h + 1), Ls.map(({ B, L }) => `${B.id}:${L.x0 | 0}-${L.x1 | 0},${L.y0 | 0}-${L.y1 | 0}`).join(' '));
+      this.ok('bairro: o fundo de cada prédio cabe no recuo', Ls.every(({ m }) => m[0] <= BAIRRO_RECUO + 1), Ls.map(({ B, m }) => `${B.id}:${Math.round(m[0])}`).join(' '));
+      this.ok('bairro: cada prédio tem a porta marcada na frente', BAIRRO_PREDIOS.every((B) => { const M = PROPS3D[B.id].marcas; return M && M.portas && M.portas.length && M.portas[0].p[0] > 0; }));
+      this.ok('bairro: janelas marcadas (luz à noite)', BAIRRO_PREDIOS.every((B) => (PROPS3D[B.id].marcas.janelas || []).length >= 2));
+      this.ok('bairro: os prédios bloqueiam (recuo)', R.blocksPoint(BAIRRO_RECUO - 20, 700, 10) && R.blocksPoint(700, BAIRRO_RECUO - 20, 10) && !R.blocksPoint(BAIRRO_RECUO + 40, 700, 10));
+      this.ok('bairro: as portas ficam na rua, alcançáveis', portas.every((n) => R.canStand(n.B.lado === 'N' ? n.x : n.x + 30, n.B.lado === 'N' ? n.y + 30 : n.y, p.radius)));
+      // casa: bater na porta
+      const casa = portas.find((n) => !n.B.interior);
+      let e1 = null; try { casa.talk(); } catch (e) { e1 = e.message; }
+      this.ok('bairro: a casa responde à porta (e não abre)', !e1 && World.zone.id === BAIRRO_ID && !g.fadeCb, e1);
+      // desenho do bairro: fotos dos prédios, vista isométrica, 3ª pessoa e a planta
+      for (let i = 0; i < 9; i++) Bairro.processar();
+      let e2 = null;
+      try { g.renderWorld(g.ctx); ThirdView.buildRoom(R); Bairro.desenharPlanta(g.ctx, 20, 20, 300, 240); World.openMap(false); World.drawMap(g.ctx, 1); World.closeMap(); } catch (e) { e2 = e.message; }
+      this.ok('bairro: desenha (isométrica, 3ª pessoa, planta e mapa)', !e2, e2);
+      // interiores: entrar, mobília, moradores e serviços, sair na porta certa
+      const servicos = { aurora_taverna: ['BENTO', 'refeicao'], aurora_hospedaria: ['ROSA', 'descansar'], aurora_conselho: ['CONSELHEIRA HELENA', 'painel'], aurora_quartel: ['CAPITÃ IRENE', 'treinar'] };
+      for (const id of ints) {
+        const porta = g.npcs.find((n) => n instanceof PortaBairro && n.B.interior === id);
+        porta.talk(); fade();
+        const Ri = g.room, I = BAIRRO_INTERIORES[id];
+        this.ok(`${id}: entra pela porta (sala fechada, piso ${THEMES[I.theme].deco})`, World.zone.id === id && Ri.interior && !Ri.aberto && !Ri.bairro);
+        this.ok(`${id}: a mobília no lugar, com colisão`, Bairro.objetos.length >= I.moveis.length - 2 && Ri.pillars.filter((q) => q.cenario).length >= Bairro.objetos.length, `${Bairro.objetos.length}/${I.moveis.length}`);
+        const [nome, sv] = servicos[id], n = g.npcs.find((q) => q instanceof Morador && q.name === nome);
+        this.ok(`${id}: ${nome} alcançável (dá para conversar de pé por perto)`, !!n && Array.from({ length: 48 }, (_, k) => k).some((k) => { const a = k / 48 * TAU; return [40, 56, 70].some((d) => Ri.canStand(n.x + Math.cos(a) * d, n.y + Math.sin(a) * d, p.radius)); }));
+        Povo.conversar(n); const ops = Dialogo.opcoes.map((o) => o.id); Dialogo.fechar();
+        this.ok(`${id}: ${nome} oferece o serviço (${sv})`, ops.includes(sv), ops.join(','));
+        this.ok(`${id}: o herói chega longe da mobília`, Ri.canStand(p.x, p.y, p.radius));
+        let e3 = null; try { g.renderWorld(g.ctx); ThirdView.buildRoom(Ri); } catch (e) { e3 = e.message; }
+        this.ok(`${id}: desenha (isométrica e 3ª pessoa)`, !e3, e3);
+        if (id === 'aurora_taverna') {
+          g.stats.soulsBank = 1000; p.hp = 1; p.buffs.cha = 0;
+          const preco = Bairro.precoRefeicao(), r = Bairro.refeicao();
+          this.ok('taverna: a refeição cura, enche a energia e aquece (chá quente)', p.hp === p.maxHp && p.buffs.cha >= 290 && g.stats.soulsBank === 1000 - preco, r);
+          g.stats.soulsBank = 0; p.hp = 1;
+          this.ok('taverna: sem células, sem ensopado', /Faltam/.test(Bairro.refeicao()) && p.hp === 1);
+          this.ok('taverna: o taverneiro conta rumores', ops.includes('rumor'));
+        }
+        if (id === 'aurora_conselho') { Povo.conversar(g.npcs.find((q) => q.name === 'CONSELHEIRA HELENA')); const o2 = Dialogo.opcoes.map((o) => o.id); Dialogo.fechar(); this.ok('conselho: contratos da Guilda com a conselheira', o2.some((i) => i.startsWith('guilda_'))); }
+        // sair: a passagem da frente leva de volta à porta do prédio
+        const saida = g.npcs.find((q) => q instanceof WorldProp && q.kind === 'gate' && q.data.to === BAIRRO_ID);
+        this.ok(`${id}: tem a saída para o bairro`, !!saida);
+        World.go(saida.data.to, null, null, saida.data.chegada); fade();
+        const volta = g.npcs.find((q) => q instanceof PortaBairro && q.B.interior === id);
+        this.ok(`${id}: sai na frente da porta do prédio`, World.zone.id === BAIRRO_ID && dist(p.x, p.y, volta.x, volta.y) < 150, Math.round(dist(p.x, p.y, volta.x, volta.y)));
+      }
+      // mapa: num distrito, o herói aparece na cidade; eventos não caem nas zonas da cidade
+      this.ok('bairro: eventos dinâmicos nunca nas zonas da cidade', Object.values(WORLD_ZONES).filter((z) => z.cidade).every((z) => !worldZonesOf(z.region).includes(z)));
+      const A = Eventos.sortear();
+      this.ok('bairro: evento sorteado daqui vai para fora da cidade', !A || !WORLD_ZONES[A.zona].cidade, A && A.zona);
+      Eventos.S.atual = null;
+      this.ok('bairro: abrigo da chuva junto aos prédios', Clima.abrigado(BAIRRO_RECUO + 20, 700) === 1 || Clima.exposicao() < 1);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('bairro: sem exceção', !erro, erro);
+    g.stats.soulsBank = b0; p.buffs.cha = 0;
+    if (World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
+  },
+
+  // Bairro da Muralha na vista isométrica: o laço do jogo fotografa os 7 prédios com o motor 3D
+  // (texturas decodificadas, um por quadro), e a 3ª pessoa põe os modelos na cena
+  async bairroFotos() {
+    const g = game, z0 = World.zone && World.zone.id;
+    if (!g.use3D || typeof R3D === 'undefined' || !R3D.active || !Bairro.pronto()) { this.ok('bairro: fotos dos prédios (sem o motor 3D, as caixas simples)', true); return; }
+    World.loadZone(BAIRRO_ID, null, null, [0.5, 0.6]);
+    g.state = 'playing';
+    for (let i = 0; i < 100 && Bairro.fotos.size < 7; i++) await new Promise((r) => setTimeout(r, 100));
+    this.igual('bairro: os 7 prédios fotografados pelo motor 3D', Bairro.fotos.size, 7);
+    const f = [...Bairro.fotos.values()];
+    this.ok('bairro: as fotos têm a passada emissiva (janelas acesas)', f.every((q) => q.emi && q.canvas.width > 100 && q.canvas.height > 100), f.map((q) => `${q.canvas.width}×${q.canvas.height}`).join(' '));
+    const Q = [];
+    Bairro.fila3P(g.room, Q, [g.room.w * 0.6, g.room.h * 0.6, 120]);
+    this.igual('bairro: 3ª pessoa com os 7 prédios na cena', Q.length, 7);
+    R3D.used = 0;
+    if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
   },
 
   // Clima dinâmico (js/mundo/tempo.js e js/mundo/clima.js): intensidade e transição, temperatura

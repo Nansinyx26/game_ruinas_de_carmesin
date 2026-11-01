@@ -429,6 +429,7 @@ const World = {
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
     Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
     Cenario.aoCarregar(z);      // objetos de cenário modelados no Blender (js/mundo/cenario.js)
+    Bairro.aoCarregar(z);       // Bairro da Muralha, interiores e a passagem da praça (js/mundo/bairro.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
     Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
     this.save();
@@ -557,6 +558,7 @@ const World = {
     const bz = zs.find((z) => (z.camps || []).some((c) => c.boss));
     const base = this.bossDone(reg.id) ? `${reg.name} concluída` : `Derrote ${reg.boss.name}${bz ? ` em ${bz.name}` : ''}`;
     const quest = typeof WorldQuests !== 'undefined' ? WorldQuests.line() : '', camp = Campanhas.linha(), ev = Eventos.linha(), av = Aventuras.linha();
+    if (this.zone.distrito) return `${ev ? `${ev} · ` : ''}${camp ? `${camp} · ` : ''}${av ? `${av} · ` : ''}${Bairro.objetivo()}`;
     if (this.zone.cidade) return `${ev ? `${ev} · ` : ''}${camp ? `${camp} · ` : ''}${av ? `${av} · ` : ''}${quest ? `${quest} · ` : ''}Refúgio da Aurora: forje, aprimore, guarde e descanse · portões para as regiões abertas`;
     if (this.zone.instancia) { const M = WORLD_MASMORRAS[this.zone.instancia]; return `${ev ? `${ev} · ` : ''}${M.nome}: ${this.zone.ultimo ? (Locais.chefeVivo() ? `derrote ${M.chefe.nome}` : 'vencida! Abra o baú e saia') : Locais.selada() ? 'derrote os inimigos para abrir a passagem' : 'suba pela passagem'}${av ? ` · ${av}` : ''}`; }
     return `${ev ? `${ev} · ` : ''}${camp ? `${camp} · ` : ''}${av ? `${av} · ` : ''}${quest || base} · locais ${zs.filter((z) => S.descobertos.includes(z.id)).length}/${zs.length} · baús ${bausAqui}/${baus}`;
@@ -613,7 +615,7 @@ const World = {
     const S = this.state, ids = [];
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], seen = S.descobertos.includes(id);
-      if (z.instancia) continue;   // andares de masmorra não entram no mapa
+      if (z.instancia || z.distrito) continue;   // andares de masmorra e os distritos da cidade não entram no mapa
       if (z.cidade) { ids.push(id); continue; }   // a cidade principal: sempre conhecida, sempre ao alcance
       if (!this.map.travel) { if (seen) ids.push(id); continue; }
       if ((seen && S.portais.includes(id)) || (worldRegion(z.region).hub === id && this.regionOpen(z.region))) ids.push(id);
@@ -657,7 +659,7 @@ const World = {
     for (const id in WORLD_ZONES) { const z = WORLD_ZONES[id]; if (z.instancia || z.cidade) continue; const d = dims[z.region] || (dims[z.region] = [0, 0]); d[0] = Math.max(d[0], z.r); d[1] = Math.max(d[1], z.c); }
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], c = pos(worldRegion(z.region).at), d = dims[z.region];
-      if (z.instancia) continue;
+      if (z.instancia || z.distrito) continue;   // (os distritos da cidade ficam no marcador da cidade)
       if (z.cidade) { const q = pos(z.mapa); zones[id] = { x: q.x, y: q.y, s: s * 1.5 }; continue; }   // a cidade: no seu lugar do mapa, maior
       zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.5, y: c.y + (z.r - d[0] / 2) * s * 1.5, s };
     }
@@ -710,7 +712,7 @@ const World = {
       ctx.fillStyle = forte ? '#ffffff' : 'rgba(220,230,245,0.9)'; ctx.fillText(txt, q.x, ty + 0.5);
     };
     // Marcadores das zonas: losango na cor da região; ícone do que há nela
-    const aqui = this.zone && (this.zone.instancia ? WORLD_MASMORRAS[this.zone.instancia].zona : this.zone.id);   // na masmorra: a zona da entrada
+    const aqui = this.zone && (this.zone.instancia ? WORLD_MASMORRAS[this.zone.instancia].zona : this.zone.distrito ? CIDADE_ID : this.zone.id);   // na masmorra: a zona da entrada; num distrito, a cidade
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], q = L.zones[id], seen = S.descobertos.includes(id), here = id === aqui;
       if (!q) continue;
@@ -802,7 +804,7 @@ const World = {
       ctx.fillText(dica, VIEW_W - 40, duas ? VIEW_H - 24 : VIEW_H - 40);
       this.drawMapInfo(ctx, sel, CX + CW - 14, CY + CH - 14);
     }
-    if (this.zone && this.zone.cidade) Cidade.desenharPlanta(ctx, CX + 14, CY + CH - 254, 300, 240);   // planta dos distritos
+    if (this.zone && this.zone.cidade) (this.zone.distrito ? Bairro : Cidade).desenharPlanta(ctx, CX + 14, CY + CH - 254, 300, 240);   // planta dos distritos (ou do bairro)
     ctx.restore();
   },
   // Marcador da cidade principal: escudo dourado com a chama e o nome sempre à vista

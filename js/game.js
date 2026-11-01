@@ -1212,6 +1212,7 @@ class Game {
 
   render(dt) {
     if (typeof Natureza3D !== 'undefined' && this.use3D) Natureza3D.processar();   // fotos das árvores do kit (motor 3D livre)
+    if (typeof Bairro !== 'undefined' && this.use3D) Bairro.processar();           // fotos dos prédios do Bairro da Muralha
     const ctx = this.ctx;
     if (typeof Realista3D !== 'undefined') Realista3D.camada(false);   // volta a aparecer se a 3ª pessoa realista desenhar
     ctx.setTransform(1, 0, 0, 1, 0, 0);

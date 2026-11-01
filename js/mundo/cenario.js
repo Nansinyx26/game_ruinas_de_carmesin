@@ -72,8 +72,12 @@ const Cenario = (function () {
   }
   // Um modelo do motor por objeto (a geometria e as texturas são compartilhadas)
   const TEX = {};
-  if (OK) {
+  // Um modelo do motor por objeto do PROPS3D (de novo quando um kit carregado depois junta objetos:
+  // js/assets/arquitetura3d.js, pelo js/mundo/bairro.js)
+  function registrarModelos() {
+    if (typeof PROPS3D === 'undefined') return;
     for (const id in PROPS3D) {
+      if (MODELS3D['cen_' + id]) continue;
       MODELS3D['cen_' + id] = {
         build() {
           const W = PROPS3D[id], nd = new N3('cen_' + id);
@@ -86,6 +90,7 @@ const Cenario = (function () {
       };
     }
   }
+  if (OK) registrarModelos();
 
   // ------------------------------------------------------------ o objeto na zona
   class Objeto extends NPC {
@@ -147,5 +152,5 @@ const Cenario = (function () {
     return n;
   }
 
-  return { OK, ZONAS, aoCarregar, geo, Objeto };
+  return { OK, ZONAS, aoCarregar, geo, Objeto, registrarModelos };
 })();
