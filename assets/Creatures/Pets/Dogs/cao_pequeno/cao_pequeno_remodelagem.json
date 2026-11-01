@@ -144,6 +144,12 @@
   ]
  },
  "inflar": null,
+ "tosa": {
+  "corpo": 3175,
+  "corpo_LOD1": 1268,
+  "corpo_LOD2": 424,
+  "corpo_LOD3": 44
+ },
  "chao_dz": 0.2805,
  "pelagens": [
   "cao_pequeno"
@@ -155,5 +161,5 @@
   3704,
   1646
  ],
- "segundos": 16
+ "segundos": 20
 }

@@ -2116,7 +2116,7 @@ const EclipseTests = {
       this.ok('pets: o catálogo em três grupos (cães e lobos, gatos e raposa, aves)', ['caes', 'gatos', 'aves'].every((gp) => Dialogo.temId('grupo_' + gp)));
       const vistos = [];
       for (const gp of ['caes', 'gatos', 'aves']) { Dialogo.escolherId('grupo_' + gp); vistos.push(...Dialogo.opcoes.filter((o) => o.id.startsWith('ver_')).map((o) => o.id.slice(4))); Dialogo.escolherId('voltar'); }
-      this.ok('pets: as 11 espécies com modelo (lobo, 4 cães, 3 gatos, raposa, papagaio, canário e a Asa Noturna)', Object.keys(PETS_ESPECIES).every((e) => vistos.includes(e)) && vistos.length === 11, vistos.join(','));
+      this.ok('pets: as 12 espécies com modelo (lobo, 5 cães com o buldogue, 3 gatos, raposa, papagaio, canário e a Asa Noturna)', Object.keys(PETS_ESPECIES).every((e) => vistos.includes(e)) && vistos.length === 12, vistos.join(','));
       Dialogo.escolherId('grupo_aves');
       g.stats.soulsBank = 100;
       Dialogo.escolherId('ver_asa_noturna');
@@ -2213,13 +2213,13 @@ const EclipseTests = {
       World.state.pets = { lista: [], ativo: null, uid: 1 }; World.state.adotados = []; World.state.hora = 12;
       const conta = (zona) => { World.loadZone(zona, null); return g.npcs.filter((n) => n instanceof AnimalCidade).map((n) => n.T.nome); };
       const q = { aurora_bairro: conta('aurora_bairro'), metro_centro: conta('metro_centro'), asterion_acampamento: conta('asterion_acampamento'), velmora_clareira: conta('velmora_clareira'),
-        lagoa_ilha: conta('lagoa_ilha'), aurora: conta('aurora'), velmora_trilha: conta('velmora_trilha') };
+        lagoa_ilha: conta('lagoa_ilha'), aurora: conta('aurora'), nexus_mercado: conta('nexus_mercado'), velmora_trilha: conta('velmora_trilha') };
       const n = (L, nome) => L.filter((x) => x === nome).length;
-      this.ok('animais: identidade por cidade (Bairro: cães, gatos e galinhas; Clareira: cães de caça, cabras e galinhas; lago: patos e gansos; Asterion: cães das neves e ovelhas; Metrópole: Asas Noturnas e pombos; Refúgio: pombos e o pavão)',
+      this.ok('animais: identidade por cidade (Bairro: cães, gatos e galinhas; Clareira: cães de caça, cabras e galinhas; lago: patos e gansos; Asterion: cães das neves e ovelhas; Metrópole: Asas Noturnas e pombos; Refúgio: pombos e o pavão; Mercado Vertical: o buldogue de guarda)',
         n(q.aurora_bairro, 'Cão de rua') === 2 && n(q.aurora_bairro, 'Galinha') === 2 && q.aurora_bairro.length === 6
         && n(q.velmora_clareira, 'Cão de caça') === 2 && n(q.velmora_clareira, 'Cabra') === 2 && n(q.velmora_clareira, 'Galinha') === 3
         && n(q.lagoa_ilha, 'Pato') === 3 && n(q.lagoa_ilha, 'Ganso') === 2 && n(q.asterion_acampamento, 'Ovelha') === 3 && n(q.asterion_acampamento, 'Cão das Neves') === 3
-        && n(q.metro_centro, 'Asa Noturna') === 3 && n(q.metro_centro, 'Pombo') === 2 && n(q.aurora, 'Pavão') === 1 && n(q.aurora, 'Pombo') === 3, JSON.stringify(q));
+        && n(q.metro_centro, 'Asa Noturna') === 3 && n(q.metro_centro, 'Pombo') === 2 && n(q.aurora, 'Pavão') === 1 && n(q.aurora, 'Pombo') === 3 && n(q.nexus_mercado, 'Cão de guarda') === 1, JSON.stringify(q));
       this.igual('animais: fora das cidades, nenhum', q.velmora_trilha.length, 0);
       World.loadZone('aurora_bairro', null);
       for (const id of ['cao_aurora', 'asa_noturna']) Criaturas3D.carregar(id);

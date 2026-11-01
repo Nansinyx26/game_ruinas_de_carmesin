@@ -61,6 +61,10 @@ const PETS_ESPECIES = {
     nome: 'Cão de colo', categoria: 'companhia', modelo: 'cao_pequeno', preco: 700, raridade: 'comum', voa: false, escala: 0.55,
     desc: 'Cãozinho de focinho curto e pernas curtas. Late para o próprio rabo e protege o dono de folhas secas.',
     nomes: ['Pipoca', 'Bolinha', 'Tico', 'Pudim', 'Amendoim'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  buldogue: {
+    nome: 'Buldogue', categoria: 'companhia', modelo: 'buldogue', preco: 800, raridade: 'comum', voa: false, escala: 0.6,
+    desc: 'Focinho curto, peito largo e pernas curtas. Ronca alto, baba no travesseiro e não larga o dono por nada.',
+    nomes: ['Tanque', 'Bigorna', 'Muralha', 'Bolacha', 'Barão'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
   papagaio: {
     nome: 'Papagaio', categoria: 'companhia', modelo: 'papagaio', preco: 1800, raridade: 'exótica', voa: true, escala: 0.36,
     desc: 'Verde, vermelho e amarelo, trazido das ilhas do sul. Repete o que não deve.',
@@ -254,7 +258,7 @@ const Pets = {
     return true;
   },
   // catálogo em três grupos (cabem na caixa de diálogo): cães e lobos, gatos e raposa, aves
-  GRUPOS: { caes: ['Cães e lobos', ['lobo_manso', 'cao_aurora', 'cao_neve', 'cao_pequeno']], gatos: ['Gatos e raposa', ['gato_malhado', 'gato_cinza', 'gato_sombra', 'raposa']],
+  GRUPOS: { caes: ['Cães e lobos', ['lobo_manso', 'cao_aurora', 'cao_neve', 'cao_pequeno', 'buldogue']], gatos: ['Gatos e raposa', ['gato_malhado', 'gato_cinza', 'gato_sombra', 'raposa']],
     aves: ['Aves', ['asa_noturna', 'papagaio', 'canario']] },
   catalogo(npc, volta) {
     const o = Object.keys(this.GRUPOS).map((g) => ({ id: 'grupo_' + g, tag: '$', txt: this.GRUPOS[g][0], fn: () => this.grupo(npc, g, volta) }));

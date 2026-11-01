@@ -1,0 +1,1081 @@
+[
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/Rosto_1.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 39770,
+   "faces": 69796,
+   "triangulos": 69796,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 9488,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 128,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5707,
+   "faces": 5705,
+   "triangulos": 11410,
+   "quads": 5705,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00067,
+   "p95": 0.00284
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5707,
+   "faces": 5705,
+   "triangulos": 11410,
+   "quads": 5705,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/Rosto_1.glb",
+  "segundos": 16
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_2.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 42812,
+   "faces": 75036,
+   "triangulos": 75036,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 10282,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 153,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5925,
+   "faces": 5923,
+   "triangulos": 11846,
+   "quads": 5923,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00078,
+   "p95": 0.0032
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5925,
+   "faces": 5923,
+   "triangulos": 11846,
+   "quads": 5923,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_2.glb",
+  "segundos": 16
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_3.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 41661,
+   "faces": 73594,
+   "triangulos": 73594,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 9478,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 125,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5492,
+   "faces": 5490,
+   "triangulos": 10980,
+   "quads": 5490,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00066,
+   "p95": 0.00261
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5492,
+   "faces": 5490,
+   "triangulos": 10980,
+   "quads": 5490,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_3.glb",
+  "segundos": 16
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_4.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 42445,
+   "faces": 74926,
+   "triangulos": 74926,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 9652,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 156,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5587,
+   "faces": 5585,
+   "triangulos": 11170,
+   "quads": 5585,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00082,
+   "p95": 0.0034
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5587,
+   "faces": 5585,
+   "triangulos": 11170,
+   "quads": 5585,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_4.glb",
+  "segundos": 16
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_6.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 38909,
+   "faces": 68452,
+   "triangulos": 68452,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 9092,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 137,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5751,
+   "faces": 5749,
+   "triangulos": 11498,
+   "quads": 5749,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00066,
+   "p95": 0.00254
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5751,
+   "faces": 5749,
+   "triangulos": 11498,
+   "quads": 5749,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_6.glb",
+  "segundos": 18
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_7.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 36822,
+   "faces": 63944,
+   "triangulos": 63944,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 9400,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 150,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5914,
+   "faces": 5912,
+   "triangulos": 11824,
+   "quads": 5912,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00069,
+   "p95": 0.00303
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5914,
+   "faces": 5912,
+   "triangulos": 11824,
+   "quads": 5912,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_7.glb",
+  "segundos": 16
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n1.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 132333,
+   "faces": 238318,
+   "triangulos": 238318,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 25586,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 381,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 5088,
+   "faces": 5085,
+   "triangulos": 10170,
+   "quads": 5085,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 22,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00173,
+   "p95": 0.00645
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5088,
+   "faces": 5085,
+   "triangulos": 10170,
+   "quads": 5085,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 22,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.24
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n1.glb",
+  "segundos": 27
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n2.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 76885,
+   "faces": 136878,
+   "triangulos": 136878,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 16390,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 251,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 4457,
+   "faces": 4453,
+   "triangulos": 8906,
+   "quads": 4453,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 12,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00152,
+   "p95": 0.00501
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 4457,
+   "faces": 4453,
+   "triangulos": 8906,
+   "quads": 4453,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 12,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n2.glb",
+  "segundos": 19
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n4.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 57356,
+   "faces": 99906,
+   "triangulos": 99906,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 14262,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 272,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 5395,
+   "faces": 5390,
+   "triangulos": 10780,
+   "quads": 5390,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 8,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00119,
+   "p95": 0.00399
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5395,
+   "faces": 5390,
+   "triangulos": 10780,
+   "quads": 5390,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 8,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 1.06
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n4.glb",
+  "segundos": 16
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n5.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 92822,
+   "faces": 163662,
+   "triangulos": 163662,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 21190,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 396,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 4559,
+   "faces": 4563,
+   "triangulos": 9126,
+   "quads": 4563,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 10,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 3,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00187,
+   "p95": 0.00648
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 4559,
+   "faces": 4563,
+   "triangulos": 9126,
+   "quads": 4563,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 10,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 3,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.17
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n5.glb",
+  "segundos": 21
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n7.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 109503,
+   "faces": 190672,
+   "triangulos": 190672,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 27300,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 517,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 4532,
+   "faces": 4548,
+   "triangulos": 9096,
+   "quads": 4548,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 12,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00252,
+   "p95": 0.00825
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 4532,
+   "faces": 4548,
+   "triangulos": 9096,
+   "quads": 4548,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 12,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.31
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n7.glb",
+  "segundos": 28
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Cabelo/Cabelo_6.glb",
+  "tipo": "cabelo",
+  "antes": {
+   "vertices": 259079,
+   "faces": 441942,
+   "triangulos": 441942,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 73114,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1551,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 4792,
+   "faces": 11000,
+   "triangulos": 11000,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 2,
+   "finos_pct": 3.1
+  },
+  "distancia": {
+   "media": 0.00056,
+   "p95": 0.00146
+  },
+  "metodo": "redução mecha a mecha (colapso; UV e bordas das mechas preservadas)",
+  "info": {
+   "fracao": 0.0249
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Cabelo/Cabelo_6.glb",
+  "segundos": 26
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_5.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 38445,
+   "faces": 67152,
+   "triangulos": 67152,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 9410,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 164,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5299,
+   "faces": 5297,
+   "triangulos": 10594,
+   "quads": 5297,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00079,
+   "p95": 0.0037
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5299,
+   "faces": 5297,
+   "triangulos": 10594,
+   "quads": 5297,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "tentativas": [
+    {
+     "quads": 6000,
+     "triangulos": 12582,
+     "p95": 0.00317
+    },
+    {
+     "quads": 5493,
+     "triangulos": 10594,
+     "p95": 0.0037
+    }
+   ],
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_5.glb",
+  "segundos": 26
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Rosto/rosto_8.glb",
+  "tipo": "rosto",
+  "antes": {
+   "vertices": 35789,
+   "faces": 62312,
+   "triangulos": 62312,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 8978,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 144,
+   "finos_pct": 0.0
+  },
+  "depois": {
+   "vertices": 5630,
+   "faces": 5628,
+   "triangulos": 11256,
+   "quads": 5628,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00067,
+   "p95": 0.00264
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5630,
+   "faces": 5628,
+   "triangulos": 11256,
+   "quads": 5628,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "tentativas": [
+    {
+     "quads": 6000,
+     "triangulos": 12110,
+     "p95": 0.00244
+    },
+    {
+     "quads": 5707,
+     "triangulos": 11256,
+     "p95": 0.00264
+    }
+   ],
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Rosto/rosto_8.glb",
+  "segundos": 26
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n3.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 113546,
+   "faces": 197796,
+   "triangulos": 197796,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 28114,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 591,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 5393,
+   "faces": 5397,
+   "triangulos": 10794,
+   "quads": 5397,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 14,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00365,
+   "p95": 0.01533
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5393,
+   "faces": 5397,
+   "triangulos": 10794,
+   "quads": 5397,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 14,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "tentativas": [
+    {
+     "quads": 5200,
+     "triangulos": 8840,
+     "p95": 0.0154
+    },
+    {
+     "quads": 6564,
+     "triangulos": 10794,
+     "p95": 0.01533
+    }
+   ],
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": false,
+  "falhas": [
+   "desvio de 95% 1.53% acima de 1.5%"
+  ],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n3.glb",
+  "segundos": 36
+ },
+ {
+  "arquivo": "assets/modelos/armaduras/kael/kael_n6.glb",
+  "tipo": "armadura",
+  "antes": {
+   "vertices": 124258,
+   "faces": 220294,
+   "triangulos": 220294,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 27324,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 449,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 5644,
+   "faces": 5649,
+   "triangulos": 11298,
+   "quads": 5649,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 6,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0
+  },
+  "distancia": {
+   "media": 0.00353,
+   "p95": 0.01674
+  },
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "info": {
+   "vertices": 5644,
+   "faces": 5649,
+   "triangulos": 11298,
+   "quads": 5649,
+   "quads_pct": 100.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 6,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 0.0,
+   "tentativas": [
+    {
+     "quads": 5200,
+     "triangulos": 8920,
+     "p95": 0.02065
+    },
+    {
+     "quads": 6505,
+     "triangulos": 10012,
+     "p95": 0.02272
+    },
+    {
+     "quads": 7250,
+     "triangulos": 11298,
+     "p95": 0.01674
+    }
+   ],
+   "assado": {
+    "lado": 1024,
+    "emissao_pct": 0.0
+   }
+  },
+  "aprovado": false,
+  "falhas": [
+   "desvio de 95% 1.67% acima de 1.5%"
+  ],
+  "saida": "assets/_retopo/assets/modelos/armaduras/kael/kael_n6.glb",
+  "segundos": 55
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Cabelo/Cabelo_4.glb",
+  "tipo": "cabelo",
+  "antes": {
+   "vertices": 560851,
+   "faces": 966718,
+   "triangulos": 966718,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 148990,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 2997,
+   "finos_pct": 0.2
+  },
+  "depois": {
+   "vertices": 4665,
+   "faces": 10670,
+   "triangulos": 10670,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 8,
+   "finos_pct": 5.9
+  },
+  "distancia": {
+   "media": 0.00203,
+   "p95": 0.01085
+  },
+  "metodo": "redução mecha a mecha (colapso; UV e bordas das mechas preservadas)",
+  "info": {
+   "fracao": 0.02,
+   "passadas": 2
+  },
+  "aprovado": true,
+  "falhas": [],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Cabelo/Cabelo_4.glb",
+  "segundos": 63
+ },
+ {
+  "arquivo": "assets/Criar_Personagem/Cabelo/cabelo_1.glb",
+  "tipo": "cabelo",
+  "antes": {
+   "vertices": 824942,
+   "faces": 1399168,
+   "triangulos": 1399168,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 240348,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 5184,
+   "finos_pct": 0.1
+  },
+  "depois": {
+   "vertices": 3825,
+   "faces": 12026,
+   "triangulos": 12026,
+   "quads": 0,
+   "quads_pct": 0.0,
+   "ngonos": 0,
+   "nao_manifold": 0,
+   "bordas": 0,
+   "soltos": 0,
+   "degeneradas": 0,
+   "cascas": 1,
+   "finos_pct": 9.0
+  },
+  "distancia": {
+   "media": 0.00582,
+   "p95": 0.03017
+  },
+  "metodo": "redução mecha a mecha (colapso; UV e bordas das mechas preservadas)",
+  "info": {
+   "fracao": 0.02,
+   "passadas": 3
+  },
+  "aprovado": false,
+  "falhas": [
+   "desvio de 95% 3.02% acima de 2.5%",
+   "12026 triângulos acima do orçamento 12000"
+  ],
+  "saida": "assets/_retopo/assets/Criar_Personagem/Cabelo/cabelo_1.glb",
+  "segundos": 100
+ }
+]

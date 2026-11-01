@@ -32,6 +32,9 @@ U = B.U
 BASES = {'lobo': os.path.join('Enemies', 'lobo_sombra_neon'), 'ave': os.path.join('Pets', 'Exotic', 'asa_noturna')}
 PERNAS_LOBO = ['escapula', 'braco', 'antebraco', 'mao', 'coxa', 'canela', 'metatarso', 'pe']
 ASAS = ['ombro', 'braco', 'antebraco', 'mao', 'ponta']
+# tosa (pelo curto) em todo o corpo do lobo, menos orelhas e patas
+TOSA_LOBO = ['cabeca', 'pescoco1', 'pescoco2', 'peito', 'coluna1', 'coluna2', 'quadril', 'cauda1', 'cauda2', 'cauda3', 'cauda4'] + \
+    [f'{n}.{s}' for n in ('escapula', 'braco', 'antebraco', 'coxa', 'canela', 'metatarso') for s in ('L', 'R')]
 
 
 def lr(nomes, esc):
@@ -54,6 +57,7 @@ ESPECIES = {
          'coluna1': (0.72, 1.08, 0.75), 'coluna2': (0.72, 1.08, 0.75), 'quadril': (0.8, 1.0, 0.8),
          'cauda1': (0.4, 1.25, 0.4), 'cauda2': (0.38, 1.35, 0.38), 'cauda3': (0.36, 1.4, 0.36), 'cauda4': (0.34, 1.45, 0.34)},
         lr(['orelha'], (1.35, 1.15, 1.35)), lr(['escapula', 'braco', 'antebraco', 'coxa', 'canela', 'metatarso'], (0.65, 0.88, 0.65)), lr(['mao', 'pe'], (0.75, 0.8, 0.75))),
+        tosa=dict(ossos=TOSA_LOBO, pct=55, folga=1.0, mole=0.2, alisar=4),
         pelagens={'gato_malhado': ((0.38, 0.18, 0.05), (0.82, 0.48, 0.18), (0.98, 0.9, 0.76), (0.3, 0.13, 0.04), 0),
                   'gato_cinza': ((0.22, 0.24, 0.28), (0.5, 0.53, 0.58), (0.88, 0.9, 0.92), (0.18, 0.19, 0.22), 0),
                   'gato_sombra': ((0.03, 0.03, 0.05), (0.14, 0.13, 0.18), (0.45, 0.42, 0.52), (0.65, 0.35, 1.0), 1.6)}),
@@ -67,7 +71,19 @@ ESPECIES = {
         {'cabeca': (1.12, 0.55, 1.05), 'pescoco1': (0.95, 0.8, 0.95), 'pescoco2': (0.95, 0.8, 0.95), 'peito': (1.05, 0.85, 1.0),
          'coluna1': (1.05, 0.85, 1.0), 'coluna2': (1.05, 0.85, 1.0), 'cauda1': (0.85, 0.75, 0.85), 'cauda2': (0.85, 0.75, 0.85), 'cauda3': (0.8, 0.7, 0.8), 'cauda4': (0.8, 0.7, 0.8)},
         lr(['orelha'], (1.0, 0.72, 1.0)), lr(['escapula', 'braco', 'antebraco', 'coxa', 'canela', 'metatarso'], (0.95, 0.58, 0.95)), lr(['mao', 'pe'], (1.0, 0.85, 1.0))),
+        tosa=dict(ossos=TOSA_LOBO, pct=55, folga=1.0, mole=0.2, alisar=4),
         pelagens={'cao_pequeno': ((0.42, 0.28, 0.14), (0.83, 0.66, 0.44), (0.98, 0.95, 0.9), (0.3, 0.2, 0.1), 0)}),
+    # focinho curto e porte atarracado (tipo buldogue): cabeça larga e curta, pescoço grosso, peito
+    # largo, pernas curtas e grossas, cauda curta
+    'buldogue': dict(base='lobo', pasta='Pets/Dogs', ossos=d(
+        {'cabeca': (1.32, 0.5, 1.18), 'pescoco1': (1.28, 0.62, 1.22), 'pescoco2': (1.25, 0.62, 1.2), 'peito': (1.32, 0.85, 1.15),
+         'coluna1': (1.18, 0.82, 1.05), 'coluna2': (1.12, 0.82, 1.02), 'quadril': (1.02, 0.85, 0.98),
+         'cauda1': (0.55, 0.35, 0.55), 'cauda2': (0.35, 0.28, 0.35), 'cauda3': (0.3, 0.25, 0.3), 'cauda4': (0.3, 0.25, 0.3)},
+        lr(['orelha'], (0.95, 0.6, 0.95)), lr(['escapula', 'braco', 'antebraco'], (1.22, 0.62, 1.2)), lr(['coxa', 'canela', 'metatarso'], (1.08, 0.62, 1.05)),
+        lr(['mao', 'pe'], (1.18, 0.9, 1.15))),
+        tosa=dict(ossos=TOSA_LOBO, pct=50, folga=1.0, mole=0.15, alisar=4),
+        pelagens={'buldogue': ((0.36, 0.22, 0.12), (0.8, 0.6, 0.4), (0.98, 0.94, 0.88), (0.26, 0.15, 0.08), 0),
+                  'buldogue_tigrado': ((0.12, 0.08, 0.05), (0.4, 0.28, 0.18), (0.92, 0.88, 0.82), (0.08, 0.05, 0.03), 0)}),
     'cabra': dict(base='lobo', pasta='DomesticAnimals', ossos=d(
         {'cabeca': (0.78, 1.18, 0.88), 'pescoco1': (0.8, 1.05, 0.8), 'pescoco2': (0.8, 1.05, 0.8), 'peito': (0.88, 1.0, 0.95),
          'coluna1': (0.88, 1.0, 0.95), 'coluna2': (0.88, 1.0, 0.95), 'quadril': (0.88, 1.0, 0.95),
@@ -167,6 +183,86 @@ def inflar(malhas, arm, quanto, grupos):
         me.update()
 
 
+def tosar(malhas, arm, ossos, pct=60, folga=1.05, mole=0.25, alisar=3):
+    """Pelo curto ("tosa"): a malha do lobo tem o pelo eriçado em pontas; para cães de pelo curto e
+    gatos, as pontas que passam do contorno de cada osso são aparadas.
+    Para cada osso pedido, os vértices em que ele manda (peso dominante >= 0,5) são divididos em
+    fatias ao longo do osso (3) e setores em volta dele (8). Em cada fatia/setor, o raio até o eixo
+    do osso acima de folga x percentil(pct) volta para perto dele (só mole x o excesso fica): o corte
+    segue a forma do corpo (barriga, costas, peito), não vira um tubo. Depois, alisa (Laplace) só as
+    regiões aparadas e o anel em volta, para a tosa não deixar degraus."""
+    Mw = np.array(arm.matrix_world)
+    E = {}
+    for b in arm.data.bones:
+        if b.name in ossos:
+            h = Mw[:3, :3] @ np.array(b.head_local) + Mw[:3, 3]
+            t = Mw[:3, :3] @ np.array(b.tail_local) + Mw[:3, 3]
+            x = Mw[:3, :3] @ np.array(b.x_axis)
+            E[b.name] = (h, t, x / max(np.linalg.norm(x), 1e-9))
+    info = {}
+    for m in malhas:
+        me = m.data
+        n = len(me.vertices)
+        P = np.empty(n * 3)
+        me.vertices.foreach_get('co', P)
+        Mm = np.array(m.matrix_world)
+        Pw = P.reshape(n, 3) @ Mm[:3, :3].T + Mm[:3, 3]
+        gi = {g.index: g.name for g in m.vertex_groups}
+        dom = np.empty(n, dtype=object)
+        for v in me.vertices:
+            g = max(v.groups, key=lambda x: x.weight, default=None)
+            dom[v.index] = gi.get(g.group) if g is not None and g.weight >= 0.5 else None
+        mexidos = np.zeros(n, bool)
+        for nome, (h, t, x) in E.items():
+            sel = np.nonzero(dom == nome)[0]
+            if len(sel) < 24:
+                continue
+            dvec = t - h
+            L2 = max(float(dvec @ dvec), 1e-12)
+            dn = dvec / np.sqrt(L2)
+            y = np.cross(dn, x)
+            Q = Pw[sel]
+            s = np.clip((Q - h) @ dvec / L2, 0, 1)
+            C = h + s[:, None] * dvec
+            R = Q - C
+            r = np.linalg.norm(R, axis=1)
+            ang = np.arctan2(R @ y, R @ x)
+            fat = np.minimum(2, (s * 3).astype(int)) * 8 + ((ang + np.pi) / (2 * np.pi) * 8).astype(int) % 8
+            for f in np.unique(fat):
+                k = fat == f
+                if k.sum() < 8:
+                    continue
+                cap = folga * np.percentile(r[k], pct)
+                acima = k & (r > cap)
+                if not acima.any():
+                    continue
+                nr = cap + (r[acima] - cap) * mole
+                Q[acima] = C[acima] + R[acima] * (nr / r[acima])[:, None]
+                mexidos[sel[acima]] = True
+            Pw[sel] = Q
+        # alisar só onde aparou (e um anel em volta)
+        ed = np.empty(len(me.edges) * 2, dtype=np.int64)
+        me.edges.foreach_get('vertices', ed)
+        ed = ed.reshape(-1, 2)
+        zona = mexidos.copy()
+        zona[ed[mexidos[ed[:, 0]], 1]] = True
+        zona[ed[mexidos[ed[:, 1]], 0]] = True
+        for _ in range(alisar):
+            soma = np.zeros_like(Pw)
+            cont = np.zeros(n)
+            np.add.at(soma, ed[:, 0], Pw[ed[:, 1]])
+            np.add.at(soma, ed[:, 1], Pw[ed[:, 0]])
+            np.add.at(cont, ed[:, 0], 1)
+            np.add.at(cont, ed[:, 1], 1)
+            med = soma / np.maximum(cont, 1)[:, None]
+            Pw[zona] += 0.5 * (med[zona] - Pw[zona])
+        P = (Pw - Mm[:3, 3]) @ np.linalg.inv(Mm[:3, :3]).T
+        me.vertices.foreach_set('co', P.reshape(-1))
+        me.update()
+        info[m.name] = int(mexidos.sum())
+    return info
+
+
 def ao_chao(arm, malhas):
     """Os pés voltam ao chão (z mínimo do LOD 0 = 0), malha e esqueleto juntos."""
     z = min(v.co.z for v in malhas[0].data.vertices)
@@ -216,6 +312,7 @@ def construir(esp):
     remodelar(arm, malhas, E['ossos'])
     if E.get('inflar'):
         inflar(malhas, arm, *E['inflar'])
+    tosa = tosar(malhas, arm, **E['tosa']) if E.get('tosa') else None
     dz = ao_chao(arm, malhas)
     lod0 = malhas[0]
     # as texturas de dados (aspereza, metal, normais) da base em 1024 (as do jogo)
@@ -263,7 +360,7 @@ def construir(esp):
         if im.users == 0:
             bpy.data.images.remove(im)
     blend = B.salvar_blend(os.path.join(pasta_base, f'{esp}.blend'))
-    rel = dict(especie=esp, base=BASES[E['base']], ossos=E['ossos'], inflar=E.get('inflar'), chao_dz=round(dz, 4),
+    rel = dict(especie=esp, base=BASES[E['base']], ossos=E['ossos'], inflar=E.get('inflar'), tosa=tosa, chao_dz=round(dz, 4),
                pelagens=[p for p, _ in feitos], blend=os.path.relpath(blend, B.RAIZ), lods=[len(m.data.polygons) for m in malhas],
                segundos=round(time.time() - t0))
     with open(os.path.join(pasta_base, f'{esp}_remodelagem.json'), 'w', encoding='utf-8') as f:
@@ -274,6 +371,10 @@ def construir(esp):
 
 if __name__ == '__main__':
     os.makedirs(os.path.join(B.RAIZ, '.cache_criacao', 'especies'), exist_ok=True)
-    pedidas = [a for a in U.args() if a in ESPECIES] or list(ESPECIES)
+    args = U.args()
+    erradas = [a for a in args if a not in ESPECIES]
+    if erradas:   # nome errado não pode virar "refaz todas"
+        sys.exit(f'espécies desconhecidas: {erradas} (existem: {sorted(ESPECIES)})')
+    pedidas = args or list(ESPECIES)
     for esp in pedidas:
         construir(esp)

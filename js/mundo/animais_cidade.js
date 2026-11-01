@@ -21,6 +21,8 @@ const ANIMAIS_TIPOS = {
     frases: ['fareja o ar e volta a olhar para a trilha', 'aceita o carinho, mas não tira os olhos da mata'] },
   cao_neve: { nome: 'Cão das Neves', especie: 'cao_neve', tipo: 'cao', adota: false, escala: 0.78, coleira: 'ferro', dono: 'a Vigília de Asterion',
     frases: ['sacode a neve do pelo em cima de você', 'uiva curto, como quem conversa'] },
+  cao_guarda: { nome: 'Cão de guarda', especie: 'buldogue_tigrado', tipo: 'cao', adota: false, escala: 0.6, coleira: 'ferro', dono: 'os comerciantes do mercado',
+    frases: ['ronca, abre um olho e volta a dormir em cima do caixote', 'cheira o seu bolso: tem cheiro de pão'] },
   gato_rua: { nome: 'Gato de rua', especie: 'gato_malhado', tipo: 'gato', adota: true, escala: 0.55,
     frases: ['aceita um carinho, depois morde de leve', 'se esfrega na sua perna e vai embora sem olhar para trás', 'ronrona como um motor velho'] },
   gato_cinza: { nome: 'Gato cinzento', especie: 'gato_cinza', tipo: 'gato', adota: true, escala: 0.55,
@@ -47,7 +49,8 @@ const ANIMAIS_TIPOS = {
 //   o Bairro da Muralha (casas antigas): cães, gatos e as galinhas dos quintais;
 //   a Clareira dos Sinais (aldeia da floresta): cães de caça, cabras e galinhas;
 //   a vila do lago: patos e gansos; Asterion (frio): cães das neves e ovelhas;
-//   a Metrópole: Asas Noturnas nos telhados e pombos; o Mercado Vertical: gatos e pombos;
+//   a Metrópole: Asas Noturnas nos telhados e pombos; o Mercado Vertical: o buldogue de guarda
+//   dos comerciantes, gatos e pombos;
 //   o oásis de Seraph: cabras
 const ANIMAIS_ZONAS = {
   aurora: [['cao_rua', 0.3, 0.7], ['cao_rua', 0.72, 0.36], ['gato_rua', 0.58, 0.28], ['pombo', 0.45, 0.55], ['pombo', 0.48, 0.6], ['pombo', 0.42, 0.62], ['pavao', 0.62, 0.42]],
@@ -57,7 +60,7 @@ const ANIMAIS_ZONAS = {
   asterion_acampamento: [['cao_neve', 0.55, 0.7], ['cao_neve', 0.62, 0.62], ['cao_neve', 0.48, 0.78], ['ovelha', 0.3, 0.4], ['ovelha', 0.34, 0.46], ['ovelha', 0.26, 0.46]],
   asterion_fortaleza: [['cao_neve', 0.5, 0.82]],
   metro_centro: [['ave_neon', 0.3, 0.3], ['ave_neon', 0.72, 0.3], ['ave_neon', 0.5, 0.7], ['pombo', 0.4, 0.5], ['pombo', 0.44, 0.52]],
-  nexus_mercado: [['gato_rua', 0.4, 0.5], ['gato_cinza', 0.6, 0.62], ['pombo', 0.5, 0.4], ['pombo', 0.53, 0.42]],
+  nexus_mercado: [['cao_guarda', 0.62, 0.38], ['gato_rua', 0.4, 0.5], ['gato_cinza', 0.6, 0.62], ['pombo', 0.5, 0.4], ['pombo', 0.53, 0.42]],
   seraph_oasis: [['cabra', 0.55, 0.62], ['cabra', 0.6, 0.66]],
 };
 

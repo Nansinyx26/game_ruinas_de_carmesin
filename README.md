@@ -408,9 +408,28 @@ Entre os setores, Kael também escolhe **evoluções** (Fio Monomolecular, Condu
 ## Inimigos
 Criaturas feitas no Blender (esqueleto, animações e LODs; veja `docs/CRIATURAS_E_TOPOLOGIA.md`):
 - **Lobo Sombra Neon** (Metrópole Tecnológica), **Lobo de Raiz** (Velmora) e **Lobo das Neves** (Asterion), com passada, bote, investida, dano, atordoamento, morte e uivo. Todos usam a malha do Meshy com retopologia; as pelagens (e os cães) mudam só a textura.
-- **Animais das cidades** (`js/mundo/animais_cidade.js`), cada cidade com os seus: cães de rua no Refúgio (adotáveis), cães de caça em Velmora, cães das neves em Asterion e Asas Noturnas nos telhados da Metrópole. Eles vagam, farejam o herói, sentam, dormem à noite e fogem da luta.
-- **Animais de companhia** (`js/mundo/pets.js`): no **Viveiro dos Alves** (Bairro da Muralha), a tratadora Cora vende a **Asa Noturna** (ave rara), o **Lobo da Muralha**, o **Cão da Aurora** e o **Cão das Neves** (em células, com confirmação e escolha do nome), e guarda e devolve os animais. O companheiro segue o herói (a ave voa), senta, dorme, come e brinca. [E] nele: petisco, brincar, carinho, ficar/seguir, nome, guardar. Fome, humor e afinidade aparecem no HUD. Ele não luta.
+- **Animais das cidades** (`js/mundo/animais_cidade.js`), cada cidade com os seus:
+  - Refúgio: cães e gatos de rua (adotáveis), pombos e o pavão do Conselho;
+  - Bairro da Muralha: galinhas nos quintais;
+  - Clareira de Velmora: cabras, galinhas e cães de caça;
+  - vila do lago: patos e gansos;
+  - Asterion: cães das neves e ovelhas;
+  - Metrópole: Asas Noturnas e pombos;
+  - Mercado Vertical: o buldogue de guarda dos comerciantes, gatos e pombos.
+
+  Cada tipo tem o seu comportamento: o cão fareja, o gato desconfia, as aves ciscam e se assustam, cabras e ovelhas pastam, os pombos levantam voo.
+- **Espécies por remodelagem no esqueleto** (`tools/blender/criaturas/especies.py`): as malhas do lobo e da ave viram gato, raposa, cão de colo, buldogue, cabra, ovelha, lobos de montaria, galinha, pato, ganso, pombo, canário, papagaio e pavão, com as mesmas animações. Chifres, crista e bico chato são peças presas aos ossos. Gatos, cão de colo e buldogue passam por uma **tosa**: as pontas do pelo eriçado do lobo são aparadas e alisadas, para dar pelo curto.
+- **Montarias** (`js/mundo/montarias.js`):
+  - Lobos de montaria, vendidos pelo domador Tobias na Estrebaria da Guarda, no Bairro da Muralha.
+  - [E] monta. O herói vai sentado na sela e corre mais.
+  - [E] ou um golpe desmonta.
+- **Animais de companhia** (`js/mundo/pets.js`): no **Viveiro dos Alves** (Bairro da Muralha), a tratadora Cora vende 12 espécies (cães, entre eles o cão de colo e o buldogue, gatos, raposa, papagaio, canário, o Lobo da Muralha e a Asa Noturna) (em células, com confirmação e escolha do nome), e guarda e devolve os animais. O companheiro segue o herói (a ave voa), senta, dorme, come e brinca. [E] nele: petisco, brincar, carinho, ficar/seguir, nome, guardar. Fome, humor e afinidade aparecem no HUD. Ele não luta.
 - A topologia de todos os modelos é diagnosticada por `tools/topologia/diagnostico.py`. A retopologia em quads e os LOD 0–3 são feitos por `tools/blender/topologia/retopologia.py`.
+- **Retopologia em lote, peça a peça** (`tools/blender/topologia/lote.py`):
+  - rostos, armaduras e cabelos, cada tipo com a sua regra;
+  - cada peça é validada (desvio da superfície, faces ruins, orçamento), e a fonte nunca é alterada;
+  - saídas em `assets/_retopo/`, relatório em `docs/topologia/LOTE.md`;
+  - foram 18 peças e 15 aprovadas; as saídas ainda não foram trocadas no jogo.
 
 - **Rastejador**: aranha mecânica de NEXUS que ataca em bando.
 - **Drone Sentinela**: mantém distância e dispara lasers.
@@ -583,7 +602,8 @@ js/
                     npc3d.js (NPC3D, NpcModelo: os moradores importantes com as peças da criação),
                     criaturas3d.js (Criaturas3D: as criaturas do Blender — carga, clipes por estado, LOD),
                     pets.js (PETS_ESPECIES, Pets, CompanheiroPet, VitrinePet: o viveiro e o companheiro),
-                    animais_cidade.js (ANIMAIS_ZONAS, AnimaisCidade, AnimalCidade: os animais das cidades)
+                    animais_cidade.js (ANIMAIS_ZONAS, AnimaisCidade, AnimalCidade: os animais das cidades),
+                    montarias.js (MONTARIAS_TIPOS, Montarias, MontariaEnt: a estrebaria e o herói montado)
   glbviewer.js      visualizador dos .glb de armas e armaduras, com a textura embutida (tela de seleção)
   criacao/          criação de personagem: dados.js (PERS_CLASSES, PERS_APAR, PersClasse, Perfis,
                     PersCriacao: classes, aparência, validação, perfis locais e equipamento inicial),

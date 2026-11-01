@@ -53,16 +53,57 @@ O projeto separa os animais em três categorias: **companhia** (seguem o herói)
 - **Salvamento:** `World.state.pets`, no mundo de cada personagem.
 - **Testes:** `js/testes.js → pets()` (veja a seção 4).
 
+## 1b'. Espécies por remodelagem no esqueleto (`tools/blender/criaturas/especies.py`)
+
+Sem malha de origem para cada espécie, as duas bases com retopologia (o lobo e a ave do Meshy) foram **remodeladas no próprio esqueleto**, no Blender:
+
+1. Cada osso recebe uma escala. Y muda o comprimento; X e Z mudam a espessura. A herança de escala fica desligada, então alongar a coxa empurra a canela sem engrossá-la.
+2. A deformação é aplicada na malha de cada LOD, e a pose vira a nova pose de repouso. Os pesos e as animações continuam valendo.
+3. A ovelha "infla" pelas normais onde os ossos do tronco mandam, o que forma a lã.
+4. **Tosa (pelo curto)**, nos gatos, no cão de colo e no buldogue: a malha do lobo tem o pelo eriçado em pontas. Para cada osso, os vértices em que ele manda são divididos em fatias ao longo do osso e em 8 setores em volta dele. Em cada fatia e setor, o raio que passa do percentil vira um corte suave. Assim o corte segue a forma do corpo (barriga, costas, peito) e não vira um tubo. Depois, só as regiões aparadas são alisadas.
+5. Os pés voltam ao chão, e a cor assada é remapeada para a pelagem.
+
+| espécie | base | pelagens | uso no jogo | peça extra |
+|---|---|---|---|---|
+| gato | lobo (com tosa) | malhado, cinzento, da Sombra (rara, veios violeta acesos) | pet; gatos de rua (adotáveis) no Refúgio, no Bairro e no Mercado Vertical | — |
+| raposa | lobo | vermelha | pet (incomum) | — |
+| cão de colo | lobo (com tosa) | fulvo | pet | — |
+| buldogue | lobo (com tosa: cabeça larga e curta, peito largo, pernas curtas, cauda curta) | fulvo, tigrado | pet; o tigrado é o cão de guarda dos comerciantes do Mercado Vertical | — |
+| cabra | lobo | marrom e branca | Clareira de Velmora, oásis de Seraph | chifres |
+| ovelha | lobo (lã inflada) | creme | Acampamento de Asterion | — |
+| lobo de montaria | lobo (robusto) | comum, de guerra (marcas rubras acesas), da Aurora (lendário, fios dourados) | montarias | — |
+| galinha | ave | carijó | Bairro e Clareira | crista e barbela |
+| pato / ganso | ave | verde-azulado / branco | vila do lago | bico chato |
+| pombo / canário | ave | cinza / amarelo | pombos no Refúgio, na Metrópole e no Mercado; canário como pet | — |
+| papagaio | ave | verde, vermelho e amarelo | pet (exótico) | — |
+| pavão | ave | azul, com as pontas da cauda acesas | o pavão do Conselho, no Refúgio | — |
+
+Cada espécie tem o `.blend` editável (malha remodelada, esqueleto, ações e pelagens), o GLB por pelagem com texturas de 1024 px e o relatório `<espécie>_remodelagem.json`.
+
+## 1d. Montarias (`js/mundo/montarias.js`)
+
+- **Estrebaria da Guarda**, no Bairro da Muralha. O domador **Tobias** vende o Lobo de Montaria (2.500 células), o Lobo de Guerra (6.000, a partir do nível 30) e o Lobo da Aurora (15.000, a partir do nível 60). A compra tem confirmação.
+- **Montar:**
+  - [E] perto da montaria monta. O herói vai **sentado na sela**, com a pose `montado` do esqueleto do Kael: quadril na altura da sela, pernas dos lados do lombo, mãos nas rédeas e o corpo balançando no trote.
+  - A velocidade sobe ×1,6 a ×2.
+  - A montaria anda no passo do herói.
+  - [E] ou qualquer golpe desmonta; montado, o herói não luta.
+- **Fora da sela**, a montaria segue o herói. Na troca de zona ela vem junto, mesmo com o herói montado. Nos interiores ela espera do lado de fora.
+- **Cavalos:** a malha do lobo não vira um cavalo convincente (testei e ficou um "lobo de pernas longas"). Por isso as montarias são lobos, um clássico de fantasia. O cavalo entra com uma malha própria, e a lógica da montaria já está pronta para ele.
+
 ## 1c. Animais domésticos das cidades (`js/mundo/animais_cidade.js`)
 
 Cada cidade tem os seus animais, pela cultura e pelo clima. Não são todas as espécies em todo lugar:
 
 | cidade | animais | comportamento |
 |---|---|---|
-| Refúgio da Aurora (praça e Bairro da Muralha) | cães de rua (Cão da Aurora) | vagam, farejam o herói, sentam, dormem à noite; **podem ser adotados** |
-| Clareira dos Sinais (Velmora) | cães de caça cinzentos dos caçadores | ficam perto do posto do caçador |
-| Acampamento e Fortaleza de Asterion | cães das neves (trenós da Vigília) | o mesmo dos cães |
-| Praça Central da Metrópole | Asas Noturnas nos telhados | pousadas; levantam voo quando o herói chega perto ou começa uma luta |
+| Refúgio da Aurora (praça) | cães e gatos de rua, pombos e o pavão do Conselho | cães farejam, gatos desconfiam, pombos voam; cães e gatos **podem ser adotados** |
+| Bairro da Muralha | cães e gatos de rua, galinhas nos quintais | as galinhas ciscam e correm assustadas |
+| Clareira dos Sinais (Velmora) | cães de caça, cabras e galinhas | as cabras pastam |
+| Vila do lago | patos e gansos | ciscam; o ganso defende o território |
+| Acampamento e Fortaleza de Asterion | cães das neves (trenós da Vigília) e ovelhas | as ovelhas pastam |
+| Praça Central da Metrópole | Asas Noturnas nos telhados e pombos | pousadas; levantam voo quando o herói chega perto ou começa uma luta |
+| Mercado Vertical / oásis de Seraph | gatos e pombos / cabras | — |
 
 - **Em comum:** fogem da luta e voltam depois. [E] serve para afagar.
 - **Adoção:** o cão de rua vira animal de companhia, com nome à escolha e chegando com fome. Ele sai da rua para sempre (`World.state.adotados`).
@@ -127,12 +168,49 @@ A configuração muda por finalidade (`TIPOS`: quadrúpede, ave, humanoide, ríg
 
 | | antes (Meshy) | depois (LOD 0) |
 |---|---|---|
-| Lobo Sombra Neon | 127.298 tri, 0% quads, 410 cascas, 20.696 bordas abertas | **5.528 quads (100%)**, 1 casca, 0 bordas, 0 não manifold, 0 vértices sem osso |
-| Asa Noturna | 128.844 tri, 0% quads, 707 cascas, 26.762 bordas abertas | **5.611 quads (100%)**, 1 casca, 0 não manifold, 0 vértices sem osso |
+| Lobo Sombra Neon | 127.298 tri, 0% quads, 410 cascas, 20.696 bordas abertas | **8.609 quads (100%, 17.218 tri)**, 1 casca, 0 bordas, 0 não manifold, 0 vértices sem osso; LODs 8.608 / 4.304 / 1.721 tri |
+| Asa Noturna | 128.844 tri, 0% quads, 707 cascas, 26.762 bordas abertas | **7.910 quads (100%, 15.820 tri)**, 1 casca, 0 não manifold, 0 vértices sem osso; LODs 7.910 / 3.954 / 1.582 tri |
+
+O LOD 0 das duas bases começou com 5,5 mil quads. Ele foi refeito mais denso (cerca de 8 mil quads) para segurar as pontas finas de pelo e pena na silhueta. Os LODs 1–3 mantêm o custo à distância.
 
 Captura: `capturas_armaduras/12_topologia_inteligente_antes_depois.png`.
 
-### 3.3 Rig ajustado à malha
+### 3.3 Lote controlado: rostos, armaduras e cabelos, peça a peça (`tools/blender/topologia/lote.py`)
+
+A retopologia foi aplicada em lote às peças de personagem. O lote segue a regra pedida: nada é destrutivo, cada peça é validada sozinha e cada lote é controlado.
+
+- **A fonte nunca é alterada.** Cada peça é lida, tratada e gravada em `assets/_retopo/<mesmo caminho>.glb`.
+- **O jogo continua com as versões dele.** Uma peça só entra no jogo quando for trocada de propósito, depois de olhada.
+- **Regra por tipo** (não é a mesma para tudo):
+  - **rosto:** QuadriFlow com simetria, até 6.000 quads, e o assado da cor e do relevo da fonte;
+  - **armadura:** peça rígida, QuadriFlow sem simetria forçada, e o assado;
+  - **cabelo:** sem remalha, porque o QuadriFlow fundiria as mechas num bloco. A redução é **mecha a mecha**: cada casca solta reduz sozinha, com as bordas e a UV preservadas.
+- **Validação de cada peça** (passa ou não passa):
+  - o desvio de 95% da superfície até a fonte, em fração da diagonal da peça: no máximo 1,2% (rosto), 1,5% (armadura) ou 2,5% (cabelo);
+  - nenhuma face degenerada, nenhum vértice solto e nenhuma aresta não manifold nova;
+  - no máximo 12 mil triângulos.
+- **Até 3 passadas por peça, sempre a partir da fonte:**
+  - quando o QuadriFlow passa do orçamento, a peça é refeita menor;
+  - quando uma armadura de muitas cascas desvia demais e ainda sobra orçamento, ela é refeita com mais quads;
+  - no cabelo, quando as mechas pequenas param de reduzir antes do alvo, entram mais passadas de redução.
+
+**Resultado** (o relatório completo está em `docs/topologia/LOTE.md`, e os dados em `assets/_retopo/lote.json`): **18 peças, 15 aprovadas.**
+
+| grupo | peças | aprovadas | antes → depois | desvio de 95% |
+|---|---|---|---|---|
+| rostos da criação | 8 | **8** | 62–75 mil → 10,6–11,8 mil tri, 100% quads | 0,25–0,37% |
+| armaduras do Kael (n1–n7) | 7 | **5** | 100–238 mil → 8,9–11,3 mil tri, 100% quads | 0,40–0,83% nas aprovadas |
+| cabelos (6, 4 e 1) | 3 | **2** | 442 mil e 967 mil → 11,0 e 10,7 mil tri | 0,15% e 1,08% |
+
+**As 3 reprovadas ficam de fora** (o jogo continua com as versões dele):
+- `kael_n3` e `kael_n6` têm 590 e 450 cascas finas (fivelas, placas e tiras). Mesmo com 11 mil triângulos, o desvio de 95% fica em 1,53% e 1,67%, acima do limite de 1,5%.
+- `cabelo_1` tem 1,4 milhão de triângulos em mechas muito finas. Reduzido a 12 mil, desvia 3,0%, acima do limite de 2,5%.
+
+Os limites não foram afrouxados para essas peças passarem. Para elas, o caminho é um orçamento maior ou a remalha parte por parte.
+
+Comparação visual (fonte e saída com a malha aparente, e a saída só com o assado): `tools/blender/topologia/comparar.py` → `capturas_armaduras/19_retopologia_em_lote.png`.
+
+### 3.4 Rig ajustado à malha
 
 - **Lobo neon:** o esqueleto de 31 ossos do lobo (`lobo.py`) foi levado às medidas desta malha:
   - focinho, as 4 patas (vértices mais baixos), a cernelha e a ponta da cauda;
@@ -165,14 +243,22 @@ Também verifiquei no navegador, na isométrica e na 3ª pessoa: `capturas_armad
 ## 5. Limites conhecidos (o que ainda não está feito)
 
 - **Ainda faltam:**
-  - **gatos, galinhas, patos, gansos, cabras, ovelhas, cavalos e as aves pequenas**: cada espécie tem anatomia própria e precisa de malha, rig e animações. Com um GLB de origem (por exemplo do Meshy), o mesmo processo do lobo faz retopologia, rig e animações em poucos minutos; sem malha de origem, cada uma é modelada do zero;
-  - as **montarias**: o cavalo, a sela, o herói montado (animação e câmera);
-  - outros acessórios além das coleiras (selas, roupinhas, enfeites de pena).
-- **Os cães são pelagens do lobo:** saem como cães de porte e focinho de lobo (do tipo husky ou cão-lobo). Raças pequenas e de focinho curto precisam de malha própria.
+  - **cavalos de verdade**: precisam de uma malha de cavalo; as montarias são lobos;
+  - os **gatos são estilizados**: têm focinho curto e cabeça redonda, e a tosa alisa o corpo, mas as orelhas e a cara longa ainda lembram um gato-do-mato ou uma raposa. Um gato doméstico realista precisa de malha própria;
+  - selas, roupinhas e outros acessórios além das coleiras.
+- **Cães:**
+  - o Cão da Aurora e o Cão das Neves são pelagens do lobo: cães de porte e focinho de lobo, do tipo husky ou cão-lobo;
+  - o cão de colo e o buldogue (dois pelos, com tosa) dão as raças pequenas e de focinho curto, mas são estilizados: a textura ainda é a pintura de pelo do lobo, e a juba continua na cabeça.
+  
+  Um pug ou um buldogue realista precisa de malha e textura próprias.
 - **Pets no bairro em renderização por software:** o bairro já é pesado nesse modo (cada quadro passa de 4 s no SwiftShader, por causa dos moradores com 50 mil triângulos). Numa placa de vídeo comum, isso não acontece.
-- **Retopologia aplicada só às duas criaturas do Meshy.** Armaduras, cabelos, rostos e personagens estão no relatório com a recomendação, mas não foram alterados. Cada um exige validação individual (troca de equipamento, pesos existentes), e mexer em massa iria contra a regra de não fazer alterações destrutivas em lote.
+- **Retopologia dos personagens: as saídas não foram trocadas no jogo.**
+  - O lote (3.3) gerou e validou 18 peças: 8 rostos, as 7 armaduras do Kael e 3 cabelos. 15 delas foram aprovadas.
+  - Para trocar uma peça no jogo, ela precisa passar de novo pelo conversor do criador ou do Kael, que cuida do atlas e dos pesos. Isso fica para quando cada peça for olhada.
+  - As 104 armaduras com Draco não entraram no lote: o decodificador não está instalado.
+  - Os outros cabelos e armaduras do relatório seguem a mesma regra e ainda não foram processados.
 - **Loops de topologia:** o QuadriFlow alinha os quads à curvatura, mas não desenha à mão os anéis em volta de olhos, boca e articulações (como no rosto de referência). Para os humanoides, isso fica para uma etapa com guias por região.
-- Mesmo com 11 mil triângulos, as pontas finas de pelo e pena ficam mais arredondadas que na fonte. A textura e o mapa de normais compensam só em parte.
+- **Pontas finas de pelo e pena:** com o LOD 0 mais denso (17 mil triângulos no lobo e 16 mil na ave), a silhueta segura bem melhor as pontas. As mais finas, porém, ainda ficam um pouco mais arredondadas que na fonte, de 127 mil triângulos.
 - **A Asa Noturna em `comer`** torce bastante o corpo.
 
 ## 6. Como refazer

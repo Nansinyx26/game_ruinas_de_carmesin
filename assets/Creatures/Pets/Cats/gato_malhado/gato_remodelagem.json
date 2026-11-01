@@ -149,6 +149,12 @@
   ]
  },
  "inflar": null,
+ "tosa": {
+  "corpo": 3174,
+  "corpo_LOD1": 1224,
+  "corpo_LOD2": 407,
+  "corpo_LOD3": 25
+ },
  "chao_dz": 0.0536,
  "pelagens": [
   "gato_malhado",
@@ -162,5 +168,5 @@
   3704,
   1646
  ],
- "segundos": 37
+ "segundos": 67
 }

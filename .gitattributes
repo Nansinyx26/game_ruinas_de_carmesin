@@ -6,3 +6,5 @@ assets/fontes/** filter=lfs diff=lfs merge=lfs -text
 *.blend filter=lfs diff=lfs merge=lfs -text
 # Fontes das criaturas (GLB do Meshy enviados): a retopologia no Blender parte deles
 assets/Creatures/**/fonte/*.glb filter=lfs diff=lfs merge=lfs -text
+# Saídas do lote de topologia inteligente (candidatas validadas peça a peça; o jogo não carrega)
+assets/_retopo/**/*.glb filter=lfs diff=lfs merge=lfs -text

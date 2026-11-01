@@ -23,8 +23,8 @@ import os
 import sys
 import time
 
-import bmesh
 import bpy
+import bmesh   # (depois do bpy: no módulo do Blender, o bmesh só existe com ele carregado)
 from mathutils.bvhtree import BVHTree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -80,7 +80,19 @@ def mechas(fonte, alvo):
     m.use_collapse_triangulate = True
     U.ativar(nova)
     bpy.ops.object.modifier_apply(modifier=m.name)
-    return nova, dict(metodo='redução mecha a mecha (colapso; UV e bordas das mechas preservadas)', fracao=round(fr, 4))
+    passadas = 1
+    # mechas pequenas e soltas param de reduzir antes do alvo: mais uma ou duas passadas, até o orçamento
+    while passadas < 3:
+        t = sum(len(p.vertices) - 2 for p in nova.data.polygons)
+        if t <= alvo * 1.05:
+            break
+        m = nova.modifiers.new('reduz', 'DECIMATE')
+        m.decimate_type = 'COLLAPSE'
+        m.ratio = max(0.05, alvo / t * 0.97)
+        m.use_collapse_triangulate = True
+        bpy.ops.object.modifier_apply(modifier=m.name)
+        passadas += 1
+    return nova, dict(metodo='redução mecha a mecha (colapso; UV e bordas das mechas preservadas)', fracao=round(fr, 4), passadas=passadas)
 
 
 def processar(rel):
@@ -92,7 +104,26 @@ def processar(rel):
     antes = R.diagnosticar(fonte)
     R.limpar(fonte)
     if Rg['metodo'] == 'quads':
-        nova, info = R.retopologia(fonte, Rg['tipo'], nome='Retopo', quads=Rg['quads'])
+        # até 3 passadas, sempre a partir da fonte: o QuadriFlow passa um pouco do alvo em algumas
+        # peças (refaz menor); peça com muitas cascas finas que desvia demais e ainda tem folga no
+        # orçamento ganha mais quads (refaz maior). O que falhar na 3ª fica reprovado no relatório.
+        quads = Rg['quads']
+        tentativas = []
+        for i in range(3):
+            nova, info = R.retopologia(fonte, Rg['tipo'], nome='Retopo', quads=quads)
+            tris = sum(len(p.vertices) - 2 for p in nova.data.polygons)
+            p95 = distancia(fonte, nova)['p95']
+            tentativas.append(dict(quads=quads, triangulos=tris, p95=p95))
+            novo = None
+            if tris > Rg['orcamento']:
+                novo = int(quads * Rg['orcamento'] / tris * 0.96)
+            elif p95 > Rg['limite'] and tris < Rg['orcamento'] * 0.85:
+                novo = int(quads * min(1.6, Rg['orcamento'] * 0.93 / tris))
+            if novo is None or i == 2:
+                break
+            bpy.data.objects.remove(nova, do_unlink=True)
+            quads = novo
+        info['tentativas'] = tentativas
         R.uv(nova)
         try:
             _, binfo = R.assar(nova, fonte, lado=1024, extrusao=max(fonte.dimensions) * 0.01, prefixo='retopo')
