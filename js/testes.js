@@ -2164,6 +2164,26 @@ const EclipseTests = {
       this.ok('pets: fica no salvamento do mundo', salvo.lista[0].nome === P.nome && salvo.lista[0].especie === 'asa_noturna');
       Pets.chamar(P.uid);
       this.ok('pets: chamar de volta', !!Pets.companheiro() && Pets.ativo() === P);
+      // coleiras: compra com a Cora, põe pelo menu, o modelo mostra a do animal
+      g.stats.soulsBank = 1000;
+      World.loadZone('aurora_animais', null);
+      const cora2 = g.npcs.find((n) => n instanceof Morador && n.name === 'CORA ALVES');
+      Povo.conversar(cora2); Dialogo.escolherId('coleiras');
+      this.ok('pets: a Cora vende as três coleiras', ['couro', 'ferro', 'neon'].every((t) => Dialogo.temId('comprar_' + t)));
+      Dialogo.escolherId('comprar_ferro'); Dialogo.fechar();
+      this.ok('pets: coleira comprada em células', Pets.S().coleiras.includes('ferro') && g.stats.soulsBank === 1000 - PET_COLEIRAS.ferro.preco);
+      Pets.S().lista.push({ uid: 77, especie: 'cao_aurora', nome: 'Pão', fome: 20, humor: 80, afinidade: 30 });
+      Pets.chamar(77);
+      const cp = Pets.companheiro(), Pc = cp.pet;
+      Pets.conversar(cp); Dialogo.escolherId('coleira'); Dialogo.escolherId('col_ferro'); Dialogo.fechar();
+      this.igual('pets: a coleira vai no animal', Pc.coleira, 'ferro');
+      const mm = g.model3('cri_cao_aurora');
+      this.ok('pets: o modelo tem as 3 coleiras presas ao pescoço (medidas na malha)', mm.coleiras && ['couro', 'ferro', 'neon'].every((t) => mm.coleiras[t] && mm.coleiras[t].geo.length > 100 && mm.nodes.pescoco1.kids.includes(mm.coleiras[t])));
+      const oc = g.opts3(cp, 0); Object.assign(oc, MODELS3D.cri_cao_aurora.opts(cp));
+      mm.reset(); MODELS3D.cri_cao_aurora.pose(mm, cp, oc);
+      this.ok('pets: só a coleira escolhida aparece', mm.coleiras.ferro.vis && !mm.coleiras.couro.vis && !mm.coleiras.neon.vis);
+      this.ok('pets: ave não usa coleira (sem a opção no menu)', !g.model3('cri_asa_noturna').coleiras && (Pets.chamar(P.uid), Pets.conversar(Pets.companheiro()), !Dialogo.temId('coleira')));
+      Dialogo.fechar();
       // a vida não ganha nada com o pet (sem vantagem de combate)
       this.ok('pets: o companheiro não luta (sem dano nem alvo)', !c.dmg && !g.enemies.includes(c));
       let e3 = null; try { g.renderWorld(g.ctx); } catch (e) { e3 = e.message; }

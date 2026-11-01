@@ -43,13 +43,35 @@ const PETS_ESPECIES = {
   },
 };
 const PET_PETISCO = 6;   // células por petisco
+// Coleiras (peças 3D presas ao pescoço de qualquer espécie, js/mundo/criaturas3d.js → coleiras)
+const PET_COLEIRAS = {
+  couro: { nome: 'Coleira de couro', preco: 40, desc: 'couro curtido com fivela de latão' },
+  ferro: { nome: 'Coleira de ferro com plaqueta', preco: 120, desc: 'elos de ferro e a plaqueta com o nome gravado' },
+  neon: { nome: 'Coleira neon da Metrópole', preco: 300, desc: 'faixa escura com fio de luz e um cristal que brilha à noite' },
+};
 
 const Pets = {
   // ------------------------------------------------------------------ estado
   S() {
     const W = World.state;
     if (!W.pets) W.pets = { lista: [], ativo: null, uid: 1 };
+    if (!W.pets.coleiras) W.pets.coleiras = [];   // as coleiras compradas (servem em qualquer animal)
     return W.pets;
+  },
+  comprarColeira(tipo) {
+    const C = PET_COLEIRAS[tipo], S = this.S();
+    if (!C) return 'Essa eu não tenho.';
+    if (S.coleiras.includes(tipo)) return 'Você já tem essa.';
+    const err = Oficios.cobrar(C.preco);
+    if (err) return err;
+    S.coleiras.push(tipo);
+    World.save();
+    return '';
+  },
+  porColeira(P, tipo) {
+    if (tipo && !this.S().coleiras.includes(tipo)) return false;
+    P.coleira = tipo || null;
+    return true;
   },
   ativo() { const S = this.S(); return S.lista.find((p) => p.uid === S.ativo) || null; },
   companheiro() { return game.npcs.find((n) => n instanceof CompanheiroPet) || null; },
@@ -170,11 +192,19 @@ const Pets = {
         : { id: 'ficar', txt: 'Fica aqui.', fn: () => { c.modo = 'ficar'; c.fazer('sentar'); v(`${P.nome} senta e espera.`); } },
       { id: 'chamar', txt: 'Chamar a atenção (comando)', fn: () => { c.fazer('chamar'); v(`${P.nome} responde ao chamado.`); } },
       { id: 'nome', txt: 'Mudar o nome', fn: () => this.menuNome(P, () => v(`Agora é ${P.nome}.`)) },
+      PETS_ESPECIES[P.especie].voa ? null : { id: 'coleira', txt: `Coleira (${P.coleira ? PET_COLEIRAS[P.coleira].nome.toLowerCase() : 'nenhuma'})`, fn: () => this.menuColeira(P, (t) => v(t)) },
       { id: 'guardar', txt: 'Deixar no Viveiro dos Alves', fn: () => { this.guardar(); Dialogo.fechar(); game.hud.toast(`${P.nome} foi para o Viveiro dos Alves`, '170,220,255'); } },
       { id: 'sair', txt: 'Até já.', fn: () => Dialogo.fechar() },
-    ];
+    ].filter(Boolean);
     const t = (texto ? texto + '\n\n' : '') + this.estadoTexto(P);
     if (Dialogo.aberto) Dialogo.mostrar(t, o); else Dialogo.abrir(c, t, o, PETS_ESPECIES[P.especie].nome);
+  },
+  // Coleira: as compradas (com a Cora, no viveiro) ou nenhuma
+  menuColeira(P, fim) {
+    const S = this.S();
+    const o = S.coleiras.map((t) => ({ id: 'col_' + t, tag: P.coleira === t ? '★' : '✚', txt: PET_COLEIRAS[t].nome, fn: () => { this.porColeira(P, t); fim(`${P.nome} com a ${PET_COLEIRAS[t].nome.toLowerCase()}.`); } }));
+    o.push({ id: 'col_nenhuma', txt: 'Sem coleira', fn: () => { this.porColeira(P, null); fim(`${P.nome} sem coleira.`); } });
+    Dialogo.mostrar(S.coleiras.length ? 'Qual coleira?' : 'Você ainda não tem coleiras. A Cora vende no Viveiro dos Alves.', o.slice(0, 9));
   },
   // Nome: sugestões da espécie ou digitado (quando o navegador deixa)
   menuNome(P, fim) {
@@ -190,6 +220,7 @@ const Pets = {
   servico(npc, s, o, volta) {
     if (s !== 'animais') return false;
     o.push({ id: 'catalogo', tag: '$', txt: 'Ver os animais à venda', fn: () => this.catalogo(npc, volta) });
+    o.push({ id: 'coleiras', tag: '$', txt: 'Coleiras e acessórios', fn: () => this.lojaColeiras(npc, volta) });
     const S = this.S();
     if (S.lista.length) o.push({ id: 'meus', tag: '✚', txt: `Seus animais (${S.lista.length})`, fn: () => this.meus(npc, volta) });
     return true;
@@ -220,6 +251,16 @@ const Pets = {
       } },
       { id: 'nao', txt: 'Ainda não', fn: () => this.catalogo(npc, volta) },
     ]);
+  },
+  lojaColeiras(npc, volta) {
+    const S = this.S(), cel = game.stats.soulsBank;
+    const o = Object.keys(PET_COLEIRAS).map((t) => {
+      const C = PET_COLEIRAS[t], tem = S.coleiras.includes(t);
+      return { id: 'comprar_' + t, tag: '$', txt: `${C.nome} — ${C.preco} células`, off: tem ? 'você já tem' : cel < C.preco ? `faltam ${C.preco - cel} células` : null,
+        fn: () => { const e = this.comprarColeira(t); volta(e || `${C.nome}: ${C.desc}. Serve em qualquer um dos seus. É só pôr pelo menu dele.`); } };
+    });
+    o.push({ id: 'voltar', txt: 'Voltar', fn: () => volta('Mais alguma coisa?') });
+    Dialogo.mostrar('Coleiras feitas aqui mesmo. Servem em qualquer bicho: o meu avô dizia que coleira é nome com fivela.', o);
   },
   meus(npc, volta) {
     const S = this.S();

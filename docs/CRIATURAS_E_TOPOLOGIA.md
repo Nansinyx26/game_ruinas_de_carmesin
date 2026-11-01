@@ -43,6 +43,12 @@ O projeto separa os animais em três categorias: **companhia** (seguem o herói)
   - parado, senta; à noite ou depois de muito tempo parado, dorme;
   - se ficar muito para trás, aparece perto; na troca de zona, chega junto.
 - **[E] no companheiro:** dar um petisco (6 células), brincar, fazer carinho, ficar/seguir, chamar (comando), ver como está, mudar o nome e deixar no viveiro.
+- **Coleiras** (acessório 3D):
+  - a Cora vende três: **couro** (40 células), **ferro com plaqueta** (120) e **neon** (300), que brilha;
+  - a coleira se escolhe no menu do animal e fica salva nele;
+  - a peça é presa ao osso do pescoço, com o raio medido na fatia da própria malha, por isso serve em qualquer espécie com esse osso;
+  - os cães de caça (couro) e os das neves (ferro) já usam a dos donos;
+  - as aves não usam coleira.
 - **Necessidades:** fome (sobe com o tempo de jogo), humor (cai com fome, sobe ao brincar) e afinidade (sobe ao alimentar, brincar e fazer carinho). Aparecem no **HUD**, embaixo da temperatura, e no texto do menu.
 - **Salvamento:** `World.state.pets`, no mundo de cada personagem.
 - **Testes:** `js/testes.js → pets()` (veja a seção 4).
@@ -161,7 +167,7 @@ Também verifiquei no navegador, na isométrica e na 3ª pessoa: `capturas_armad
 - **Ainda faltam:**
   - **gatos, galinhas, patos, gansos, cabras, ovelhas, cavalos e as aves pequenas**: cada espécie tem anatomia própria e precisa de malha, rig e animações. Com um GLB de origem (por exemplo do Meshy), o mesmo processo do lobo faz retopologia, rig e animações em poucos minutos; sem malha de origem, cada uma é modelada do zero;
   - as **montarias**: o cavalo, a sela, o herói montado (animação e câmera);
-  - as **coleiras e acessórios** (peças 3D por espécie).
+  - outros acessórios além das coleiras (selas, roupinhas, enfeites de pena).
 - **Os cães são pelagens do lobo:** saem como cães de porte e focinho de lobo (do tipo husky ou cão-lobo). Raças pequenas e de focinho curto precisam de malha própria.
 - **Pets no bairro em renderização por software:** o bairro já é pesado nesse modo (cada quadro passa de 4 s no SwiftShader, por causa dos moradores com 50 mil triângulos). Numa placa de vídeo comum, isso não acontece.
 - **Retopologia aplicada só às duas criaturas do Meshy.** Armaduras, cabelos, rostos e personagens estão no relatório com a recomendação, mas não foram alterados. Cada um exige validação individual (troca de equipamento, pesos existentes), e mexer em massa iria contra a regra de não fazer alterações destrutivas em lote.

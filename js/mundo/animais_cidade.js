@@ -17,9 +17,9 @@
 const ANIMAIS_TIPOS = {
   cao_rua: { nome: 'Cão de rua', especie: 'cao_aurora', tipo: 'cao', adota: true, escala: 0.7,
     frases: ['abana o rabo e encosta a cabeça na sua mão', 'fareja as suas botas e espirra', 'deita de barriga para cima'] },
-  cao_caca: { nome: 'Cão de caça', especie: 'lobo_manso', tipo: 'cao', adota: false, escala: 0.78,
+  cao_caca: { nome: 'Cão de caça', especie: 'lobo_manso', tipo: 'cao', adota: false, escala: 0.78, coleira: 'couro', dono: 'os caçadores da clareira',
     frases: ['fareja o ar e volta a olhar para a trilha', 'aceita o carinho, mas não tira os olhos da mata'] },
-  cao_neve: { nome: 'Cão das Neves', especie: 'cao_neve', tipo: 'cao', adota: false, escala: 0.78,
+  cao_neve: { nome: 'Cão das Neves', especie: 'cao_neve', tipo: 'cao', adota: false, escala: 0.78, coleira: 'ferro', dono: 'a Vigília de Asterion',
     frases: ['sacode a neve do pelo em cima de você', 'uiva curto, como quem conversa'] },
   ave_neon: { nome: 'Asa Noturna', especie: 'asa_noturna', tipo: 'ave', adota: false, escala: 0.5,
     frases: ['inclina a cabeça e as penas acendem', 'bica a sua manga e levanta voo de volta ao telhado'] },
@@ -57,7 +57,7 @@ const AnimaisCidade = {
       o.push({ id: 'adotar', tag: '★', txt: 'Adotar (levar para casa)', off: cheio ? 'o viveiro só guarda seis animais por pessoa' : null, fn: () => this.adotar(a) });
     }
     o.push({ id: 'sair', txt: 'Deixar em paz', fn: () => Dialogo.fechar() });
-    Dialogo.abrir(a, `Um ${T.nome.toLowerCase()}. ${a.dono ? '' : 'Ninguém parece ser o dono.'}`.trim(), o, T.nome);
+    Dialogo.abrir(a, `Um ${T.nome.toLowerCase()}. ${a.dono ? `A coleira diz que é de ${a.dono}.` : 'Sem coleira: ninguém parece ser o dono.'}`, o, T.nome);
   },
   adotar(a) {
     const E = PETS_ESPECIES[a.T.especie];
@@ -80,6 +80,7 @@ class AnimalCidade extends NPC {
     this.key = null; this.escala = this.T.escala; this.height = 24; this.radius = 9; this.papel = 'Animal da cidade'; this.verb = 'Afagar';
     this.casa = { x, y }; this.alvo = null; this.esperaT = rand(1, 4); this.vx = 0; this.vy = 0; this.alt = 0; this.acao = null; this.acaoT = 0;
     this.paradoT = rand(0, 8); this.facing = rand(0, TAU); this.curiosoT = 0; this.state = 'idle';
+    this.coleira = this.T.coleira || null; this.dono = this.T.dono || null;   // (os cães com dono usam coleira)
     if (this.T.tipo === 'ave') this.alt = 0;
   }
   canTalk() { return !game.combatActive(); }

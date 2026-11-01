@@ -126,7 +126,11 @@ const Criaturas3D = {
           N[b.n] = n;
           (b.pai ? N[b.pai] : raiz).add(n);
         }
+        // coleiras (acessórios dos animais de companhia, js/mundo/pets.js): presas ao pescoço
+        const col = N.pescoco1 ? self.coleiras(C) : null;
+        if (col) for (const k in col) { const n = new N3('coleira_' + k); n.geo = col[k]; N.pescoco1.add(n); }
         const m = new Model3(raiz);
+        if (col) { m.coleiras = {}; for (const k in col) m.coleiras[k] = m.nodes['coleira_' + k]; }
         m.skins = instPeles3D(C.SK, m);
         m.skins.forEach((s, i) => { s.nivel = C.SK[i].nivel; });
         m.ossosN = C.ossos.map((b) => m.nodes[b.n]);
@@ -138,6 +142,56 @@ const Criaturas3D = {
       pose(m, e, o) { self.posar(m, e, o, C); },
       opts(e) { return self.opcoes(e, C); },
     };
+  },
+
+  // ------------------------------------------------------------------ coleiras
+  // Geometria das coleiras no espaço do osso do pescoço (o eixo do osso é +Z): o raio e a altura
+  // vêm dos vértices da própria malha presos ao pescoço; a plaqueta vai no ponto mais baixo
+  COLEIRAS: { couro: ['#4a2a14', 2, 0, '#b08840'], ferro: ['#5c6068', 1, 0, '#c8ccd2'], neon: ['#123040', 1, 0.9, '#5ff0ff'] },
+  coleiras(C) {
+    if (C.coleirasGeo !== undefined) return C.coleirasGeo;
+    C.coleirasGeo = null;
+    if (C.ossos.some((b) => b.n === 'ombro.L')) return null;   // aves (asas): sem coleira (o osso do pescoço pega o peito todo)
+    const S = C.SK.find((s) => s.nivel === 0) || C.SK[0], k = S.ossos.indexOf('pescoco1');
+    if (k < 0) return null;
+    // a fatia da malha ao longo do osso do pescoço (no espaço do osso, o eixo é +Z): o raio do
+    // pelo em volta dele (os pesos não servem: o pescoço divide o peso com o peito e a cabeça)
+    const I = S.inv.subarray(k * 12, k * 12 + 12), R = [];
+    const filho = C.ossos.find((b) => b.n === 'pescoco2'), comp = filho ? Math.hypot(filho.p[0], filho.p[1], filho.p[2]) : 4;
+    const z0 = comp * 0.3, z1 = comp * 0.75, nv = S.pos.length / 3;
+    for (let v = 0; v < nv; v++) {
+      const x = S.pos[v * 3], y = S.pos[v * 3 + 1], z = S.pos[v * 3 + 2];
+      const bz = I[8] * x + I[9] * y + I[10] * z + I[11];
+      if (bz < z0 || bz > z1) continue;
+      R.push(Math.hypot(I[0] * x + I[1] * y + I[2] * z + I[3], I[4] * x + I[5] * y + I[6] * z + I[7]));
+    }
+    if (R.length < 12) return null;
+    R.sort((a, b) => a - b);
+    const med = R[Math.floor(R.length / 2)], Rn = R.filter((r) => r < med * 2.2);
+    const raio = Rn[Math.floor(Rn.length * 0.7)], zc = (z0 + z1) / 2, alt = Math.max(0.8, comp * 0.18);
+    // o ponto mais baixo do anel no modelo, para a plaqueta (a rotação do osso é ortonormal: a
+    // inversa é a transposta, então o z do modelo de um ponto do osso (cos a, sin a) é I[2]·cos + I[6]·sin)
+    let melhor = 0, zmin = 1e9;
+    for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2, lz = I[2] * Math.cos(a) + I[6] * Math.sin(a); if (lz < zmin) { zmin = lz; melhor = a; } }
+    C.coleiraInfo = { raio, zc, alt, n: R.length };
+    const out = {};
+    for (const nome in this.COLEIRAS) {
+      const [cor, mat, emi, metal] = this.COLEIRAS[nome], g = new G3();
+      g.cyl(0, 0, zc - alt / 2, raio, raio, alt, 18, cor, emi);
+      g.cyl(0, 0, zc - alt / 2, raio * 0.96, raio * 0.96, alt, 18, cor, emi);
+      const nFaixa = g.d.length;
+      const tx = Math.cos(melhor) * (raio + 0.35), ty = Math.sin(melhor) * (raio + 0.35);
+      g.at(tx, ty, zc - alt * 0.9, 0, 0, melhor);
+      g.box(0, 0, 0, 0.5, 0.9, 1.2, metal, nome === 'neon' ? 1 : 0);   // a plaqueta (ou o cristal da neon)
+      g.at();
+      const d = new Float32Array(g.d);
+      // formato do programa com textura (vértices de cor): o material vai no canal azul; a faixa no
+      // material da coleira, a plaqueta em metal
+      for (let i = 0; i < d.length; i += 10) d[i + 8] = -1 - d[i + 8] - 2 * (i < nFaixa ? mat : 1);
+      out[nome] = d;
+    }
+    C.coleirasGeo = out;
+    return out;
   },
 
   // ------------------------------------------------------------------ escolha do clipe
@@ -229,6 +283,8 @@ const Criaturas3D = {
       n.p[0] = out[k]; n.p[1] = out[k + 1]; n.p[2] = out[k + 2];
       this.euler(out[k + 3], out[k + 4], out[k + 5], out[k + 6], n.r);
     }
+    // coleira do animal (por entidade: o modelo é compartilhado)
+    if (m.coleiras) { const c = e.coleira !== undefined ? e.coleira : e.pet ? e.pet.coleira : null; for (const k in m.coleiras) m.coleiras[k].vis = c === k; }
     // LOD: só a malha do nível escolhido (o modelo é compartilhado; a escolha vale para esta pose)
     const nv = Math.min(C.lods - 1, o && o.lodCri !== undefined ? o.lodCri : 0);
     for (const s of m.skins) s.hide = s.nivel !== nv;
