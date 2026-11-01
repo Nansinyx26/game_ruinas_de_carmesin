@@ -1205,6 +1205,19 @@ function buildTempestadeNula(g, k, part, lod) {
     P.cB = 0; P.flare = 0.02; P.cFl = 0;
     return P;
   }
+  // Montado (js/mundo/montarias.js): quadril na altura da sela, pernas abertas dos lados do lombo,
+  // tronco um pouco à frente (mais na corrida), mãos nas rédeas; o trote balança o corpo
+  function montarPose(P, e, K) {
+    rest(P, e);
+    const t = num(e.animTime), A = num(e.sela, 30), v = Math.min(1, num(e.moveSpeed) / 260), tro = Math.sin(t * 10) * v;
+    P.hz = A + 2.4 - K.HZ0 + Math.abs(tro) * 1.4; P.hy = 0; P.bz = 0;
+    P.tp = 0.06 + 0.12 * v; P.ty = 0; P.tr = 0; P.hp = 0.05 - 0.05 * v;
+    set3(P.fL, 2.4, -8.8, Math.max(0, A - 13.5)); set3(P.fR, 2.4, 8.8, Math.max(0, A - 13.5));
+    const hz = A + 9.5 - K.HAND0 + Math.abs(tro) * 0.8;
+    set3(P.hL, 7.6, -3.0, hz); set3(P.hR, 7.6, 3.0, hz);
+    P.cB = 0; P.flare = 0.04 + 0.1 * v; P.cFl = 0.1 * v;
+    return P;
+  }
   function falarPose(P, e) {
     rest(P, e);
     const t = num(e.animTime);
@@ -1406,6 +1419,7 @@ function buildTempestadeNula(g, k, part, lod) {
       if (st === 'npc_dormir') { const D = dormirPose(m, e, t); hands(m, e, D, true); if (m.sec) secondary(m, e, D); return; }
       let P;
       if (st === 'npc_sentar') P = sentarPose(POSE, e, m.props || KAEL_PROPS);
+      else if (st === 'montado') P = montarPose(POSE, e, m.props || KAEL_PROPS);
       else if (st === 'npc_falar') P = falarPose(POSE, e);
       else if (st === 'npc_guarda') P = guardaPose(POSE, e);
       else if (st === 'run') P = runPose(POSE, e);

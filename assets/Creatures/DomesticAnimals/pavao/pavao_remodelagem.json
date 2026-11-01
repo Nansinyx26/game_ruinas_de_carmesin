@@ -1,0 +1,104 @@
+{
+ "especie": "pavao",
+ "base": "Pets/Exotic/asa_noturna",
+ "ossos": {
+  "peito": [
+   1.1,
+   1.0,
+   1.1
+  ],
+  "coluna": [
+   1.1,
+   1.0,
+   1.1
+  ],
+  "pescoco1": [
+   0.9,
+   1.25,
+   0.9
+  ],
+  "pescoco2": [
+   0.9,
+   1.25,
+   0.9
+  ],
+  "cauda1": [
+   1.8,
+   2.4,
+   1.8
+  ],
+  "cauda2": [
+   1.8,
+   2.4,
+   1.8
+  ],
+  "cauda3": [
+   1.8,
+   2.4,
+   1.8
+  ],
+  "ombro.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "ombro.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "braco.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "braco.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "antebraco.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "antebraco.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "mao.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "mao.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "ponta.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "ponta.R": [
+   0.75,
+   0.6,
+   0.75
+  ]
+ },
+ "inflar": null,
+ "chao_dz": -0.2165,
+ "pelagens": [
+  "pavao"
+ ],
+ "blend": "assets/Creatures/DomesticAnimals/pavao/pavao.blend",
+ "lods": [
+  7910,
+  5711,
+  3413,
+  1510
+ ],
+ "segundos": 18
+}

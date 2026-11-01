@@ -33,12 +33,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils as U   # noqa: E402
 
 # Configuração por finalidade: faces do LOD 0 (quads pedidos ao QuadriFlow, que entrega ~75% disso:
-# 7000 → ~5300 quads ≈ 10,6 mil triângulos, dentro do orçamento de criatura de 12 mil, o bastante para
-# as pontas de pelo e de pena manterem a silhueta), voxel (fração do comprimento), simetria,
+# 9800 → ~7400 quads ≈ 14,8 mil triângulos no LOD 0, que só aparece de perto: as pontas de pelo e de
+# pena mantêm a silhueta; de longe entram os LODs 1–3), voxel (fração do comprimento), simetria,
 # frações dos LODs, lado das texturas e o empurrão do assado (fração do comprimento)
 TIPOS = {
-    'quadrupede': dict(quads=7000, voxel=1 / 230, simetria=True, lods=(0.5, 0.25, 0.1), lado=2048, extrusao=0.012),
-    'ave': dict(quads=7600, voxel=1 / 260, simetria=True, lods=(0.5, 0.25, 0.1), lado=2048, extrusao=0.01),
+    'quadrupede': dict(quads=9800, voxel=1 / 230, simetria=True, lods=(0.5, 0.25, 0.1), lado=2048, extrusao=0.012),
+    'ave': dict(quads=10400, voxel=1 / 260, simetria=True, lods=(0.5, 0.25, 0.1), lado=2048, extrusao=0.01),
     'humanoide': dict(quads=9000, voxel=1 / 300, simetria=True, lods=(0.5, 0.25, 0.12), lado=2048, extrusao=0.008),
     'rigido': dict(quads=3000, voxel=1 / 200, simetria=False, lods=(0.5, 0.25, 0.1), lado=1024, extrusao=0.01),
 }

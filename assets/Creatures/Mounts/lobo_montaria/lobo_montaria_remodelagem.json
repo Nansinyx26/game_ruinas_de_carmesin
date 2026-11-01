@@ -1,0 +1,136 @@
+{
+ "especie": "lobo_montaria",
+ "base": "Enemies/lobo_sombra_neon",
+ "ossos": {
+  "peito": [
+   1.18,
+   1.05,
+   1.15
+  ],
+  "coluna1": [
+   1.18,
+   1.1,
+   1.12
+  ],
+  "coluna2": [
+   1.18,
+   1.1,
+   1.12
+  ],
+  "quadril": [
+   1.15,
+   1.05,
+   1.1
+  ],
+  "pescoco1": [
+   1.12,
+   1.08,
+   1.12
+  ],
+  "pescoco2": [
+   1.1,
+   1.05,
+   1.1
+  ],
+  "cabeca": [
+   1.08,
+   1.0,
+   1.05
+  ],
+  "escapula.L": [
+   1.12,
+   1.12,
+   1.12
+  ],
+  "escapula.R": [
+   1.12,
+   1.12,
+   1.12
+  ],
+  "braco.L": [
+   1.12,
+   1.12,
+   1.12
+  ],
+  "braco.R": [
+   1.12,
+   1.12,
+   1.12
+  ],
+  "coxa.L": [
+   1.12,
+   1.12,
+   1.12
+  ],
+  "coxa.R": [
+   1.12,
+   1.12,
+   1.12
+  ],
+  "antebraco.L": [
+   1.05,
+   1.12,
+   1.05
+  ],
+  "antebraco.R": [
+   1.05,
+   1.12,
+   1.05
+  ],
+  "canela.L": [
+   1.05,
+   1.12,
+   1.05
+  ],
+  "canela.R": [
+   1.05,
+   1.12,
+   1.05
+  ],
+  "metatarso.L": [
+   1.05,
+   1.12,
+   1.05
+  ],
+  "metatarso.R": [
+   1.05,
+   1.12,
+   1.05
+  ],
+  "mao.L": [
+   1.15,
+   1.05,
+   1.15
+  ],
+  "mao.R": [
+   1.15,
+   1.05,
+   1.15
+  ],
+  "pe.L": [
+   1.15,
+   1.05,
+   1.15
+  ],
+  "pe.R": [
+   1.15,
+   1.05,
+   1.15
+  ]
+ },
+ "inflar": null,
+ "chao_dz": -0.0651,
+ "pelagens": [
+  "lobo_montaria",
+  "lobo_guerra",
+  "lobo_aurora"
+ ],
+ "blend": "assets/Creatures/Mounts/lobo_montaria/lobo_montaria.blend",
+ "lods": [
+  8609,
+  6156,
+  3704,
+  1646
+ ],
+ "segundos": 37
+}

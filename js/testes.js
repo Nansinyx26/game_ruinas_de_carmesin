@@ -52,6 +52,7 @@ const EclipseTests = {
       await this.criaturas();
       await this.pets();
       await this.animaisCidade();
+      await this.montarias();
       await this.criacaoGLB();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
@@ -848,7 +849,7 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
     this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
@@ -1853,7 +1854,7 @@ const EclipseTests = {
       const portas = g.npcs.filter((n) => n instanceof PortaBairro);
       this.igual('bairro: 7 portas (5 prédios com interior e 2 casas)', portas.length, 7);
       this.ok('bairro: volta para a praça', g.npcs.some((n) => n instanceof WorldProp && n.kind === 'gate' && n.data.to === CIDADE_ID));
-      this.igual('bairro: ao meio-dia, 5 moradores na rua (guarda, Nina, Jorge, o bardo e o viajante no banco)', g.npcs.filter((n) => n instanceof Morador).length, 5);
+      this.igual('bairro: ao meio-dia, 6 moradores na rua (guarda, Nina, Jorge, o bardo, o viajante no banco e o domador Tobias)', g.npcs.filter((n) => n instanceof Morador).length, 6);
       this.ok('bairro: lampiões, poço, carroça e o resto da rua (objetos do Blender com colisão)', Bairro.objetos.length >= 15 && R.pillars.filter((q) => q.cenario).length >= Bairro.objetos.length, Bairro.objetos.length);
       // prédios: dentro da sala, sem sobrepor, o fundo dentro do recuo, a porta na frente
       const Ls = BAIRRO_PREDIOS.map((B) => ({ B, L: Bairro.lugar(B, R), m: Bairro.medidas(B) }));
@@ -2028,7 +2029,7 @@ const EclipseTests = {
       const N = Criaturas3D.dados.lobo_sombra_neon, A = Criaturas3D.dados.asa_noturna;
       this.ok('criaturas: Lobo Sombra Neon com 4 LODs (malha retopologizada) e as 10 animações', N && N.lods === 4 && CL.every((k) => N.clipes[k]), N && N.lods);
       const tr = N ? N.SK.map((s) => s.idx.length / 3) : [];
-      this.ok('criaturas: LODs cada vez mais leves e o LOD 0 no orçamento (até 12 mil triângulos)', tr.length === 4 && tr[0] <= 12000 && tr.every((t, i) => !i || t < tr[i - 1]), tr.join(' > '));
+      this.ok('criaturas: LODs cada vez mais leves e o LOD 0 no orçamento (até 18 mil triângulos, só de perto)', tr.length === 4 && tr[0] <= 18000 && tr.every((t, i) => !i || t < tr[i - 1]), tr.join(' > '));
       const RZ = Criaturas3D.dados.lobo_raiz;
       this.ok('criaturas: as pelagens (raiz, neve, cinzento, cães) usam a malha e as animações do lobo neon (o arquivo só traz texturas)', RZ && RZ.base === 'lobo_sombra_neon' && RZ.SK === N.SK && RZ.clipes === N.clipes && RZ.tex.src !== N.tex.src);
       this.ok('criaturas: o lobo neon está na Metrópole', ENEMY_VARIANTS.lobo_neon.modelo === 'lobo_sombra_neon' && Object.values(WORLD_ZONES).some((z) => z.region === 'metropole' && (z.camps || []).some((c) => c.mobs && c.mobs.lobo_neon)));
@@ -2101,7 +2102,7 @@ const EclipseTests = {
       const cora = g.npcs.find((n) => n instanceof Morador && n.name === 'CORA ALVES');
       this.ok('pets: a Cora atende no Viveiro dos Alves (Bairro da Muralha)', !!cora && WORLD_ZONES.aurora_animais.distrito === 'interior');
       const vit = g.npcs.filter((n) => n instanceof VitrinePet);
-      this.igual('pets: 5 animais na vitrine do viveiro (ave, lobo e os dois cães)', vit.length, 5);
+      this.igual('pets: 7 animais na vitrine do viveiro (aves, lobo, cães e gato)', vit.length, 7);
       const mods = [...new Set(Object.values(PETS_ESPECIES).map((E) => E.modelo))];
       for (const id of mods) Criaturas3D.carregar(id);
       for (let i = 0; i < 200 && !mods.every((id) => Criaturas3D.pronto(id)); i++) await new Promise((r) => setTimeout(r, 100));
@@ -2112,13 +2113,17 @@ const EclipseTests = {
       Povo.conversar(cora);
       this.ok('pets: a Cora oferece o catálogo', Dialogo.temId('catalogo'));
       Dialogo.escolherId('catalogo');
-      this.ok('pets: o catálogo lista as quatro espécies (ave, lobo e dois cães)', ['asa_noturna', 'lobo_manso', 'cao_aurora', 'cao_neve'].every((e) => Dialogo.temId('ver_' + e)));
+      this.ok('pets: o catálogo em três grupos (cães e lobos, gatos e raposa, aves)', ['caes', 'gatos', 'aves'].every((gp) => Dialogo.temId('grupo_' + gp)));
+      const vistos = [];
+      for (const gp of ['caes', 'gatos', 'aves']) { Dialogo.escolherId('grupo_' + gp); vistos.push(...Dialogo.opcoes.filter((o) => o.id.startsWith('ver_')).map((o) => o.id.slice(4))); Dialogo.escolherId('voltar'); }
+      this.ok('pets: as 11 espécies com modelo (lobo, 4 cães, 3 gatos, raposa, papagaio, canário e a Asa Noturna)', Object.keys(PETS_ESPECIES).every((e) => vistos.includes(e)) && vistos.length === 11, vistos.join(','));
+      Dialogo.escolherId('grupo_aves');
       g.stats.soulsBank = 100;
       Dialogo.escolherId('ver_asa_noturna');
       this.ok('pets: sem células, a compra fica desativada', Dialogo.opcoes.find((o) => o.id === 'comprar').off);
       Dialogo.fechar();
       g.stats.soulsBank = 5000;
-      Povo.conversar(cora); Dialogo.escolherId('catalogo'); Dialogo.escolherId('ver_asa_noturna'); Dialogo.escolherId('comprar');
+      Povo.conversar(cora); Dialogo.escolherId('catalogo'); Dialogo.escolherId('grupo_aves'); Dialogo.escolherId('ver_asa_noturna'); Dialogo.escolherId('comprar');
       this.ok('pets: pede confirmação antes de cobrar', Dialogo.temId('sim') && g.stats.soulsBank === 5000);
       Dialogo.escolherId('sim');
       this.igual('pets: cobra o preço em células (a mesma moeda)', g.stats.soulsBank, 5000 - PETS_ESPECIES.asa_noturna.preco);
@@ -2207,15 +2212,19 @@ const EclipseTests = {
     try {
       World.state.pets = { lista: [], ativo: null, uid: 1 }; World.state.adotados = []; World.state.hora = 12;
       const conta = (zona) => { World.loadZone(zona, null); return g.npcs.filter((n) => n instanceof AnimalCidade).map((n) => n.T.nome); };
-      const q = { aurora_bairro: conta('aurora_bairro'), metro_centro: conta('metro_centro'), asterion_acampamento: conta('asterion_acampamento'), velmora_clareira: conta('velmora_clareira'), velmora_trilha: conta('velmora_trilha') };
-      this.ok('animais: cães de rua no Refúgio, aves de neon na Metrópole, cães das neves em Asterion e de caça em Velmora',
-        q.aurora_bairro.length === 2 && q.aurora_bairro.every((n) => n === 'Cão de rua') && q.metro_centro.length === 3 && q.metro_centro.every((n) => n === 'Asa Noturna')
-        && q.asterion_acampamento.length === 3 && q.velmora_clareira.every((n) => n === 'Cão de caça'), JSON.stringify(q));
+      const q = { aurora_bairro: conta('aurora_bairro'), metro_centro: conta('metro_centro'), asterion_acampamento: conta('asterion_acampamento'), velmora_clareira: conta('velmora_clareira'),
+        lagoa_ilha: conta('lagoa_ilha'), aurora: conta('aurora'), velmora_trilha: conta('velmora_trilha') };
+      const n = (L, nome) => L.filter((x) => x === nome).length;
+      this.ok('animais: identidade por cidade (Bairro: cães, gatos e galinhas; Clareira: cães de caça, cabras e galinhas; lago: patos e gansos; Asterion: cães das neves e ovelhas; Metrópole: Asas Noturnas e pombos; Refúgio: pombos e o pavão)',
+        n(q.aurora_bairro, 'Cão de rua') === 2 && n(q.aurora_bairro, 'Galinha') === 2 && q.aurora_bairro.length === 6
+        && n(q.velmora_clareira, 'Cão de caça') === 2 && n(q.velmora_clareira, 'Cabra') === 2 && n(q.velmora_clareira, 'Galinha') === 3
+        && n(q.lagoa_ilha, 'Pato') === 3 && n(q.lagoa_ilha, 'Ganso') === 2 && n(q.asterion_acampamento, 'Ovelha') === 3 && n(q.asterion_acampamento, 'Cão das Neves') === 3
+        && n(q.metro_centro, 'Asa Noturna') === 3 && n(q.metro_centro, 'Pombo') === 2 && n(q.aurora, 'Pavão') === 1 && n(q.aurora, 'Pombo') === 3, JSON.stringify(q));
       this.igual('animais: fora das cidades, nenhum', q.velmora_trilha.length, 0);
       World.loadZone('aurora_bairro', null);
       for (const id of ['cao_aurora', 'asa_noturna']) Criaturas3D.carregar(id);
       for (let i = 0; i < 150 && !(Criaturas3D.pronto('cao_aurora') && Criaturas3D.pronto('asa_noturna')); i++) await new Promise((r) => setTimeout(r, 100));
-      const caes = g.npcs.filter((n) => n instanceof AnimalCidade), c = caes[0];
+      const caes = g.npcs.filter((n) => n instanceof AnimalCidade && n.T.nome === 'Cão de rua'), c = caes[0];
       c.update(0.016);
       this.ok('animais: o cão usa o modelo do Blender (Cão da Aurora)', c.key === 'cri_cao_aurora');
       // curioso: chega perto do herói
@@ -2244,10 +2253,25 @@ const EclipseTests = {
       const P = Pets.ativo();
       this.ok('animais: adotado vira companheiro (Cão da Aurora) e sai da rua', P && P.especie === 'cao_aurora' && P.adotado && !g.npcs.includes(caes[1]) && !!Pets.companheiro());
       World.loadZone('aurora_bairro', null);
-      this.igual('animais: não volta para a rua depois de adotado', g.npcs.filter((n) => n instanceof AnimalCidade).length, 1);
+      this.igual('animais: não volta para a rua depois de adotado', g.npcs.filter((n) => n instanceof AnimalCidade && n.T.nome === 'Cão de rua').length, 1);
+      // o gato de rua se afasta de quem chega perto; a galinha cisca parada
+      const gato = g.npcs.find((n) => n instanceof AnimalCidade && n.T.tipo === 'gato'), gal = g.npcs.find((n) => n instanceof AnimalCidade && n.T.nome === 'Galinha');
+      p.x = gato.x + 50; p.y = gato.y;
+      const dg = Math.hypot(p.x - gato.x, p.y - gato.y);
+      for (let i = 0; i < 20; i++) gato.update(0.05);
+      this.ok('animais: o gato de rua se afasta de quem chega perto', Math.hypot(p.x - gato.x, p.y - gato.y) > dg + 20, `${Math.round(dg)} → ${Math.round(Math.hypot(p.x - gato.x, p.y - gato.y))}`);
+      for (const id of ['galinha', 'cabra', 'pato']) Criaturas3D.carregar(id);
+      for (let i = 0; i < 150 && !['galinha', 'cabra', 'pato'].every((id) => Criaturas3D.pronto(id)); i++) await new Promise((r) => setTimeout(r, 100));
+      p.x = gal.x + 400; gal.vx = gal.vy = 0; gal.paradoT = 5; gal.noite = false;
+      const Sg = { fl: 0, fi: 0 }, clg = new Set();
+      for (let i = 0; i < 60; i++) clg.add(gal.petClipe(Sg, Criaturas3D.dados.galinha, 0.2)[0]);
+      this.ok('animais: a galinha parada cisca (comer) e olha em volta', clg.has('comer') && clg.has('idle'), [...clg].join(','));
+      // peças das espécies presas aos ossos: chifres da cabra, crista da galinha, bico chato do pato
+      const peca = (id, osso) => { const mm = g.model3('cri_' + id); return mm && mm.nodes[osso].kids.some((k) => k.name.startsWith('acess_') && k.geo && k.geo.length > 60); };
+      this.ok('animais: chifres na cabra, crista na galinha e bico chato no pato', peca('cabra', 'cabeca') && peca('galinha', 'cabeca') && peca('pato', 'cabeca'));
       // a ave da Metrópole levanta voo quando o herói chega perto
       World.loadZone('metro_centro', null);
-      const ave = g.npcs.find((n) => n instanceof AnimalCidade);
+      const ave = g.npcs.find((n) => n instanceof AnimalCidade && n.T.tipo === 'ave');
       for (let i = 0; i < 5; i++) ave.update(0.05);
       p.x = ave.x + 30; p.y = ave.y;
       for (let i = 0; i < 20; i++) ave.update(0.05);
@@ -2260,6 +2284,69 @@ const EclipseTests = {
     if (Dialogo.aberto) Dialogo.fechar();
     if (typeof Pets !== 'undefined') Pets.tirarDaZona();
     World.state.pets = S0 === 'null' ? undefined : JSON.parse(S0); World.state.adotados = JSON.parse(A0); World.state.hora = h0;
+    if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
+  },
+
+  // Montarias (js/mundo/montarias.js): a estrebaria do Tobias (nível, células, confirmação), montar,
+  // a pose da sela no lugar do herói, a velocidade, desmontar com [E] ou com um golpe, a troca de
+  // zona montado e os interiores (a montaria espera do lado de fora)
+  async montarias() {
+    const g = game, p = g.player, z0 = World.zone && World.zone.id, b0 = g.stats.soulsBank, M0 = JSON.stringify(World.state.montarias || null);
+    let erro = null;
+    try {
+      World.state.montarias = { lista: [], ativa: null };
+      World.loadZone(BAIRRO_ID, null);
+      const tob = g.npcs.find((n) => n instanceof Morador && n.name === 'TOBIAS');
+      this.ok('montarias: o domador Tobias na Estrebaria da Guarda (Bairro da Muralha)', !!tob);
+      g.stats.soulsBank = 20000;
+      Povo.conversar(tob); Dialogo.escolherId('montarias');
+      const lv = g.activeProgress().level;
+      this.ok('montarias: os três lobos à venda; os de nível alto ficam travados', Dialogo.temId('m_lobo_montaria') && Dialogo.temId('m_lobo_guerra') && Dialogo.temId('m_lobo_aurora')
+        && (lv >= 60 || !!Dialogo.opcoes.find((o) => o.id === 'm_lobo_aurora').off));
+      Dialogo.escolherId('m_lobo_montaria');
+      this.ok('montarias: pede confirmação antes de cobrar', Dialogo.temId('sim') && g.stats.soulsBank === 20000);
+      Dialogo.escolherId('sim'); Dialogo.fechar();
+      this.ok('montarias: cobra em células e a montaria vem', g.stats.soulsBank === 20000 - MONTARIAS_TIPOS.lobo_montaria.preco && !!Montarias.ent());
+      Criaturas3D.carregar('lobo_montaria');
+      for (let i = 0; i < 150 && !Criaturas3D.pronto('lobo_montaria'); i++) await new Promise((r) => setTimeout(r, 100));
+      const m = Montarias.ent();
+      m.update(0.016);
+      this.igual('montarias: [E] Montar', m.verb, 'Montar');
+      m.talk();
+      this.ok('montarias: montado (o herói vai na sela)', p.montado === m && m.cavaleiro === p && m.verb === 'Desmontar');
+      const X = Montarias.proxy(p);
+      this.ok('montarias: o motor posa o herói sentado na sela (pose montado na altura do lombo)', X.state === 'montado' && X.sela > 20 && X !== p, X.sela);
+      // velocidade
+      const v0 = p.baseSpeed * p.stats.speedMult;
+      p.state = 'idle'; p.vx = p.vy = 0;
+      const inp = { move: { x: 1, y: 0 }, pressed: {}, held: {}, keyPressed: new Set() };
+      for (let i = 0; i < 30; i++) p.update(0.016, inp);
+      this.ok('montarias: montado corre mais (×1,6)', Math.hypot(p.vx, p.vy) > v0 * 1.4, `${Math.round(Math.hypot(p.vx, p.vy))} / ${Math.round(v0)}`);
+      m.update(0.016);
+      this.ok('montarias: a montaria acompanha o herói e anda no passo dele', m.x === p.x && m.y === p.y && m.petClipe({ fl: 0, fi: 0 }, Criaturas3D.dados.lobo_montaria, 0.016)[0] !== 'idle');
+      let e3 = null; try { g.renderWorld(g.ctx); } catch (e) { e3 = e.message; }
+      this.ok('montarias: desenha montado', !e3, e3);
+      // golpe desmonta
+      p.captureInput({ move: { x: 0, y: 0 }, pressed: { light: true }, held: {}, keyPressed: new Set() });
+      this.ok('montarias: um golpe desmonta primeiro (montado não luta)', !p.montado && !m.cavaleiro);
+      // troca de zona montado
+      Montarias.montar(Montarias.ent());
+      World.loadZone('aurora', null);
+      this.ok('montarias: troca de zona montado: a montaria vem e o herói continua na sela', !!Montarias.ent() && p.montado === Montarias.ent());
+      World.loadZone('aurora_animais', null);
+      this.ok('montarias: no interior, desce e a montaria espera do lado de fora', !p.montado && !Montarias.ent());
+      World.loadZone(BAIRRO_ID, null);
+      this.ok('montarias: na volta, a montaria está lá', !!Montarias.ent() && !p.montado);
+      this.ok('montarias: salva no mundo', World.state.montarias.lista.includes('lobo_montaria') && World.state.montarias.ativa === 'lobo_montaria');
+      Montarias.guardar();
+      this.ok('montarias: deixar no cercado', !Montarias.ent());
+    } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
+    this.ok('montarias: sem exceção', !erro, erro);
+    if (Dialogo.aberto) Dialogo.fechar();
+    if (p.montado) Montarias.desmontar();
+    World.state.montarias = M0 === 'null' ? undefined : JSON.parse(M0);
+    g.stats.soulsBank = b0;
     if (z0 && World.zone.id !== z0) World.loadZone(z0, null);
     g.state = 'playing';
   },

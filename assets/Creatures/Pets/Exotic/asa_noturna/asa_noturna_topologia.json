@@ -35,14 +35,14 @@
  },
  "retopologia": {
   "metodo": "QuadriFlow na fonte limpa (quads)",
-  "vertices": 5614,
-  "faces": 5611,
-  "triangulos": 11222,
-  "quads": 5611,
+  "vertices": 7912,
+  "faces": 7910,
+  "triangulos": 15820,
+  "quads": 7910,
   "quads_pct": 100.0,
   "ngonos": 0,
   "nao_manifold": 0,
-  "bordas": 18,
+  "bordas": 12,
   "soltos": 0,
   "degeneradas": 0,
   "cascas": 1,
@@ -50,7 +50,7 @@
  },
  "assado": {
   "lado": 2048,
-  "emissao_pct": 8.68
+  "emissao_pct": 8.05
  },
  "medidas": {
   "envergadura": 1.897,
@@ -61,22 +61,22 @@
  "lods": [
   {
    "nome": "corpo",
-   "triangulos": 11222,
+   "triangulos": 15820,
    "sem_osso": 0
   },
   {
    "nome": "corpo_LOD1",
-   "triangulos": 5610,
+   "triangulos": 7910,
    "sem_osso": 0
   },
   {
    "nome": "corpo_LOD2",
-   "triangulos": 2804,
+   "triangulos": 3954,
    "sem_osso": 0
   },
   {
    "nome": "corpo_LOD3",
-   "triangulos": 1122,
+   "triangulos": 1582,
    "sem_osso": 0
   }
  ],
@@ -110,5 +110,5 @@
   "sentar",
   "voar"
  ],
- "segundos": 58
+ "segundos": 67
 }

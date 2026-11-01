@@ -1310,14 +1310,14 @@ class Game {
     if (!this.use3D) return;
     const th = this.room.theme, lc = th.lamp.split(',').map((v) => v / 255);
     R3D.light.amb = [0.34 + lc[0] * 0.16, 0.38 + lc[1] * 0.16, 0.5 + lc[2] * 0.16];
-    const p = this.player, art = !p.kit && p.def.id === DEFAULT_CHARACTER && KaelArt.active();   // os sprites da arte oficial são só do Kael
+    const p = this.player, art = !p.kit && !p.montado && p.def.id === DEFAULT_CHARACTER && KaelArt.active();   // os sprites da arte oficial são só do Kael (e a pé)
     // Modelo do personagem: a versão texturizada (<modelo>Tex) tem preferência; sem ela, o modelo
     // procedural do herói (ou o do Kael)
     const mk0 = p.def.model || 'kael', mk = heroModelKey(p.def);
     p.mk3 = mk;
     const o3 = this.opts3(p, p.flash > 0 ? 0.9 : 0);
     o3.tint = heroArmorTint(p.def.id);   // cor da armadura equipada no modelo texturizado
-    p.spr = art ? null : this.queue3(mk, p, o3);
+    p.spr = art ? null : this.queue3(mk, p.montado && typeof Montarias !== 'undefined' ? Montarias.proxy(p) : p, o3);   // (montado: a pose da sela, js/mundo/montarias.js)
     let n = art ? 99 : 0;   // com a arte oficial, os fantasmas da esquiva também são sprites
     for (let i = 0; i < p.ghosts.length; i++) {
       const g = p.ghosts[i];

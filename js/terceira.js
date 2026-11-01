@@ -365,7 +365,7 @@ const ThirdView = {
     const o3 = g.opts3(p, p.flash > 0 ? 0.9 : 0);
     o3.tint = heroArmorTint(p.def.id);
     sombra(p, 22);
-    const itP = g.queue3(mk, p, o3);
+    const itP = g.queue3(mk, p.montado && typeof Montarias !== 'undefined' ? Montarias.proxy(p) : p, o3);   // (montado: a pose da sela)
     if (itP) { itP.o.pitch = (itP.o.pitch || 0) + this.inclina; itP.o.roll = (itP.o.roll || 0) + this.giro; }   // inclinação do corpo
     p.spr = place(itP, p);
     for (const e of g.enemies) {

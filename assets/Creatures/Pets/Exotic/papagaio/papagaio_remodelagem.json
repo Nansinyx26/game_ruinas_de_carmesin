@@ -1,0 +1,89 @@
+{
+ "especie": "papagaio",
+ "base": "Pets/Exotic/asa_noturna",
+ "ossos": {
+  "cabeca": [
+   1.15,
+   0.9,
+   1.15
+  ],
+  "cauda1": [
+   0.7,
+   1.3,
+   0.7
+  ],
+  "cauda2": [
+   0.7,
+   1.3,
+   0.7
+  ],
+  "cauda3": [
+   0.6,
+   1.3,
+   0.6
+  ],
+  "ombro.L": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "ombro.R": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "braco.L": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "braco.R": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "antebraco.L": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "antebraco.R": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "mao.L": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "mao.R": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "ponta.L": [
+   0.8,
+   0.7,
+   0.8
+  ],
+  "ponta.R": [
+   0.8,
+   0.7,
+   0.8
+  ]
+ },
+ "inflar": null,
+ "chao_dz": -0.0154,
+ "pelagens": [
+  "papagaio"
+ ],
+ "blend": "assets/Creatures/Pets/Exotic/papagaio/papagaio.blend",
+ "lods": [
+  7910,
+  5711,
+  3413,
+  1510
+ ],
+ "segundos": 16
+}

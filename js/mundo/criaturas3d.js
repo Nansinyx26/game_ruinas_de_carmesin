@@ -22,7 +22,7 @@ const Criaturas3D = {
   MISTURA: { atacar: 0.07, saltar: 0.08, dano: 0.06, morte: 0.12, atordoado: 0.1, uivar: 0.35, idle: 0.25 },
   // velocidade (unidades/s) em que cada passada fica natural; acima ou abaixo, o clipe acelera
   PASSO: { andar: 55, trotar: 115, correr: 200 },
-  LOD_DIST: [380, 760, 1250],   // 3ª pessoa: distância do herói para trocar de LOD
+  LOD_DIST: [300, 650, 1150],   // 3ª pessoa: distância do herói para trocar de LOD (o LOD 0, ~17 mil triângulos, só de perto)
 
   // ------------------------------------------------------------------ carga
   carregar(id) {
@@ -131,6 +131,8 @@ const Criaturas3D = {
         if (col) for (const k in col) { const n = new N3('coleira_' + k); n.geo = col[k]; N.pescoco1.add(n); }
         const m = new Model3(raiz);
         if (col) { m.coleiras = {}; for (const k in col) m.coleiras[k] = m.nodes['coleira_' + k]; }
+        // peças da espécie que a malha base não tem (chifres, crista, cascos)
+        for (const [osso, geo] of self.acessorios(C)) if (m.nodes[osso]) { const n = new N3('acess_' + osso + '_' + Math.random().toString(36).slice(2, 6)); n.geo = geo; m.nodes[osso].add(n); }
         m.skins = instPeles3D(C.SK, m);
         m.skins.forEach((s, i) => { s.nivel = C.SK[i].nivel; });
         m.ossosN = C.ossos.map((b) => m.nodes[b.n]);
@@ -191,6 +193,104 @@ const Criaturas3D = {
       out[nome] = d;
     }
     C.coleirasGeo = out;
+    return out;
+  },
+
+  // ------------------------------------------------------------------ peças da espécie
+  // id da criatura (ou da base dela) → peças: chifres (cabra), crista e barbela (galinha), cascos
+  // (cavalos). Medidas na fatia da malha no espaço de cada osso, como as coleiras.
+  ACESSORIOS: {
+    cabra: [['chifres', 'cabeca']],
+    galinha: [['crista', 'cabeca']],
+    pato: [['bico_chato', 'cabeca']],
+    ganso: [['bico_chato', 'cabeca']],
+  },
+  fatia(C, osso, f0, f1) {
+    const S = C.SK.find((s) => s.nivel === 0) || C.SK[0], k = S.ossos.indexOf(osso);
+    if (k < 0) return null;
+    const I = S.inv.subarray(k * 12, k * 12 + 12), P = [];
+    const nv = S.pos.length / 3, B = (v) => { const x = S.pos[v * 3], y = S.pos[v * 3 + 1], z = S.pos[v * 3 + 2];
+      return [I[0] * x + I[1] * y + I[2] * z + I[3], I[4] * x + I[5] * y + I[6] * z + I[7], I[8] * x + I[9] * y + I[10] * z + I[11]]; };
+    // o comprimento do osso pelos vértices que ele comanda (o filho mais perto pode nascer na base, como a mandíbula)
+    let comp = 0;
+    for (let v = 0; v < nv; v++) {
+      let w = 0;
+      for (let j = 0; j < 4; j++) if (S.bi[v * 4 + j] === k) w += S.bw[v * 4 + j];
+      if (w >= 0.5) comp = Math.max(comp, B(v)[2]);
+    }
+    if (comp <= 0.5) return null;
+    for (let v = 0; v < nv; v++) {
+      const q = B(v);
+      if (q[2] < comp * f0 || q[2] > comp * f1 || Math.hypot(q[0], q[1]) > comp * 1.3) continue;
+      P.push(q);
+    }
+    // direções do mundo no espaço do osso (a rotação é ortonormal: as colunas da inversa)
+    const cima = [I[2], I[6], I[10]], frente = [I[0], I[4], I[8]];
+    return { P, comp, cima, frente, lado: [cima[1] * frente[2] - cima[2] * frente[1], cima[2] * frente[0] - cima[0] * frente[2], cima[0] * frente[1] - cima[1] * frente[0]] };
+  },
+  // segmento de cilindro de a até b (G3.cyl é no eixo z: gira z para a direção do segmento)
+  segmento(g, a, b, r0, r1, cor, mat) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.hypot(dx, dy, dz) || 1;
+    const ux = dx / L, uy = dy / L, uz = dz / L, rx = Math.asin(Math.max(-1, Math.min(1, -uy))), ry = Math.atan2(ux, uz);
+    g.at(a[0], a[1], a[2], rx, ry, 0);
+    g.cyl(0, 0, 0, r0, r1, L, 8, cor);
+    g.at();
+  },
+  acessorios(C) {
+    if (C.acessGeo) return C.acessGeo;
+    const L = this.ACESSORIOS[C.id] || this.ACESSORIOS[C.base] || [], out = [];
+    const add = (v, k) => [v[0] * k, v[1] * k, v[2] * k], soma = (...vs) => vs.reduce((a, v) => [a[0] + v[0], a[1] + v[1], a[2] + v[2]], [0, 0, 0]);
+    const fim = (g, mat) => { const d = new Float32Array(g.d); for (let i = 0; i < d.length; i += 10) d[i + 8] = -1 - d[i + 8] - 2 * mat; return d; };
+    for (const [tipo, osso] of L) {
+      const F = this.fatia(C, osso, tipo === 'casco' ? 0.0 : tipo === 'bico_chato' ? 0.6 : 0.05, tipo === 'casco' ? 1.0 : tipo === 'bico_chato' ? 1.05 : 0.5);
+      if (!F || F.P.length < 8) continue;
+      const proj = (p, d) => p[0] * d[0] + p[1] * d[1] + p[2] * d[2];
+      const g = new G3();
+      if (tipo === 'bico_chato') {
+        // bico de pato: uma cunha larga e achatada, laranja, sobre o bico curvo da base (na ponta da cabeça)
+        let ponta = F.P[0];
+        for (const p of F.P) if (proj(p, F.frente) > proj(ponta, F.frente)) ponta = p;
+        const larg = Math.max(...F.P.map((p) => Math.abs(proj(p, F.lado))));
+        const base = soma(ponta, add(F.frente, -F.comp * 0.22));
+        for (let i = 0; i < 4; i++) {
+          const t = i / 3, c = soma(base, add(F.frente, F.comp * 0.32 * t), add(F.cima, -0.4 - 0.3 * t));
+          g.at(c[0], c[1], c[2], 0, 0, Math.atan2(F.frente[1], F.frente[0]));
+          g.box(0, 0, 0, F.comp * 0.14, larg * (0.62 - 0.12 * t), 0.9 - 0.2 * t, '#e08a1e', 0);
+          g.at();
+        }
+      } else if (tipo === 'chifres' || tipo === 'crista') {
+        // o alto do crânio: o vértice mais alto da fatia de trás da cabeça
+        let topo = F.P[0];
+        for (const p of F.P) if (proj(p, F.cima) > proj(topo, F.cima)) topo = p;
+        const larg = Math.max(...F.P.map((p) => Math.abs(proj(p, F.lado))));
+        if (tipo === 'chifres') {
+          for (const s of [-1, 1]) {
+            let a = soma(topo, add(F.lado, s * larg * 0.32), add(F.cima, -0.4));
+            const Lc = F.comp * 0.55;
+            for (let i = 0; i < 6; i++) {
+              const t = (i + 1) / 6, b = soma(soma(topo, add(F.lado, s * larg * (0.32 + 0.15 * t))), add(F.cima, Lc * Math.sin(t * 1.7) * 0.75), add(F.frente, -Lc * (1 - Math.cos(t * 1.7)) * 0.9));
+              this.segmento(g, a, b, 0.9 * (1 - (i / 6) * 0.8), 0.9 * (1 - ((i + 1) / 6) * 0.8), '#5a4632', 2);
+              a = b;
+            }
+          }
+        } else {
+          // crista: 4 lóbulos vermelhos em fila no alto; barbela: 2 gotas debaixo do bico
+          for (let i = 0; i < 4; i++) {
+            const c = soma(topo, add(F.frente, (i - 1.2) * F.comp * 0.12), add(F.cima, 0.6 + 0.5 * Math.sin((i / 3) * Math.PI)));
+            g.at(c[0], c[1], c[2]); g.box(0, 0, 0, 0.7, 0.7, 1.5 + 0.6 * Math.sin((i / 3) * Math.PI), '#c81e1e', 0); g.at();
+          }
+          let baixo = F.P[0];
+          for (const p of F.P) if (proj(p, F.cima) < proj(baixo, F.cima) && proj(p, F.frente) > proj(baixo, F.frente) - 1) baixo = p;
+          for (const s of [-1, 1]) { const c = soma(baixo, add(F.lado, s * 0.5), add(F.cima, -0.8)); g.at(c[0], c[1], c[2]); g.box(0, 0, 0, 0.6, 0.5, 1.4, '#b01818', 0); g.at(); }
+        }
+      } else if (tipo === 'casco') {
+        // casco: um tronco de cone escuro em volta da pata (o eixo do osso)
+        const R = F.P.map((p) => Math.hypot(p[0], p[1])).sort((a, b) => a - b), r = R[Math.floor(R.length * 0.75)] * 1.04;
+        g.cyl(0, 0, F.comp * 0.05, r * 1.08, r * 0.95, F.comp * 0.9, 12, '#1c1712');
+      }
+      out.push([osso, fim(g, tipo === 'crista' || tipo === 'bico_chato' ? 0 : 2)]);
+    }
+    C.acessGeo = out;
     return out;
   },
 
@@ -300,7 +400,7 @@ const Criaturas3D = {
       O.lodCri = d < L[0] ? 0 : d < L[1] ? 1 : d < L[2] ? 2 : 3;
     } else if (g.camera) {
       const cam = g.camera, z = cam.zoom || 1, sx = isoX(e.x, e.y), sy = isoY(e.x, e.y);
-      O.lodCri = z >= 0.9 ? 0 : z >= 0.6 ? 1 : 2;
+      O.lodCri = z >= 1.25 ? 0 : z >= 0.8 ? 1 : 2;   // (na isométrica de sempre, o LOD 1: as pontas finas do LOD 0 só aparecem de perto)
       const fora = Math.abs(sx - cam.x) > VIEW_W / (2 * z) + 140 || Math.abs(sy - cam.y) > VIEW_H / (2 * z) + 160;
       if (fora && e.state !== 'dying') { O.cache = 0.25; O.lodCri = Math.max(O.lodCri, 2); }   // fora da tela: pose guardada e malha leve
     }

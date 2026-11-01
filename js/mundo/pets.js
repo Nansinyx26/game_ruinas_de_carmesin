@@ -41,6 +41,34 @@ const PETS_ESPECIES = {
     nomes: ['Nevasca', 'Geada', 'Lobo', 'Fiorde', 'Prata'],
     clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' },
   },
+  gato_malhado: {
+    nome: 'Gato malhado', categoria: 'companhia', modelo: 'gato_malhado', preco: 450, raridade: 'comum', voa: false, escala: 0.55,
+    desc: 'Gato listrado dos telhados do Refúgio, pelo eriçado e opinião sobre tudo. Caça rato, ignora ordem.',
+    nomes: ['Tigre', 'Biscoito', 'Faísca', 'Mel', 'Bigode'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  gato_cinza: {
+    nome: 'Gato cinzento', categoria: 'companhia', modelo: 'gato_cinza', preco: 450, raridade: 'comum', voa: false, escala: 0.55,
+    desc: 'Pelo curto cinza-azulado, olhar de quem sabe onde fica a cozinha.',
+    nomes: ['Fumaça', 'Névoa', 'Chumbo', 'Lua', 'Sombra'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  gato_sombra: {
+    nome: 'Gato da Sombra', categoria: 'companhia', modelo: 'gato_sombra', preco: 2200, raridade: 'rara', voa: false, escala: 0.58,
+    desc: 'Negro com veios violeta que acendem no escuro. Raro: aparece no viveiro uma vez por lua.',
+    nomes: ['Eclipse', 'Breu', 'Ônix', 'Vazio', 'Noite'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  raposa: {
+    nome: 'Raposa domesticada', categoria: 'companhia', modelo: 'raposa', preco: 1300, raridade: 'incomum', voa: false, escala: 0.62,
+    desc: 'Raposa vermelha criada desde filhote. Curiosa, ladra e muito leal a quem a alimenta.',
+    nomes: ['Ruiva', 'Brasa', 'Astúcia', 'Cobre', 'Fagulha'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  cao_pequeno: {
+    nome: 'Cão de colo', categoria: 'companhia', modelo: 'cao_pequeno', preco: 700, raridade: 'comum', voa: false, escala: 0.55,
+    desc: 'Cãozinho de focinho curto e pernas curtas. Late para o próprio rabo e protege o dono de folhas secas.',
+    nomes: ['Pipoca', 'Bolinha', 'Tico', 'Pudim', 'Amendoim'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  papagaio: {
+    nome: 'Papagaio', categoria: 'companhia', modelo: 'papagaio', preco: 1800, raridade: 'exótica', voa: true, escala: 0.36,
+    desc: 'Verde, vermelho e amarelo, trazido das ilhas do sul. Repete o que não deve.',
+    nomes: ['Louro', 'Esmeralda', 'Pirata', 'Kiwi', 'Manga'], clipes: { parado: 'idle', andar: 'andar', voar: 'voar', planar: 'planar', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'chamar' } },
+  canario: {
+    nome: 'Canário', categoria: 'companhia', modelo: 'canario', preco: 300, raridade: 'comum', voa: true, escala: 0.22,
+    desc: 'Pequeno, amarelo e cantor. Pousa no ombro do primeiro que tiver migalha.',
+    nomes: ['Piu', 'Sol', 'Gema', 'Trino', 'Ouro'], clipes: { parado: 'idle', andar: 'andar', voar: 'voar', planar: 'planar', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'chamar' } },
 };
 const PET_PETISCO = 6;   // células por petisco
 // Coleiras (peças 3D presas ao pescoço de qualquer espécie, js/mundo/criaturas3d.js → coleiras)
@@ -173,7 +201,7 @@ const Pets = {
   },
   vitrine() {
     const R = game.room;
-    for (const [esp, fx, fy, pose] of [['asa_noturna', 0.45, 0.4, 'sentar'], ['lobo_manso', 0.7, 0.2, 'dormir'], ['cao_aurora', 0.36, 0.62, 'sentar'], ['cao_neve', 0.82, 0.36, 'parado'], ['asa_noturna', 0.64, 0.64, 'parado']]) {
+    for (const [esp, fx, fy, pose] of [['asa_noturna', 0.45, 0.4, 'sentar'], ['lobo_manso', 0.7, 0.2, 'dormir'], ['cao_aurora', 0.36, 0.62, 'sentar'], ['cao_neve', 0.82, 0.36, 'parado'], ['asa_noturna', 0.64, 0.64, 'parado'], ['gato_malhado', 0.52, 0.22, 'dormir'], ['papagaio', 0.28, 0.4, 'parado']]) {
       const v = new VitrinePet(esp, R.w * fx, R.h * fy, pose);
       game.npcs.push(v);
     }
@@ -225,13 +253,21 @@ const Pets = {
     if (S.lista.length) o.push({ id: 'meus', tag: '✚', txt: `Seus animais (${S.lista.length})`, fn: () => this.meus(npc, volta) });
     return true;
   },
+  // catálogo em três grupos (cabem na caixa de diálogo): cães e lobos, gatos e raposa, aves
+  GRUPOS: { caes: ['Cães e lobos', ['lobo_manso', 'cao_aurora', 'cao_neve', 'cao_pequeno']], gatos: ['Gatos e raposa', ['gato_malhado', 'gato_cinza', 'gato_sombra', 'raposa']],
+    aves: ['Aves', ['asa_noturna', 'papagaio', 'canario']] },
   catalogo(npc, volta) {
-    const o = Object.keys(PETS_ESPECIES).map((esp) => {
+    const o = Object.keys(this.GRUPOS).map((g) => ({ id: 'grupo_' + g, tag: '$', txt: this.GRUPOS[g][0], fn: () => this.grupo(npc, g, volta) }));
+    o.push({ id: 'voltar', txt: 'Voltar', fn: () => volta('Fique à vontade. Eles gostam de visita.') });
+    Dialogo.mostrar('Os da vitrine estão aqui dentro: pode olhar de perto. Que tipo de bicho?', o);
+  },
+  grupo(npc, g, volta) {
+    const o = this.GRUPOS[g][1].filter((esp) => PETS_ESPECIES[esp]).map((esp) => {
       const E = PETS_ESPECIES[esp];
       return { id: 'ver_' + esp, tag: '$', txt: `${E.nome} — ${E.preco} células (${E.raridade})`, fn: () => this.ver(npc, esp, volta) };
     });
-    o.push({ id: 'voltar', txt: 'Voltar', fn: () => volta('Fique à vontade. Eles gostam de visita.') });
-    Dialogo.mostrar('Os da vitrine estão aqui dentro: pode olhar de perto. Qual quer conhecer?', o);
+    o.push({ id: 'voltar', txt: 'Outros bichos', fn: () => this.catalogo(npc, volta) });
+    Dialogo.mostrar(`${this.GRUPOS[g][0]}. Qual quer conhecer?`, o);
   },
   ver(npc, esp, volta) {
     const E = PETS_ESPECIES[esp], cel = game.stats.soulsBank;

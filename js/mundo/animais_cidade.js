@@ -21,18 +21,49 @@ const ANIMAIS_TIPOS = {
     frases: ['fareja o ar e volta a olhar para a trilha', 'aceita o carinho, mas não tira os olhos da mata'] },
   cao_neve: { nome: 'Cão das Neves', especie: 'cao_neve', tipo: 'cao', adota: false, escala: 0.78, coleira: 'ferro', dono: 'a Vigília de Asterion',
     frases: ['sacode a neve do pelo em cima de você', 'uiva curto, como quem conversa'] },
+  gato_rua: { nome: 'Gato de rua', especie: 'gato_malhado', tipo: 'gato', adota: true, escala: 0.55,
+    frases: ['aceita um carinho, depois morde de leve', 'se esfrega na sua perna e vai embora sem olhar para trás', 'ronrona como um motor velho'] },
+  gato_cinza: { nome: 'Gato cinzento', especie: 'gato_cinza', tipo: 'gato', adota: true, escala: 0.55,
+    frases: ['pisca devagar: é um elogio', 'finge que não te viu'] },
+  galinha: { nome: 'Galinha', especie: 'galinha', tipo: 'ave_chao', adota: false, escala: 0.3, dono: 'os moradores',
+    frases: ['cacareja indignada e volta a ciscar', 'bica o seu cadarço'] },
+  pato: { nome: 'Pato', especie: 'pato', tipo: 'ave_chao', adota: false, escala: 0.32, dono: 'a vila do lago',
+    frases: ['grasna e balança o rabo', 'te segue esperando pão'] },
+  ganso: { nome: 'Ganso', especie: 'ganso', tipo: 'ave_chao', adota: false, escala: 0.36, dono: 'a vila do lago',
+    frases: ['abre as asas e chia: recua, isso é território dele', 'te encara com desconfiança antiga'] },
+  pavao: { nome: 'Pavão', especie: 'pavao', tipo: 'ave_chao', adota: false, escala: 0.42, dono: 'o Conselho da Aurora',
+    frases: ['arruma a cauda como quem se prepara para um retrato', 'solta um grito que não combina com a beleza'] },
+  pombo: { nome: 'Pombo', especie: 'pombo', tipo: 'pombo', adota: false, escala: 0.26,
+    frases: ['arrulha e anda em círculos', 'olha para a sua mão procurando migalha'] },
+  cabra: { nome: 'Cabra', especie: 'cabra', tipo: 'pasto', adota: false, escala: 0.62, dono: 'os pastores',
+    frases: ['mastiga a ponta da sua capa', 'bale e volta a pastar'] },
+  ovelha: { nome: 'Ovelha', especie: 'ovelha', tipo: 'pasto', adota: false, escala: 0.62, dono: 'os pastores da encosta',
+    frases: ['a lã é quente e cheira a fumaça de lareira', 'bale para o rebanho e vem atrás de você'] },
   ave_neon: { nome: 'Asa Noturna', especie: 'asa_noturna', tipo: 'ave', adota: false, escala: 0.5,
     frases: ['inclina a cabeça e as penas acendem', 'bica a sua manga e levanta voo de volta ao telhado'] },
 };
-// zona → [[tipo, x, y] ...] (frações da sala)
+// zona → [[tipo, x, y] ...] (frações da sala). Cada cidade com os seus (cultura e clima):
+//   o Refúgio (comercial e nobre): cães e gatos de rua, pombos e o pavão do Conselho;
+//   o Bairro da Muralha (casas antigas): cães, gatos e as galinhas dos quintais;
+//   a Clareira dos Sinais (aldeia da floresta): cães de caça, cabras e galinhas;
+//   a vila do lago: patos e gansos; Asterion (frio): cães das neves e ovelhas;
+//   a Metrópole: Asas Noturnas nos telhados e pombos; o Mercado Vertical: gatos e pombos;
+//   o oásis de Seraph: cabras
 const ANIMAIS_ZONAS = {
-  aurora: [['cao_rua', 0.3, 0.7], ['cao_rua', 0.72, 0.36]],
-  aurora_bairro: [['cao_rua', 0.58, 0.62], ['cao_rua', 0.4, 0.82]],
-  velmora_clareira: [['cao_caca', 0.6, 0.72], ['cao_caca', 0.66, 0.78]],
-  asterion_acampamento: [['cao_neve', 0.55, 0.7], ['cao_neve', 0.62, 0.62], ['cao_neve', 0.48, 0.78]],
+  aurora: [['cao_rua', 0.3, 0.7], ['cao_rua', 0.72, 0.36], ['gato_rua', 0.58, 0.28], ['pombo', 0.45, 0.55], ['pombo', 0.48, 0.6], ['pombo', 0.42, 0.62], ['pavao', 0.62, 0.42]],
+  aurora_bairro: [['cao_rua', 0.58, 0.62], ['cao_rua', 0.4, 0.82], ['gato_rua', 0.28, 0.5], ['gato_cinza', 0.7, 0.8], ['galinha', 0.5, 0.88], ['galinha', 0.54, 0.86]],
+  velmora_clareira: [['cao_caca', 0.6, 0.72], ['cao_caca', 0.66, 0.78], ['cabra', 0.3, 0.6], ['cabra', 0.34, 0.66], ['galinha', 0.45, 0.8], ['galinha', 0.48, 0.84], ['galinha', 0.43, 0.86]],
+  lagoa_ilha: [['pato', 0.3, 0.3], ['pato', 0.34, 0.34], ['pato', 0.28, 0.36], ['ganso', 0.62, 0.3], ['ganso', 0.66, 0.34]],
+  asterion_acampamento: [['cao_neve', 0.55, 0.7], ['cao_neve', 0.62, 0.62], ['cao_neve', 0.48, 0.78], ['ovelha', 0.3, 0.4], ['ovelha', 0.34, 0.46], ['ovelha', 0.26, 0.46]],
   asterion_fortaleza: [['cao_neve', 0.5, 0.82]],
-  metro_centro: [['ave_neon', 0.3, 0.3], ['ave_neon', 0.72, 0.3], ['ave_neon', 0.5, 0.7]],
+  metro_centro: [['ave_neon', 0.3, 0.3], ['ave_neon', 0.72, 0.3], ['ave_neon', 0.5, 0.7], ['pombo', 0.4, 0.5], ['pombo', 0.44, 0.52]],
+  nexus_mercado: [['gato_rua', 0.4, 0.5], ['gato_cinza', 0.6, 0.62], ['pombo', 0.5, 0.4], ['pombo', 0.53, 0.42]],
+  seraph_oasis: [['cabra', 0.55, 0.62], ['cabra', 0.6, 0.66]],
 };
+
+// clipes por família de malha (a do lobo e a da ave), para as espécies que não são de companhia
+const CLIPES_LOBO = { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' };
+const CLIPES_AVE = { parado: 'idle', andar: 'andar', voar: 'voar', planar: 'planar', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'chamar' };
 
 const AnimaisCidade = {
   // os adotados saem da rua (por personagem: World.state.adotados = ['zona:i', ...])
@@ -76,7 +107,9 @@ const AnimaisCidade = {
 class AnimalCidade extends NPC {
   constructor(tipo, x, y, uid) {
     super({ model: 'civil', name: ANIMAIS_TIPOS[tipo].nome, lines: ['…'] }, x, y);
-    this.T = ANIMAIS_TIPOS[tipo]; this.E = PETS_ESPECIES[this.T.especie]; this.uid = uid;
+    this.T = ANIMAIS_TIPOS[tipo]; this.uid = uid;
+    const ave = ['ave', 'ave_chao', 'pombo'].includes(this.T.tipo);
+    this.E = PETS_ESPECIES[this.T.especie] || { modelo: this.T.especie, clipes: ave ? CLIPES_AVE : CLIPES_LOBO, voa: ave };
     this.key = null; this.escala = this.T.escala; this.height = 24; this.radius = 9; this.papel = 'Animal da cidade'; this.verb = 'Afagar';
     this.casa = { x, y }; this.alvo = null; this.esperaT = rand(1, 4); this.vx = 0; this.vy = 0; this.alt = 0; this.acao = null; this.acaoT = 0;
     this.paradoT = rand(0, 8); this.facing = rand(0, TAU); this.curiosoT = 0; this.state = 'idle';
@@ -91,7 +124,8 @@ class AnimalCidade extends NPC {
     const id = this.E.modelo;
     if (Criaturas3D.pronto(id)) this.key = 'cri_' + id; else Criaturas3D.carregar(id);
     if (this.talkT > 0) this.talkT -= dt;
-    const p = game.player, luta = game.combatActive(), ave = this.T.tipo === 'ave';
+    const p = game.player, luta = game.combatActive(), ave = this.T.tipo === 'ave' || this.T.tipo === 'pombo';
+    if (this.susto > 0) this.susto -= dt;
     const h = typeof WorldTime !== 'undefined' ? WorldTime.hora() : 12, noite = h >= 22 || h < 5;
     const dp = Math.hypot(p.x - this.x, p.y - this.y);
     if (this.acao) {
@@ -106,8 +140,12 @@ class AnimalCidade extends NPC {
       if (dp < 360) { tx = this.x + Math.cos(a) * 120; ty = this.y + Math.sin(a) * 120; vel = 220; }
     } else if (this.talkT > 0 || Dialogo.npc === this) {
       tx = null;
-    } else if (!ave && !noite && dp < 170 && dp > 60 && this.curiosoT < 6) {
-      this.curiosoT += dt; tx = p.x; ty = p.y; vel = 80;
+    } else if (this.T.tipo === 'cao' && !noite && dp < 170 && dp > 60 && this.curiosoT < 6) {
+      this.curiosoT += dt; tx = p.x; ty = p.y; vel = 80;   // cão: chega para farejar
+    } else if ((this.T.tipo === 'gato' && dp < 90) || (this.T.tipo === 'ave_chao' && dp < 60) || (this.T.tipo === 'pasto' && dp < 40)) {
+      const a = Math.atan2(this.y - p.y, this.x - p.x);   // gato desconfiado, galinha assustada, cabra que se afasta
+      tx = this.x + Math.cos(a) * 90; ty = this.y + Math.sin(a) * 90; vel = this.T.tipo === 'pasto' ? 70 : 150;
+      if (this.T.tipo === 'ave_chao') this.susto = 0.6;
     } else {
       if (dp > 260) this.curiosoT = 0;
       if (!this.alvo || (this.esperaT -= dt) <= 0 && Math.hypot(this.alvo.x - this.x, this.alvo.y - this.y) < 14) {
@@ -117,7 +155,7 @@ class AnimalCidade extends NPC {
           this.alvo = { x: this.casa.x + Math.cos(a) * rand(0, r), y: this.casa.y + Math.sin(a) * rand(0, r) };
         }
       }
-      if (this.alvo && !noite) { tx = this.alvo.x; ty = this.alvo.y; vel = ave ? 120 : 55; }
+      if (this.alvo && !noite) { tx = this.alvo.x; ty = this.alvo.y; vel = ave ? 120 : this.T.tipo === 'pasto' ? 30 : this.T.tipo === 'ave_chao' ? 40 : 55; }
     }
     let dx = 0, dy = 0, d = 0;
     if (tx !== null && !this.acao) { dx = tx - this.x; dy = ty - this.y; d = Math.hypot(dx, dy); }
@@ -132,6 +170,8 @@ class AnimalCidade extends NPC {
     if (ave) {
       const voa = (luta && dp < 400) || v > 40 || (dp < 70 && !this.talkT && Dialogo.npc !== this);   // assusta: levanta voo
       this.alt += ((voa ? 46 : 0) - this.alt) * (1 - Math.exp(-3 * dt));
+    } else if (this.T.tipo === 'ave_chao') {
+      this.alt += ((this.susto > 0 ? 10 : 0) - this.alt) * (1 - Math.exp(-6 * dt));   // o pulo batendo as asas da galinha assustada
     }
     this.paradoT = v < 10 && !this.acao ? this.paradoT + dt : 0;
     this.noite = noite;
@@ -141,14 +181,16 @@ class AnimalCidade extends NPC {
     const K = this.E.clipes, d = (n) => (C.clipes[n] ? C.clipes[n].d : 1), tem = (n) => !!(n && C.clipes[n]);
     if (this.acao && tem(K[this.acao])) return [K[this.acao], Math.min(this.acaoT, d(K[this.acao]))];
     const v = Math.hypot(this.vx, this.vy);
-    if (this.alt > 6 && tem(K.voar)) { const n = v > 100 || this.alt < 30 ? K.voar : K.planar; S.fl = (S.fl + dt / d(n)) % 1; return [n, S.fl * d(n)]; }
+    if (this.alt > 6 && tem(K.voar) && this.T.tipo !== 'ave_chao') { const n = v > 100 || this.alt < 30 ? K.voar : K.planar; S.fl = (S.fl + dt / d(n)) % 1; return [n, S.fl * d(n)]; }
     if (v > 10) {
       const n = v < 90 || !K.trotar ? K.andar : v < 180 || !K.correr ? K.trotar : K.correr;
       S.fl = (S.fl + dt * Math.max(0.6, Math.min(1.6, v / (n === K.andar ? 55 : n === K.trotar ? 115 : 200))) / d(n)) % 1;
       return [n, S.fl * d(n)];
     }
     let n = K.parado;
-    if (this.noite || this.paradoT > 30) n = K.dormir;
+    const tp = this.T.tipo;
+    if (this.noite || this.paradoT > (tp === 'gato' ? 14 : 30)) n = K.dormir;
+    else if ((tp === 'ave_chao' || tp === 'pasto' || tp === 'pombo') && this.paradoT > 1) n = Math.floor(S.fi / 3.5) % 3 ? K.comer : K.parado;   // ciscar, pastar
     else if (this.paradoT > 4) n = K.sentar;
     if (!tem(n)) n = K.parado;
     S.fi += dt;

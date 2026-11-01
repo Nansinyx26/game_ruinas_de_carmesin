@@ -90,6 +90,11 @@ const BAIRRO_INTERIORES = {
 };
 // Quem mora e trabalha no bairro e nos prédios
 const BAIRRO_POVO = [
+  { id: 'aur_tobias', nome: 'TOBIAS', zona: BAIRRO_ID, at: [0.2, 0.42], model: 'civil', variant: 0, facing: 0.2, papel: 'Domador da Estrebaria da Guarda', servicos: ['montarias'],
+    personalidade: 'Grandalhão de voz mansa; trata os lobos de montaria como filhos.',
+    ola: ['Devagar perto do cercado. Eles sentem pressa.', 'Montaria boa é a que volta sozinha para casa.'],
+    temas: [['Por que lobos e não cavalos?', 'Cavalo não aguenta o Nexus: se assusta com neon, empaca na neve. Lobo grande vai a qualquer lugar. Os cavalos que restam estão nas fazendas do sul, e eu não vendo o que não tenho.'],
+      ['Posso lutar montado?', 'Não. Montado você corre; para lutar, desce. O lobo se afasta e espera.']] },
   { id: 'aur_cora', nome: 'CORA ALVES', zona: 'aurora_animais', at: [0.2, 0.7], model: 'civil', variant: 3, facing: 4.7, papel: 'Tratadora de animais', servicos: ['animais'],
     personalidade: 'Calma e direta; fala com os bichos antes de falar com gente.',
     ola: ['Devagar ao entrar: a Asa Noturna estranha gente nova.', 'Veio adotar ou só matar a saudade de bicho?'],
@@ -468,6 +473,7 @@ const Bairro = {
   // ------------------------------------------------------------ serviços (Povo.servico)
   servico(npc, s, o, volta) {
     if (typeof Pets !== 'undefined' && Pets.servico(npc, s, o, volta)) return true;   // a tratadora do viveiro (js/mundo/pets.js)
+    if (typeof Montarias !== 'undefined' && Montarias.servico(npc, s, o, volta)) return true;   // a estrebaria da Guarda (js/mundo/montarias.js)
     if (s !== 'refeicao') return false;
     const preco = this.precoRefeicao();
     o.push({ id: 'refeicao', tag: '♨', txt: `Pedir o ensopado do dia (${preco} células: vida, energia e o corpo aquecido)`, fn: () => volta(this.refeicao()) });

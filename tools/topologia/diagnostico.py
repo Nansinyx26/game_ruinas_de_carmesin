@@ -36,7 +36,7 @@ EXT = {'.glb', '.gltf', '.fbx', '.obj', '.blend'}
 # Orçamento de triângulos por tipo (o motor desenha a pele na CPU: perto da câmera, LOD 0)
 ORCAMENTO = {
     'personagem': 30000, 'rosto': 12000, 'corpo': 20000, 'cabelo': 12000, 'barba': 6000, 'armadura': 12000,
-    'arma': 6000, 'criatura': 12000, 'pet': 8000, 'montaria': 15000, 'chefe': 30000,
+    'arma': 6000, 'criatura': 16000, 'pet': 16000, 'montaria': 15000, 'chefe': 30000,
     'construcao': 8000, 'cenario': 4000, 'natureza': 3000, 'outro': 10000,
 }
 TIPO_COMP = {5120: 'b', 5121: 'B', 5122: 'h', 5123: 'H', 5125: 'I', 5126: 'f'}

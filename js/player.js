@@ -273,6 +273,8 @@ class Player extends Entity {
   captureInput(input) {
     if (this.state === 'dead') return;
     const livre = !(this.travaAtaque > 0);   // logo depois de fechar uma conversa ou loja, sem golpe
+    // montado não luta: qualquer golpe, esquiva, pulo ou poder desce da montaria primeiro
+    if (this.montado && (input.pressed.light || input.pressed.heavy || input.pressed.dash || input.pressed.jump || input.pressed.special || input.pressed.grenade || [1, 2, 3, 4].some((k) => input.pressed['ab' + k]))) Montarias.desmontar();
     if (input.pressed.light && livre) this.combo.bufferInput('L');
     if (input.pressed.heavy && livre) this.combo.bufferInput('H');
     if (input.pressed.dash) this.dashBuffer = 0.16;
@@ -340,7 +342,7 @@ class Player extends Entity {
         }
         let tvx = 0, tvy = 0;
         if (wd) {
-          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this);
+          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this) * (this.montado ? this.montado.T.vel : 1);   // (montaria: js/mundo/montarias.js)
           tvx = wd.x * sp; tvy = wd.y * sp;
           // de frente para um pilar, contorna pela tangente em vez de empacar (Room.desvio)
           const dv = this.dv || (this.dv = { x: 0, y: 0 });

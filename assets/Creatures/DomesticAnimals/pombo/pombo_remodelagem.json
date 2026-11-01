@@ -1,0 +1,110 @@
+{
+ "especie": "pombo",
+ "base": "Pets/Exotic/asa_noturna",
+ "ossos": {
+  "peito": [
+   1.15,
+   0.95,
+   1.15
+  ],
+  "coluna": [
+   1.15,
+   1.0,
+   1.15
+  ],
+  "quadril": [
+   1.1,
+   1.0,
+   1.1
+  ],
+  "pescoco1": [
+   1.0,
+   0.75,
+   1.0
+  ],
+  "pescoco2": [
+   1.0,
+   0.75,
+   1.0
+  ],
+  "cauda1": [
+   0.9,
+   0.6,
+   0.9
+  ],
+  "cauda2": [
+   0.9,
+   0.6,
+   0.9
+  ],
+  "cauda3": [
+   0.9,
+   0.6,
+   0.9
+  ],
+  "ombro.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "ombro.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "braco.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "braco.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "antebraco.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "antebraco.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "mao.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "mao.R": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "ponta.L": [
+   0.75,
+   0.6,
+   0.75
+  ],
+  "ponta.R": [
+   0.75,
+   0.6,
+   0.75
+  ]
+ },
+ "inflar": null,
+ "chao_dz": 0.0383,
+ "pelagens": [
+  "pombo",
+  "canario"
+ ],
+ "blend": "assets/Creatures/DomesticAnimals/pombo/pombo.blend",
+ "lods": [
+  7910,
+  5711,
+  3413,
+  1510
+ ],
+ "segundos": 25
+}
