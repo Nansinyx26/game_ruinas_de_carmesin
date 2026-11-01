@@ -88,7 +88,7 @@ Resposta à fase 1 do "Prompt mestre — expansão completa do mundo aberto". Tu
    - kit modular de arquitetura no Blender (paredes de pedra e madeira, portas, janelas, telhados, escadas, arcos, colunas, sacadas, cercas, ponte, mobília, lampiões) e prédios montados com ele;
    - taverna, hospedaria, conselho, quartel e casas no Refúgio da Aurora, com **interiores** (zonas fechadas com mobília, quem trabalha ali e serviços);
    - a praça e as ruas com mobiliário.
-3. **Fase 3 — NPCs:**
+3. **Fase 3 — NPCs:** concluída (relatório na seção 6).
    - atividades da rotina: sentar, comer na taverna, conversar entre si, dormir em casa, guardas em turnos;
    - modelos 3D próprios para os NPCs importantes;
    - missões ligadas aos prédios novos.
@@ -162,3 +162,52 @@ com oclusão, metal/aspereza, normais e emissão. `python3 tools/blender/arquite
 - Os interiores são maiores que os prédios por fora (18 a 20 m de lado), como é comum em jogos; a
   entrada é por troca de zona (com o escurecimento), não sem costura.
 - Os moradores ainda não sentam, comem nem dormem: são as atividades da Fase 3.
+
+## 6. Fase 3 — moradores: o que foi feito
+
+Entregue em 01/11/2026. Testado na suíte (`rotina()`, 1105/1105 passando) e em capturas.
+
+### Rotina por hora (`js/mundo/rotina.js`)
+
+| Pedido | Estado | Como |
+|---|---|---|
+| Sentar, comer na taverna | existe | cadeiras e bancos dos interiores; comendo ou bebendo, a mão vai da mesa à boca. Às 20 h a taverna tem 6 moradores sentados, além do taverneiro e do bardo |
+| Dormir em casa | existe | nas camas da hospedaria e nos beliches do quartel, deitados de costas; quem mora nas casas do bairro entra pela porta à noite e só sai de manhã |
+| Conversar entre si | existe | em pares, frente a frente, um fala e o outro escuta, com as falas em balões (Nina e Jorge no poço, à tarde) |
+| Guardas em turnos | existe | o Rui faz a ronda de dia e a Marta à noite; os dois trocam na porta do quartel às 6 h e às 18 h, com a fala da troca, e quem sai do turno vai comer e dormir no quartel |
+| Ir e vir | existe | com o herói na zona, quem tem compromisso em outro lugar anda até a porta (ou a passagem) e entra; quem chega sai pela porta do prédio de onde vem; ao carregar uma zona, cada um já está onde a agenda manda |
+| Conversa com o herói em qualquer postura | existe | sentado, quem conversa continua sentado; quem dorme só resmunga num balão |
+
+Doze moradores têm agenda: Bento, Cosme, Rosa, o viajante, a Conselheira Helena, o escriba, a Capitã Irene, o Soldado Pedro, os guardas Rui e Marta, Nina e Jorge. O diário e os marcadores apontam a zona onde a pessoa está naquela hora. Nada novo vai para o salvamento: tudo sai da hora do mundo.
+
+### Modelos 3D próprios dos moradores importantes (`js/mundo/npc3d.js`)
+
+- **Quem ganhou modelo próprio:** Bento, Cosme, Rosa, Helena, Irene, Rui e Marta.
+- **Como são montados:** com as mesmas peças GLB da criação de personagem (corpo, rosto, cabelo, barba, as roupas e armaduras do catálogo), no esqueleto do Kael. Cada um tem aparência e roupa próprias. Exemplos:
+  - a conselheira usa o conjunto arcano azul do nível 50;
+  - a capitã usa as placas e a capa de batalha;
+  - os guardas usam o couro e as placas do nível 30.
+- **Posturas novas no esqueleto** (`js/models/kael.js`): sentar, comer, beber, falar, ouvir, guarda em sentido e dormir deitado. O modelo `civil` (os outros moradores) também ganhou essas posturas (`js/models/civil.js`).
+- **Desempenho (medido):** um corpo destes tem 52 a 66 mil triângulos com pele. Três deles na fila de todo quadro deixavam a pose em ~11 ms por quadro.
+  - Agora, na vista isométrica, cada um vira uma foto do motor 3D. A foto é refeita de 2 a 30 vezes por segundo, conforme a postura: dormindo, poucas vezes; andando, quase todo quadro. Fora da tela, a foto não é refeita.
+  - Na 3ª pessoa entra o modelo, com a pele reaproveitada enquanto a postura não muda (o cache de pose `o.cache` do `R3D.poseAll`).
+  - Na taverna cheia, a pose média caiu de 67–77 ms para 17 ms por quadro (os moradores comuns sozinhos dão 15 ms). Os números são do SwiftShader do ambiente de testes.
+  - Os modelos dos ausentes saem da memória na troca de zona.
+
+### Missões ligadas aos prédios
+
+| Missão | Quem dá | Passos |
+|---|---|---|
+| O Ensopado do Javali Dourado | Bento (taverna) | levar 3 couros e 4 ervas; depois disso, a refeição fica pela metade do preço para sempre |
+| O Hóspede Encapuzado | Rosa (hospedaria) | conversar com o viajante, seguir o rastro do caçador nas Galerias de Serviço (3 pistas), derrotar o Caçador do NEXUS, levar o núcleo de volta e escolher o destino dele |
+| Selo do Conselho | Helena (conselho) | mostrar o selo à Mestra Veridiana (praça) e à Capitã Irene (quartel) e voltar |
+| Recruta da Muralha | Irene (quartel) | derrotar 10 inimigos em Carmesin, contar ao Soldado Pedro como foi e voltar |
+
+### Outros ajustes
+
+- Dentro dos prédios não chove nem neva (antes passava um pouco "pelas frestas", como nas ruínas).
+
+### Limites
+
+- As posturas são poses em código no esqueleto, como as do herói. Não são clipes de animação gravados.
+- Os moradores da praça antiga continuam com o modelo genérico e sem agenda.

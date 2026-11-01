@@ -215,7 +215,13 @@ class Morador extends NPC {
     this.verb = 'Conversar';
     this.casaXY = null; this.rotaXY = null; this.ri = 0; this.espera = rand(1, 4); this.andando = false;
     this.origem = { x, y };   // onde fica (volta para cá depois do abrigo)
+    // moradores importantes do bairro: o modelo próprio, montado com as peças da criação (js/mundo/npc3d.js)
+    const k = typeof NpcModelo !== 'undefined' && NpcModelo.chave(this.P);
+    if (k) this.key = k;
+    this.bolha = null;   // balão de fala (conversas entre moradores, o bardo, quem resmunga dormindo)
   }
+  // Balão sobre a cabeça (k: a fala da vez; a mesma fala não reinicia o balão)
+  balao(txt, k) { if (this.bolha && this.bolha.k === k) return; this.bolha = { txt, k, t: 3.2 }; }
   // Pontos da rotina na sala (frações → posições livres)
   preparar(R) {
     const P = this.P;
@@ -227,12 +233,38 @@ class Morador extends NPC {
     for (const e of game.enemies) if (e.alive && e.state !== 'dying' && !e.dormant && dist2(e.x, e.y, this.x, this.y) < 260 * 260) return true;
     return false;
   }
-  canTalk() { return !this.perigo(); }
-  talk() { Povo.conversar(this); }
+  canTalk() { return !this.perigo() && !this.saindo && !this.sumiu; }
+  talk() { if (this.state === 'sleep') { Rotina.dormindo(this); return; } Povo.conversar(this); }
+  drawShadow(ctx) { if (this.state !== 'sleep' && !this.sumiu) super.drawShadow(ctx); }
+  draw(ctx) {
+    if (this.sumiu) return;
+    if (this.foto3d && this.fotoImg && game.use3D) { NpcModelo.desenhar(ctx, this); return; }   // a foto do modelo próprio (js/mundo/npc3d.js)
+    super.draw(ctx);
+  }
+  drawEmissive(ctx) {
+    if (this.sumiu) return;
+    if (!this.foto3d) super.drawEmissive(ctx);
+    const B = this.bolha, p = game.player;
+    if (!B || B.t <= 0 || !p || dist(p.x, p.y, this.x, this.y) > 520) return;
+    // balão: caixa escura com a fala, acima da cabeça, sumindo no fim
+    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - (this.state === 'sleep' ? 40 : this.state === 'sit' || this.state === 'eat' || this.state === 'drink' ? this.height * 0.85 : this.height + 24);
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, B.t / 0.4, (3.2 - B.t) / 0.2 + 0.2);
+    ctx.font = `12px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = Math.min(300, ctx.measureText(B.txt).width + 18);
+    ctx.fillStyle = 'rgba(10,8,14,0.82)'; ctx.strokeStyle = 'rgba(255,214,150,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.rect(sx - w / 2, sy - 26, w, 20); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx - 5, sy - 6); ctx.lineTo(sx, sy); ctx.lineTo(sx + 5, sy - 6); ctx.fill();
+    ctx.fillStyle = '#f2e6d0'; ctx.fillText(B.txt, sx, sy - 16, w - 10);
+    ctx.restore();
+  }
   update(dt) {
     this.animTime += dt; this.stateTime += dt;
     if (this.talkT > 0) this.talkT -= dt;
+    if (this.bolha) this.bolha.t -= dt;
     const p = game.player, medo = this.perigo();
+    // agenda do dia (js/mundo/rotina.js): sentar, comer, dormir, conversar, a guarda, entrar e sair
+    if (!medo && this.rot !== undefined && typeof Rotina !== 'undefined' && Rotina.atualizar(this, dt)) return;
     this.andando = !medo && this.talkT <= 0 && this.andar(dt, p);
     if (medo && !this.holo) this.setState('fear');
     else if (this.talkT > 0) this.setState('talk');
@@ -316,6 +348,8 @@ const Povo = {
   onde(id) {
     const P = this.persona(id);
     if (!P) return null;
+    const zr = typeof Rotina !== 'undefined' ? Rotina.zonaDe(P.id) : undefined;   // quem tem agenda: onde está agora
+    if (zr) return { zona: zr, nome: P.nome };
     if (P.zona) return { zona: P.zona, nome: P.nome };
     const [zona, nome] = P.chave.split(':');
     return { zona, nome };

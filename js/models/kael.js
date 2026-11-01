@@ -1178,6 +1178,76 @@ function buildTempestadeNula(g, k, part, lod) {
     n.blade.s[0] = 1;
   }
 
+  // ------------------------------------------------------------ moradores (NPCs no esqueleto do Kael)
+  // Os NPCs importantes da cidade (js/mundo/npc3d.js) usam este esqueleto com as peças da criação;
+  // estas são as posturas da rotina deles (js/mundo/rotina.js): sentar (e.npcAcao: 'comer' ou
+  // 'beber'), falar ('ouvir': escuta e acena), guarda em sentido e dormir deitado (na cama).
+  // e.assento: altura do assento; e.camaZ: altura do colchão (unidades do jogo).
+  function sentarPose(P, e, K) {
+    rest(P, e);
+    const t = num(e.animTime), A = num(e.assento, 15.5), kx = K.LTH * 0.92;
+    P.hz = A + 2.4 - K.HZ0; P.hy = 0; P.bz = 0;
+    P.tp = -0.05 + Math.sin(t * 1.7) * 0.012; P.ty = 0; P.tr = 0; P.hp = 0.08;
+    set3(P.fL, kx + 1.6, -4.4, 0); set3(P.fR, kx + 1.2, 4.6, 0);
+    const hz = A + 5.2 - K.HAND0;
+    set3(P.hL, kx * 0.6, -5.6, hz); set3(P.hR, kx * 0.6, 5.8, hz);
+    const ac = e.npcAcao;
+    if (ac === 'comer' || ac === 'beber') {
+      // a mão direita vai da mesa à boca e volta (comer: mais rápido; beber: a caneca demora na boca)
+      const ciclo = ac === 'beber' ? 3.4 : 2.2, u = (t % ciclo) / ciclo;
+      const k = ac === 'beber' ? smooth(cl(u < 0.5 ? u / 0.2 : (1 - u) / 0.3, 0, 1)) : smooth(cl(u < 0.5 ? u / 0.25 : (1 - u) / 0.25, 0, 1));
+      const ombro = P.hz + K.HZ0 + 0.5 + K.SHZ;
+      const mesa = [kx + 9, 5.0, A + 11.5 - K.HAND0], boca = [4.6, 1.4, ombro + 5.2 - K.HAND0];
+      set3(P.hR, mix(mesa[0], boca[0], k), mix(mesa[1], boca[1], k), mix(mesa[2], boca[2], k));
+      set3(P.hL, kx + 7, -5.2, A + 11 - K.HAND0);   // a outra mão apoiada na mesa
+      P.hp = 0.14 - 0.12 * k; P.tp = 0.04 - 0.06 * k;
+    }
+    P.cB = 0; P.flare = 0.02; P.cFl = 0;
+    return P;
+  }
+  function falarPose(P, e) {
+    rest(P, e);
+    const t = num(e.animTime);
+    if (e.npcAcao === 'ouvir') {
+      // escuta: peso numa perna, braços cruzados à frente e acenos curtos de cabeça
+      P.hp += 0.1 * Math.max(0, Math.sin(t * 2.3)) ** 3; P.hyw += 0.05 * Math.sin(t * 0.7);
+      set3(P.hL, 4.2, 1.5, 28.5); set3(P.hR, 4.4, -1.2, 29.2);
+      P.tr += 0.04;
+      return P;
+    }
+    const g1 = Math.sin(t * 3.1), g2 = Math.sin(t * 4.7 + 1.1), g3 = Math.sin(t * 1.7);
+    set3(P.hR, 7.5 + 2.2 * g1, 8.5 + g3, 31 + 3.2 * g2);
+    set3(P.hL, 2.5 + Math.max(0, g3) * 3, -8.5, 23.5 + Math.max(0, g3) * 4);
+    P.hp += 0.05 * g2; P.hyw += 0.08 * g3; P.ty += 0.06 * g1; P.tp += 0.02;
+    return P;
+  }
+  function guardaPose(P, e) {
+    rest(P, e);
+    const t = num(e.animTime);
+    // em sentido: costas retas, mãos para trás e o olhar varrendo a rua devagar
+    P.hz += 0.7; P.tp = -0.04; P.hp = -0.04;
+    P.hyw += Math.sin(t * 0.55) * 0.38 + Math.sin(t * 1.3) * 0.05;
+    set3(P.hL, -4.6, -3.2, 21.5); set3(P.hR, -4.6, 3.4, 21.8);
+    set3(P.fL, 0.6, -4.8, 0); set3(P.fR, 0.6, 5.0, 0);
+    return P;
+  }
+  function dormirPose(m, e, t) {
+    const P = rest(DEADP, e);
+    // deitado de costas na cama: pernas esticadas, braços ao lado do corpo, a respiração lenta
+    const br = Math.sin(t * 1.25);
+    P.hz = HZR - 0.4; P.tp = 0.02 + br * 0.015; P.ty = 0; P.tr = 0; P.hy = 0;
+    P.hp = -0.18; P.hyw = 0.35; P.hr = 0;
+    set3(P.fL, 0.6, -4.2, 0); set3(P.fR, 0.6, 4.4, 0); P.toeL = 0.5; P.toeR = 0.5;
+    set3(P.hL, 1.5, -8.8, 22 + br * 0.2); set3(P.hR, 3.5, 6.5, 25.5 + br * 0.3);
+    P.cB = 0; P.flare = 0; P.cFl = 0;
+    solve(m, P, e, t, true);
+    // o corpo inteiro tomba para trás sobre o colchão, com os pés na ponta da cama
+    const n = m.nodes;
+    n.fall.r[0] = 0; n.fall.r[1] = -1.52; n.fall.r[2] = 0;
+    n.fall.p[0] = num(e.camaPe, 29); n.fall.p[1] = 0; n.fall.p[2] = num(e.camaZ, 21) + 4.2;
+    return P;
+  }
+
   const POSE = mkP();
   const OPT0 = {}, OPTF = { flash: 0.85 }, OPTS = { emi: 1.25 };
   // Dedos no espaço da mão (−Z ao longo da mão, +X para a frente, a palma voltada para o corpo):
@@ -1333,8 +1403,12 @@ function buildTempestadeNula(g, k, part, lod) {
       const t = num(e.animTime);
       const st = e.state;
       if (st === 'dead') { deadPose(m, e, t); hands(m, e, DEADP, true); if (m.sec) secondary(m, e, DEADP); return; }
+      if (st === 'npc_dormir') { const D = dormirPose(m, e, t); hands(m, e, D, true); if (m.sec) secondary(m, e, D); return; }
       let P;
-      if (st === 'run') P = runPose(POSE, e);
+      if (st === 'npc_sentar') P = sentarPose(POSE, e, m.props || KAEL_PROPS);
+      else if (st === 'npc_falar') P = falarPose(POSE, e);
+      else if (st === 'npc_guarda') P = guardaPose(POSE, e);
+      else if (st === 'run') P = runPose(POSE, e);
       else if (st === 'attack') P = attackPose(POSE, e);
       else if (st === 'charge') P = chargePose(POSE, e);
       else if (st === 'dash') P = dashPose(POSE, e);

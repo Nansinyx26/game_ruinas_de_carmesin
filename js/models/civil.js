@@ -8,7 +8,9 @@
 //                   rifle de sucata nas costas, visor ciano fino sobre um olho
 //   3 JOVEM         poncho vinho remendado (mais baixa, ~44), cachecol, mochila pequena,
 //                   faixa de LED ciano no capuz
-// e = { animTime, stateTime, state: 'idle'|'walk'|'talk'|'fear', facing, variant, vx, vy }
+// e = { animTime, stateTime, state: 'idle'|'walk'|'talk'|'fear'|'sit'|'eat'|'drink'|'sleep'|'listen'|'guard',
+//       facing, variant, vx, vy, assento (altura do assento), camaZ e camaPe (dormir na cama) }
+// (sit/eat/drink/sleep/listen/guard: a rotina dos moradores, js/mundo/rotina.js)
 // Referencial: +X frente, +Y direita, +Z cima; origem nos pés.
 // ---------------------------------------------------------------------------
 (function () {
@@ -346,6 +348,42 @@
       fRn.r[1] = -1.25 - 0.3 * g2; fRn.r[0] = -0.25; fRn.r[2] = 0.4;
       aL.r[1] = 0.1; aL.r[0] = -0.12; fLn.r[1] = -0.4;
       hd.r[1] = 0.05 * Math.sin(t * 5.2); hd.r[2] = 0.05 + 0.08 * g3; hd.r[0] = 0.05 * g2;
+    } else if (st === 'sit' || st === 'eat' || st === 'drink') {
+      // sentado: quadril no assento, coxas para a frente, mãos nas coxas; comendo ou bebendo, a mão
+      // direita vai da mesa à boca e volta
+      const A = num(e.assento, 15.5);
+      hipZ = A + 2.2; hipX = -0.5; fL = LTH * 0.95; fR = LTH * 0.9;
+      sp.r[1] = -0.04 + br * 0.01; sp.s[2] = 1 + br * 0.01;
+      aL.r[1] = -0.62; aL.r[0] = -0.12; fLn.r[1] = -0.55;
+      aR.r[1] = -0.62; aR.r[0] = 0.12; fRn.r[1] = -0.55;
+      hd.r[1] = 0.08; hd.r[2] = Math.sin(t * 0.5) * 0.25;
+      if (st !== 'sit') {
+        const ciclo = st === 'drink' ? 3.4 : 2.2, u = (t % ciclo) / ciclo;
+        const k = ss(cl(u < 0.5 ? u / 0.25 : (1 - u) / 0.25, 0, 1));
+        aR.r[1] = -0.75 - 0.45 * k; aR.r[0] = 0.18 - 0.1 * k; fRn.r[1] = -0.7 - 1.55 * k;
+        aL.r[1] = -0.95; fLn.r[1] = -0.35;   // a outra mão na mesa
+        hd.r[1] = 0.14 - 0.12 * k; sp.r[1] = 0.06 - 0.08 * k; hd.r[2] = 0;
+      }
+    } else if (st === 'sleep') {
+      // deitado de costas na cama (o corpo tomba sobre o colchão, os pés na ponta)
+      sp.s[2] = 1 + Math.sin(t * 1.25) * 0.012;
+      aL.r[0] = -0.16; aR.r[0] = 0.16; aL.r[1] = 0.04; aR.r[1] = 0.04; fLn.r[1] = -0.15; fRn.r[1] = -0.15;
+      hd.r[2] = 0.35; hd.r[1] = -0.1;
+      fL = 0.3; fR = 0.3;
+      n.body.r[1] = -1.52; n.body.p[0] = num(e.camaPe, 27); n.body.p[2] = num(e.camaZ, 21) + 3.6;
+    } else if (st === 'listen') {
+      // escutando: braços cruzados, acenos curtos de cabeça
+      sp.s[2] = 1 + br * 0.012; sp.r[1] = 0.03;
+      aL.r[1] = -0.55; aL.r[0] = 0.35; fLn.r[1] = -1.55; fLn.r[0] = 0.6;
+      aR.r[1] = -0.5; aR.r[0] = -0.35; fRn.r[1] = -1.6; fRn.r[0] = -0.6;
+      hd.r[1] = 0.06 + 0.1 * Math.pow(Math.max(0, Math.sin(t * 2.3)), 3); hd.r[2] = 0.05 * Math.sin(t * 0.7);
+      fL = 0.8; fR = -0.6;
+    } else if (st === 'guard') {
+      // em sentido: costas retas, mãos para trás, o olhar varrendo a rua
+      hipZ = HIPZ + 0.1; sp.r[1] = -0.04; sp.s[2] = 1 + br * 0.008;
+      aL.r[1] = 0.32; aL.r[0] = -0.05; fLn.r[1] = -0.9; aR.r[1] = 0.32; aR.r[0] = 0.05; fRn.r[1] = -0.9;
+      hd.r[2] = Math.sin(t * 0.55) * 0.42; hd.r[1] = -0.03;
+      fL = 0.5; fR = 0.5;
     } else if (st === 'fear') {
       // agachado, encolhido, braços protegendo a cabeça, tremendo
       const tr = Math.sin(t * 41) * 0.5 + Math.sin(t * 27 + 1.3) * 0.5;

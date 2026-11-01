@@ -189,8 +189,10 @@ const WorldTime = {
       }
     }
     // chuva: a quantidade pela intensidade; nos interiores, só um pouco (pelas frestas)
-    if (C.rain && typeof Backdrop !== 'undefined') Backdrop.drawRain(ctx, t, C.rain * k * (typeof Clima !== 'undefined' ? 0.25 + 0.75 * Clima.exposicao() : 1));
-    for (const q of this.parts) {
+    // (dentro dos prédios do bairro, js/mundo/bairro.js, nada: nem chuva nem neve)
+    const dentro = !!game.room.interior;
+    if (C.rain && !dentro && typeof Backdrop !== 'undefined') Backdrop.drawRain(ctx, t, C.rain * k * (typeof Clima !== 'undefined' ? 0.25 + 0.75 * Clima.exposicao() : 1));
+    if (!dentro) for (const q of this.parts) {
       if (q.k === 'neve') { ctx.fillStyle = 'rgba(240,246,255,0.85)'; ctx.beginPath(); ctx.arc(q.x, q.y, 1.2 + q.s, 0, TAU); ctx.fill(); }
       else if (q.k === 'areia') { ctx.strokeStyle = 'rgba(230,180,110,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q.x - 18 * q.s, q.y - 2); ctx.stroke(); }
       else if (q.k === 'cinza') { ctx.fillStyle = 'rgba(120,110,105,0.7)'; ctx.fillRect(q.x, q.y, 1.5 + q.s, 1.5 + q.s); }

@@ -574,6 +574,24 @@ const R3D = {
         it.minX = F.minX; it.minY = F.minY; it.w = F.w; it.h = F.h;
         continue;
       }
+      // Pose reaproveitada (o.cache, segundos): modelos pesados com pele (os moradores montados com
+      // as peças da criação, js/mundo/npc3d.js) refazem a pele só a cada o.cache segundos enquanto
+      // a raiz não muda (mesmo giro e escala na isométrica; mesmo lugar na 3ª pessoa)
+      if (o.cache) {
+        const sc = o.scale || 1, lg = sc * (o.larg || 1);
+        const RT = o.m || M3.trs(this._mc || (this._mc = M3.make()), [0, 0, o.lift || 0], [o.roll || 0, o.pitch || 0, o.yaw || 0], [lg, lg, sc]);
+        const C = o._cache, agora = performance.now() * 0.001;
+        let igual = !!(C && C.m === m && agora - C.t < o.cache && C.vis === m.cacheVer);
+        if (igual) for (let k = 0; k < 12; k++) if (Math.abs(C.root[k] - RT[k]) > 1e-4) { igual = false; break; }
+        if (igual) {
+          if (vo + C.d.length > this.data.length) { const nd2 = new Float32Array(Math.max(this.data.length * 2, vo + C.d.length + 1024)); nd2.set(this.data.subarray(0, vo)); this.data = nd2; }
+          this.data.set(C.d, vo);
+          it.v0 = vo / 10; vo += C.d.length; it.vn = C.d.length / 10;
+          it.minX = C.minX; it.minY = C.minY; it.w = C.w; it.h = C.h;
+          for (const k in C.anc) { const a = C.anc[k], q = it.anchors[k] || (it.anchors[k] = { x: 0, y: 0, z: 0 }); q.x = a.x; q.y = a.y; q.z = a.z; q.wx = a.wx; q.wy = a.wy; }
+          continue;
+        }
+      }
       m.reset();
       // Um erro numa pose nunca deve derrubar o quadro: o modelo fica na pose de repouso
       if (it.pose) { try { it.pose(m, it.arg, o); } catch (err) { if (!m.err) { m.err = true; console.error(err); } } }
@@ -635,6 +653,13 @@ const R3D = {
         const q = it.anchors[k] || (it.anchors[k] = { x: 0, y: 0, z: 0 });
         q.x = X - Y; q.y = (X + Y) * 0.5 - Z; q.z = Z;
         q.wx = X; q.wy = Y;
+      }
+      if (o.cache) {   // guarda a pose (com as âncoras) para os próximos quadros
+        const C = o._cache || (o._cache = { root: new Float32Array(12), anc: {} });
+        C.m = m; C.vis = m.cacheVer; C.t = performance.now() * 0.001 - Math.random() * o.cache * 0.5;   // (desencontra os moradores)
+        C.d = this.data.slice(it.v0 * 10, vo); C.minX = it.minX; C.minY = it.minY; C.w = it.w; C.h = it.h;
+        for (let k = 0; k < 12; k++) C.root[k] = root[k];
+        for (const k in it.anchors) { const q = it.anchors[k], a = C.anc[k] || (C.anc[k] = {}); a.x = q.x; a.y = q.y; a.z = q.z; a.wx = q.wx; a.wy = q.wy; }
       }
     }
     return vo;
@@ -965,9 +990,9 @@ const R3D = {
   // Foto de um modelo parado (vista isométrica) num canvas próprio, para virar sprite fixo (as
   // árvores do kit da natureza, js/mundo/natureza3d.js). Só com a fila vazia (começo do quadro):
   // devolve { canvas, minX, minY, s } (s: pixels por unidade) ou null
-  foto(model, o, scale) {
+  foto(model, o, scale, pose = null, arg = null) {   // (pose/arg: um modelo posado, como os moradores de js/mundo/npc3d.js)
     if (!this.active || this.used) return null;
-    const it = this.queue(model, null, null, o);
+    const it = this.queue(model, pose, arg, o);
     const vo = this.poseAll(1, scale);
     this.pack(1, scale);
     this.drawAtlas(1, vo);

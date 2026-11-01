@@ -784,6 +784,7 @@ const EclipseTests = {
       this.fabricacao();
       this.cidade();
       this.bairro();
+      this.rotina();
       this.climaMundo();
       this.criacao(salvar);   // por último: troca o herói pelo personagem criado e volta ao Kael
     } finally {
@@ -1828,7 +1829,8 @@ const EclipseTests = {
   // prédios (medidas, portas, recuo), passagens, portas e saídas, mobília com colisão, moradores e
   // serviços (refeição, descanso, missões, treino), desenho nas três vistas e no mapa
   bairro() {
-    const g = game, p = g.player, z0 = World.zone.id, b0 = g.stats.soulsBank;
+    const g = game, p = g.player, z0 = World.zone.id, b0 = g.stats.soulsBank, h0 = World.state.hora;
+    World.state.hora = 12;   // (a rotina dos moradores depende da hora: meio-dia, todos nos postos)
     const fade = () => { if (g.fadeCb) { const cb = g.fadeCb; g.fadeCb = null; cb(); } };
     let erro = null;
     try {
@@ -1848,7 +1850,7 @@ const EclipseTests = {
       const portas = g.npcs.filter((n) => n instanceof PortaBairro);
       this.igual('bairro: 7 portas (4 prédios com interior e 3 casas)', portas.length, 7);
       this.ok('bairro: volta para a praça', g.npcs.some((n) => n instanceof WorldProp && n.kind === 'gate' && n.data.to === CIDADE_ID));
-      this.igual('bairro: 3 moradores na rua', g.npcs.filter((n) => n instanceof Morador).length, 3);
+      this.igual('bairro: ao meio-dia, 5 moradores na rua (guarda, Nina, Jorge, o bardo e o viajante no banco)', g.npcs.filter((n) => n instanceof Morador).length, 5);
       this.ok('bairro: lampiões, poço, carroça e o resto da rua (objetos do Blender com colisão)', Bairro.objetos.length >= 15 && R.pillars.filter((q) => q.cenario).length >= Bairro.objetos.length, Bairro.objetos.length);
       // prédios: dentro da sala, sem sobrepor, o fundo dentro do recuo, a porta na frente
       const Ls = BAIRRO_PREDIOS.map((B) => ({ B, L: Bairro.lugar(B, R), m: Bairro.medidas(B) }));
@@ -1907,7 +1909,96 @@ const EclipseTests = {
       this.ok('bairro: abrigo da chuva junto aos prédios', Clima.abrigado(BAIRRO_RECUO + 20, 700) === 1 || Clima.exposicao() < 1);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('bairro: sem exceção', !erro, erro);
-    g.stats.soulsBank = b0; p.buffs.cha = 0;
+    g.stats.soulsBank = b0; p.buffs.cha = 0; World.state.hora = h0;
+    if (World.zone.id !== z0) World.loadZone(z0, null);
+    g.state = 'playing';
+  },
+
+  // Rotina dos moradores (js/mundo/rotina.js): a agenda cobre o dia inteiro, cada um no lugar certo
+  // na hora certa (sentar, comer, dormir, conversar, a guarda), a troca de turno, entradas e saídas,
+  // quem dorme só resmunga; os modelos próprios (js/mundo/npc3d.js) e as missões dos prédios
+  rotina() {
+    const g = game, p = g.player, z0 = World.zone.id, h0 = World.state.hora, b0 = g.stats.soulsBank;
+    const em = (zona, h) => { World.state.hora = h; World.loadZone(zona, null, null, [0.5, 0.75]); const L = g.npcs.filter((n) => n instanceof Morador); for (const n of L) n.update(0.016); return L; };
+    const nome = (L, n) => L.find((q) => q.name === n);
+    let erro = null;
+    try {
+      const ids = Object.keys(ROTINA);
+      this.ok('rotina: cada agenda é de um morador que existe', ids.every((id) => Povo.persona(id)), ids.filter((id) => !Povo.persona(id)).join(','));
+      this.ok('rotina: cada agenda cobre as 24 horas, sem buraco', ids.every((id) => { const A = ROTINA[id]; return A[0][0] === 0 && A[A.length - 1][1] === 24 && A.every((e, i) => !i || A[i - 1][1] === e[0]); }));
+      this.ok('rotina: os compromissos são em zonas que existem', ids.every((id) => ROTINA[id].every((e) => e[2].zona === null || WORLD_ZONES[e[2].zona])));
+      this.ok('rotina: as conversas têm par e falas', ids.every((id) => ROTINA[id].every((e) => e[2].tipo !== 'conversar' || (CONVERSAS[e[2].fala] && ROTINA[e[2].com]))));
+      // a taverna às 20 h: a casa cheia, gente comendo e bebendo, o bardo cantando
+      let L = em('aurora_taverna', 20);
+      const sentados = L.filter((n) => n.state === 'eat' || n.state === 'drink' || n.state === 'sit');
+      this.ok('rotina: às 20 h a taverna enche (5+ sentados comendo ou bebendo)', sentados.length >= 5, L.map((n) => `${n.name}:${n.state}`).join(' '));
+      this.ok('rotina: o bardo canta (balão com a cantiga)', !!nome(L, 'COSME') && nome(L, 'COSME').state === 'talk' && (g.realTime += 0.1, Rotina.atualizar(nome(L, 'COSME'), 0.1), !!nome(L, 'COSME').bolha));
+      this.ok('rotina: quem senta fica no lugar (não anda)', sentados.every((n) => !n.indo && !n.saindo));
+      L = em('aurora_taverna', 3);
+      this.ok('rotina: de madrugada a taverna está fechada (o Bento dorme)', !nome(L, 'BENTO'));
+      // o quartel à noite: a guarda dorme nos beliches
+      L = em('aurora_quartel', 23.5);
+      const dormem = L.filter((n) => n.state === 'sleep');
+      this.ok('rotina: às 23h30 três dormem no quartel (Rui, Irene, Pedro)', dormem.length === 3, L.map((n) => `${n.name}:${n.state}`).join(' '));
+      const rui = nome(L, 'GUARDA RUI');
+      Dialogo.fechar(); rui.talk();
+      this.ok('rotina: quem dorme só resmunga (sem abrir a conversa)', !!rui.bolha && g.state !== 'worlddlg');
+      this.igual('rotina: o Rui está no quartel às 23 h (diário e marcador)', Povo.onde('aur_rui').zona, 'aurora_quartel');
+      // a troca de turno na porta do quartel
+      L = em(BAIRRO_ID, 17.8);
+      const r = nome(L, 'GUARDA RUI'), m = nome(L, 'GUARDA MARTA');
+      for (const n of [r, m]) Rotina.atualizar(n, 0.05);
+      this.ok('rotina: às 17h50 Rui e Marta trocam o turno na porta do quartel', !!r && !!m && r.rot.tipo === 'conversar' && m.rot.tipo === 'conversar' && dist(r.x, r.y, m.x, m.y) < 80);
+      this.ok('rotina: um fala e o outro escuta', (r.state === 'talk') !== (m.state === 'talk'), `${r.state}/${m.state}`);
+      // entradas e saídas: a hora muda com o herói no bairro
+      L = em(BAIRRO_ID, 17.5);
+      this.ok('rotina: às 17h30 a Marta ainda não está na rua', !nome(L, 'GUARDA MARTA'));
+      World.state.hora = 17.7; Rotina.passo = 0; Rotina.update(0.1);
+      const mt = g.npcs.find((n) => n.name === 'GUARDA MARTA'), dq = Rotina.porta('quartel', g.room);
+      this.ok('rotina: a Marta sai pela porta do quartel e anda até o posto', !!mt && mt.indo && dist(mt.x, mt.y, dq.x, dq.y) < 40);
+      World.state.hora = 18.4; Rotina.passo = 0; Rotina.update(0.1);
+      const ru = g.npcs.find((n) => n.name === 'GUARDA RUI');
+      this.ok('rotina: às 18h20 o Rui vai embora (para a porta do quartel)', !!ru && !!ru.saindo && dist(ru.saindo.x, ru.saindo.y, dq.x, dq.y) < 2);
+      for (let i = 0; i < 400 && !ru.sumiu; i++) Rotina.atualizar(ru, 0.05);
+      Rotina.passo = 0; Rotina.update(0.1);
+      this.ok('rotina: chegando na porta, ele entra (some da rua)', ru.sumiu && !g.npcs.includes(ru));
+      // a conversa no poço e o banco do viajante
+      L = em(BAIRRO_ID, 17);
+      const ni = nome(L, 'NINA'), jo = nome(L, 'JORGE');
+      this.ok('rotina: às 17 h Nina e Jorge conversam no poço, frente a frente', !!ni && !!jo && ni.rot.tipo === 'conversar' && dist(ni.x, ni.y, jo.x, jo.y) < 90);
+      this.ok('rotina: o viajante passa a tarde no banco do poço', nome(L, 'VIAJANTE ENCAPUZADO') && nome(L, 'VIAJANTE ENCAPUZADO').rot.tipo === 'sentar');
+      L = em(BAIRRO_ID, 23);
+      this.ok('rotina: às 23 h os moradores estão em casa (Nina, Helena e Dídimo fora da rua)', !nome(L, 'NINA') && !nome(L, 'CONSELHEIRA HELENA') && !nome(L, 'ESCRIBA DÍDIMO'));
+      // modelos próprios dos moradores importantes
+      const imp = ['aur_bento', 'aur_rosa', 'aur_helena', 'aur_irene', 'aur_cosme', 'aur_rui', 'aur_marta'];
+      this.ok('npc3d: 7 moradores importantes com modelo próprio (peças da criação)', imp.every((id) => NpcModelo.chave(Povo.persona(id)) === 'npc_' + id), imp.filter((id) => NpcModelo.chave(Povo.persona(id)) !== 'npc_' + id).join(','));
+      L = em('aurora_taverna', 12);
+      this.igual('npc3d: o Bento usa o modelo próprio', nome(L, 'BENTO').key, 'npc_aur_bento');
+      const cr = nome(L, 'BENTO')._corpo || NpcModelo.corpo(nome(L, 'BENTO'), NpcModelo.defs.aur_bento);
+      this.ok('npc3d: o corpo de vitrine veste as peças GLB da roupa dele', !!cr.pecasPrevia && Object.values(cr.pecasPrevia).every((it) => Criacao3D.POR_ID[it.cat]), Object.keys(cr.pecasPrevia).join(','));
+      const est = { sit: 'npc_sentar', eat: 'npc_sentar', sleep: 'npc_dormir', guard: 'npc_guarda', talk: 'npc_falar', walk: 'run' };
+      this.ok('npc3d: cada estado da rotina vira a postura do esqueleto', Object.keys(est).every((k) => NpcModelo.ESTADOS[k][0] === est[k]));
+      let e3 = null;
+      try { for (const k of ['sit', 'eat', 'sleep', 'guard', 'talk', 'listen', 'walk']) { const v = NpcModelo.corpo({ x: 0, y: 0, facing: 0, state: k, animTime: 1, stateTime: 1, assento: 16, camaZ: 20 }, NpcModelo.defs.aur_bento); MODELS3D.kael.pose(MODELS3D.kael.build(), v, {}); } } catch (e) { e3 = e.message; }
+      this.ok('npc3d: as posturas novas no esqueleto do Kael (sentar, comer, dormir, guarda, falar, ouvir, andar)', !e3, e3);
+      // missões dos prédios
+      const MS = ['aur_ensopado', 'aur_hospede', 'aur_selo', 'aur_recruta'];
+      this.ok('missões: as 4 dos prédios novos existem, com quem dá e quem recebe', MS.every((id) => { const q = Aventuras.def(id); return q && Povo.persona(q.doador) && q.passos.every((P) => !P.npc || Povo.persona(P.npc)); }));
+      const lvM = g.activeProgress().level; g.activeProgress().level = 30;   // (regiões abertas e o nível das missões)
+      for (const [id, n] of [['aur_ensopado', 'BENTO'], ['aur_hospede', 'ROSA'], ['aur_selo', 'CONSELHEIRA HELENA'], ['aur_recruta', 'CAPITÃ IRENE']]) {
+        const zona = { BENTO: 'aurora_taverna', ROSA: 'aurora_hospedaria', 'CONSELHEIRA HELENA': 'aurora_conselho', 'CAPITÃ IRENE': 'aurora_quartel' }[n];
+        L = em(zona, 12);
+        Povo.conversar(nome(L, n)); const ops = Dialogo.opcoes.map((o) => o.txt).join(' / '); Dialogo.fechar();
+        this.ok(`missões: ${n} oferece "${Aventuras.def(id).nome}"`, ops.includes(Aventuras.def(id).nome), ops);
+      }
+      g.activeProgress().level = lvM;
+      const v0 = Bairro.precoRefeicao(), S = World.state.aventuras, ant = S.aur_ensopado;
+      S.aur_ensopado = { st: 'feita' };
+      this.ok('missões: o ensopado feito deixa a refeição pela metade', Bairro.precoRefeicao() === Math.ceil(v0 / 2), `${v0} → ${Bairro.precoRefeicao()}`);
+      if (ant) S.aur_ensopado = ant; else delete S.aur_ensopado;
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('rotina: sem exceção', !erro, erro);
+    World.state.hora = h0; g.stats.soulsBank = b0;
     if (World.zone.id !== z0) World.loadZone(z0, null);
     g.state = 'playing';
   },

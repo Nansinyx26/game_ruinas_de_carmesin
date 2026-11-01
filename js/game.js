@@ -1213,6 +1213,7 @@ class Game {
   render(dt) {
     if (typeof Natureza3D !== 'undefined' && this.use3D) Natureza3D.processar();   // fotos das árvores do kit (motor 3D livre)
     if (typeof Bairro !== 'undefined' && this.use3D) Bairro.processar();           // fotos dos prédios do Bairro da Muralha
+    if (typeof NpcModelo !== 'undefined' && this.use3D) NpcModelo.processar();     // fotos dos moradores com modelo próprio
     const ctx = this.ctx;
     if (typeof Realista3D !== 'undefined') Realista3D.camada(false);   // volta a aparecer se a 3ª pessoa realista desenhar
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1329,7 +1330,7 @@ class Game {
       g.spr = this.queue3(MODELS3D[mk0] ? mk0 : 'kael', gp, o);   // fantasmas: o modelo procedural do herói
     }
     for (const e of this.enemies) e.spr = this.queue3(e.isBoss ? 'nexus' : e.type, e, this.opts3(e, e.flash > 0 ? 0.85 : 0));
-    for (const n of this.npcs) n.spr = this.queue3(n.key, n, this.opts3(n, 0));
+    for (const n of this.npcs) n.spr = n.foto3d ? null : this.queue3(n.key, n, this.opts3(n, 0));   // (foto3d: a foto do morador, js/mundo/npc3d.js)
     let cells = 0;
     for (let i = 0; i < this.pickups.count; i++) {
       const it = this.pickups.items[i];

@@ -50,7 +50,7 @@ const BAIRRO_MEDIDAS = { quartel: [212, 373], taverna: [219, 387], conselho: [20
 // Objetos da rua do bairro: [id, x, y (fração), giro, escala] (mais um lampião em cada vão entre os prédios)
 const BAIRRO_RUA = [
   ['lampiao_rua', 0.47, 0.5, 0, 1], ['lampiao_rua', 0.76, 0.64, 0, 1],
-  ['poco', 0.6, 0.48, 0, 1], ['carroca', 0.84, 0.8, 2.6, 1], ['fardo_feno', 0.9, 0.7, 0.4, 1], ['fardo_feno', 0.76, 0.86, 1.2, 0.9],
+  ['poco', 0.6, 0.48, 0, 1], ['banco', 0.6, 0.36, Math.PI / 2, 1], ['carroca', 0.84, 0.8, 2.6, 1], ['fardo_feno', 0.9, 0.7, 0.4, 1], ['fardo_feno', 0.76, 0.86, 1.2, 0.9],
   ['estandarte_rubro', 0.22, 0.2, 0, 1], ['boneco_treino', 0.3, 0.24, 2.2, 1], ['armeiro', 0.4, 0.27, 1.57, 1],
   ['barril', 0.5, 0.2, 0, 1], ['barril', 0.53, 0.205, 0.7, 1], ['caixote', 0.66, 0.205, 0.3, 1], ['caixote', 0.215, 0.5, 1.1, 1],
   ['estandarte_rubro', 0.92, 0.25, 0, 1],
@@ -88,7 +88,13 @@ const BAIRRO_POVO = [
     personalidade: 'Sério e cansado; conta os passos da ronda.',
     ola: ['Ronda da muralha. Tudo calmo. Por enquanto.', 'Se ouvir o sino do conselho, corra para dentro.'],
     temas: [['Que bairro é este?', 'O Bairro da Muralha: as casas mais velhas da Aurora, encostadas no muro. Taverna, hospedaria, o conselho e o nosso quartel. Quem chega de fora dorme aqui.'],
-      ['O quartel aceita voluntários?', 'A Capitã Irene treina qualquer um que aguente o boneco de palha. Lá dentro, no quartel.']] },
+      ['O quartel aceita voluntários?', 'A Capitã Irene treina qualquer um que aguente o boneco de palha. Lá dentro, no quartel.'],
+      ['Você nunca dorme?', 'Durmo. Das nove às cinco e meia, no beliche do quartel. A Marta fica com a noite; a gente troca na porta, às seis e às dezoito.']] },
+  { id: 'aur_marta', nome: 'GUARDA MARTA', zona: BAIRRO_ID, at: [0.3, 0.86], model: 'civil', variant: 2, facing: 4.0, papel: 'Guarda da muralha (turno da noite)', rota: [[0.3, 0.86], [0.66, 0.75], [0.86, 0.5], [0.62, 0.3]],
+    personalidade: 'Calada e atenta; prefere a noite porque "ninguém pergunta nada".',
+    ola: ['Ronda da noite. Siga com a lanterna acesa.', 'Viu alguma coisa estranha na muralha? Não? Ótimo.'],
+    temas: [['Por que o turno da noite?', 'Porque à noite a rua é honesta: quem anda nela tem motivo. Troco com o Rui na porta do quartel, às seis e às dezoito.'],
+      ['O que acontece à noite no bairro?', 'A taverna enche, a hospedaria apaga as luzes, o Jorge some para a carroça. E eu conto lampiões.']] },
   { id: 'aur_nina', nome: 'NINA', zona: BAIRRO_ID, at: [0.66, 0.56], model: 'civil', variant: 3, facing: 3.6, papel: 'Moradora', rota: [[0.66, 0.56], [0.52, 0.62], [0.66, 0.7]],
     personalidade: 'Falante, conhece a vida de todo mundo do bairro.',
     ola: ['O poço é o melhor lugar para saber das coisas. Água e fofoca, as duas frescas.', 'Já foi à taverna? O ensopado do Bento cura até saudade.'],
@@ -451,7 +457,8 @@ const Bairro = {
     o.push({ id: 'refeicao', tag: '♨', txt: `Pedir o ensopado do dia (${preco} células: vida, energia e o corpo aquecido)`, fn: () => volta(this.refeicao()) });
     return true;
   },
-  precoRefeicao() { return 18 + Math.floor(game.activeProgress().level / 4) * 2; },
+  // (com a missão do ensopado feita, pela metade)
+  precoRefeicao() { const v = 18 + Math.floor(game.activeProgress().level / 4) * 2, S = World.state && World.state.aventuras; return S && S.aur_ensopado && S.aur_ensopado.st === 'feita' ? Math.ceil(v / 2) : v; },
   // Ensopado: vida e energia cheias e o calor do chá quente por 5 minutos (Clima: isola do frio)
   refeicao() {
     const p = game.player;
@@ -503,3 +510,51 @@ for (const P of BAIRRO_POVO) {
   const z = WORLD_ZONES[P.zona];
   if (!z.npcs.some((n) => n.persona === P)) z.npcs.push({ model: P.model, variant: P.variant || 0, name: P.nome, at: P.at, facing: P.facing || 0, lines: P.ola, persona: P });
 }
+
+// Missões dos prédios do bairro (Fase 3 da expansão): a taverna, a hospedaria, o conselho e o quartel
+WORLD_AVENTURAS.push(
+  { id: 'aur_ensopado', reg: 'nexus', nome: 'O Ensopado do Javali Dourado', doador: 'aur_bento', nivel: 3,
+    desc: 'O caldeirão do Bento está quase vazio: falta carne de fera e erva para o ensopado da semana.',
+    ini: 'Três couros com carne ainda presa e quatro ervas luminosas. Traz isso e o ensopado sai — e o seu prato fica pela metade do preço. Palavra de taverneiro.',
+    passos: [{ t: 'entregar', npc: 'aur_bento', mat: { couro: 3, erva: 4 }, fim: true, txt: 'Leve 3 Couros e 4 Ervas Luminosas ao Bento, na taverna' }],
+    fim: 'Isso! Cheiro de ensopado de verdade. A partir de hoje o seu prato sai pela metade do preço. E leva um chá para a estrada.',
+    rec: { xp: 300, cel: 40, rep: 60, cons: { cha: 2 } } },
+  { id: 'aur_hospede', reg: 'nexus', nome: 'O Hóspede Encapuzado', doador: 'aur_rosa', nivel: 6, regioes: ['carmesin'],
+    desc: 'Rosa desconfia do viajante encapuzado: ele paga em núcleos do NEXUS e não dorme sem olhar a porta.',
+    ini: 'Não quero confusão na Chama. Converse com ele, descubra o que carrega. Se for perigo, quero saber antes do conselho.',
+    passos: [
+      { t: 'falar', npc: 'aur_viajante', opcao: 'perguntar o que ele esconde', txt: 'Converse com o viajante encapuzado (hospedaria de manhã e à noite; de dia, no banco do poço)',
+        fala: 'Eu era técnico do NEXUS. Fugi com um núcleo de memória: os nomes de quem eles apagaram. Escondi nas Galerias de Serviço, mas um caçador me seguiu até lá.' },
+      { t: 'examinar', zona: 'galerias', nome: 'Rastro do caçador', txt: 'Siga o rastro do caçador nas Galerias de Serviço', pistas: [
+        { at: [0.18, 0.7], txt: 'Pegadas de bota com sola de aço. Pesadas demais para um sobrevivente.' },
+        { at: [0.55, 0.15], txt: 'Um marcador do NEXUS colado na parede: "ALVO: DESERTOR 0447".' },
+        { at: [0.86, 0.45], txt: 'O esconderijo foi revirado. O núcleo não está aqui — o caçador ainda está.' }] },
+      { t: 'chefe', zona: 'galerias', at: [0.8, 0.8], chefe: { tipo: 'cacador', nome: 'CAÇADOR DO NEXUS', hp: 2.6, escolta: { drone: 2 } }, txt: 'Derrote o caçador do NEXUS nas Galerias de Serviço' },
+      { t: 'falar', npc: 'aur_viajante', fim: true, txt: 'Leve o núcleo de memória de volta ao viajante' }],
+    fim: 'Os nomes estão aqui. Todos. Obrigado — a Aurora vai lembrar deles.',
+    escolha: { txt: 'O que eu faço com o núcleo? Fico com ele ou entrego ao conselho?', opcoes: [
+      { txt: 'Entregue ao conselho. A cidade precisa saber.', fim: 'Você tem razão. A Conselheira Helena vai guardar melhor do que eu.', rec: { rep: 120, cel: 60 } },
+      { txt: 'Guarde. É a sua história.', fim: 'Então eu levo comigo. E isto aqui é seu: foi o que sobrou do meu pagamento.', rec: { rel: { min: 2, sorte: 0.3 }, cel: 30 } }] },
+    rec: { xp: 700, cel: 70, rep: 60 } },
+  { id: 'aur_selo', reg: 'nexus', nome: 'Selo do Conselho', doador: 'aur_helena', nivel: 4,
+    desc: 'A Conselheira Helena precisa que o novo selo das expedições seja visto pela Guilda e pela guarda antes de valer.',
+    ini: 'Leve o selo à Mestra Veridiana, na Guilda, e depois à Capitã Irene, no quartel. Sem as duas, é só cera bonita.',
+    passos: [
+      { t: 'falar', npc: 'aur_veridiana', opcao: 'mostrar o selo do conselho', txt: 'Mostre o selo à Mestra Veridiana, na praça da Aurora',
+        fala: 'Hm. Bonito, firme. A Guilda reconhece. Vai, a capitã é mais chata que eu.' },
+      { t: 'falar', npc: 'aur_irene', opcao: 'mostrar o selo do conselho', txt: 'Mostre o selo à Capitã Irene, no quartel do bairro',
+        fala: 'Selo do conselho, aprovado pela Guilda. A guarda reconhece. Diga à Helena que a ronda da muralha cumpre.' },
+      { t: 'falar', npc: 'aur_helena', fim: true, txt: 'Volte à Conselheira Helena, no conselho' }],
+    fim: 'Guilda e guarda de acordo. É assim que uma cidade funciona: devagar, mas junta.',
+    rec: { xp: 380, cel: 50, rep: 80, cons: { retorno: 1 } } },
+  { id: 'aur_recruta', reg: 'nexus', nome: 'Recruta da Muralha', doador: 'aur_irene', nivel: 5, regioes: ['carmesin'],
+    desc: 'A Capitã Irene só confia em quem já enfrentou as máquinas lá fora. O Soldado Pedro quer saber como é.',
+    ini: 'Dez máquinas abatidas nas Ruínas de Carmesin. Depois conte ao Pedro como foi — ele precisa ouvir de alguém que voltou.',
+    passos: [
+      { t: 'matar', n: 10, reg: 'carmesin', txt: 'Derrote 10 inimigos nas Ruínas de Carmesin' },
+      { t: 'falar', npc: 'aur_pedro', opcao: 'contar como foi lá fora', txt: 'Conte ao Soldado Pedro como foi (no quartel de dia; à noite, na taverna)',
+        fala: 'Dez?! E voltou andando? Tá, eu vou treinar mais. Muito mais.' },
+      { t: 'falar', npc: 'aur_irene', fim: true, txt: 'Volte à Capitã Irene' }],
+    fim: 'O Pedro treinou o dobro hoje. Isso vale mais que as dez máquinas. Bem-vindo à muralha.',
+    rec: { xp: 520, cel: 60, rep: 90, rel: { min: 2 } } },
+);
