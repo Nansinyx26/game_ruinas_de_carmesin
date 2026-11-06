@@ -54,6 +54,7 @@ const EclipseTests = {
       await this.animaisCidade();
       await this.montarias();
       await this.criacaoGLB();
+      await this.criacaoTroca();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -2787,6 +2788,59 @@ const EclipseTests = {
   // (js/mundo/armaduras.js): catálogo e caminhos, quatro raridades, conjunto inicial (uma vez só,
   // salvo), requisitos de nível e classe, bônus de conjunto, filtros, modelo montado, atlas,
   // tintura, troca de peças no corpo e migração dos salvamentos antigos
+  // Criação: trocar cabelo, barba e rosto nunca deixa a prévia sem o personagem. A cada quadro, o
+  // modelo à vista tem malha e está pintado; a peça nova só entra quando já chegou (com as imagens);
+  // várias escolhas seguidas: vale a última
+  async criacaoTroca() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Criacao3D === 'undefined' || !Criacao3D.CAT.length || !R3D.active) { this.ok('criação: troca de peças (sem o motor 3D, nada a conferir)', true); return; }
+    let erro = null;
+    const visivel = () => { const def = CriacaoTela.previa(), m = def && g.model3(def.model); return !!(m && !m.criaVazio && m.skins && m.skins.length && (!m.cria || Criacao3D.pintado(m))); };
+    try {
+      CriacaoTela.abrir('criar');
+      const U = CriacaoTela.ui;
+      CriacaoTela.acao('estilo', 0);
+      U.sujo = true;
+      for (let i = 0; i < 300 && !visivel(); i++) await espera(50);   // o primeiro personagem (corpo, rosto e cabelo padrão)
+      this.ok('criação: a prévia começa com o personagem inteiro', visivel());
+      // peças ainda não baixadas: um cabelo, uma barba e um rosto que ninguém pediu
+      const livre = (k, ids) => { for (let i = 1; i < ids.length; i++) { const id = ids[i]; if (id && !Criacao3D.tem(id)) return i; } return -1; };
+      const cab = livre('cabeloG', PERS_CABELOS_GLB), bar = livre('barbaG', [null].concat(Criacao3D.BARBAS));
+      const rostoI = [0, 1, 2, 3, 4, 5, 6, 7].find((i) => i !== U.A.rostoG && !Criacao3D.tem(`rosto_${i + 1}`));
+      let quadros = 0, vazios = 0;
+      const trocar = async (campo, v) => {
+        CriacaoTela.acao('opcao', { k: campo, i: v });
+        for (let i = 0; i < 400; i++) {   // até a peça nova entrar (ou 20 s)
+          quadros++;
+          if (!visivel()) vazios++;
+          CriacaoTela.draw(g.ctx, i * 0.05);
+          const def = CriacaoTela.previa();
+          if (def.aparencia[campo] === v && !U.carregando) return true;
+          await espera(50);
+        }
+        return false;
+      };
+      const r1 = cab > 0 ? await trocar('cabeloG', cab) : true;
+      const r2 = bar > 0 ? await trocar('barbaG', bar) : true;
+      const r3 = rostoI !== undefined ? await trocar('rostoG', rostoI) : true;
+      this.ok('criação: cabelo, barba e rosto novos entram na prévia', r1 && r2 && r3, `${cab} ${bar} ${rostoI}`);
+      this.igual(`criação: em ${quadros} quadros de troca, nenhum sem o personagem (malha pintada à vista)`, vazios, 0);
+      // várias escolhas seguidas: a última vale
+      const ops = PERS_CABELOS_GLB.map((id, i) => i).filter((i) => i > 0).slice(0, 4);
+      for (const i of ops) CriacaoTela.acao('opcao', { k: 'cabeloG', i });
+      let ult = false;
+      for (let i = 0; i < 400 && !ult; i++) { if (!visivel()) vazios++; const def = CriacaoTela.previa(); ult = def.aparencia.cabeloG === ops[ops.length - 1] && !U.carregando; if (!ult) await espera(50); }
+      this.ok('criação: escolhas seguidas, vale a última, sem sumir', ult && vazios === 0, `${U.A.cabeloG} vazios=${vazios}`);
+      // o botão de criar aparece desativado sem nome válido, e o clique avisa
+      U.nome = ''; CriacaoTela.draw(g.ctx, 0.1);
+      CriacaoTela.acao('confirmar');
+      this.ok('criação: sem nome, CRIAR E JOGAR não cria e diz o motivo', /nome/i.test(U.erro) && g.state === 'criacao', U.erro);
+      CriacaoTela.fechar();
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('criação: troca de peças sem exceção', !erro, erro);
+    if (g.state === 'criacao') CriacaoTela.fechar();
+  },
+
   async criacaoGLB() {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
     const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
@@ -2954,7 +3008,8 @@ const EclipseTests = {
       // armaduras GLB no corpo: entram pela prévia, escondem o que fica dentro
       v.state = 'idle'; v.pecasPrevia = { botas: Arsenal.gerarCat('ini_botas', 0), capacete: Arsenal.gerarCat('ini_capuz', 0), capa: Arsenal.gerarCat('n30_guerreiro_capa', 1) };
       const n0 = M.skins.length;
-      MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+      // (a peça entra quando as imagens dela chegaram: a pose é chamada a cada quadro, como no jogo)
+      for (let i = 0; i < 100; i++) { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); if (M.cria.ids.botas && M.cria.ids.capacete && M.cria.ids.capa) break; await espera(50); }
       this.ok('armadura GLB: botas, capuz e capa entram no modelo', M.cria.ids.botas === 'ini_botas' && M.cria.ids.capacete === 'ini_capuz' && M.cria.ids.capa === 'n30_guerreiro_capa' && M.skins.length > n0 && !conf(M), conf(M));
       this.ok('armadura GLB: pés dentro das botas e cabelo dentro do capuz somem', M.cria.peles.corpo.filter((S) => S.regiao === 'pes').every((S) => S.hide) && M.cria.peles.cabelo.every((S) => S.hide) && M.cria.peles.corpo.filter((S) => S.regiao === 'tronco').every((S) => !S.hide));
       this.ok('armadura GLB: a capa pende nas abas (balança)', M.cria.peles.capa.some((S) => S.bones.some((b) => /^c[FSB][RL]2?$/.test(b.name))));

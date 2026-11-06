@@ -17,7 +17,8 @@
 // Confirmar grava o perfil (Perfis) e começa o mundo do personagem (World.start).
 // ---------------------------------------------------------------------------
 const CRIA_POSES = ['Parado', 'Guarda', 'Vitória', 'Correndo', 'Golpe'];
-const CRIA_ZOOM = [{ nome: 'Corpo inteiro', d: 150, z: 30 }, { nome: 'Busto', d: 82, z: 45 }, { nome: 'Rosto', d: 44, z: 53 }];
+// (busto: do peito ao alto da cabeça; rosto: o rosto inteiro, com o cabelo)
+const CRIA_ZOOM = [{ nome: 'Corpo inteiro', d: 150, z: 30 }, { nome: 'Busto', d: 62, z: 49 }, { nome: 'Rosto', d: 38, z: 55 }];
 // Categorias da aparência no estilo Realista (peças GLB) e as linhas (teclado) de cada uma
 const CRIA_CATS = [
   { id: 'corpo', nome: 'CORPO', campos: ['corpoG', 'altura', 'porte'] },
@@ -69,9 +70,20 @@ const CriacaoTela = {
       return p ? CHARACTERS_BY_ID[p.id] || Perfis.registrar(p) : null;
     }
     if (U.sujo || !CHARACTERS_BY_ID.p_previa) {
+      // a aparência nova só entra quando as peças dela (e as imagens) já estiverem carregadas: até
+      // lá fica o personagem anterior, inteiro (nunca um modelo vazio). Peça que não carregou: volta
+      // a escolha anterior e avisa
+      const atual = CHARACTERS_BY_ID.p_previa;
+      if (atual && typeof Criacao3D !== 'undefined') {
+        const st = Criacao3D.preparar({ aparencia: U.A });
+        if (st === 'falha' && U.Aok) { U.A = Object.assign({}, U.Aok); this.aviso('Essa peça não carregou. A anterior foi mantida.'); }
+        else if (st !== true) { U.carregando = true; return atual; }
+      }
+      U.carregando = false;
       U.sujo = false;
       const def = Perfis.registrar({ id: 'p_previa', nome: U.nome || 'Prévia', classe: U.classe, aparencia: Object.assign({}, U.A) });
       if (U.arma) RosterManager.weapon.p_previa = U.arma; else delete RosterManager.weapon.p_previa;
+      U.Aok = Object.assign({}, U.A);   // a última aparência que entrou inteira na tela
       this.vit = null;
       return def;
     }
@@ -522,7 +534,11 @@ const CriacaoTela = {
     // botões
     const by = y + h - 92;
     this.botao(ctx, 'camera', 0, x + 14, by, w - 28, 26, `CÂMERA NO MUNDO: ${U.terceira ? '3ª PESSOA' : 'ISOMÉTRICA'}`, false, rgb);
-    this.botao(ctx, 'confirmar', 0, x + 14, by + 32, w - 28, 34, U.modo === 'editar' ? 'SALVAR ALTERAÇÕES' : 'CRIAR E JOGAR', true, rgb);
+    // nome inválido (vazio, curto, caractere proibido ou repetido): o botão aparece desativado; o
+    // clique ainda responde, com o motivo e o foco no campo do nome (Perfis.criar recusa de novo)
+    const nomeOk = Perfis.validarNome(U.nome, U.editId).ok;
+    this.botao(ctx, 'confirmar', 0, x + 14, by + 32, w - 28, 34, U.modo === 'editar' ? 'SALVAR ALTERAÇÕES' : 'CRIAR E JOGAR', nomeOk, rgb, !nomeOk);
+    if (!nomeOk) U.rects.push({ id: 'confirmar', v: 0, x: x + 14, y: by + 32, w: w - 28, h: 34 });
   },
   // Lista dos personagens da conta
   drawLista(ctx, x, y, wL, wR, t) {
@@ -646,6 +662,10 @@ const CriacaoTela = {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       ctx.drawImage(R3D.canvas, 0, res.ey, res.ew, res.eh, P.x, P.y, P.w, P.h);
       ctx.restore();
+    }
+    if (U.carregando) {   // peça nova a caminho: o personagem anterior continua à vista
+      ctx.save(); ctx.font = `11px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(200,190,240,0.75)';
+      ctx.fillText('carregando a peça escolhida…', P.x + P.w / 2, P.y + P.h - 14); ctx.restore();
     }
     // brasas subindo
     ctx.save(); ctx.globalCompositeOperation = 'lighter';

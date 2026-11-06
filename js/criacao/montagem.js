@@ -101,6 +101,24 @@ const Criacao3D = (function () {
     return falta === 0;
   }
 
+  // A aparência pode entrar na tela já inteira? true: peças e imagens carregadas (o modelo novo sai
+  // completo e pintado no mesmo quadro); false: ainda carregando (pede o que falta); 'falha': uma
+  // das peças não carregou. A tela de criação só troca o personagem à vista com true: ele nunca fica
+  // vazio nem sem textura, nem por um instante (antes, o modelo era refeito na hora como um
+  // esqueleto vazio até a peça chegar: o personagem sumia a cada troca de cabelo ou barba).
+  function preparar(def) {
+    if (!def || !def.aparencia || def.aparencia.estilo === 1 || !CAT.length) return true;   // modelo paramétrico: sai na hora
+    const P = pecasDe(def), ids = [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode].filter(Boolean);
+    let ok = true;
+    for (const id of ids) {
+      if (falhou[id] || !disponivel(id)) return 'falha';
+      if (!tem(id)) { carregar(id); ok = false; continue; }
+      const I = imagens(id);
+      if (I.ok < I.n) ok = false;
+    }
+    return ok;
+  }
+
   // ------------------------------------------------------------ imagens e malhas (compartilhadas)
   const IMG = {};
   function imagens(id) {
@@ -496,7 +514,8 @@ const Criacao3D = (function () {
       const id = want[v] || null;
       if ((C.ids[v] || null) === id) continue;
       if (!id) { delete C.peles[v]; delete C.ids[v]; mudou = true; continue; }
-      if (!tem(id)) { carregar(id); continue; }   // chega num dos próximos quadros
+      if (!tem(id)) { carregar(id); continue; }   // chega num dos próximos quadros (a peça anterior fica)
+      { const I = imagens(id); if (I.ok < I.n) continue; }   // e só entra com as imagens prontas (sai pintada)
       por(m, v, id); mudou = true;
     }
     if (mudou) {
@@ -524,5 +543,5 @@ const Criacao3D = (function () {
     return MINI[id].complete && MINI[id].naturalWidth ? MINI[id] : null;
   }
 
-  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
+  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, preparar, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
 })();
