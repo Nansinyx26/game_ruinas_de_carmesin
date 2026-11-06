@@ -1,0 +1,353 @@
+{
+ "_comentario": "Tamanho real de cada estrutura no jogo, em metros (1 m = 34 unidades): altura, ou lado (o maior lado no chão) para as peças baixas e compridas. As fontes vêm todas normalizadas para ~2 unidades; os valores saíram das prévias (assets/models/estruturas/<id>.png). Os prédios altos ficam um pouco abaixo do real para caberem na vista isométrica. _tipos: o padrão de quem não está na lista.",
+ "_tipos": {
+  "estrutura": {
+   "altura": 8
+  },
+  "item": {
+   "altura": 1.4
+  },
+  "arvore": {
+   "altura": 9
+  },
+  "planta": {
+   "altura": 1.2
+  }
+ },
+ "casa_moinho_beira_do_rio": {
+  "altura": 9,
+  "nome": "Moinho d'água"
+ },
+ "estrutura_md_1": {
+  "altura": 12,
+  "nome": "Moinho de vento"
+ },
+ "estrutura_md_2": {
+  "altura": 13,
+  "nome": "Torre de vigia de pedra"
+ },
+ "estrutura_md_3": {
+  "altura": 16,
+  "nome": "Catedral"
+ },
+ "estrutura_md_4": {
+  "altura": 10,
+  "nome": "Portão do castelo"
+ },
+ "estrutura_md_5": {
+  "altura": 9,
+  "nome": "Casa de enxaimel"
+ },
+ "estrutura_md_6": {
+  "altura": 12,
+  "nome": "Torre de pedra"
+ },
+ "estrutura_md_7": {
+  "altura": 3.2,
+  "nome": "Banca do mercado"
+ },
+ "estrutura_md_8": {
+  "altura": 2.8,
+  "nome": "Carroça coberta"
+ },
+ "estrutura_md_9": {
+  "altura": 8,
+  "nome": "Torre de madeira"
+ },
+ "estrutura_md_10": {
+  "altura": 3.4,
+  "nome": "Poço"
+ },
+ "estrutura_md_11": {
+  "lado": 5,
+  "nome": "Fonte"
+ },
+ "estrutura_md_12": {
+  "altura": 3.6,
+  "nome": "Poste de lampião"
+ },
+ "estrutura_md_13": {
+  "altura": 3,
+  "nome": "Placa de madeira"
+ },
+ "estrutura_md_14": {
+  "lado": 4.5,
+  "nome": "Paliçada"
+ },
+ "estrutura_md_15": {
+  "altura": 5.5,
+  "nome": "Arco de pedra"
+ },
+ "estrutura_md_16": {
+  "altura": 5,
+  "nome": "Colunas em ruínas"
+ },
+ "estrutura_md_17": {
+  "lado": 9,
+  "nome": "Ponte"
+ },
+ "fonte_do_guardiao": {
+  "altura": 5.5,
+  "nome": "Fonte do Guardião"
+ },
+ "hearthside_forge": {
+  "altura": 6,
+  "nome": "Ferraria"
+ },
+ "moonlit_medieval_mark": {
+  "altura": 3.4,
+  "nome": "Banca do mercado (azul)"
+ },
+ "quadro_de_missoes_medieval": {
+  "altura": 2.6,
+  "nome": "Quadro de missões"
+ },
+ "cachoeira": {
+  "altura": 6,
+  "nome": "Ruína da cachoeira"
+ },
+ "fast_travel": {
+  "altura": 2.4,
+  "nome": "Placa de caminho"
+ },
+ "blue_roof_cottage": {
+  "altura": 7,
+  "nome": "Chalé de telhado azul"
+ },
+ "item_ambiente_md_1": {
+  "altura": 1.6,
+  "nome": "Caixotes empilhados"
+ },
+ "item_ambiente_md_2": {
+  "altura": 1.3,
+  "nome": "Caixas"
+ },
+ "item_ambiente_md_3": {
+  "altura": 1.1,
+  "nome": "Barris e sacos"
+ },
+ "item_ambiente_md_4": {
+  "altura": 1.2,
+  "nome": "Carrinho de mão"
+ },
+ "item_ambiente_md_5": {
+  "altura": 3.2,
+  "nome": "Estandarte azul"
+ },
+ "item_ambiente_md_6": {
+  "altura": 3.2,
+  "nome": "Estandarte azul"
+ },
+ "item_ambiente_md_7": {
+  "altura": 3.2,
+  "nome": "Estandarte vermelho"
+ },
+ "item_ambiente_md_8": {
+  "altura": 1.5,
+  "nome": "Braseiro"
+ },
+ "item_ambiente_md_9": {
+  "altura": 1.8,
+  "nome": "Cristal no pedestal"
+ },
+ "apartamento_urbano": {
+  "altura": 14,
+  "nome": "Prédio de apartamentos"
+ },
+ "edificio_cyberpunk": {
+  "altura": 18,
+  "nome": "Edifício do painel"
+ },
+ "estrutura_cbp_1": {
+  "altura": 10,
+  "nome": "Loja de vitrine"
+ },
+ "estrutura_cbp_2": {
+  "altura": 7,
+  "nome": "Hangar"
+ },
+ "estrutura_cbp_3": {
+  "altura": 12,
+  "nome": "Fábrica"
+ },
+ "estrutura_cbp_5": {
+  "altura": 7,
+  "nome": "Galpão"
+ },
+ "estrutura_cbp_6": {
+  "altura": 15,
+  "nome": "Prédio corporativo"
+ },
+ "estrutura_cbp_7": {
+  "altura": 18,
+  "nome": "Torre corporativa"
+ },
+ "monotrilho_futurista": {
+  "lado": 16,
+  "nome": "Monotrilho"
+ },
+ "neon_cyberpunk_bar": {
+  "altura": 9,
+  "nome": "Bar neon"
+ },
+ "neon_night_cafe": {
+  "altura": 5,
+  "nome": "Café noturno"
+ },
+ "urban_blossom_terrace": {
+  "altura": 5,
+  "nome": "Terraço florido"
+ },
+ "viaduto_cyberpunk": {
+  "lado": 16,
+  "nome": "Viaduto"
+ },
+ "sci_fi_clinic": {
+  "altura": 9,
+  "nome": "Clínica"
+ },
+ "item_ambiente_cbp_1": {
+  "altura": 1.4,
+  "nome": "Contêiner"
+ },
+ "castelo_medieval": {
+  "altura": 16,
+  "nome": "Castelo"
+ },
+ "cais_com_barco": {
+  "lado": 8,
+  "nome": "Cais com barco"
+ },
+ "escadaria_ruinas": {
+  "altura": 3.5,
+  "nome": "Escadaria em ruínas"
+ },
+ "canhao_medieval": {
+  "altura": 1.6,
+  "nome": "Canhão"
+ },
+ "muro_ruinas_placa": {
+  "altura": 2.6,
+  "nome": "Muro em ruínas com placa"
+ },
+ "forno_pedra": {
+  "altura": 2.6,
+  "nome": "Forno de pedra"
+ },
+ "banca_ceramica": {
+  "altura": 3.2,
+  "nome": "Banca de cerâmica"
+ },
+ "rochas_grupo": {
+  "altura": 1.8,
+  "nome": "Rochas"
+ },
+ "arco_braseiros": {
+  "altura": 5,
+  "nome": "Arco com braseiros"
+ },
+ "hotel_neon": {
+  "altura": 16,
+  "nome": "Hotel neon"
+ },
+ "torre_antena": {
+  "altura": 14,
+  "nome": "Torre de antena"
+ },
+ "loja_armas": {
+  "altura": 6,
+  "nome": "Loja de armas"
+ },
+ "loja_tecnologia": {
+  "altura": 6,
+  "nome": "Loja de tecnologia"
+ },
+ "oficina_mecanica": {
+  "altura": 6,
+  "nome": "Oficina"
+ },
+ "estufa_cupula": {
+  "altura": 7,
+  "nome": "Estufa em cúpula"
+ },
+ "portao_setor": {
+  "altura": 6,
+  "nome": "Portão de setor"
+ },
+ "carro_neon": {
+  "lado": 4.6,
+  "nome": "Carro"
+ },
+ "moto_neon": {
+  "lado": 2.3,
+  "nome": "Moto"
+ },
+ "drone_carga": {
+  "lado": 1.4,
+  "nome": "Drone"
+ },
+ "ponto_onibus": {
+  "altura": 3,
+  "nome": "Ponto de ônibus"
+ },
+ "arco_neon": {
+  "altura": 6,
+  "nome": "Arco neon"
+ },
+ "maquina_venda": {
+  "altura": 2,
+  "nome": "Máquina de venda"
+ },
+ "painel_anuncio": {
+  "altura": 3.5,
+  "nome": "Painel de anúncio"
+ },
+ "totem_info": {
+  "altura": 2.2,
+  "nome": "Totem de informação"
+ },
+ "item_ambiente_cbp_2": {
+  "altura": 1.4,
+  "nome": "Caixa técnica"
+ },
+ "item_ambiente_cbp_3": {
+  "altura": 1.4,
+  "nome": "Caixa técnica"
+ },
+ "item_ambiente_cbp_4": {
+  "altura": 1.4,
+  "nome": "Caixa técnica"
+ },
+ "arvore_1": {
+  "altura": 9,
+  "nome": "Árvore"
+ },
+ "arvore_2": {
+  "altura": 9,
+  "nome": "Árvore"
+ },
+ "arvore_3": {
+  "altura": 7,
+  "nome": "Árvore"
+ },
+ "arvore_4": {
+  "altura": 9,
+  "nome": "Árvore"
+ },
+ "arvore_5": {
+  "altura": 9,
+  "nome": "Árvore"
+ },
+ "arvore_6": {
+  "altura": 7,
+  "nome": "Árvore"
+ },
+ "arvore_7": {
+  "altura": 9,
+  "nome": "Árvore"
+ },
+ "arvore_8": {
+  "altura": 9,
+  "nome": "Árvore"
+ }
+}

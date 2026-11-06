@@ -1,0 +1,314 @@
+{
+ "castelo_medieval": {
+  "nome": "Castelo com torres e estandartes",
+  "estilo": "medieval",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/castelo_medieval.png",
+  "folha": "medieval",
+  "caixa": [
+   905,
+   8,
+   1352,
+   398
+  ]
+ },
+ "cais_com_barco": {
+  "nome": "Cais de madeira com barco",
+  "estilo": "medieval",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/cais_com_barco.png",
+  "folha": "medieval",
+  "caixa": [
+   382,
+   648,
+   652,
+   800
+  ]
+ },
+ "escadaria_ruinas": {
+  "nome": "Escadaria de pedra em ruínas",
+  "estilo": "medieval",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/escadaria_ruinas.png",
+  "folha": "medieval",
+  "caixa": [
+   822,
+   690,
+   1042,
+   852
+  ]
+ },
+ "canhao_medieval": {
+  "nome": "Canhão em carreta de madeira",
+  "estilo": "medieval",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/canhao_medieval.png",
+  "folha": "medieval",
+  "caixa": [
+   388,
+   868,
+   525,
+   1012
+  ]
+ },
+ "muro_ruinas_placa": {
+  "nome": "Muro de pedra em ruínas com placa",
+  "estilo": "medieval",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/muro_ruinas_placa.png",
+  "folha": "medieval",
+  "caixa": [
+   528,
+   876,
+   684,
+   1012
+  ]
+ },
+ "forno_pedra": {
+  "nome": "Forno de pedra aceso",
+  "estilo": "medieval",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/forno_pedra.png",
+  "folha": "medieval",
+  "caixa": [
+   882,
+   876,
+   1058,
+   1012
+  ]
+ },
+ "banca_ceramica": {
+  "nome": "Banca de mercado com cerâmica",
+  "estilo": "medieval",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/banca_ceramica.png",
+  "folha": "medieval",
+  "caixa": [
+   440,
+   402,
+   618,
+   598
+  ]
+ },
+ "rochas_grupo": {
+  "nome": "Grupo de rochas",
+  "estilo": "medieval",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/rochas_grupo.png",
+  "folha": "medieval",
+  "caixa": [
+   1168,
+   880,
+   1398,
+   1012
+  ]
+ },
+ "arco_braseiros": {
+  "nome": "Arco de pedra com braseiros e estandartes",
+  "estilo": "medieval",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/arco_braseiros.png",
+  "folha": "medieval",
+  "caixa": [
+   1000,
+   422,
+   1238,
+   642
+  ]
+ },
+ "hotel_neon": {
+  "nome": "Hotel com letreiro neon",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/hotel_neon.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   18,
+   4,
+   282,
+   252
+  ]
+ },
+ "torre_antena": {
+  "nome": "Torre de antena com parabólica",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/torre_antena.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   1398,
+   0,
+   1536,
+   252
+  ]
+ },
+ "loja_armas": {
+  "nome": "Loja de armas neon",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/loja_armas.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   8,
+   266,
+   238,
+   418
+  ]
+ },
+ "loja_tecnologia": {
+  "nome": "Loja de tecnologia",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/loja_tecnologia.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   228,
+   262,
+   448,
+   418
+  ]
+ },
+ "oficina_mecanica": {
+  "nome": "Oficina mecânica com veículo",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/oficina_mecanica.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   448,
+   256,
+   688,
+   418
+  ]
+ },
+ "estufa_cupula": {
+  "nome": "Estufa em cúpula de vidro",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/estufa_cupula.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   898,
+   286,
+   1102,
+   418
+  ]
+ },
+ "portao_setor": {
+  "nome": "Portão de setor com cancela",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/portao_setor.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   1318,
+   272,
+   1532,
+   418
+  ]
+ },
+ "carro_neon": {
+  "nome": "Carro futurista",
+  "estilo": "cyberpunk",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/carro_neon.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   342,
+   452,
+   508,
+   562
+  ]
+ },
+ "moto_neon": {
+  "nome": "Moto futurista",
+  "estilo": "cyberpunk",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/moto_neon.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   512,
+   438,
+   668,
+   548
+  ]
+ },
+ "drone_carga": {
+  "nome": "Drone de quatro hélices",
+  "estilo": "cyberpunk",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/drone_carga.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   672,
+   438,
+   792,
+   522
+  ]
+ },
+ "ponto_onibus": {
+  "nome": "Ponto de ônibus com painel",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/ponto_onibus.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   822,
+   418,
+   1012,
+   528
+  ]
+ },
+ "arco_neon": {
+  "nome": "Arco de passagem com neon",
+  "estilo": "cyberpunk",
+  "tipo": "estrutura",
+  "referencia": "assets/referencias/estruturas_meshy/arco_neon.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   1298,
+   412,
+   1534,
+   572
+  ]
+ },
+ "maquina_venda": {
+  "nome": "Máquina de venda automática",
+  "estilo": "cyberpunk",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/maquina_venda.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   358,
+   586,
+   428,
+   702
+  ]
+ },
+ "painel_anuncio": {
+  "nome": "Painel de anúncio holográfico",
+  "estilo": "cyberpunk",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/painel_anuncio.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   12,
+   562,
+   162,
+   718
+  ]
+ },
+ "totem_info": {
+  "nome": "Totem de informação",
+  "estilo": "cyberpunk",
+  "tipo": "item",
+  "referencia": "assets/referencias/estruturas_meshy/totem_info.png",
+  "folha": "cyberpunk",
+  "caixa": [
+   158,
+   576,
+   242,
+   718
+  ]
+ }
+}
