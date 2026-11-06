@@ -52,7 +52,7 @@ def d(*partes):
 # claro, cor das linhas/marcas, emissão). A primeira pelagem é a "base" da espécie (o arquivo do
 # jogo das outras só traz as texturas).
 ESPECIES = {
-    'gato': dict(base='lobo', pasta='Pets/Cats', ossos=d(
+    'gato': dict(base='lobo', pasta='Prototypes/remodelados', ossos=d(
         {'cabeca': (1.3, 0.48, 1.25), 'pescoco1': (0.65, 0.72, 0.65), 'pescoco2': (0.68, 0.75, 0.68), 'peito': (0.75, 0.85, 0.78),
          'coluna1': (0.72, 1.08, 0.75), 'coluna2': (0.72, 1.08, 0.75), 'quadril': (0.8, 1.0, 0.8),
          'cauda1': (0.4, 1.25, 0.4), 'cauda2': (0.38, 1.35, 0.38), 'cauda3': (0.36, 1.4, 0.36), 'cauda4': (0.34, 1.45, 0.34)},
@@ -106,7 +106,7 @@ ESPECIES = {
                   'lobo_guerra': ((0.03, 0.03, 0.035), (0.12, 0.12, 0.13), (0.32, 0.31, 0.33), (0.75, 0.12, 0.08), 1.2),
                   'lobo_aurora': ((0.75, 0.72, 0.66), (0.92, 0.9, 0.86), (1.0, 0.99, 0.97), (1.0, 0.78, 0.3), 1.8)}),
     # ---- aves (da Asa Noturna)
-    'galinha': dict(base='ave', pasta='DomesticAnimals', ossos=d(
+    'galinha': dict(base='ave', pasta='Prototypes/remodelados', ossos=d(
         {'peito': (1.45, 1.0, 1.4), 'coluna': (1.45, 1.0, 1.4), 'quadril': (1.35, 1.0, 1.3), 'pescoco1': (1.1, 0.8, 1.1), 'pescoco2': (1.05, 0.8, 1.05),
          'cabeca': (1.05, 0.85, 1.05), 'cauda1': (1.0, 0.55, 1.2), 'cauda2': (1.0, 0.5, 1.2), 'cauda3': (1.0, 0.5, 1.2)},
         lr(ASAS, (0.62, 0.45, 0.62)), lr(['coxa', 'tarso'], (1.2, 0.9, 1.2))),

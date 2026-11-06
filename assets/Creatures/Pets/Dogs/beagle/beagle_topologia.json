@@ -1,0 +1,140 @@
+{
+ "id": "beagle",
+ "fonte": "assets/Creatures/Pets/Dogs/beagle/fonte/cachorro.glb",
+ "antes": {
+  "vertices": 36763,
+  "faces": 63292,
+  "triangulos": 63292,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 9874,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 180,
+  "finos_pct": 0.0
+ },
+ "limpeza": {
+  "soldados": 5125,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 31638,
+  "faces": 63292,
+  "triangulos": 63292,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 7873,
+  "faces": 7869,
+  "triangulos": 15738,
+  "quads": 7869,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 6,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 2,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 0.0
+ },
+ "ajuste_esqueleto": {
+  "escala_z": 1.572,
+  "cabeca_dz": -0.05,
+  "comprimento": 1.9,
+  "altura": 1.363,
+  "patas": {
+   "FL": [
+    0.141,
+    -0.512,
+    0.027
+   ],
+   "HL": [
+    0.109,
+    0.487,
+    0.026
+   ],
+   "FR": [
+    -0.141,
+    -0.512,
+    0.027
+   ],
+   "HR": [
+    -0.108,
+    0.486,
+    0.028
+   ]
+  }
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 15738,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 7869,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 3933,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 1573,
+   "sem_osso": 0
+  }
+ ],
+ "escala_deslocamentos": 1.572,
+ "pelagens": [],
+ "glb": "assets/Creatures/Pets/Dogs/beagle/beagle.glb",
+ "blend": "assets/Creatures/Pets/Dogs/beagle/beagle.blend",
+ "previa": "assets/Creatures/Pets/Dogs/beagle/beagle.png",
+ "folha": [
+  ".cache_criacao/beagle/beagle_andar.png",
+  ".cache_criacao/beagle/beagle_trotar.png",
+  ".cache_criacao/beagle/beagle_correr.png",
+  ".cache_criacao/beagle/beagle_comer.png",
+  ".cache_criacao/beagle/beagle_sentar.png",
+  ".cache_criacao/beagle/beagle_dormir.png",
+  ".cache_criacao/beagle/beagle_uivar.png",
+  ".cache_criacao/beagle/beagle_brincar.png"
+ ],
+ "ossos": 31,
+ "animacoes": [
+  "andar",
+  "atacar",
+  "atordoado",
+  "brincar",
+  "carinho",
+  "comer",
+  "correr",
+  "dano",
+  "dormir",
+  "idle",
+  "morte",
+  "saltar",
+  "sentar",
+  "trotar",
+  "uivar"
+ ],
+ "segundos": 82
+}

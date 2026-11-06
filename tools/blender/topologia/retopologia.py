@@ -292,10 +292,11 @@ def _material_emissao(nome, img, canal=None, cor=True):
     return m
 
 
-def assar(baixa, fonte, lado=2048, extrusao=0.02, pasta=None, prefixo='criatura'):
+def assar(baixa, fonte, lado=2048, extrusao=0.02, pasta=None, prefixo='criatura', emissao=True):
     """Assa a fonte na malha nova: cor (sRGB), aspereza e metal (dados), normais (espaço
     tangente) e a emissão (as partes acesas da arte, separadas pela cor). Devolve as imagens e o
-    material PBR da malha nova."""
+    material PBR da malha nova. emissao=False: criatura sem partes acesas (animais naturais: nem
+    a manta azul da sela nem os olhos verdes do gato podem virar luz); a imagem de emissão fica preta."""
     I = _imagens_fonte(fonte)
     for k in ('cor', 'orm'):
         if I[k] is not None and k == 'orm':
@@ -360,6 +361,8 @@ def assar(baixa, fonte, lado=2048, extrusao=0.02, pasta=None, prefixo='criatura'
     sat = (mx - mn) / np.maximum(mx, 1e-4)
     azul = np.clip((np.maximum(g, b) - r - 0.18) / 0.25, 0, 1)
     em = np.clip((sat - 0.45) / 0.3, 0, 1) * np.clip((mx - 0.55) / 0.3, 0, 1) * azul
+    if not emissao:
+        em = np.zeros_like(em)
     emi = bpy.data.images.new(f'{prefixo}_emissao', lado, lado, alpha=False, float_buffer=False)
     emi.colorspace_settings.name = 'sRGB'
     E = np.zeros_like(cor)
@@ -378,7 +381,7 @@ def assar(baixa, fonte, lado=2048, extrusao=0.02, pasta=None, prefixo='criatura'
     ne.image = emi
     ke = 'Emission Color' if 'Emission Color' in P.inputs else 'Emission'
     nt.links.new(ne.outputs['Color'], P.inputs[ke])
-    P.inputs['Emission Strength'].default_value = 2.0
+    P.inputs['Emission Strength'].default_value = 2.0 if emissao else 0.0
     if pasta:
         os.makedirs(pasta, exist_ok=True)
         for nome, (im, _) in list(imgs.items()) + [('emissao', (emi, None))]:

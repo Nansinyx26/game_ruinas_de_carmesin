@@ -6,13 +6,17 @@ Estado real em 01/11/2026. Este documento lista o que foi feito e verificado, e 
 
 | criatura | uso no jogo | origem da malha | LOD 0 → 3 (triângulos) | ossos | animações | GLB / .blend |
 |---|---|---|---|---|---|---|
-| **Lobo Sombra Neon** | inimigo `lobo_neon` na **Metrópole Tecnológica** (traços matilha e teleporta) | GLB do Meshy enviado (127.298 tri), com **retopologia, rig e animações no Blender** — é a **base** das pelagens abaixo | 11.056 → 5.528 → 2.764 → 1.104 | 31 | 15 | `assets/Creatures/Enemies/lobo_sombra_neon/` |
-| **Asa Noturna** (Azure Nightwing) | pet raro do viveiro e ave de neon nos telhados da Metrópole | GLB do Meshy enviado (128.844 tri), com **retopologia, rig de ave e animações no Blender** | 11.222 → 5.610 → 2.804 → 1.122 | 26 | 13 | `assets/Creatures/Pets/Exotic/asa_noturna/` |
+| **Lobo Sombra Neon** | inimigo `lobo_neon` na **Metrópole Tecnológica** (traços matilha e teleporta) | GLB do Meshy enviado (127.298 tri), com **retopologia, rig e animações no Blender** — é a **base** das pelagens abaixo | 17.218 → 8.608 → 4.304 → 1.721 | 31 | 15 | `assets/Creatures/Enemies/lobo_sombra_neon/` |
+| **Asa Noturna** (Azure Nightwing) | pet raro do viveiro e ave de neon nos telhados da Metrópole | GLB do Meshy enviado (128.844 tri), com **retopologia, rig de ave e animações no Blender** | 15.820 → 7.910 → 3.954 → 1.582 | 26 | 13 | `assets/Creatures/Pets/Exotic/asa_noturna/` |
 | Lobo de Raiz | inimigo `lobo_raiz` em **Velmora** | pelagem da base (musgo e linhas verdes acesas) | como a base | 31 | 15 | `assets/Creatures/Enemies/lobo_raiz/` |
 | Lobo das Neves | inimigo `lobo_neve` em **Asterion** | pelagem da base (branco gelo, linhas azul-claro) | como a base | 31 | 15 | `assets/Creatures/Enemies/lobo_neve/` |
-| Lobo Cinzento | **Lobo da Muralha** (pet) e os **cães de caça** de Velmora | pelagem da base (cinza, sem brilho) | como a base | 31 | 15 | `assets/Creatures/Wildlife/Mammals/lobo_cinzento/` |
+| Lobo Cinzento | **Lobo da Muralha** (pet) | pelagem da base (cinza, sem brilho) | como a base | 31 | 15 | `assets/Creatures/Wildlife/Mammals/lobo_cinzento/` |
 | **Cão da Aurora** | pet do viveiro e **cães de rua** do Refúgio (adotáveis) | pelagem da base (marrom e creme) | como a base | 31 | 15 | `assets/Creatures/Pets/Dogs/cao_aurora/` |
 | **Cão das Neves** | pet do viveiro e cães de trenó de Asterion | pelagem da base (cinza e branco) | como a base | 31 | 15 | `assets/Creatures/Pets/Dogs/cao_neve/` |
+| **Cavalo** (castanho, tordilho, negro) | **montarias** da Estrebaria da Guarda | GLB enviado (150.754 tri, com sela, manta e rédeas), retopologia, rig e animações no Blender (1e) | 17.952 → 8.976 → 4.488 → 1.794 | 31 | 15 | `assets/Creatures/Mounts/cavalo/` |
+| **Beagle** | pet do viveiro e os **cães de caça** da Clareira de Velmora | GLB enviado (63.292 tri, com a coleira e a plaquinha) | 15.738 → 7.869 → 3.933 → 1.573 | 31 | 15 | `assets/Creatures/Pets/Dogs/beagle/` |
+| **Gato** (malhado, cinzento, da Sombra) | pets e **gatos de rua** (adotáveis) | GLB enviado (58.176 tri, malhado laranja) | 20.290 → 10.144 → 5.072 → 2.028 | 31 | 15 | `assets/Creatures/Pets/Cats/gato_malhado/` |
+| **Galinha** (branca, ruiva, preta) | quintais do Bairro e da Clareira | GLB enviado (189.720 tri), esqueleto de ave com as asas dobradas e animações de galinha | 20.234 → 10.116 → 5.058 → 2.022 | 26 | 11 | `assets/Creatures/DomesticAnimals/galinha/` |
 
 **As pelagens** (`tools/blender/criaturas/lobo_neon.py → PELAGENS`): a mesma malha com retopologia, o mesmo esqueleto e as mesmas animações da base, com a cor assada **remapeada pela luminância** (o detalhe do pelo continua) e as linhas acesas recoloridas (com brilho) ou viradas em marcas no pelo. Os arquivos do jogo das pelagens trazem **só as texturas** (cerca de 0,6 MB em vez de 1,8 MB); o motor usa a malha da base, carregada uma vez. As pelagens são materiais do `.blend` da base. Os lobos feitos antes por script (`lobo.py`, qualidade inferior) foram movidos para `assets/Creatures/Prototypes/`; o script continua como **molde** do esqueleto e das animações.
 
@@ -23,6 +27,33 @@ Cada pasta tem o `.glb` final (texturas embutidas, armadura, animações com nom
 **Animações:**
 - Lobos e cães: `idle`, `andar`, `trotar`, `correr`, `atacar` (bote), `saltar` (investida), `dano`, `atordoado`, `morte`, `uivar`, e as de companhia: `sentar`, `dormir` (deitado), `comer`, `brincar` (o convite) e `carinho`. As posturas foram conferidas na vista lateral.
 - Asa Noturna: `idle` (pousada, asas meio dobradas), `andar` (saltita), `voar`, `planar`, `decolar`, `pousar`, `comer`, `dormir`, `sentar`, `brincar`, `carinho`, `chamar` (comando) e `dano`.
+
+## 1e. Animais enviados (GLB do Meshy): cavalo, beagle, gato e galinha (`tools/blender/criaturas/meshy.py`)
+
+As quatro malhas enviadas passam pelo mesmo caminho do lobo neon e da Asa Noturna. As fontes ficam intactas em `.../fonte/` (Git LFS).
+
+1. **Limpeza e retopologia em quads com simetria.** De 58–190 mil triângulos para 16–20 mil no LOD 0, só quads, mais os LODs 1–3.
+2. **UV nova e assado** da cor, da aspereza, do metal e das normais. Aqui **sem emissão**: são animais naturais, e nem a manta azul da sela nem os olhos verdes do gato podem virar luz (`assar(..., emissao=False)`).
+3. **Esqueleto medido na malha:**
+   - cavalo, beagle e gato usam o esqueleto do lobo (31 ossos), levado ao focinho, às patas, à cernelha e às linhas do corpo e das pernas de cada um;
+   - a galinha usa um esqueleto de ave (26 ossos) com as **asas dobradas** junto ao corpo. Em cada fatia do flanco, mede-se a parte de fora: a asa da galinha não fica aberta como a de uma ave de voo.
+4. **Animações:**
+   - os quadrúpedes têm as 15 do lobo. Os deslocamentos do corpo (deitar, pular, o sobe e desce do passo) foram para a escala da altura de cada animal: 1,77× no cavalo, 1,57× no beagle e no gato;
+   - no cavalo, o galope e o trote têm as pernas **amortecidas** (55% e 80%). A passada do lobo numa perna mais longa jogava o casco longe demais;
+   - a galinha tem 11 animações próprias: `idle` (a cabeça que para no ar e muda de lado), `andar` (o pescoço que vai e volta), `comer` (cisca: raspa a terra e bica duas vezes), `dormir`, `sentar` (chocando), `voar` (o pulo assustado batendo as asas), `planar`, `chamar` (canta: estufa o peito e estica o pescoço), `brincar`, `carinho` e `dano`.
+5. **A sela do cavalo é medida na malha** (`cavalo_topologia.json → sela`):
+   - no perfil de cima do lombo, o assento é o ponto mais baixo entre o arção e a patilha, a **74,5% da altura**, 5,7% do comprimento atrás do centro;
+   - os estribos e a largura do lombo também são medidos.
+   
+   O herói senta nesse assento, com os pés para fora do lombo e descendo até os estribos.
+6. **Pelagens pela máscara.** A cor assada é remapeada só onde a máscara deixa:
+   - **cavalo negro e tordilho:** o castanho do pelo, também na sombra. A sela e os loros são do mesmo couro castanho do pelo, e a cor não os separa. Eles ficam pela **posição**: a posição 3D de cada pixel da textura é assada da própria malha, e a caixa da sela medida no lombo fica de fora. A manta azul, as meias e a estrela brancas, a crina preta e o metal ficam pela cor;
+   - **gato cinzento e da Sombra:** tudo menos os olhos e o nariz. No da Sombra, as listras (o mais escuro do pelo) acendem em violeta;
+   - **galinha ruiva e preta:** as penas claras. A crista, a barbela, o bico, as pernas e as pontas marrons da cauda ficam.
+7. **No jogo:**
+   - o **gato** e a **galinha** enviados substituem os remodelados, que foram guardados em `assets/Creatures/Prototypes/remodelados/`;
+   - o **beagle** entrou como pet e como os cães de caça da Clareira. Ele já traz a coleira na malha, então a coleira 3D do jogo não é posta nele;
+   - a **galinha** não ganha mais a crista do jogo, porque já tem a dela.
 
 ## 1b. Animais de companhia (`js/mundo/pets.js`)
 
@@ -65,14 +96,14 @@ Sem malha de origem para cada espécie, as duas bases com retopologia (o lobo e 
 
 | espécie | base | pelagens | uso no jogo | peça extra |
 |---|---|---|---|---|
-| gato | lobo (com tosa) | malhado, cinzento, da Sombra (rara, veios violeta acesos) | pet; gatos de rua (adotáveis) no Refúgio, no Bairro e no Mercado Vertical | — |
+| gato *(substituído pelo gato enviado, 1e; guardado em `Prototypes/remodelados/`)* | lobo (com tosa) | malhado, cinzento, da Sombra | — | — |
 | raposa | lobo | vermelha | pet (incomum) | — |
 | cão de colo | lobo (com tosa) | fulvo | pet | — |
 | buldogue | lobo (com tosa: cabeça larga e curta, peito largo, pernas curtas, cauda curta) | fulvo, tigrado | pet; o tigrado é o cão de guarda dos comerciantes do Mercado Vertical | — |
 | cabra | lobo | marrom e branca | Clareira de Velmora, oásis de Seraph | chifres |
 | ovelha | lobo (lã inflada) | creme | Acampamento de Asterion | — |
 | lobo de montaria | lobo (robusto) | comum, de guerra (marcas rubras acesas), da Aurora (lendário, fios dourados) | montarias | — |
-| galinha | ave | carijó | Bairro e Clareira | crista e barbela |
+| galinha *(substituída pela galinha enviada, 1e; guardada em `Prototypes/remodelados/`)* | ave | carijó | — | — |
 | pato / ganso | ave | verde-azulado / branco | vila do lago | bico chato |
 | pombo / canário | ave | cinza / amarelo | pombos no Refúgio, na Metrópole e no Mercado; canário como pet | — |
 | papagaio | ave | verde, vermelho e amarelo | pet (exótico) | — |
@@ -82,14 +113,21 @@ Cada espécie tem o `.blend` editável (malha remodelada, esqueleto, ações e p
 
 ## 1d. Montarias (`js/mundo/montarias.js`)
 
-- **Estrebaria da Guarda**, no Bairro da Muralha. O domador **Tobias** vende o Lobo de Montaria (2.500 células), o Lobo de Guerra (6.000, a partir do nível 30) e o Lobo da Aurora (15.000, a partir do nível 60). A compra tem confirmação.
+- **Estrebaria da Guarda**, no Bairro da Muralha. O domador **Tobias** vende:
+  - os **cavalos**: castanho (1.800 células), tordilho (4.200, a partir do nível 15) e negro (9.000, a partir do nível 40);
+  - os lobos: Lobo de Montaria (2.500), Lobo de Guerra (6.000, a partir do nível 30) e Lobo da Aurora (15.000, a partir do nível 60).
+  
+  A compra tem confirmação.
 - **Montar:**
   - [E] perto da montaria monta. O herói vai **sentado na sela**, com a pose `montado` do esqueleto do Kael: quadril na altura da sela, pernas dos lados do lombo, mãos nas rédeas e o corpo balançando no trote.
   - A velocidade sobe ×1,6 a ×2.
   - A montaria anda no passo do herói.
   - [E] ou qualquer golpe desmonta; montado, o herói não luta.
 - **Fora da sela**, a montaria segue o herói. Na troca de zona ela vem junto, mesmo com o herói montado. Nos interiores ela espera do lado de fora.
-- **Cavalos:** a malha do lobo não vira um cavalo convincente (testei e ficou um "lobo de pernas longas"). Por isso as montarias são lobos, um clássico de fantasia. O cavalo entra com uma malha própria, e a lógica da montaria já está pronta para ele.
+- **Cavalos** (a malha enviada, 1e):
+  - o herói senta no assento medido na sela, com os pés abertos na largura do lombo e descendo até os estribos;
+  - o cavalo anda à frente do herói o quanto o assento fica atrás do centro do modelo, para o assento ficar sob o quadril;
+  - parado sem cavaleiro, ele **pasta** (não senta como o lobo).
 
 ## 1c. Animais domésticos das cidades (`js/mundo/animais_cidade.js`)
 
@@ -98,8 +136,8 @@ Cada cidade tem os seus animais, pela cultura e pelo clima. Não são todas as e
 | cidade | animais | comportamento |
 |---|---|---|
 | Refúgio da Aurora (praça) | cães e gatos de rua, pombos e o pavão do Conselho | cães farejam, gatos desconfiam, pombos voam; cães e gatos **podem ser adotados** |
-| Bairro da Muralha | cães e gatos de rua, galinhas nos quintais | as galinhas ciscam e correm assustadas |
-| Clareira dos Sinais (Velmora) | cães de caça, cabras e galinhas | as cabras pastam |
+| Bairro da Muralha | cães e gatos de rua, galinhas nos quintais (branca e ruiva) | as galinhas ciscam e correm assustadas |
+| Clareira dos Sinais (Velmora) | beagles dos caçadores, cabras e galinhas (branca, ruiva e preta) | as cabras pastam; as galinhas ciscam |
 | Vila do lago | patos e gansos | ciscam; o ganso defende o território |
 | Acampamento e Fortaleza de Asterion | cães das neves (trenós da Vigília) e ovelhas | as ovelhas pastam |
 | Praça Central da Metrópole | Asas Noturnas nos telhados e pombos | pousadas; levantam voo quando o herói chega perto ou começa uma luta |
@@ -243,14 +281,14 @@ Também verifiquei no navegador, na isométrica e na 3ª pessoa: `capturas_armad
 ## 5. Limites conhecidos (o que ainda não está feito)
 
 - **Ainda faltam:**
-  - **cavalos de verdade**: precisam de uma malha de cavalo; as montarias são lobos;
-  - os **gatos são estilizados**: têm focinho curto e cabeça redonda, e a tosa alisa o corpo, mas as orelhas e a cara longa ainda lembram um gato-do-mato ou uma raposa. Um gato doméstico realista precisa de malha própria;
-  - selas, roupinhas e outros acessórios além das coleiras.
+  - selas e roupinhas como peças à parte (a sela do cavalo vem na malha dele), e acessórios além das coleiras;
+  - patos, gansos, pombos, papagaios, pavões, cabras e ovelhas continuam remodelados das duas bases. Com malhas enviadas, eles seguem o mesmo caminho do cavalo e da galinha (1e).
+- **Animações emprestadas:** o cavalo, o beagle e o gato usam as animações do lobo, ajustadas à altura deles. O galope do cavalo segue o ritmo do lobo, não o de um galope de cavalo de verdade. Bater as asas da galinha deforma um pouco o flanco (a asa é a mesma superfície do corpo).
 - **Cães:**
   - o Cão da Aurora e o Cão das Neves são pelagens do lobo: cães de porte e focinho de lobo, do tipo husky ou cão-lobo;
   - o cão de colo e o buldogue (dois pelos, com tosa) dão as raças pequenas e de focinho curto, mas são estilizados: a textura ainda é a pintura de pelo do lobo, e a juba continua na cabeça.
   
-  Um pug ou um buldogue realista precisa de malha e textura próprias.
+  O beagle (1e) já é uma malha enviada, um cão realista. Um pug ou um buldogue realista também precisa de malha e textura próprias.
 - **Pets no bairro em renderização por software:** o bairro já é pesado nesse modo (cada quadro passa de 4 s no SwiftShader, por causa dos moradores com 50 mil triângulos). Numa placa de vídeo comum, isso não acontece.
 - **Retopologia dos personagens: as saídas não foram trocadas no jogo.**
   - O lote (3.3) gerou e validou 18 peças: 8 rostos, as 7 armaduras do Kael e 3 cabelos. 15 delas foram aprovadas.
@@ -266,6 +304,8 @@ Também verifiquei no navegador, na isométrica e na 3ª pessoa: `capturas_armad
 ```
 python3 tools/blender/criaturas/lobo_neon.py        # retopologia + rig + animações → GLB + .blend
 python3 tools/blender/criaturas/asa_noturna.py
+python3 tools/blender/criaturas/meshy.py [cavalo beagle gato_malhado galinha]   # as malhas enviadas
+python3 tools/importar_criatura.py assets/Creatures/Mounts/cavalo_negro/cavalo_negro.glb --base cavalo   # pelagem: só as texturas
 python3 tools/blender/criaturas/lobo.py             # os 3 lobos procedurais
 python3 tools/importar_criatura.py assets/Creatures/Enemies/lobo_sombra_neon/lobo_sombra_neon.glb   # → js/assets/criaturas/
 python3 tools/topologia/diagnostico.py              # inventário e relatório (só leitura)

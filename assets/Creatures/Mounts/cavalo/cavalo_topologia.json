@@ -1,0 +1,174 @@
+{
+ "id": "cavalo",
+ "fonte": "assets/Creatures/Mounts/cavalo/fonte/cavalo.glb",
+ "antes": {
+  "vertices": 86834,
+  "faces": 150754,
+  "triangulos": 150754,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 22060,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 427,
+  "finos_pct": 0.1
+ },
+ "limpeza": {
+  "soldados": 11557,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 75277,
+  "faces": 150754,
+  "triangulos": 150754,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 2,
+  "finos_pct": 0.1
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 8986,
+  "faces": 8976,
+  "triangulos": 17952,
+  "quads": 8976,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 104,
+  "soltos": 0,
+  "degeneradas": 1,
+  "cascas": 3,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 0.0
+ },
+ "ajuste_esqueleto": {
+  "escala_z": 1.774,
+  "cabeca_dz": -0.07,
+  "comprimento": 1.899,
+  "altura": 1.479,
+  "patas": {
+   "FL": [
+    0.087,
+    -0.32,
+    0.025
+   ],
+   "HL": [
+    0.114,
+    0.658,
+    0.026
+   ],
+   "FR": [
+    -0.086,
+    -0.318,
+    0.026
+   ],
+   "HR": [
+    -0.114,
+    0.66,
+    0.028
+   ]
+  }
+ },
+ "sela": {
+  "z": 1.1013,
+  "y": 0.109,
+  "z_frac": 0.7448,
+  "y_frac": 0.0574,
+  "estribo_x": 0.2685,
+  "meia_largura": 0.1891,
+  "arcao_z": 1.245,
+  "patilha_z": 1.1784,
+  "caixa": {
+   "y0": -0.1759,
+   "y1": 0.3369,
+   "z0": 0.6577,
+   "borda": 0.0285
+  }
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 17952,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 8976,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 4488,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 1794,
+   "sem_osso": 0
+  }
+ ],
+ "escala_deslocamentos": 1.774,
+ "amortecer": {
+  "correr": 0.55,
+  "trotar": 0.8,
+  "saltar": 0.6
+ },
+ "pelagens": [
+  {
+   "id": "cavalo_negro",
+   "glb": "assets/Creatures/Mounts/cavalo_negro/cavalo_negro.glb",
+   "mascara": "pelo_cavalo",
+   "mascara_pct": 21.2
+  },
+  {
+   "id": "cavalo_tordilho",
+   "glb": "assets/Creatures/Mounts/cavalo_tordilho/cavalo_tordilho.glb",
+   "mascara": "pelo_cavalo",
+   "mascara_pct": 21.2
+  }
+ ],
+ "glb": "assets/Creatures/Mounts/cavalo/cavalo.glb",
+ "blend": "assets/Creatures/Mounts/cavalo/cavalo.blend",
+ "previa": "assets/Creatures/Mounts/cavalo/cavalo.png",
+ "folha": [
+  ".cache_criacao/cavalo/cavalo_andar.png",
+  ".cache_criacao/cavalo/cavalo_trotar.png",
+  ".cache_criacao/cavalo/cavalo_correr.png",
+  ".cache_criacao/cavalo/cavalo_comer.png",
+  ".cache_criacao/cavalo/cavalo_sentar.png",
+  ".cache_criacao/cavalo/cavalo_dormir.png",
+  ".cache_criacao/cavalo/cavalo_uivar.png",
+  ".cache_criacao/cavalo/cavalo_brincar.png"
+ ],
+ "ossos": 31,
+ "animacoes": [
+  "andar",
+  "atacar",
+  "atordoado",
+  "brincar",
+  "carinho",
+  "comer",
+  "correr",
+  "dano",
+  "dormir",
+  "idle",
+  "morte",
+  "saltar",
+  "sentar",
+  "trotar",
+  "uivar"
+ ],
+ "segundos": 106
+}

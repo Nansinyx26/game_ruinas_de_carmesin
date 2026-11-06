@@ -150,10 +150,13 @@ const Criaturas3D = {
   // Geometria das coleiras no espaço do osso do pescoço (o eixo do osso é +Z): o raio e a altura
   // vêm dos vértices da própria malha presos ao pescoço; a plaqueta vai no ponto mais baixo
   COLEIRAS: { couro: ['#4a2a14', 2, 0, '#b08840'], ferro: ['#5c6068', 1, 0, '#c8ccd2'], neon: ['#123040', 1, 0.9, '#5ff0ff'] },
+  // malhas enviadas que já trazem a coleira modelada (o beagle, com a plaquinha da pata)
+  COLEIRA_PROPRIA: new Set(['beagle']),
   coleiras(C) {
     if (C.coleirasGeo !== undefined) return C.coleirasGeo;
     C.coleirasGeo = null;
     if (C.ossos.some((b) => b.n === 'ombro.L')) return null;   // aves (asas): sem coleira (o osso do pescoço pega o peito todo)
+    if (this.COLEIRA_PROPRIA.has(C.id) || this.COLEIRA_PROPRIA.has(C.base)) return null;   // a malha já vem com a coleira dela
     const S = C.SK.find((s) => s.nivel === 0) || C.SK[0], k = S.ossos.indexOf('pescoco1');
     if (k < 0) return null;
     // a fatia da malha ao longo do osso do pescoço (no espaço do osso, o eixo é +Z): o raio do
@@ -197,11 +200,11 @@ const Criaturas3D = {
   },
 
   // ------------------------------------------------------------------ peças da espécie
-  // id da criatura (ou da base dela) → peças: chifres (cabra), crista e barbela (galinha), cascos
-  // (cavalos). Medidas na fatia da malha no espaço de cada osso, como as coleiras.
+  // id da criatura (ou da base dela) → peças que a malha remodelada não tem: chifres (cabra) e bico
+  // chato (pato, ganso). Medidas na fatia da malha no espaço de cada osso, como as coleiras. (A
+  // galinha enviada já traz crista e barbela modeladas; a 'crista' continua aqui para quem precisar.)
   ACESSORIOS: {
     cabra: [['chifres', 'cabeca']],
-    galinha: [['crista', 'cabeca']],
     pato: [['bico_chato', 'cabeca']],
     ganso: [['bico_chato', 'cabeca']],
   },

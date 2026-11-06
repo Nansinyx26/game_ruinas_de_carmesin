@@ -1,0 +1,153 @@
+{
+ "id": "gato_malhado",
+ "fonte": "assets/Creatures/Pets/Cats/gato_malhado/fonte/gato.glb",
+ "antes": {
+  "vertices": 34356,
+  "faces": 58176,
+  "triangulos": 58176,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 10142,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 197,
+  "finos_pct": 0.1
+ },
+ "limpeza": {
+  "soldados": 5266,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 29090,
+  "faces": 58176,
+  "triangulos": 58176,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.1
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 10147,
+  "faces": 10145,
+  "triangulos": 20290,
+  "quads": 10145,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 0.0
+ },
+ "ajuste_esqueleto": {
+  "escala_z": 1.57,
+  "cabeca_dz": -0.187,
+  "comprimento": 1.899,
+  "altura": 1.482,
+  "patas": {
+   "FL": [
+    0.144,
+    -0.561,
+    0.036
+   ],
+   "HL": [
+    0.156,
+    0.479,
+    0.036
+   ],
+   "FR": [
+    -0.146,
+    -0.561,
+    0.038
+   ],
+   "HR": [
+    -0.159,
+    0.476,
+    0.036
+   ]
+  }
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 20290,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 10144,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 5072,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 2028,
+   "sem_osso": 0
+  }
+ ],
+ "escala_deslocamentos": 1.57,
+ "pelagens": [
+  {
+   "id": "gato_cinza",
+   "glb": "assets/Creatures/Pets/Cats/gato_cinza/gato_cinza.glb",
+   "mascara": "sem_olhos",
+   "mascara_pct": 100.0
+  },
+  {
+   "id": "gato_sombra",
+   "glb": "assets/Creatures/Pets/Cats/gato_sombra/gato_sombra.glb",
+   "mascara": "sem_olhos",
+   "mascara_pct": 100.0
+  }
+ ],
+ "glb": "assets/Creatures/Pets/Cats/gato_malhado/gato_malhado.glb",
+ "blend": "assets/Creatures/Pets/Cats/gato_malhado/gato_malhado.blend",
+ "previa": "assets/Creatures/Pets/Cats/gato_malhado/gato_malhado.png",
+ "folha": [
+  ".cache_criacao/gato_malhado/gato_malhado_andar.png",
+  ".cache_criacao/gato_malhado/gato_malhado_trotar.png",
+  ".cache_criacao/gato_malhado/gato_malhado_correr.png",
+  ".cache_criacao/gato_malhado/gato_malhado_comer.png",
+  ".cache_criacao/gato_malhado/gato_malhado_sentar.png",
+  ".cache_criacao/gato_malhado/gato_malhado_dormir.png",
+  ".cache_criacao/gato_malhado/gato_malhado_uivar.png",
+  ".cache_criacao/gato_malhado/gato_malhado_brincar.png"
+ ],
+ "ossos": 31,
+ "animacoes": [
+  "andar",
+  "atacar",
+  "atordoado",
+  "brincar",
+  "carinho",
+  "comer",
+  "correr",
+  "dano",
+  "dormir",
+  "idle",
+  "morte",
+  "saltar",
+  "sentar",
+  "trotar",
+  "uivar"
+ ],
+ "segundos": 105
+}

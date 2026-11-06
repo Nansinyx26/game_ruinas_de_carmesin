@@ -42,15 +42,15 @@ const PETS_ESPECIES = {
     clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' },
   },
   gato_malhado: {
-    nome: 'Gato malhado', categoria: 'companhia', modelo: 'gato_malhado', preco: 450, raridade: 'comum', voa: false, escala: 0.55,
+    nome: 'Gato malhado', categoria: 'companhia', modelo: 'gato_malhado', preco: 450, raridade: 'comum', voa: false, escala: 0.42,
     desc: 'Gato listrado dos telhados do Refúgio, pelo eriçado e opinião sobre tudo. Caça rato, ignora ordem.',
     nomes: ['Tigre', 'Biscoito', 'Faísca', 'Mel', 'Bigode'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
   gato_cinza: {
-    nome: 'Gato cinzento', categoria: 'companhia', modelo: 'gato_cinza', preco: 450, raridade: 'comum', voa: false, escala: 0.55,
+    nome: 'Gato cinzento', categoria: 'companhia', modelo: 'gato_cinza', preco: 450, raridade: 'comum', voa: false, escala: 0.42,
     desc: 'Pelo curto cinza-azulado, olhar de quem sabe onde fica a cozinha.',
     nomes: ['Fumaça', 'Névoa', 'Chumbo', 'Lua', 'Sombra'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
   gato_sombra: {
-    nome: 'Gato da Sombra', categoria: 'companhia', modelo: 'gato_sombra', preco: 2200, raridade: 'rara', voa: false, escala: 0.58,
+    nome: 'Gato da Sombra', categoria: 'companhia', modelo: 'gato_sombra', preco: 2200, raridade: 'rara', voa: false, escala: 0.44,
     desc: 'Negro com veios violeta que acendem no escuro. Raro: aparece no viveiro uma vez por lua.',
     nomes: ['Eclipse', 'Breu', 'Ônix', 'Vazio', 'Noite'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
   raposa: {
@@ -61,6 +61,10 @@ const PETS_ESPECIES = {
     nome: 'Cão de colo', categoria: 'companhia', modelo: 'cao_pequeno', preco: 700, raridade: 'comum', voa: false, escala: 0.55,
     desc: 'Cãozinho de focinho curto e pernas curtas. Late para o próprio rabo e protege o dono de folhas secas.',
     nomes: ['Pipoca', 'Bolinha', 'Tico', 'Pudim', 'Amendoim'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
+  beagle: {
+    nome: 'Beagle', categoria: 'companhia', modelo: 'beagle', preco: 750, raridade: 'comum', voa: false, escala: 0.55, coleiraPropria: true,
+    desc: 'Tricolor de orelhas compridas, faro de caçador e a coleira de couro com a plaquinha da pata. Segue qualquer cheiro até o fim.',
+    nomes: ['Faro', 'Trufa', 'Bóris', 'Pimenta', 'Sansão'], clipes: { parado: 'idle', andar: 'andar', trotar: 'trotar', correr: 'correr', sentar: 'sentar', dormir: 'dormir', comer: 'comer', brincar: 'brincar', carinho: 'carinho', chamar: 'uivar' } },
   buldogue: {
     nome: 'Buldogue', categoria: 'companhia', modelo: 'buldogue', preco: 800, raridade: 'comum', voa: false, escala: 0.6,
     desc: 'Focinho curto, peito largo e pernas curtas. Ronca alto, baba no travesseiro e não larga o dono por nada.',
@@ -205,7 +209,7 @@ const Pets = {
   },
   vitrine() {
     const R = game.room;
-    for (const [esp, fx, fy, pose] of [['asa_noturna', 0.45, 0.4, 'sentar'], ['lobo_manso', 0.7, 0.2, 'dormir'], ['cao_aurora', 0.36, 0.62, 'sentar'], ['cao_neve', 0.82, 0.36, 'parado'], ['asa_noturna', 0.64, 0.64, 'parado'], ['gato_malhado', 0.52, 0.22, 'dormir'], ['papagaio', 0.28, 0.4, 'parado']]) {
+    for (const [esp, fx, fy, pose] of [['asa_noturna', 0.45, 0.4, 'sentar'], ['lobo_manso', 0.7, 0.2, 'dormir'], ['cao_aurora', 0.36, 0.62, 'sentar'], ['cao_neve', 0.82, 0.36, 'parado'], ['beagle', 0.64, 0.64, 'sentar'], ['gato_malhado', 0.52, 0.22, 'dormir'], ['papagaio', 0.28, 0.4, 'parado']]) {
       const v = new VitrinePet(esp, R.w * fx, R.h * fy, pose);
       game.npcs.push(v);
     }
@@ -224,7 +228,7 @@ const Pets = {
         : { id: 'ficar', txt: 'Fica aqui.', fn: () => { c.modo = 'ficar'; c.fazer('sentar'); v(`${P.nome} senta e espera.`); } },
       { id: 'chamar', txt: 'Chamar a atenção (comando)', fn: () => { c.fazer('chamar'); v(`${P.nome} responde ao chamado.`); } },
       { id: 'nome', txt: 'Mudar o nome', fn: () => this.menuNome(P, () => v(`Agora é ${P.nome}.`)) },
-      PETS_ESPECIES[P.especie].voa ? null : { id: 'coleira', txt: `Coleira (${P.coleira ? PET_COLEIRAS[P.coleira].nome.toLowerCase() : 'nenhuma'})`, fn: () => this.menuColeira(P, (t) => v(t)) },
+      PETS_ESPECIES[P.especie].voa || PETS_ESPECIES[P.especie].coleiraPropria ? null : { id: 'coleira', txt: `Coleira (${P.coleira ? PET_COLEIRAS[P.coleira].nome.toLowerCase() : 'nenhuma'})`, fn: () => this.menuColeira(P, (t) => v(t)) },
       { id: 'guardar', txt: 'Deixar no Viveiro dos Alves', fn: () => { this.guardar(); Dialogo.fechar(); game.hud.toast(`${P.nome} foi para o Viveiro dos Alves`, '170,220,255'); } },
       { id: 'sair', txt: 'Até já.', fn: () => Dialogo.fechar() },
     ].filter(Boolean);
@@ -258,7 +262,7 @@ const Pets = {
     return true;
   },
   // catálogo em três grupos (cabem na caixa de diálogo): cães e lobos, gatos e raposa, aves
-  GRUPOS: { caes: ['Cães e lobos', ['lobo_manso', 'cao_aurora', 'cao_neve', 'cao_pequeno', 'buldogue']], gatos: ['Gatos e raposa', ['gato_malhado', 'gato_cinza', 'gato_sombra', 'raposa']],
+  GRUPOS: { caes: ['Cães e lobos', ['lobo_manso', 'cao_aurora', 'cao_neve', 'beagle', 'cao_pequeno', 'buldogue']], gatos: ['Gatos e raposa', ['gato_malhado', 'gato_cinza', 'gato_sombra', 'raposa']],
     aves: ['Aves', ['asa_noturna', 'papagaio', 'canario']] },
   catalogo(npc, volta) {
     const o = Object.keys(this.GRUPOS).map((g) => ({ id: 'grupo_' + g, tag: '$', txt: this.GRUPOS[g][0], fn: () => this.grupo(npc, g, volta) }));

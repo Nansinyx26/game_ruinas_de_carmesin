@@ -1212,7 +1212,10 @@ function buildTempestadeNula(g, k, part, lod) {
     const t = num(e.animTime), A = num(e.sela, 30), v = Math.min(1, num(e.moveSpeed) / 260), tro = Math.sin(t * 10) * v;
     P.hz = A + 2.4 - K.HZ0 + Math.abs(tro) * 1.4; P.hy = 0; P.bz = 0;
     P.tp = 0.06 + 0.12 * v; P.ty = 0; P.tr = 0; P.hp = 0.05 - 0.05 * v;
-    set3(P.fL, 2.4, -8.8, Math.max(0, A - 13.5)); set3(P.fR, 2.4, 8.8, Math.max(0, A - 13.5));
+    // pés dos lados do lombo (estribo: meia largura do animal na sela) e pendurados (perna: o quanto
+    // descem abaixo do assento; no cavalo, até os estribos)
+    const es = num(e.estribo, 8.8), pz = Math.max(0, A - num(e.pernaSela, 13.5));
+    set3(P.fL, 2.4, -es, pz); set3(P.fR, 2.4, es, pz);
     const hz = A + 9.5 - K.HAND0 + Math.abs(tro) * 0.8;
     set3(P.hL, 7.6, -3.0, hz); set3(P.hR, 7.6, 3.0, hz);
     P.cB = 0; P.flare = 0.04 + 0.1 * v; P.cFl = 0.1 * v;

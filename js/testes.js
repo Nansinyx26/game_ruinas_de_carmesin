@@ -2116,7 +2116,7 @@ const EclipseTests = {
       this.ok('pets: o catálogo em três grupos (cães e lobos, gatos e raposa, aves)', ['caes', 'gatos', 'aves'].every((gp) => Dialogo.temId('grupo_' + gp)));
       const vistos = [];
       for (const gp of ['caes', 'gatos', 'aves']) { Dialogo.escolherId('grupo_' + gp); vistos.push(...Dialogo.opcoes.filter((o) => o.id.startsWith('ver_')).map((o) => o.id.slice(4))); Dialogo.escolherId('voltar'); }
-      this.ok('pets: as 12 espécies com modelo (lobo, 5 cães com o buldogue, 3 gatos, raposa, papagaio, canário e a Asa Noturna)', Object.keys(PETS_ESPECIES).every((e) => vistos.includes(e)) && vistos.length === 12, vistos.join(','));
+      this.ok('pets: as 13 espécies com modelo (lobo, 6 cães com o beagle e o buldogue, 3 gatos, raposa, papagaio, canário e a Asa Noturna)', Object.keys(PETS_ESPECIES).every((e) => vistos.includes(e)) && vistos.length === 13, vistos.join(','));
       Dialogo.escolherId('grupo_aves');
       g.stats.soulsBank = 100;
       Dialogo.escolherId('ver_asa_noturna');
@@ -2266,9 +2266,12 @@ const EclipseTests = {
       const Sg = { fl: 0, fi: 0 }, clg = new Set();
       for (let i = 0; i < 60; i++) clg.add(gal.petClipe(Sg, Criaturas3D.dados.galinha, 0.2)[0]);
       this.ok('animais: a galinha parada cisca (comer) e olha em volta', clg.has('comer') && clg.has('idle'), [...clg].join(','));
-      // peças das espécies presas aos ossos: chifres da cabra, crista da galinha, bico chato do pato
+      // peças das espécies presas aos ossos: chifres da cabra e bico chato do pato (a galinha enviada
+      // já traz crista e barbela na malha: nenhuma peça a mais)
       const peca = (id, osso) => { const mm = g.model3('cri_' + id); return mm && mm.nodes[osso].kids.some((k) => k.name.startsWith('acess_') && k.geo && k.geo.length > 60); };
-      this.ok('animais: chifres na cabra, crista na galinha e bico chato no pato', peca('cabra', 'cabeca') && peca('galinha', 'cabeca') && peca('pato', 'cabeca'));
+      this.ok('animais: chifres na cabra e bico chato no pato; a galinha com a crista da própria malha', peca('cabra', 'cabeca') && peca('pato', 'cabeca') && !peca('galinha', 'cabeca'));
+      const GA = Criaturas3D.dados.galinha;
+      this.ok('animais: a galinha é a malha enviada (esqueleto de ave com as asas dobradas, 11 animações de galinha)', GA && GA.nb === 26 && ['idle', 'andar', 'comer', 'dormir', 'voar', 'chamar'].every((k) => GA.clipes[k]) && !GA.base, GA && Object.keys(GA.clipes).join(','));
       // a ave da Metrópole levanta voo quando o herói chega perto
       World.loadZone('metro_centro', null);
       const ave = g.npcs.find((n) => n instanceof AnimalCidade && n.T.tipo === 'ave');
@@ -2341,6 +2344,29 @@ const EclipseTests = {
       this.ok('montarias: salva no mundo', World.state.montarias.lista.includes('lobo_montaria') && World.state.montarias.ativa === 'lobo_montaria');
       Montarias.guardar();
       this.ok('montarias: deixar no cercado', !Montarias.ent());
+      // o cavalo (a malha enviada): sela medida na malha, o herói sentado no assento de verdade
+      World.loadZone(BAIRRO_ID, null);
+      Povo.conversar(g.npcs.find((n) => n instanceof Morador && n.name === 'TOBIAS')); Dialogo.escolherId('montarias');
+      this.ok('montarias: os cavalos à venda junto com os lobos (castanho, tordilho e negro)', ['cavalo', 'cavalo_tordilho', 'cavalo_negro'].every((t) => Dialogo.temId('m_' + t)));
+      Dialogo.escolherId('m_cavalo'); Dialogo.escolherId('sim'); Dialogo.fechar();
+      Criaturas3D.carregar('cavalo');
+      for (let i = 0; i < 150 && !Criaturas3D.pronto('cavalo'); i++) await new Promise((r) => setTimeout(r, 100));
+      const cv = Montarias.ent(), CC = Criaturas3D.dados.cavalo;
+      this.ok('montarias: o cavalo é a malha enviada (31 ossos, LODs, as animações do quadrúpede)', cv && cv.T.modelo === 'cavalo' && CC && CC.nb === 31 && CC.lods === 4 && ['andar', 'trotar', 'correr', 'comer', 'dormir'].every((k) => CC.clipes[k]), CC && CC.lods);
+      cv.update(0.016); cv.talk();
+      const XC = Montarias.proxy(p);
+      this.ok('montarias: no cavalo, o herói senta no assento medido (74,5% da altura do modelo), com os pés para fora do lombo',
+        p.montado === cv && Math.abs(XC.sela - CC.h * cv.escala * 0.745) < 0.01 && XC.estribo > 8.8 && XC.pernaSela === 21, `${XC.sela.toFixed(1)} ${XC.estribo.toFixed(1)}`);
+      p.facing = 0; cv.update(0.016);
+      this.ok('montarias: o assento fica sob o herói (o cavalo anda à frente o quanto a sela fica atrás do centro)', cv.recuo() > 0 && Math.abs(cv.x - (p.x + cv.recuo())) < 0.01 && cv.y === p.y, cv.recuo().toFixed(2));
+      // a separação de corpos do jogo não empurra o herói para fora da montaria em que ele está
+      // sentado (ela é um NPC sólido para todos os outros)
+      for (let i = 0; i < 5; i++) { g.separate(); cv.update(0.016); }
+      this.ok('montarias: montado, o herói continua sobre a sela (a colisão não o tira do cavalo)', Math.hypot(p.x - cv.x, p.y - cv.y) <= cv.recuo() + 0.5, Math.hypot(p.x - cv.x, p.y - cv.y).toFixed(2));
+      Montarias.desmontar();
+      cv.paradoT = 8;
+      this.igual('montarias: o cavalo parado pasta (não senta como o lobo)', cv.petClipe({ fl: 0, fi: 0 }, CC, 0.016)[0], 'comer');
+      Montarias.guardar();
     } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
     this.ok('montarias: sem exceção', !erro, erro);
     if (Dialogo.aberto) Dialogo.fechar();

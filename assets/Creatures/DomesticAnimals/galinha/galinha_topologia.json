@@ -1,0 +1,125 @@
+{
+ "id": "galinha",
+ "fonte": "assets/Creatures/DomesticAnimals/galinha/fonte/Galinha.glb",
+ "antes": {
+  "vertices": 105518,
+  "faces": 189720,
+  "triangulos": 189720,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 20660,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 328,
+  "finos_pct": 0.1
+ },
+ "limpeza": {
+  "soldados": 10656,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 94862,
+  "faces": 189720,
+  "triangulos": 189720,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.1
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 10119,
+  "faces": 10117,
+  "triangulos": 20234,
+  "quads": 10117,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 0.0
+ },
+ "medidas": {
+  "largura": 0.958,
+  "comprimento": 1.782,
+  "altura": 1.898
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 20234,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 10116,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 5058,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 2022,
+   "sem_osso": 0
+  }
+ ],
+ "pelagens": [
+  {
+   "id": "galinha_ruiva",
+   "glb": "assets/Creatures/DomesticAnimals/galinha_ruiva/galinha_ruiva.glb",
+   "mascara": "penas_claras",
+   "mascara_pct": 33.9
+  },
+  {
+   "id": "galinha_preta",
+   "glb": "assets/Creatures/DomesticAnimals/galinha_preta/galinha_preta.glb",
+   "mascara": "penas_claras",
+   "mascara_pct": 33.9
+  }
+ ],
+ "glb": "assets/Creatures/DomesticAnimals/galinha/galinha.glb",
+ "blend": "assets/Creatures/DomesticAnimals/galinha/galinha.blend",
+ "previa": "assets/Creatures/DomesticAnimals/galinha/galinha.png",
+ "folha": [
+  ".cache_criacao/galinha/galinha_idle.png",
+  ".cache_criacao/galinha/galinha_andar.png",
+  ".cache_criacao/galinha/galinha_comer.png",
+  ".cache_criacao/galinha/galinha_dormir.png",
+  ".cache_criacao/galinha/galinha_voar.png",
+  ".cache_criacao/galinha/galinha_chamar.png",
+  ".cache_criacao/galinha/galinha_sentar.png",
+  ".cache_criacao/galinha/galinha_brincar.png"
+ ],
+ "ossos": 26,
+ "animacoes": [
+  "andar",
+  "brincar",
+  "carinho",
+  "chamar",
+  "comer",
+  "dano",
+  "dormir",
+  "idle",
+  "planar",
+  "sentar",
+  "voar"
+ ],
+ "segundos": 142
+}

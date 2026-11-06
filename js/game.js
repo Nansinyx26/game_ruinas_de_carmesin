@@ -455,7 +455,7 @@ class Game {
     // NPCs são sólidos para o herói
     if (pSolid) {
       for (const n of this.npcs) {
-        if (n.flat) continue;   // passagens e portais do mundo aberto
+        if (n.flat || n === p.montado) continue;   // passagens e portais do mundo aberto; a montaria em que ele está sentado
         const dx = p.x - n.x, dy = p.y - n.y, min = n.radius + p.radius, d2 = dx * dx + dy * dy;
         if (d2 < min * min && d2 > 0.0001) { const d = Math.sqrt(d2); p.x = n.x + (dx / d) * min; p.y = n.y + (dy / d) * min; }
       }

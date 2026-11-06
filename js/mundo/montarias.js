@@ -11,10 +11,26 @@
 // lados do lombo, mãos nas rédeas), corre mais (×1,6 a ×2) e não luta; a montaria acompanha o
 // passo (andar/trotar/correr pela velocidade). Fora da sela, ela segue o herói como um animal de
 // companhia. Estado: World.state.montarias.
-// O cavalo de verdade precisa de malha própria (a do lobo não vira cavalo): quando houver, entra
-// aqui com a mesma lógica.
+// CAVALOS: a malha enviada (GLB do Meshy, com sela, manta e rédeas) com retopologia, esqueleto e
+// animações no Blender (tools/blender/criaturas/meshy.py). A SELA foi medida na malha: o assento
+// (altura e posição ao longo do corpo) e a largura dos estribos vêm em sela/selaY/estribo, e o
+// herói senta no assento de verdade. Parado sem cavaleiro, o cavalo pasta (não senta como o lobo).
+//   Cavalo castanho (comum), tordilho (incomum, nível 15) e negro (raro, nível 40).
 // ---------------------------------------------------------------------------
 const MONTARIAS_TIPOS = {
+  // medidos na malha (tools/blender/criaturas/meshy.py → cavalo_topologia.json, "sela"): sela =
+  // altura do assento (74,5% da altura do modelo, entre o arção e a patilha); selaY = o assento
+  // atrás do centro (5,7% do comprimento); estribo = meia largura do lombo abaixo da sela (35% da
+  // largura); perna = o quanto os pés descem abaixo do assento (até os estribos)
+  cavalo: { nome: 'Cavalo castanho', modelo: 'cavalo', preco: 1800, nivel: 1, vel: 1.75, escala: 1.25, raridade: 'comum',
+    sela: 0.745, selaY: 0.057, estribo: 0.35, perna: 21, clipes: { sentar: 'comer' },
+    desc: 'Castanho de meias brancas, arreado com sela de couro e manta azul. Manso, resistente e bom de estrada.' },
+  cavalo_tordilho: { nome: 'Cavalo tordilho', modelo: 'cavalo_tordilho', preco: 4200, nivel: 15, vel: 1.85, escala: 1.25, raridade: 'incomum',
+    sela: 0.745, selaY: 0.057, estribo: 0.35, perna: 21, clipes: { sentar: 'comer' },
+    desc: 'Pelo cinza-prateado que clareia com a idade. Atento, rápido na arrancada, não refuga ponte nem rio.' },
+  cavalo_negro: { nome: 'Cavalo negro', modelo: 'cavalo_negro', preco: 9000, nivel: 40, vel: 1.95, escala: 1.3, raridade: 'rara',
+    sela: 0.745, selaY: 0.057, estribo: 0.35, perna: 21, clipes: { sentar: 'comer' },
+    desc: 'Negro de crina longa, dos haras de Asterion. Fôlego de sobra e gênio forte: só aceita quem já provou o seu valor.' },
   lobo_montaria: { nome: 'Lobo de Montaria', modelo: 'lobo_montaria', preco: 2500, nivel: 1, vel: 1.6, escala: 1.65, raridade: 'comum',
     desc: 'Lobo grande da Guarda, criado para carregar batedores. Firme na trilha, paciente com cavaleiro novato.' },
   lobo_guerra: { nome: 'Lobo de Guerra', modelo: 'lobo_guerra', preco: 6000, nivel: 30, vel: 1.8, escala: 1.75, raridade: 'rara',
@@ -101,6 +117,7 @@ const Montarias = {
     if (!p.montado) return p;
     const X = p._proxyMont || (p._proxyMont = Object.create(p));
     X.state = 'montado'; X.stateTime = p.stateTime; X.animTime = p.animTime; X.sela = p.montado.sela(); X.moveSpeed = p.moveSpeed;
+    X.estribo = p.montado.estribo(); X.pernaSela = p.montado.T.perna || 13.5;
     return X;
   },
   // ------------------------------------------------------------------ estrebaria (serviço do Tobias)
@@ -119,7 +136,7 @@ const Montarias = {
       return { id: 'm_' + t, tag: '$', txt: `${T.nome} (${T.raridade}) — ${T.preco} células`, off, fn: () => this.confirmar(t, volta) };
     });
     o.push({ id: 'voltar', txt: 'Voltar', fn: () => volta('Quando quiser, eles estão no cercado.') });
-    Dialogo.mostrar('Os lobos da Guarda. Rápidos na estrada, inúteis na briga: montado, você não luta. Escolha com calma.', o);
+    Dialogo.mostrar('Cavalos do cercado e os lobos da Guarda. Rápidos na estrada, inúteis na briga: montado, você não luta. Escolha com calma.', o);
   },
   confirmar(t, volta) {
     const T = MONTARIAS_TIPOS[t];
@@ -142,7 +159,8 @@ class MontariaEnt extends NPC {
   constructor(tipo, x, y) {
     super({ model: 'civil', name: MONTARIAS_TIPOS[tipo].nome, lines: ['…'] }, x, y);
     this.tipo = tipo; this.T = MONTARIAS_TIPOS[tipo];
-    this.E = { modelo: this.T.modelo, clipes: MONTARIA_CLIPES, voa: false };
+    this.K = Object.assign({}, MONTARIA_CLIPES, this.T.clipes || {});
+    this.E = { modelo: this.T.modelo, clipes: this.K, voa: false };
     this.key = null; this.escala = this.T.escala; this.height = 46; this.radius = 16; this.papel = 'Montaria';
     this.vx = 0; this.vy = 0; this.alt = 0; this.paradoT = 0; this.cavaleiro = null; this.state = 'idle';
   }
@@ -150,8 +168,13 @@ class MontariaEnt extends NPC {
   set verb(v) { /* (o NPC base define verb; aqui é calculado) */ }
   canTalk() { return !game.combatActive() || !!this.cavaleiro; }
   talk() { if (this.cavaleiro) Montarias.desmontar(); else Montarias.montar(this); }
-  // altura da sela (onde o quadril do cavaleiro senta), pelo tamanho do modelo
-  sela() { const C = Criaturas3D.dados[this.T.modelo]; return (C ? C.h : 33) * this.escala * 0.68; }
+  // altura da sela (onde o quadril do cavaleiro senta), pelo tamanho do modelo: no cavalo, o
+  // assento medido na malha; nos lobos, 68% da altura
+  sela() { const C = Criaturas3D.dados[this.T.modelo]; return (C ? C.h : 33) * this.escala * (this.T.sela || 0.68); }
+  // meia largura do lombo onde as pernas do cavaleiro descem (os pés ficam do lado de fora)
+  estribo() { const C = Criaturas3D.dados[this.T.modelo]; return this.T.estribo && C ? Math.max(8.8, C.d * this.escala * this.T.estribo + 1.5) : 8.8; }   // (C.d: a largura; C.w: o comprimento)
+  // o assento fica atrás do centro do modelo: a montaria anda à frente do herói essa distância
+  recuo() { const C = Criaturas3D.dados[this.T.modelo]; return this.T.selaY && C ? C.w * this.escala * this.T.selaY : 0; }
   update(dt) {
     this.animTime += dt;
     const id = this.T.modelo;
@@ -159,7 +182,8 @@ class MontariaEnt extends NPC {
     const p = game.player;
     if (this.cavaleiro) {
       // na sela: o lugar e o giro são os do herói; o passo é o dele
-      this.x = p.x; this.y = p.y; this.vx = p.vx; this.vy = p.vy; this.facing = p.facing;
+      const r = this.recuo();
+      this.x = p.x + Math.cos(p.facing || 0) * r; this.y = p.y + Math.sin(p.facing || 0) * r; this.vx = p.vx; this.vy = p.vy; this.facing = p.facing;
       this.paradoT = Math.hypot(p.vx, p.vy) < 10 ? this.paradoT + dt : 0;
       this.state = Math.hypot(p.vx, p.vy) > 10 ? 'walk' : 'idle';
       return;
@@ -179,7 +203,7 @@ class MontariaEnt extends NPC {
     this.state = v > 12 ? 'walk' : 'idle';
   }
   petClipe(S, C, dt) {
-    const K = MONTARIA_CLIPES, d = (n) => (C.clipes[n] ? C.clipes[n].d : 1);
+    const K = this.K, d = (n) => (C.clipes[n] ? C.clipes[n].d : 1);
     const v = Math.hypot(this.vx, this.vy) / (this.cavaleiro ? 1.6 : 1);   // (montado, a passada é a de um animal grande)
     if (v > 10) {
       const n = v < 90 ? K.andar : v < 190 ? K.trotar : K.correr;

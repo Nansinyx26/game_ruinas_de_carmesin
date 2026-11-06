@@ -5,7 +5,7 @@
 // montarias). Cada cidade tem os SEUS, pela cultura e pelo clima (identidade regional, não todas
 // as espécies em todo lugar):
 //   Refúgio da Aurora (praça e Bairro da Muralha)  cães de rua da Aurora (marrons e creme)
-//   Clareira dos Sinais (Velmora, floresta)         cães de caça cinzentos dos caçadores
+//   Clareira dos Sinais (Velmora, floresta)         beagles dos caçadores (cães de caça)
 //   Acampamento e Fortaleza de Asterion (neve)       cães das neves (puxam os trenós da Vigília)
 //   Praça Central da Metrópole                       Asas Noturnas pousadas nos telhados de neon
 // Todos com os modelos do Blender (js/mundo/criaturas3d.js). Comportamento: andam em volta do
@@ -17,18 +17,22 @@
 const ANIMAIS_TIPOS = {
   cao_rua: { nome: 'Cão de rua', especie: 'cao_aurora', tipo: 'cao', adota: true, escala: 0.7,
     frases: ['abana o rabo e encosta a cabeça na sua mão', 'fareja as suas botas e espirra', 'deita de barriga para cima'] },
-  cao_caca: { nome: 'Cão de caça', especie: 'lobo_manso', tipo: 'cao', adota: false, escala: 0.78, coleira: 'couro', dono: 'os caçadores da clareira',
+  cao_caca: { nome: 'Cão de caça', especie: 'beagle', tipo: 'cao', adota: false, escala: 0.55, dono: 'os caçadores da clareira',   // (o beagle já tem coleira)
     frases: ['fareja o ar e volta a olhar para a trilha', 'aceita o carinho, mas não tira os olhos da mata'] },
   cao_neve: { nome: 'Cão das Neves', especie: 'cao_neve', tipo: 'cao', adota: false, escala: 0.78, coleira: 'ferro', dono: 'a Vigília de Asterion',
     frases: ['sacode a neve do pelo em cima de você', 'uiva curto, como quem conversa'] },
   cao_guarda: { nome: 'Cão de guarda', especie: 'buldogue_tigrado', tipo: 'cao', adota: false, escala: 0.6, coleira: 'ferro', dono: 'os comerciantes do mercado',
     frases: ['ronca, abre um olho e volta a dormir em cima do caixote', 'cheira o seu bolso: tem cheiro de pão'] },
-  gato_rua: { nome: 'Gato de rua', especie: 'gato_malhado', tipo: 'gato', adota: true, escala: 0.55,
+  gato_rua: { nome: 'Gato de rua', especie: 'gato_malhado', tipo: 'gato', adota: true, escala: 0.42,
     frases: ['aceita um carinho, depois morde de leve', 'se esfrega na sua perna e vai embora sem olhar para trás', 'ronrona como um motor velho'] },
-  gato_cinza: { nome: 'Gato cinzento', especie: 'gato_cinza', tipo: 'gato', adota: true, escala: 0.55,
+  gato_cinza: { nome: 'Gato cinzento', especie: 'gato_cinza', tipo: 'gato', adota: true, escala: 0.42,
     frases: ['pisca devagar: é um elogio', 'finge que não te viu'] },
-  galinha: { nome: 'Galinha', especie: 'galinha', tipo: 'ave_chao', adota: false, escala: 0.3, dono: 'os moradores',
+  galinha: { nome: 'Galinha', especie: 'galinha', tipo: 'ave_chao', adota: false, escala: 0.22, dono: 'os moradores',
     frases: ['cacareja indignada e volta a ciscar', 'bica o seu cadarço'] },
+  galinha_ruiva: { nome: 'Galinha', especie: 'galinha_ruiva', tipo: 'ave_chao', adota: false, escala: 0.22, dono: 'os moradores',
+    frases: ['arrepia as penas ruivas e te encara de lado', 'cisca a terra do lado da sua bota'] },
+  galinha_preta: { nome: 'Galinha', especie: 'galinha_preta', tipo: 'ave_chao', adota: false, escala: 0.22, dono: 'os moradores',
+    frases: ['as penas pretas brilham verdes no sol', 'canta um cacarejo comprido: botou ovo'] },
   pato: { nome: 'Pato', especie: 'pato', tipo: 'ave_chao', adota: false, escala: 0.32, dono: 'a vila do lago',
     frases: ['grasna e balança o rabo', 'te segue esperando pão'] },
   ganso: { nome: 'Ganso', especie: 'ganso', tipo: 'ave_chao', adota: false, escala: 0.36, dono: 'a vila do lago',
@@ -54,8 +58,8 @@ const ANIMAIS_TIPOS = {
 //   o oásis de Seraph: cabras
 const ANIMAIS_ZONAS = {
   aurora: [['cao_rua', 0.3, 0.7], ['cao_rua', 0.72, 0.36], ['gato_rua', 0.58, 0.28], ['pombo', 0.45, 0.55], ['pombo', 0.48, 0.6], ['pombo', 0.42, 0.62], ['pavao', 0.62, 0.42]],
-  aurora_bairro: [['cao_rua', 0.58, 0.62], ['cao_rua', 0.4, 0.82], ['gato_rua', 0.28, 0.5], ['gato_cinza', 0.7, 0.8], ['galinha', 0.5, 0.88], ['galinha', 0.54, 0.86]],
-  velmora_clareira: [['cao_caca', 0.6, 0.72], ['cao_caca', 0.66, 0.78], ['cabra', 0.3, 0.6], ['cabra', 0.34, 0.66], ['galinha', 0.45, 0.8], ['galinha', 0.48, 0.84], ['galinha', 0.43, 0.86]],
+  aurora_bairro: [['cao_rua', 0.58, 0.62], ['cao_rua', 0.4, 0.82], ['gato_rua', 0.28, 0.5], ['gato_cinza', 0.7, 0.8], ['galinha', 0.5, 0.88], ['galinha_ruiva', 0.54, 0.86]],
+  velmora_clareira: [['cao_caca', 0.6, 0.72], ['cao_caca', 0.66, 0.78], ['cabra', 0.3, 0.6], ['cabra', 0.34, 0.66], ['galinha', 0.45, 0.8], ['galinha_preta', 0.48, 0.84], ['galinha_ruiva', 0.43, 0.86]],
   lagoa_ilha: [['pato', 0.3, 0.3], ['pato', 0.34, 0.34], ['pato', 0.28, 0.36], ['ganso', 0.62, 0.3], ['ganso', 0.66, 0.34]],
   asterion_acampamento: [['cao_neve', 0.55, 0.7], ['cao_neve', 0.62, 0.62], ['cao_neve', 0.48, 0.78], ['ovelha', 0.3, 0.4], ['ovelha', 0.34, 0.46], ['ovelha', 0.26, 0.46]],
   asterion_fortaleza: [['cao_neve', 0.5, 0.82]],
