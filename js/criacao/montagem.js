@@ -321,12 +321,19 @@ const Criacao3D = (function () {
   // corpo DESTE personagem recua para dentro dela (cópia própria das posições; as compartilhadas
   // ficam como estão). Refeito quando as peças mudam.
   const COBRE = ['peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas', 'capacete'];
+  const OPC = { herdarPesos: true };   // (os testes de encaixe desligam para comparar o antes e o depois)
   const RECUA = ['corpo', 'rosto', 'barba', 'bigode'];
   function recuarCorpo(m) {
     const C = m && m.cria;
     if (!C) return;
     const pele = RECUA.flatMap((k) => C.peles[k] || []);
-    for (const S of pele) if (S.pos0) S.pos.set(S.pos0);
+    for (const S of pele) {
+      S._mapa = null;
+      if (S.pos0) S.pos.set(S.pos0);
+      if (S.bi0) { S.bi.set(S.bi0); S.bw.set(S.bw0); }   // os pesos originais (a peça anterior pode ter saído)
+      if (S.bones0) { S.bones = S.bones0; S.inv = S.inv0; S.bones0 = S.inv0 = null; S.S = S.E = null; }   // e os ossos
+      S.cobre = null;
+    }
     // (o cabelo em mechas do Blender também cobre: o couro cabeludo de rostos maiores que a cabeça
     // de referência atravessava as mechas curtas)
     // de referência atravessava as mechas curtas); ali o recuo é menor (a testa sob a franja)
@@ -336,16 +343,43 @@ const Criacao3D = (function () {
     if (!pecas.length) return;
     const H = 1.2, G = new Map(), chave = (i, j, k) => (i * 92837111) ^ (j * 689287499) ^ (k * 283923481);
     pecas.forEach((P, pi) => {
-      // recuo máximo: 3 nas armaduras, 1 nas mechas do cabelo, 0,35 na barba (perto da boca o rosto
-      // afundava e ficava uma mancha escura em volta do bigode)
-      const p = P.pos, n = P.nor, mx = barbas.includes(P) ? 0.35 : mechas.includes(P) ? 1.0 : 3.0;
+      // recuo máximo: 7 nas armaduras (só a pele na sombra da peça recua, e fica sempre por baixo
+      // dela; com 3, o peito e a cabeça mais largos que a peça ainda furavam o peitoral e o elmo),
+      // 1 nas mechas do cabelo, 0,35 na barba (perto da boca o rosto afundava e ficava uma mancha
+      // escura em volta do bigode)
+      const p = P.pos, n = P.nor, mx = barbas.includes(P) ? 0.35 : mechas.includes(P) ? 1.0 : 7.0;
       for (let i = 0; i < p.length; i += 3) {
         const c = chave(Math.floor(p[i] / H), Math.floor(p[i + 1] / H), Math.floor(p[i + 2] / H));
         let L = G.get(c);
         if (!L) G.set(c, (L = []));
-        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2], mx, pi);   // (pi: a peça; a barba não recua dentro de si mesma)
+        L.push(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2], mx, pi, i / 3);   // (pi: a peça; a barba não recua dentro de si mesma; o vértice)
       }
     });
+    // Pesos herdados: a pele coberta por uma ARMADURA passa a seguir os ossos da peça, com os pesos
+    // do vértice da peça que a cobre. Recuada para dentro na pose de repouso, a pele com pesos
+    // próprios ainda podia furar a peça em movimento (ombro, cotovelo, joelho, tronco girando); com
+    // os mesmos pesos, as duas se movem juntas em qualquer pose. (Cabelo e barba ficam fora: têm
+    // ossos de mecha que o corpo não tem.)
+    const armas = new Set(COBRE.flatMap((v) => C.peles[v] || []));
+    // (a região da pele que não tem um osso da peça, como a do tronco sem o da cabeça na borda do
+    // elmo, ganha esse osso na lista dela, com a matriz inversa de repouso da peça)
+    const mapear = (P, S) => {
+      let M = S._mapa && S._mapa.get(P);
+      if (M) return M;
+      M = P.bones.map((b, j) => {
+        let i = S.bones.indexOf(b);
+        if (i < 0 && S.bones.length < 255) {
+          if (!S.bones0) { S.bones0 = S.bones; S.inv0 = S.inv; S.bones = S.bones.slice(); }
+          const inv = new Float32Array(S.inv.length + 12);
+          inv.set(S.inv); inv.set(P.inv.subarray(j * 12, j * 12 + 12), S.inv.length);
+          S.inv = inv; S.bones.push(b); S.S = S.E = null;   // (as matrizes do R3D.skin são refeitas no tamanho novo)
+          i = S.bones.length - 1;
+        }
+        return i;
+      });
+      (S._mapa || (S._mapa = new Map())).set(P, M);
+      return M;
+    };
     const MARGEM = 0.28, R2 = 2.3 * 2.3, LAT2 = 1.7 * 1.7;
     for (const S of pele) {
       if (!S.pos0) { S.pos0 = S.pos; S.pos = new Float32Array(S.pos0); }
@@ -356,21 +390,63 @@ const Criacao3D = (function () {
         for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
           const L = G.get(chave(ci + a, cj + b, ck + c));
           if (!L) continue;
-          for (let t = 0; t < L.length; t += 8) {
+          for (let t = 0; t < L.length; t += 9) {
             if (L[t + 7] === eu) continue;
             const dx = X - L[t], dy = Y - L[t + 1], dz = Z - L[t + 2], d2 = dx * dx + dy * dy + dz * dz;
             if (d2 < best) { best = d2; q = L; qo = t; }
           }
         }
         if (!q) continue;
-        let nx = q[qo + 3], ny = q[qo + 4], nz = q[qo + 5];
-        if (nx * nb[i] + ny * nb[i + 1] + nz * nb[i + 2] < 0) { nx = -nx; ny = -ny; nz = -nz; }   // a face de dentro da peça
+        let nx = q[qo + 3], ny = q[qo + 4], nz = q[qo + 5], sn = 1;
+        if (nx * nb[i] + ny * nb[i + 1] + nz * nb[i + 2] < 0) { nx = -nx; ny = -ny; nz = -nz; sn = -1; }   // a face de dentro da peça
         const dx = X - q[qo], dy = Y - q[qo + 1], dz = Z - q[qo + 2], d = dx * nx + dy * ny + dz * nz;
         if (best - d * d > LAT2 || d <= -MARGEM) continue;            // fora da sombra da peça ou já por dentro
         const k = Math.min(q[qo + 6], d + MARGEM);
         p[i] = X - nx * k; p[i + 1] = Y - ny * k; p[i + 2] = Z - nz * k;
+        const P = pecas[q[qo + 7]], vi = q[qo + 8];
+        const reg = armas.has(P) ? [P, vi, sn, false] : null;
+        if (reg) (S.cobre || (S.cobre = new Map())).set(i / 3, reg);   // (para medir o encaixe em cada pose)
+        if (OPC.herdarPesos && armas.has(P) && S.bi && P.bi) {
+          const M = mapear(P, S), v4 = (i / 3) * 4, a4 = vi * 4;
+          // (um osso da peça que a pele não tem, como o ombro para a pele do rosto: os pesos são
+          // redistribuídos nos ossos em comum, se eles somarem pelo menos metade)
+          let soma = 0;
+          for (let j = 0; j < 4; j++) if (P.bw[a4 + j] > 0 && M[P.bi[a4 + j]] >= 0) soma += P.bw[a4 + j];
+          if (soma >= 0.5) {
+            if (!S.bi0) { S.bi0 = S.bi; S.bw0 = S.bw; S.bi = new Uint8Array(S.bi0); S.bw = new Float32Array(S.bw0); }
+            for (let j = 0; j < 4; j++) {
+              const w = P.bw[a4 + j], b = w > 0 ? M[P.bi[a4 + j]] : -1;
+              S.bi[v4 + j] = b >= 0 ? b : 0; S.bw[v4 + j] = b >= 0 ? w / soma : 0;
+            }
+            reg[3] = true;
+          }
+        }
       }
     }
+  }
+  // Encaixe medido numa pose (depois de R3D.skin no corpo e nas peças): de cada vértice de pele
+  // coberto por uma armadura, a distância à superfície da peça pela normal dela (positiva = a pele
+  // furou a peça). Devolve { n, fura (> 0,15), pior } por vaga
+  function encaixe(m) {
+    const C = m && m.cria, out = {};
+    if (!C) return out;
+    const vagaDe = new Map();
+    for (const v of COBRE) for (const P of C.peles[v] || []) vagaDe.set(P, v);
+    for (const k of RECUA) for (const S of C.peles[k] || []) {
+      if (!S.cobre || !S.P) continue;
+      for (const [i, [P, vi, sn, herdou]] of S.cobre) {
+        if (!P.P || !P.N) continue;
+        const v = vagaDe.get(P);
+        if (!v) continue;
+        const R = out[v] || (out[v] = { n: 0, fura: 0, pior: -1e9 });
+        // (a normal da peça virada para o lado da pele, como no recuo: a pele por dentro fica no negativo)
+        const d = sn * ((S.P[i * 3] - P.P[vi * 3]) * P.N[vi * 3] + (S.P[i * 3 + 1] - P.P[vi * 3 + 1]) * P.N[vi * 3 + 1] + (S.P[i * 3 + 2] - P.P[vi * 3 + 2]) * P.N[vi * 3 + 2]);
+        R.n++;
+        if (d > 0.15) { R.fura++; const c = `${k}${S.hide ? '(oculta)' : ''}${herdou ? '' : '·sem pesos'}`; (R.onde || (R.onde = {}))[c] = ((R.onde || {})[c] || 0) + 1; }
+        if (d > R.pior) R.pior = d;
+      }
+    }
+    return out;
   }
 
   // ------------------------------------------------------------ formato do rosto
@@ -543,5 +619,5 @@ const Criacao3D = (function () {
     return MINI[id].complete && MINI[id].naturalWidth ? MINI[id] : null;
   }
 
-  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, preparar, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
+  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, preparar, encaixe, OPC, recuarCorpo, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
 })();

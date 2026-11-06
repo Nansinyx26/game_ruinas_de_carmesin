@@ -55,6 +55,7 @@ const EclipseTests = {
       await this.montarias();
       await this.criacaoGLB();
       await this.criacaoTroca();
+      await this.criacaoEncaixe();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -2839,6 +2840,62 @@ const EclipseTests = {
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('criação: troca de peças sem exceção', !erro, erro);
     if (g.state === 'criacao') CriacaoTela.fechar();
+  },
+
+  // Encaixe da armadura no corpo (js/criacao/montagem.js): a pele coberta herda os pesos da peça
+  // que a cobre, e a lista de ossos da região do corpo ganha os que faltavam. Medido nos dois casos
+  // que mais furavam antes (Guerreiro corpo 2 nível 75 e Patrulheiro corpo 1 nível 100), em cinco
+  // poses e três instantes de cada: sem a herança a pele fura a peça; com ela, em nenhum ponto
+  async criacaoEncaixe() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Criacao3D === 'undefined' || !Criacao3D.CAT.length || !R3D.active || !Criacao3D.encaixe) { this.ok('encaixe da armadura (sem o motor 3D, nada a conferir)', true); return; }
+    const POSES = [['parado', { state: 'idle', idleVariant: 'idle_breathing', idleBlend: 0, wpnOut: false }], ['guarda', { state: 'idle', idleVariant: 'idle_combat_ready', idleBlend: 1, wpnOut: true }],
+      ['vitoria', { state: 'idle', idleVariant: 'idle_victory', idleBlend: 1, wpnOut: true }], ['correndo', { state: 'run', wpnOut: true }], ['golpe', { state: 'attack', wpnOut: true }]];
+    let erro = null;
+    try {
+      for (const [c, corpoG, nv] of [['guerreiro', 1, 75], ['patrulheiro', 0, 100]]) {
+        const def = Perfis.registrar({ id: `p_teste_enc_${c}`, nome: 'Encaixe', classe: c, aparencia: Object.assign(persAparenciaPadrao(c), { estilo: 0, corpoG, cabeloG: 0, barbaG: 0, bigodeG: 0 }) });
+        for (let i = 0; i < 400 && Criacao3D.preparar(def) !== true; i++) await espera(50);
+        MODELS3D[def.model].model = null;
+        const M = g.model3(def.model);
+        if (!M || !M.cria) { this.ok(`encaixe ${c} ${nv}: modelo montado`, false); continue; }
+        const prev = {};
+        for (const q of CRIA_CATALOGO.filter((x) => x.tipo === 'peca' && x.nivel === nv && x.classe === c)) { const it = Arsenal.gerarCat(q.id, 0); if (it) prev[it.slot] = it; }
+        const v = new Player(0, 0, def); v.vitrine = true; v.pecasPrevia = prev; v.facing = v.viewFacing = 0;
+        const ombrosNoPeito = prev.peitoral && Criacao3D.POR_ID[prev.peitoral.cat] && Criacao3D.POR_ID[prev.peitoral.cat].ombros;
+        const quer = Object.keys(prev).filter((s) => !((s === 'ombroE' || s === 'ombroD') && ombrosNoPeito));
+        let vestiu = false;
+        for (let i = 0; i < 600 && !vestiu; i++) { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); vestiu = quer.every((s) => M.cria.ids[s] === prev[s].cat); if (!vestiu) await espera(50); }
+        const medir = () => {
+          let fura = 0, pior = -1e9, n = 0;
+          for (const [, P] of POSES) for (const tt of [0.15, 0.45, 0.8]) {
+            Object.assign(v, P); v.animTime = tt * 3; v.stateTime = tt; v.moveSpeed = v.vx = P.state === 'run' ? v.baseSpeed : 0;
+            if (P.state === 'attack') { const T = CHARACTER_COMBOS[def.base] || COMBO_TABLE, id = T && T.L, d = ATTACKS[id]; v.attack = d ? { id, def: d, t: tt * ((d.windup || 0.1) + (d.active || 0.1) + (d.recovery || 0.3)), dir: 0, serial: 1 } : null; } else v.attack = null;
+            MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+            (function anda(nd, Pm) { M3.mul(nd.w, Pm, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make());
+            for (const sk of M.skins) R3D.skin(sk, 0, !!M.dqs);
+            const E = Criacao3D.encaixe(M);
+            for (const s in E) { fura += E[s].fura; n += E[s].n; pior = Math.max(pior, E[s].pior); }
+          }
+          return { fura, n, pior };
+        };
+        const ossos = () => M.skins.map((s) => s.bones.length).join();
+        const marca = () => { let h = 0; for (const s of M.skins) for (const A of [s.pos, s.bi, s.bw]) for (let i = 0; i < A.length; i++) h = (h * 31 + Math.round(A[i] * 1000)) | 0; return h; };
+        Criacao3D.OPC.herdarPesos = false; Criacao3D.recuarCorpo(M);
+        const sem = medir(), ossosSem = ossos(), marcaSem = marca();
+        Criacao3D.OPC.herdarPesos = true; Criacao3D.recuarCorpo(M);
+        const com = medir(), ossosCom = ossos();
+        Criacao3D.OPC.herdarPesos = false; Criacao3D.recuarCorpo(M);
+        const ossosVolta = ossos(), marcaVolta = marca();
+        Criacao3D.OPC.herdarPesos = true; Criacao3D.recuarCorpo(M);
+        this.ok(`encaixe ${c} corpo ${corpoG + 1} nível ${nv}: as ${quer.length} peças vestidas e a pele medida (sem a herança dos pesos ela fura a peça: a medida acusa)`, vestiu && sem.n > 1000 && sem.fura > 0, `vestiu ${vestiu} pontos ${sem.n} furam ${sem.fura}`);
+        this.igual(`encaixe ${c} corpo ${corpoG + 1} nível ${nv}: com a herança, nenhum ponto da pele fura a armadura em 5 poses × 3 instantes`, com.fura, 0);
+        this.ok(`encaixe ${c}: a herança acrescenta ossos à pele, e desligá-la devolve os ossos e os pesos originais (posições, índices e pesos iguais aos de antes)`,
+          ossosCom !== ossosSem && ossosVolta === ossosSem && marcaVolta === marcaSem, `ossos ${ossosSem} → ${ossosCom} → ${ossosVolta} · pele ${marcaSem} → ${marcaVolta}`);
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Criacao3D.OPC.herdarPesos = true;
+    this.ok('encaixe da armadura sem exceção', !erro, erro);
   },
 
   async criacaoGLB() {
