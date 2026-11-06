@@ -81,7 +81,7 @@ const EclipseTests = {
       let fin = true, emax = 0;
       for (let i = 0; i < raw.length; i += 10) { if (!isFinite(raw[i]) || !isFinite(raw[i + 1]) || !isFinite(raw[i + 2])) { fin = false; break; } emax = Math.max(emax, raw[i + 9]); }
       this.ok(`arma ${id}: posições válidas`, fin);
-      this.ok(`arma ${id}: GLB de origem registrado (${W.src})`, /^assets\/armas\/eclipse\/.+\.glb$/.test(W.src));
+      this.ok(`arma ${id}: GLB de origem registrado (${W.src})`, /^assets\/(armas\/eclipse|_retopo\/meshy)\/.+\.glb$/.test(W.src));   // (a variação da espada do Kael lê o remesh do Meshy)
       this.ok(`arma ${id}: comprimento coerente`, Math.abs(W.len - 64) <= 50, W.len);
       this.ok(`arma ${id}: encaixe nas costas definido`, !!WeaponRig.BACK[id]);
     }
@@ -777,6 +777,7 @@ const EclipseTests = {
         const f = R3D.active ? R3D.foto(g.model3('cen_carvalho'), { yaw: 0, scale: 1, lift: 0, roll: 0, pitch: 0, flash: 0, emi: 1, holo: false, ghost: null, tint: null }, 1) : { canvas: { width: 1 } };
         this.ok('motor: foto de um modelo parado vira sprite (as árvores da vista isométrica)', !!f && f.canvas.width > 0);
         this.ok('floresta: a vila da clareira (carroça, feno, poço, cerca, placa) nas zonas do cenário', ['carroca', 'fardo_feno', 'poco', 'cerca', 'placa_estrada'].every((id) => Cenario.ZONAS.velmora_clareira.some((q) => q[0] === id)));
+        this.ok('lote do Meshy: a pilha de caixotes (remesh) no motor e na clareira de Velmora', !!PROPS3D.caixotes && PROPS3D.caixotes.n <= 6000 && /_retopo\/meshy\//.test(PROPS3D.caixotes.src) && !!MODELS3D.cen_caixotes && Cenario.ZONAS.velmora_clareira.some((q) => q[0] === 'caixotes'));
         this.ok('floresta: fora da floresta o kit não entra', Natureza3D.escolha({ seed: 5 }, THEMES.neve) === null);
       }
       this.campoAberto();
