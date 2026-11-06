@@ -34,7 +34,7 @@ const WORLD_CLIMA_REG = {
   carmesin: { limpo: 4, brasas: 3, chuva: 2, tempestade: 1 },
   velmora: { limpo: 4, chuva: 3, neblina: 2, vagalumes: 3, tempestade: 1 },
   lagoa: { limpo: 3, neblina: 3, chuva: 3, tempestade: 1 },
-  nexus: { limpo: 3, chuva: 4, tempestade: 2, neblina: 1 },
+  nexus: { limpo: 5, neblina: 2 },   // a cidade de Nexus é subterrânea (js/mundo/expansao.js: tema metropole)
   seraph: { limpo: 4, areia: 3, calor: 3 },
   asterion: { limpo: 2, neve: 5, nevasca: 3 },
   obsidiano: { cinzas: 5, brasas: 3, calor: 2, limpo: 1 },

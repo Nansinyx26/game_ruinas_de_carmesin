@@ -215,6 +215,7 @@ class Game {
     if (inp.pressed.debug) this.debug = !this.debug;
     // fadeTo com a tela já escura também chama o retorno (ex.: sem evoluções para escolher
     // num novo ciclo, a troca de setor pedia outro escurecimento e a tela ficava preta)
+    if (this.dissolve && (this.dissolve.t -= dt) <= 0) this.dissolve = null;
     if (this.fade !== this.fadeTarget || this.fadeCb) {
       this.fade = approach(this.fade, this.fadeTarget, dt * 3.2);
       if (this.fade === this.fadeTarget && this.fadeCb) { const cb = this.fadeCb; this.fadeCb = null; cb(); }
@@ -260,6 +261,14 @@ class Game {
   }
 
   fadeTo(cb) { this.fadeTarget = 1; this.fadeCb = cb; }
+  // Mundo contínuo (World.go pela borda): guarda a imagem atual, que se dissolve sobre a zona nova
+  dissolver(T = 0.28) {
+    if (!this.canvas || typeof document === 'undefined') return;
+    const c = this._dissolveC || (this._dissolveC = document.createElement('canvas'));
+    c.width = this.canvas.width; c.height = this.canvas.height;
+    c.getContext('2d').drawImage(this.canvas, 0, 0);
+    this.dissolve = { canvas: c, t: T, T };
+  }
 
   // Exibe páginas da história; 'done' é chamado ao terminar (ou pular)
   playStory(pages, done) {
@@ -422,6 +431,8 @@ class Game {
     this.camera.follow(isoX(lx, ly) + this.lookOff.x, isoY(lx, ly) - 30 + this.lookOff.y, dt);
     if (inp.pressed.camToggle) ThirdView.toggle();   // V: câmera isométrica / 3ª pessoa (js/terceira.js)
     ThirdView.update(dt, inp);
+    if (typeof Mira !== 'undefined') Mira.update(dt, inp);   // mira travada (js/heroes/mira.js)
+    if (typeof Agua !== 'undefined') Agua.update(dt);         // rios, lagos e nado (js/mundo/agua.js)
 
     if (p.state === 'dead' && p.stateTime > 2.2 && !this.fadeCb) this.fadeTo(() => this.endRun(false));
     if (this.victoryTimer > 0) {
@@ -1213,6 +1224,7 @@ class Game {
   render(dt) {
     if (typeof Natureza3D !== 'undefined' && this.use3D) Natureza3D.processar();   // fotos das árvores do kit (motor 3D livre)
     if (typeof Bairro !== 'undefined' && this.use3D) Bairro.processar();           // fotos dos prédios do Bairro da Muralha
+    if (typeof Estruturas !== 'undefined' && this.use3D) Estruturas.processar();   // fotos das estruturas enviadas (js/mundo/estruturas.js)
     if (typeof NpcModelo !== 'undefined' && this.use3D) NpcModelo.processar();     // fotos dos moradores com modelo próprio
     const ctx = this.ctx;
     if (typeof Realista3D !== 'undefined') Realista3D.camada(false);   // volta a aparecer se a 3ª pessoa realista desenhar
@@ -1247,6 +1259,7 @@ class Game {
       else if (this.state === 'victory') this.screens.drawEnd(ctx, true, this.realTime);
     }
     if (this.debug) this.drawDebugInfo(ctx);
+    if (this.dissolve) { ctx.save(); ctx.globalAlpha = clamp(this.dissolve.t / this.dissolve.T, 0, 1); ctx.drawImage(this.dissolve.canvas, 0, 0, VIEW_W, VIEW_H); ctx.restore(); }
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade.toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     DevTools.draw(ctx);
     this.menu.drawNotice(ctx);
@@ -1278,7 +1291,8 @@ class Game {
     if (def.opts) Object.assign(o, def.opts(e));
     if (e.elite) o.scale = (o.scale || 1) * 1.18;
     if (e.escala) o.scale = (o.scale || 1) * e.escala;   // variantes de inimigos (js/mundo/variantes.js): tamanho e cor
-    if (e.tint && !def.semTinta) o.vart = e.tint;   // (semTinta: criaturas com textura própria)
+    if (e.tint && !def.semTinta) o.vart = e.tint;
+    if (typeof Agua !== 'undefined') Agua.afundar(e, o);   // nadando: o corpo afunda até o peito   // (semTinta: criaturas com textura própria)
     // clima no corpo (molhado, neve, geada) e o tremor de frio (js/mundo/clima.js)
     if (this.world && World.zone) { o.clima = Clima.roupa(e); Clima.tremor(e, o); } else o.clima = null;
     // recuo do inimigo atingido: o corpo tomba um pouco na direção do golpe e volta (Enemy.takeHit)
@@ -1350,6 +1364,7 @@ class Game {
       const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H * 0.35, 40, VIEW_W / 2, VIEW_H * 0.35, VIEW_W * 0.75);
       g.addColorStop(0, rgba(th.lamp, 0.05)); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      if (th.subsolo) Ambiente3P.tetoNeon(ctx, t, cam.x * 0.03, cam.y * 0.03);   // megacidade subterrânea: as luzes do teto da caverna
       return;
     }
     const layer = Backdrop.layer('sky-' + th.sky, VIEW_W + 160, VIEW_H + 120, (g, w, h) => Backdrop.paintSky(g, w, h, th.sky));
@@ -1426,6 +1441,7 @@ class Game {
     cam.apply(ctx);
     room.drawBackground(ctx);
     room.drawDoor(ctx);
+    if (typeof Agua !== 'undefined') Agua.desenhar(ctx);   // rios e lagos por cima do chão
     if (this.world) Clima.desenharChao(ctx);   // poças, neve acumulada, pegadas e respingos (js/mundo/clima.js)
     p.drawShadow(ctx);
     for (const e of this.enemies) if (e.state !== 'spawn') e.drawShadow(ctx);
@@ -1443,6 +1459,7 @@ class Game {
       else o.draw(ctx);
     }
     this.particles.drawSolid(ctx);
+    if (typeof Agua !== 'undefined') Agua.desenharNadadores(ctx);   // a água cobre o corpo de quem está nela
     ctx.restore();
 
     // 2) Escuridão com luzes (jogador, tochas, projéteis, chefe)
@@ -1478,6 +1495,7 @@ class Game {
     ctx.restore();
     p.drawAura(ctx, this.realTime);
     this.drawDanoDir(ctx);
+    if (typeof Mira !== 'undefined') Mira.desenhar(ctx);
     if (this.world) { Cidade.desenhar(ctx); Clima.desenharAr(ctx); }   // teletransporte; neblina, vapor e fogueiras
     for (const e of this.enemies) {
       if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);

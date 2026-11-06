@@ -167,7 +167,7 @@ class Player extends Entity {
     if (list.length < 2) return null;
     return list[(list.indexOf(cur) + 1) % list.length];
   }
-  // Troca de arma em campo (Q / X / R3): espera golpe, carga, suprema e esquiva terminarem
+  // Troca de arma em campo (Q / LB + R3): espera golpe, carga, suprema e esquiva terminarem
   // (fica pendente por 1,5 s); a mão vai às costas, troca e volta com a nova (gesto de sacar).
   // Os atributos são recalculados pelo RosterManager ('weaponChanged' → recalc).
   swapWeapon() {
@@ -273,6 +273,7 @@ class Player extends Entity {
   captureInput(input) {
     if (this.state === 'dead') return;
     const livre = !(this.travaAtaque > 0);   // logo depois de fechar uma conversa ou loja, sem golpe
+    if (this.nadando) { if (input.pressed.dash) this.dashBuffer = 0.16; return; }   // nadando: só a braçada (esquiva) e o andar (js/mundo/agua.js)
     // montado não luta: qualquer golpe, esquiva, pulo ou poder desce da montaria primeiro
     if (this.montado && (input.pressed.light || input.pressed.heavy || input.pressed.dash || input.pressed.jump || input.pressed.special || input.pressed.grenade || [1, 2, 3, 4].some((k) => input.pressed['ab' + k]))) Montarias.desmontar();
     if (input.pressed.light && livre) this.combo.bufferInput('L');
@@ -331,7 +332,7 @@ class Player extends Entity {
       const st = this.state;
       if (st === 'idle' || st === 'run' || st === 'block' || st === 'hurt') { this.granadaBuffer = 0; Granada.lancar(this, wd); }
     }
-    if (input.held.block && !this.air && (this.state === 'idle' || this.state === 'run') && !this.combo.hasBuffer()) this.startBlock();
+    if (input.held.block && !this.air && !this.nadando && (this.state === 'idle' || this.state === 'run') && !this.combo.hasBuffer()) this.startBlock();
 
     switch (this.state) {
       case 'idle':
@@ -342,7 +343,7 @@ class Player extends Entity {
         }
         let tvx = 0, tvy = 0;
         if (wd) {
-          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this) * (this.montado ? this.montado.T.vel : 1);   // (montaria: js/mundo/montarias.js)
+          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this) * (this.montado ? this.montado.T.vel : 1) * (typeof Agua !== 'undefined' ? Agua.ritmo(this) : 1);   // (água: js/mundo/agua.js)   // (montaria: js/mundo/montarias.js)
           tvx = wd.x * sp; tvy = wd.y * sp;
           // de frente para um pilar, contorna pela tangente em vez de empacar (Room.desvio)
           const dv = this.dv || (this.dv = { x: 0, y: 0 });

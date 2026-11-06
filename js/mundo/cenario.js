@@ -48,7 +48,8 @@ const Cenario = (function () {
   };
 
   // ------------------------------------------------------------ malhas
-  // Com texturas (W.uv): 14 bytes por canto (posição, normal, UV) e as texturas assadas no Blender
+  // Com texturas (W.uv): 14 bytes por canto (posição, normal, UV) — ou por vértice com os índices em
+  // W.ix (W.i32: 32 bits), nas estruturas enviadas — e as texturas assadas no Blender
   // (W.tc cor, W.tm material: R metal, G aspereza, B emissão; W.tn normais), desenhadas pelo
   // programa com textura do motor (como os heróis). Sem elas: a cor por canto no lugar da UV (como as armas).
   const GEO = {};
@@ -68,7 +69,13 @@ const Cenario = (function () {
         raw[o + 9] = D.getUint8(k + 13) / 255 * EMI;
       }
     }
-    return (GEO[id] = raw);
+    if (!W.ix) return (GEO[id] = raw);
+    // malha indexada (as estruturas enviadas, js/assets/estruturas/): vértices únicos + índices → um canto por vez
+    const si = atob(W.ix), ib = new Uint8Array(si.length);
+    for (let i = 0; i < si.length; i++) ib[i] = si.charCodeAt(i);
+    const I = W.i32 ? new Uint32Array(ib.buffer) : new Uint16Array(ib.buffer), out = new Float32Array(I.length * 10);
+    for (let k = 0; k < I.length; k++) out.set(raw.subarray(I[k] * 10, I[k] * 10 + 10), k * 10);
+    return (GEO[id] = out);
   }
   // Um modelo do motor por objeto (a geometria e as texturas são compartilhadas)
   const TEX = {};
@@ -136,7 +143,7 @@ const Cenario = (function () {
       if (!PROPS3D[id]) continue;
       const W = PROPS3D[id], r = W.r * esc;
       // o lugar pedido ou o mais perto livre em volta (passagens, portal, moradores, baús, obstáculos)
-      const livre = (x, y) => R.canStand(x, y, r) && !g.npcs.some((q) => dist(q.x, q.y, x, y) < r + 70);
+      const livre = (x, y) => R.canStand(x, y, r) && !g.npcs.some((q) => dist(q.x, q.y, x, y) < r + 70) && !(typeof Agua !== 'undefined' && Agua.profundidade(x, y) > 0);
       let x = R.w * fx, y = R.h * fy;
       if (!livre(x, y)) {
         let achou = false;

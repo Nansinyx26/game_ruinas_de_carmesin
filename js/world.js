@@ -46,9 +46,9 @@ const WORLD_REGIONS = [
     order: 6, hub: 'obsidiano_posto', boss: { name: 'NÚCLEO DE OBSIDIANA', type: 'legionario', hp: 3.6 },
     desc: 'Território vulcânico: lava, inimigos de alto nível e eventos mundiais.' },
   // Faixas altas: cidades enormes com distritos, cada uma com a sua chegada (a cidade no centro)
-  { id: 'metropole', name: 'Metrópole Tecnológica', biome: 'Megacidade', lv: [25, 50], minLv: 25, rgb: '80,225,255', at: [0.92, 0.37], r: 0.085,
+  { id: 'metropole', name: 'Metrópole Tecnológica', biome: 'Megacidade subterrânea', lv: [25, 50], minLv: 25, rgb: '80,225,255', at: [0.92, 0.37], r: 0.085,
     order: 7, hub: 'metro_centro', boss: { name: 'SUPERVISOR ÔMEGA', type: 'legionario', hp: 4.4 },
-    desc: 'Torres de vidro, trens suspensos e a corporação que ainda vigia cada rua. A cidade de quem chega ao nível 25.' },
+    desc: 'Uma megacidade enterrada sob a rocha: torres que sobem até o teto da caverna, trens suspensos, neon e a corporação que ainda vigia cada rua. A cidade de quem chega ao nível 25.' },
   { id: 'ruinas', name: 'Cidade das Ruínas Carmesins', biome: 'Cidade em ruínas', lv: [50, 75], minLv: 50, rgb: '230,50,80', at: [0.07, 0.45], r: 0.08,
     order: 8, hub: 'rc_cidadela', boss: { name: 'REI CARMESIM', type: 'sacerdote', hp: 5.2 },
     desc: 'A capital antiga, partida pela energia vermelha: catedrais, mercados mortos e a cidadela onde os sobreviventes resistem.' },
@@ -327,7 +327,7 @@ const World = {
 
   // Carrega uma zona; 'from' = lado por onde o herói chega (N, S, W, E) ou null (portal / início);
   // 'along' (0 a 1) = onde, ao longo da borda, ele cruzou (campo aberto: sai em qualquer ponto)
-  loadZone(id, from, along = null, chegada = null) {
+  loadZone(id, from, along = null, chegada = null, continuo = false) {
     const g = game, z = WORLD_ZONES[id];
     this.zone = z; this.state.zona = id;
     g.audio.playMusic({ cathedral: 'nexus_encounter', lab: 'facility', vulcao: 'nexus_encounter', tower: 'nexus_encounter' }[z.theme] || 'vesper');
@@ -411,8 +411,14 @@ const World = {
       if (R.canStand(x, y, 22)) { p.x = x; p.y = y; }
     }
     p.air = false; p.vz = 0;
-    p.vx = p.vy = p.kbx = p.kby = 0;
-    p.state = 'idle'; p.stateTime = 0; p.attack = null; p.combo.reset();
+    if (continuo) {   // mundo contínuo: segue andando do outro lado, no mesmo passo e direção
+      const lado = WORLD_OPP[from], x = lado === 'W' ? 34 : lado === 'E' ? R.w - 34 : p.x, y = lado === 'N' ? 34 : lado === 'S' ? R.h - 34 : p.y;
+      if (R.canStand(x, y, 22)) { p.x = x; p.y = y; }
+      p.kbx = p.kby = 0; p.attack = null; if (p.state !== 'run') p.state = 'idle';
+    } else {
+      p.vx = p.vy = p.kbx = p.kby = 0;
+      p.state = 'idle'; p.stateTime = 0; p.attack = null; p.combo.reset();
+    }
     g.camera.snap(isoX(p.x, p.y), isoY(p.x, p.y) - 30);
     const dif = z.lv - g.activeProgress().level;   // zona acima do nível do herói: aviso no letreiro
     g.hud.message(z.name.toUpperCase(), dif >= 4 ? `${z.sub} · PERIGOSA PARA VOCÊ` : z.vila ? `${z.vila.nome.toUpperCase()} · ${z.sub}` : z.sub, 2.2);
@@ -423,6 +429,7 @@ const World = {
       WorldQuests.check();
     }
     if (z.portal && !this.state.portais.includes(id)) { this.state.portais.push(id); g.hud.toast(`Portal ativado · ${z.name}`, '170,120,255'); }
+    if (typeof Agua !== 'undefined') Agua.aoCarregar(z);   // rios e lagos da zona, antes de quem põe coisas no chão (js/mundo/agua.js)
     Campanhas.aoCarregar(id);   // sinal do capítulo da campanha do herói, se for esta zona (js/mundo/campanhas.js)
     Rotina.aoCarregar(z);       // quem está aqui agora pela agenda do dia, e onde (js/mundo/rotina.js)
     if (typeof Criaturas3D !== 'undefined') Criaturas3D.aoCarregar();   // criaturas do Blender dos inimigos da zona (js/mundo/criaturas3d.js)
@@ -434,6 +441,8 @@ const World = {
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
     Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
     Cenario.aoCarregar(z);      // objetos de cenário modelados no Blender (js/mundo/cenario.js)
+    if (typeof Estruturas !== 'undefined') Estruturas.aoCarregar(z);
+    if (typeof Agua !== 'undefined') Agua.depois();   // quem nasceu dentro d'água vai para a margem   // estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js)
     Bairro.aoCarregar(z);       // Bairro da Muralha, interiores e a passagem da praça (js/mundo/bairro.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
     Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
@@ -449,8 +458,31 @@ const World = {
   // Vai para outra zona (passagem: 'dir'; portal: dir null)
   go(id, dir, along = null, chegada = null) {
     if (!WORLD_ZONES[id] || game.fadeCb) return;
+    // MUNDO CONTÍNUO: pela borda (campo aberto), sem tela preta — a zona vizinha entra na hora, com o
+    // herói no mesmo ponto da borda oposta e no mesmo passo, e a imagem de antes se dissolve por
+    // cima (0,28 s). Os modelos da vizinha já vinham carregando (preCarregar). Portais e passagens
+    // das cidades continuam com o escurecer (são outra coisa: teletransporte e portas)
+    if (dir && along !== null && game.world) {
+      game.dissolver();
+      const vx = game.player.vx, vy = game.player.vy, f = game.player.facing;
+      this.loadZone(id, dir, along, chegada, true);
+      const p = game.player; p.vx = vx; p.vy = vy; p.facing = p.viewFacing = f;
+      return;
+    }
     game.audio.play('uiSelect');
     game.fadeTo(() => { this.loadZone(id, dir, along, chegada); game.fadeTarget = 0; });
+  },
+  // Streaming: perto de uma borda, a zona vizinha começa a carregar os modelos dela
+  preCarregar(dt) {
+    const z = this.zone, p = game.player, R = game.room;
+    if (!z || !p || !R || (this.preT = (this.preT || 0) - dt) > 0) return;
+    this.preT = 0.5;
+    const perto = 320;
+    for (const [dir, d] of [['W', p.x], ['E', R.w - p.x], ['N', p.y], ['S', R.h - p.y]]) {
+      if (d > perto) continue;
+      const nz = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
+      if (nz && typeof Estruturas !== 'undefined') Estruturas.preCarregar(nz.id);
+    }
   },
   // Recursos de coleta: prontos de novo a cada dia do mundo (js/mundo/tempo.js)
   coletaPronta(key) { const C = this.state.coletas || {}; return (C[key] || 0) < (this.state.dia || 1); },
@@ -495,6 +527,7 @@ const World = {
       const nz = dir && worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
       if (nz) this.go(nz.id, dir, dir === 'N' || dir === 'S' ? p.x / Rm.w : p.y / Rm.h);
     }
+    this.preCarregar(dt);   // streaming: os modelos da zona vizinha, antes de cruzar a borda
     Encontros.update(dt);   // acampamentos: percepção, alerta, luta e coleira (js/mundo/encontros.js)
     Campanhas.update(dt);
     Aventuras.update(dt);   // lugares escondidos e quem volta para casa

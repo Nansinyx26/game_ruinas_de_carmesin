@@ -65,7 +65,8 @@ Cada final tem um epílogo dos aliados: *Os que não se ajoelharam* (I), *Depois
 | I | **Eclipse Absoluto** (100 de energia, depois de desbloqueado) |
 | Tab / H | Árvore de habilidades |
 | E / F | Conversar com NPCs |
-| Q / X | Trocar de arma (a próxima liberada do personagem: ex. machado ↔ martelo do Drakos) |
+| Q (controle: LB + R3) | Trocar de arma (a próxima liberada do personagem: ex. machado ↔ martelo do Drakos) |
+| X / botão do meio do mouse (controle: R3) | Travar a mira no inimigo mais perto da frente; de novo passa para o próximo; segurar solta (o golpe começa virado para o alvo e a câmera 3D o enquadra) |
 | R | **Granada de Plasma** do Kael (3 cargas, cada uma volta em 8 s) · na árvore de habilidades: **redistribuir os pontos** (aperte de novo para confirmar) |
 | ESC | Pausa (menu de pausa) / pular história / voltar nos menus |
 | M | Som liga/desliga |
@@ -222,6 +223,15 @@ python3 tools/importar_criacao.py --minis           # só miniaturas e catálogo
 ## Mundo aberto
 
 Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica), **MUNDO ABERTO · 3ª PESSOA** ou **CAMPANHAS DOS HERÓIS** (o mundo com a lista das campanhas aberta). Na pausa: **CÂMERA** alterna as duas vistas e **MUNDO ABERTO** leva da campanha para o mundo (a campanha fica salva); dentro do mundo, o mesmo item abre o mapa. No toque, o botão **3D** alterna a câmera e arrastar na metade direita gira.
+
+**Novo nesta etapa** (detalhes em `docs/ESTRUTURAS_E_MUNDO.md`):
+- **Câmera 3D padrão** (a isométrica fica na opção V) e o **movimento relativo ao mundo** (W = norte do mapa) ou à câmera, no menu de pausa.
+- **Mundo contínuo**: pela borda do campo aberto a zona vizinha entra sem tela preta, no mesmo passo (dissolução de 0,28 s); perto da borda, os modelos da vizinha já carregam (*streaming*).
+- **Rios e lagos com nado** (`js/mundo/agua.js`): margem rasa mais lenta; no fundo o herói nada (55%, sem golpes, esquiva vira braçada, o corpo afunda até o peito); inimigos param na margem.
+- **Megacidades subterrâneas**: a Metrópole e a cidade de Nexus ficam sob o teto de uma caverna, com luz própria, sem chuva e com o neon no teto.
+- **82 estruturas** no mundo (`js/mundo/estruturas.js`): as enviadas em `assets/estruturas_ambiente/` e 24 geradas no Meshy a partir das folhas de referência, reduzidas no Blender, no tamanho real e carregadas só quando a zona pede; a mesma coleção numa **biblioteca de assets do Blender** (`assets/fontes/bibliotecas/eclipse_estruturas.blend`).
+- **Mira travada** (X / botão do meio do mouse / R3): o golpe começa virado para o alvo e a câmera o enquadra.
+- **Painel do Meshy** (`node tools/meshy/painel.mjs`): fila de gerações com referência e prévia, saldo, custo e confirmação antes de gastar créditos; a chave nunca passa pelo navegador.
 
 **Câmera em 3ª pessoa** (`js/terceira.js`, `ThirdView`): o mesmo jogo (campanha e mundo aberto) visto de trás do ombro, em perspectiva. O motor 3D (`R3D.renderScene`) desenha numa passada a sala montada em 3D a partir da `Room` (piso em ladrilhos, paredes com as aberturas da porta e das passagens, pilares e luminárias), os heróis com armaduras, cabelo e armas, os inimigos, NPCs, baús, coletáveis e sombras, com névoa na cor do tema. Os efeitos 2D (partículas, auras, projéteis, números de dano, barras de vida) usam a projeção da câmera e aparecem no lugar. O movimento é relativo à câmera; parado sem girar, ela volta para trás do herói quando ele anda. O pilar que fica entre a câmera e o herói some. A arena antiga de 3ª pessoa continua no menu como **ARENA 3D (TREINO)**.
 

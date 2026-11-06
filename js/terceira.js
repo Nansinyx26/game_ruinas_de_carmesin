@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------------------
 // O MESMO jogo (campanha e mundo aberto: sala, heróis com armaduras e armas, inimigos, combate,
 // habilidades, HUD) visto de trás do ombro, em perspectiva. Só muda o desenho e o sentido dos
-// controles: o analógico e o WASD andam em relação à câmera (screenToWorldDir).
+// controles: o analógico e o WASD andam em relação à câmera (screenToWorldDir) ou, com a opção
+// "movimento relativo ao mundo", sempre no sentido do mapa (W = norte). É a câmera padrão.
 //   V alterna isométrica / 3ª pessoa · botão direito do mouse (arrastar) gira · roda aproxima
 //   Z / C giram · analógico direito gira e inclina · parado sem girar, a câmera volta para trás
 //   do herói quando ele anda
@@ -37,8 +38,22 @@ const ThirdView = {
   // movimento da câmera e do corpo (update)
   alvo: [0, 0, 0], alvoOk: false, bobF: 0, bob: 0, quedaZ: 0, noAr: false, vzAnt: 0, fovK: 0, inclina: 0, giro: 0, faceAnt: 0, passoN: 0,
 
-  // Preferência guardada (a última câmera usada)
-  load() { try { this.on = localStorage.getItem(THIRD_KEY) === '3p' && R3D.active; } catch (e) { this.on = false; } if (this.on) this.init(); },
+  // Preferência guardada (a última câmera usada). Sem escolha guardada, a 3D é a padrão (com o motor
+  // 3D ativo); a isométrica fica como opção (V). Movimento: relativo à câmera (padrão) ou ao mundo
+  // (o W anda sempre para o norte do mapa, como na isométrica, com a câmera em qualquer giro)
+  movMundo: false,
+  load() {
+    let k = null, m = null;
+    try { k = localStorage.getItem(THIRD_KEY); m = localStorage.getItem(THIRD_KEY + '_mov'); } catch (e) { /* sem armazenamento */ }
+    this.on = (k === null ? true : k === '3p') && R3D.active;
+    this.movMundo = m === 'mundo';
+    if (this.on) this.init();
+  },
+  setMov(mundo, quiet) {
+    this.movMundo = !!mundo;
+    try { localStorage.setItem(THIRD_KEY + '_mov', this.movMundo ? 'mundo' : 'camera'); } catch (e) { /* vale só nesta sessão */ }
+    if (!quiet && typeof game !== 'undefined' && game.hud) game.hud.toast(this.movMundo ? 'MOVIMENTO · RELATIVO AO MUNDO (W = norte do mapa)' : 'MOVIMENTO · RELATIVO À CÂMERA', '120,200,255');
+  },
   set(on, quiet) {
     if (on && !R3D.active) { if (!quiet) game.hud.toast('Câmera em 3ª pessoa: precisa dos gráficos 3D (G)', '255,92,122'); on = false; }
     this.on = !!on;
@@ -48,6 +63,7 @@ const ThirdView = {
       const p = game.player;
       if (p) this.yaw = typeof p.facing === 'number' ? p.facing : this.yaw;
       this.curDist = this.dist;
+      this.alvoOk = false;   // ligou agora: a câmera vai direto para o herói (sem a mola partir de onde parou da outra vez)
     }
     if (!quiet) game.hud.toast(this.on ? 'CÂMERA · 3ª PESSOA  (V alterna · botão direito ou Z/C giram)' : 'CÂMERA · ISOMÉTRICA', '120,200,255');
   },
@@ -90,6 +106,7 @@ const ThirdView = {
       const d = angleDiff(this.yaw, Math.atan2(p.vy, p.vx));
       if (Math.abs(d) < 2.3) this.yaw += clamp(d, -1, 1) * Math.min(1, sp / 220) * 1.3 * dt;
     }
+    if (typeof Mira !== 'undefined') Mira.camera(this, dt);   // mira travada: o alvo à frente
     this.curDist += (this.dist - this.curDist) * Math.min(1, dt * 6);
     this.movimento(dt, p, sp);
     Ambiente3P.update(dt);
@@ -125,6 +142,11 @@ const ThirdView = {
   },
   // Direção no mundo para o analógico (dx, dy da tela): para cima = para onde a câmera olha
   inputDir(dx, dy, out) {
+    if (this.movMundo) {   // relativo ao mundo: o mesmo sentido da vista isométrica (W = norte do mapa)
+      const wx = dy + dx * 0.5, wy = dy - dx * 0.5, l = Math.hypot(wx, wy) || 1;
+      out.x = wx / l; out.y = wy / l;
+      return out;
+    }
     const fx = Math.cos(this.yaw), fy = Math.sin(this.yaw);
     const wx = fx * -dy - fy * dx, wy = fy * -dy + fx * dx, l = Math.hypot(wx, wy) || 1;
     out.x = wx / l; out.y = wy / l;
@@ -343,6 +365,7 @@ const ThirdView = {
     if (this.chaoModel) { M3.trs(this.chaoO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]); const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi); }
     if (typeof Natureza3D !== 'undefined') Natureza3D.fila3P(R, Q, E, T, p);   // árvores, rochas e enfeites da floresta (kit do Blender)
     if (typeof Bairro !== 'undefined') Bairro.fila3P(R, Q, E);   // prédios do Bairro da Muralha (kit de arquitetura do Blender)
+    if (typeof Estruturas !== 'undefined') Estruturas.fila3P(R, Q, E);   // estruturas enviadas e geradas no Meshy (paradas)
     // modelos (as mesmas chaves e poses da vista isométrica), já no lugar do mundo
     const place = (it, e) => {
       if (!it) return null;
@@ -379,7 +402,8 @@ const ThirdView = {
       sombra(n, 16);
       n.spr = place(g.queue3(n.key, n, g.opts3(n, 0)), n);
     }
-    if (g.world && World.zone) Clima.fila3P(Q);   // poças, neve no chão e fogueiras (js/mundo/clima.js)
+    if (g.world && World.zone) Clima.fila3P(Q);
+    if (typeof Agua !== 'undefined') Agua.fila3P(Q);   // rios e lagos (js/mundo/agua.js)   // poças, neve no chão e fogueiras (js/mundo/clima.js)
     let cells = 0;
     for (let i = 0; i < g.pickups.count; i++) {
       const it = g.pickups.items[i];
@@ -518,6 +542,7 @@ const ThirdView = {
       ctx.restore();
       p.drawAura(ctx, g.realTime);
       g.drawDanoDir(ctx);
+      if (typeof Mira !== 'undefined') Mira.desenhar(ctx);
       if (g.world) { Cidade.desenhar(ctx); Clima.desenharAr(ctx); }   // teletransporte; neblina, pegadas, vapor e fogueiras
       for (const e of g.enemies) {
         if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
