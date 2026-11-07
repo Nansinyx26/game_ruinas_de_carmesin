@@ -75,11 +75,11 @@
   Object.assign(WORLD_QUESTS, {
     metropole: [
       { id: 'met1', name: 'Olhos de Vidro', tipo: 'matar', alvo: 'sentinela_neon', n: 14, rec: { cells: 420, xp: 9000, min: 2 },
-        ini: 'As sentinelas neon marcam cada pessoa que sai da praça. Quatorze a menos e a gente volta a andar sem ser contado.', fim: 'O painel da praça apagou três setores. Três! Gente saiu de casa hoje.' },
+        ini: 'As sentinelas neon saem do Cofre Ômega, sob os Subníveis, e marcam cada pessoa da cidade. Desça e derrube quatorze delas.', fim: 'O painel da praça apagou três setores. Três! Gente saiu de casa hoje.' },
       { id: 'met2', name: 'Registros da Diretoria', tipo: 'terminais', rec: { cells: 520, xp: 12000, min: 2 },
         ini: 'Os terminais das torres e do distrito industrial guardam as ordens do Supervisor. Leia todos.', fim: '"Destino: Ômega." Então as sentinelas não vigiam a cidade. Elas a esvaziam.' },
       { id: 'met3', name: 'O Supervisor Ômega', tipo: 'chefe', rec: { cells: 900, xp: 22000, min: 3 },
-        ini: 'O Supervisor comanda tudo do Núcleo Ômega. Desligue-o e a Metrópole volta a ser nossa.', fim: 'A cidade inteira piscou e ficou em silêncio. Pela primeira vez, silêncio bom. As Ruínas Carmesins esperam quem chegar ao nível 50.' },
+        ini: 'O Supervisor fugiu da cidade e se trancou no fundo do Cofre Ômega, sob os Subníveis. Desligue-o e a Metrópole volta a ser nossa.', fim: 'A cidade inteira piscou e ficou em silêncio. Pela primeira vez, silêncio bom. As Ruínas Carmesins esperam quem chegar ao nível 50.' },
     ],
     ruinas: [
       { id: 'ruc1', name: 'A Guarda Rubra', tipo: 'matar', alvo: 'cavaleiro_rubro', n: 12, rec: { cells: 900, xp: 26000, min: 2 },
@@ -249,7 +249,7 @@
   // ------------------------------------------------------------ masmorras e tesouros
   Object.assign(WORLD_MASMORRAS, {
     cofre_omega: { nome: 'Cofre Ômega', reg: 'metropole', zona: 'metro_subnivel', at: [0.82, 0.84], oculta: true, tema: 'lab', lv: 42,
-      mobs: ['sentinela_neon', 'executor', 'atirador'], chefe: { tipo: 'executor', nome: 'DIRETOR DE SEGURANÇA', hp: 4.6, escolta: { sentinela_neon: 2 } },
+      mobs: ['sentinela_neon', 'executor', 'atirador', 'lobo_neon'], chefe: { tipo: 'legionario', nome: 'SUPERVISOR ÔMEGA', hp: 5, escolta: { sentinela_neon: 2 }, regional: true },   // (a Metrópole é segura: o chefe da região está aqui)
       desc: 'O cofre da corporação, com os protótipos que nunca saíram do laboratório.' },
     cripta_real: { nome: 'Cripta Real', reg: 'ruinas', zona: 'rc_catedral', at: [0.5, 0.86], oculta: true, tema: 'cathedral', lv: 60,
       mobs: ['espectro', 'cavaleiro_rubro', 'enxame'], chefe: { tipo: 'cavaleiro_rubro', nome: 'PRIMEIRO CAVALEIRO', hp: 5.2, escolta: { espectro: 2 } },

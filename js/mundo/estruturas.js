@@ -13,7 +13,8 @@
 // - Vista isométrica: cada (estrutura, giro, escala, zoom) é fotografada uma vez pelo motor 3D
 //   (R3D.foto) no começo de um quadro, como os prédios do bairro; até lá, um bloco simples.
 // - 3ª pessoa: o modelo entra na cena pela fila dos moradores (ThirdView).
-// Medievais nas zonas da floresta e das Ruínas Carmesins; cyberpunk na Metrópole Tecnológica.
+// Medievais na cidade principal (Aurora), na floresta e nas Ruínas Carmesins; cyberpunk na
+// Metrópole e na cidade de Nexus (as duas subterrâneas).
 // ---------------------------------------------------------------------------
 const Estruturas = (() => {
   const IDX = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {};
@@ -35,13 +36,28 @@ const Estruturas = (() => {
     rc_catedral: [['estrutura_md_3', 0.5, 0.12, 0, 0.7], ['estrutura_md_10', 0.2, 0.75, 0, 1], ['item_ambiente_md_5', 0.35, 0.3, 0, 1], ['item_ambiente_md_6', 0.65, 0.3, 0, 1]],
     rc_quartel: [['castelo_medieval', 0.18, 0.15, 0, 0.6], ['canhao_medieval', 0.55, 0.3, 0.6, 1], ['canhao_medieval', 0.7, 0.3, 0.4, 1], ['blue_roof_cottage', 0.86, 0.82, -2.4, 0.8]],
     rc_jardins: [['estrutura_md_11', 0.5, 0.5, 0, 0.8], ['escadaria_ruinas', 0.85, 0.15, -0.4, 0.9], ['muro_ruinas_placa', 0.15, 0.3, 0.3, 1]],
-    // Metrópole Tecnológica
-    metro_centro: [['edificio_cyberpunk', 0.08, 0.32, P2, 0.6], ['estrutura_cbp_1', 0.92, 0.35, -P2, 0.7], ['item_ambiente_cbp_1', 0.4, 0.6, 0.3, 1], ['painel_anuncio', 0.6, 0.12, 0, 1]],
+    // Refúgio da Aurora (cidade principal, medieval): a praça do mercado com os assets gerados no
+    // Meshy — fileira de bancas, forno e carroças, estandartes, lampiões e a Fonte do Guardião
+    aurora: [['fonte_do_guardiao', 0.5, 0.42, 0, 0.75], ['moonlit_medieval_mark', 0.3, 0.3, 0.4, 0.9], ['banca_ceramica', 0.4, 0.26, 0.2, 0.9], ['estrutura_md_7', 0.6, 0.26, -0.2, 0.9],
+      ['forno_pedra', 0.72, 0.3, -0.5, 0.9], ['estrutura_md_8', 0.24, 0.62, 1.2, 0.9], ['item_ambiente_md_4', 0.76, 0.62, 2.2, 1], ['item_ambiente_md_3', 0.34, 0.2, 0, 1],
+      ['item_ambiente_md_1', 0.66, 0.2, 0.4, 1], ['item_ambiente_md_5', 0.42, 0.55, 0, 1], ['item_ambiente_md_6', 0.58, 0.55, 0, 1], ['estrutura_md_12', 0.36, 0.44, 0, 1],
+      ['estrutura_md_12', 0.64, 0.44, 0, 1], ['estrutura_md_10', 0.84, 0.46, 0, 0.9], ['canhao_medieval', 0.16, 0.42, 0.8, 1]],
+    aurora_bairro: [['item_ambiente_md_2', 0.62, 0.56, 0.3, 1], ['muro_ruinas_placa', 0.86, 0.9, 2.4, 1]],
+    // Metrópole (subterrânea, segura): a rua da Praça Central com os assets do Meshy — lojas, hotel,
+    // ponto de ônibus, máquinas de venda, carro e moto estacionados, totens, painel e o arco neon
+    metro_centro: [['edificio_cyberpunk', 0.08, 0.32, P2, 0.6], ['estrutura_cbp_1', 0.92, 0.35, -P2, 0.7], ['loja_armas', 0.22, 0.1, 0, 0.75], ['loja_tecnologia', 0.5, 0.1, 0, 0.75],
+      ['hotel_neon', 0.78, 0.1, 0, 0.55], ['ponto_onibus', 0.35, 0.9, PI, 0.9], ['maquina_venda', 0.45, 0.26, 0, 1], ['maquina_venda', 0.58, 0.26, 0, 1], ['carro_neon', 0.66, 0.88, 0.2, 1],
+      ['moto_neon', 0.75, 0.86, 0.4, 1], ['totem_info', 0.3, 0.5, 0.8, 1], ['totem_info', 0.7, 0.5, -0.8, 1], ['painel_anuncio', 0.6, 0.12, 0, 1], ['arco_neon', 0.5, 0.96, 0, 0.8],
+      ['item_ambiente_cbp_1', 0.4, 0.6, 0.3, 1], ['drone_carga', 0.2, 0.7, 0.6, 1]],
     metro_porto: [['estrutura_cbp_2', 0.82, 0.14, 0, 0.75], ['item_ambiente_cbp_2', 0.3, 0.5, 0.5, 1], ['item_ambiente_cbp_3', 0.36, 0.56, 1.2, 1]],
     metro_torres: [['estrutura_cbp_7', 0.12, 0.3, 0, 0.6], ['estrutura_cbp_6', 0.86, 0.5, 0, 0.6], ['apartamento_urbano', 0.4, 0.12, 0, 0.6]],
     metro_trilhos: [['monotrilho_futurista', 0.5, 0.15, 0, 0.8], ['viaduto_cyberpunk', 0.5, 0.82, 0, 0.8]],
     metro_mercado: [['neon_cyberpunk_bar', 0.14, 0.13, 0.3, 0.7], ['hotel_neon', 0.86, 0.13, -0.3, 0.6], ['loja_armas', 0.13, 0.8, P2, 0.75], ['neon_night_cafe', 0.5, 0.12, 0, 0.8],
-      ['maquina_venda', 0.6, 0.5, 0, 1], ['item_ambiente_cbp_4', 0.4, 0.55, 0, 1]],
+      ['maquina_venda', 0.6, 0.5, 0, 1], ['item_ambiente_cbp_4', 0.4, 0.55, 0, 1], ['painel_anuncio', 0.3, 0.3, 0.3, 1], ['totem_info', 0.7, 0.32, -0.3, 1], ['moto_neon', 0.86, 0.6, 2.6, 1]],
+    // Cidade de Nexus (subterrânea): o portão de setor na chegada e as ruas com o neon
+    nexus_portao: [['portao_setor', 0.5, 0.12, 0, 0.9], ['arco_neon', 0.5, 0.88, 0, 0.8], ['totem_info', 0.3, 0.5, 0.6, 1], ['maquina_venda', 0.7, 0.5, -0.6, 1]],
+    nexus_avenida: [['apartamento_urbano', 0.12, 0.14, 0, 0.55], ['estrutura_cbp_6', 0.88, 0.14, 0, 0.55], ['carro_neon', 0.5, 0.5, P2, 1], ['ponto_onibus', 0.3, 0.86, PI, 0.9]],
+    nexus_mercado: [['neon_night_cafe', 0.2, 0.15, 0.3, 0.8], ['loja_tecnologia', 0.8, 0.15, -0.3, 0.8], ['maquina_venda', 0.5, 0.5, 0, 1]],
     metro_industrial: [['estrutura_cbp_3', 0.15, 0.15, 0, 0.65], ['estrutura_cbp_5', 0.85, 0.2, PI, 0.7], ['oficina_mecanica', 0.85, 0.8, -2.4, 0.8]],
     metro_subnivel: [['sci_fi_clinic', 0.14, 0.14, 0.2, 0.7], ['loja_tecnologia', 0.85, 0.15, -0.2, 0.8], ['ponto_onibus', 0.5, 0.8, PI, 1]],
     metro_arcologia: [['estufa_cupula', 0.5, 0.15, 0, 0.6], ['urban_blossom_terrace', 0.15, 0.75, 0.6, 0.8], ['torre_antena', 0.88, 0.8, 0, 0.8]],

@@ -23,6 +23,66 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "npc_ferreiro",
+  "tipo": "npc",
+  "nome": "Ferreiro",
+  "estilo": "medieval",
+  "arq": "assets/npcs/meshy/npc_ferreiro.glb",
+  "mini": "assets/npcs/meshy/npc_ferreiro.png",
+  "js": "js/assets/criacao/npc_ferreiro.js",
+  "convertido": true
+ },
+ {
+  "id": "npc_camponesa",
+  "tipo": "npc",
+  "nome": "Camponesa",
+  "estilo": "medieval",
+  "arq": "assets/npcs/meshy/npc_camponesa.glb",
+  "mini": "assets/npcs/meshy/npc_camponesa.png",
+  "js": "js/assets/criacao/npc_camponesa.js",
+  "convertido": true
+ },
+ {
+  "id": "npc_guarda",
+  "tipo": "npc",
+  "nome": "Guarda da cidade",
+  "estilo": "medieval",
+  "arq": "assets/npcs/meshy/npc_guarda.glb",
+  "mini": "assets/npcs/meshy/npc_guarda.png",
+  "js": "js/assets/criacao/npc_guarda.js",
+  "convertido": true
+ },
+ {
+  "id": "npc_hacker",
+  "tipo": "npc",
+  "nome": "Hacker de rua",
+  "estilo": "cyberpunk",
+  "arq": "assets/npcs/meshy/npc_hacker.glb",
+  "mini": "assets/npcs/meshy/npc_hacker.png",
+  "js": "js/assets/criacao/npc_hacker.js",
+  "convertido": true
+ },
+ {
+  "id": "npc_operario",
+  "tipo": "npc",
+  "nome": "Operário do subsolo",
+  "estilo": "cyberpunk",
+  "arq": "assets/npcs/meshy/npc_operario.glb",
+  "mini": "assets/npcs/meshy/npc_operario.png",
+  "js": "js/assets/criacao/npc_operario.js",
+  "convertido": true
+ },
+ {
+  "id": "npc_comerciante",
+  "tipo": "npc",
+  "nome": "Comerciante neon",
+  "estilo": "cyberpunk",
+  "arq": "assets/npcs/meshy/npc_comerciante.glb",
+  "mini": "assets/npcs/meshy/npc_comerciante.png",
+  "js": "js/assets/criacao/npc_comerciante.js",
+  "convertido": true
+ },
+ {
   "id": "rosto_1",
   "tipo": "rosto",
   "nome": "Rosto 1",

@@ -12,3 +12,5 @@ assets/_retopo/**/*.glb filter=lfs diff=lfs merge=lfs -text
 # versões reduzidas no Blender (o jogo usa as convertidas em js/assets/estruturas/)
 assets/estruturas_ambiente/**/Meshy/*.glb filter=lfs diff=lfs merge=lfs -text
 assets/models/estruturas/*.glb filter=lfs diff=lfs merge=lfs -text
+# NPCs gerados no Meshy (comprimidos com Draco: tools/estruturas/comprimir_draco.mjs)
+assets/npcs/**/*.glb filter=lfs diff=lfs merge=lfs -text

@@ -79,6 +79,8 @@ const Criacao3D = (function () {
   }
   function pecasDe(def) {
     const A = def.aparencia || {};
+    // NPC gerado no Meshy (tipo 'npc' no catálogo): corpo inteiro com roupa, rosto e cabelo próprios
+    if (A.npc) return { corpo: A.npc, rosto: null, cabelo: null, barba: null, bigode: null };
     return {
       corpo: CORPOS[A.corpoG === 1 ? 1 : 0],
       rosto: `rosto_${Math.max(0, Math.min(7, A.rostoG | 0)) + 1}`,
@@ -212,6 +214,7 @@ const Criacao3D = (function () {
   }
   function tintas(def) {
     const A = def.aparencia || {};
+    if (A.npc) return { olhos: null, pele: null, cabelo: null, barba: null };   // (as cores do NPC vêm na textura dele)
     return {
       olhos: typeof PERS_OLHOS !== 'undefined' && PERS_OLHOS[A.olhos] ? cor01(PERS_OLHOS[A.olhos][1]) : null,
       pele: typeof PERS_PELES !== 'undefined' && PERS_PELES[A.pele] ? cor01(PERS_PELES[A.pele]) : null,
@@ -449,6 +452,47 @@ const Criacao3D = (function () {
     return out;
   }
 
+  // Âncoras das peças (padrão de encaixe, docs/CRIACAO_ENCAIXE.md): por vaga, (1) quanto da faixa do
+  // PEITO do tronco (55–90% da altura do tronco, em repouso) a peça cobre — o peitoral tem de cobrir
+  // o peito, não a barriga — e (2) o desvio: quanto a distância entre a pele coberta e a peça muda da
+  // pose de repouso para a atual (a peça acompanha o tronco: perto de zero em qualquer animação)
+  function ancoras(m) {
+    const C = m && m.cria, out = {};
+    if (!C) return out;
+    const vagaDe = new Map();
+    for (const v of COBRE) for (const P of C.peles[v] || []) vagaDe.set(P, v);
+    const tronco = (C.peles.corpo || []).filter((S) => S.regiao === 'tronco');
+    let z0 = 1e9, z1 = -1e9;
+    for (const S of tronco) for (let i = 2; i < S.pos.length; i += 3) { z0 = Math.min(z0, S.pos[i]); z1 = Math.max(z1, S.pos[i]); }
+    const h = z1 - z0, pa = z0 + 0.55 * h, pb = z0 + 0.9 * h;
+    let peitoTotal = 0;
+    for (const S of tronco) for (let i = 2; i < S.pos.length; i += 3) if (S.pos[i] > pa && S.pos[i] < pb) peitoTotal++;
+    for (const S of tronco) {
+      for (const [i, [P, vi]] of S.cobre || []) {
+        const v = vagaDe.get(P);
+        if (!v || !P.P || !S.P) continue;
+        const R = out[v] || (out[v] = { peito: 0, desvio: 0, n: 0 });
+        const z = S.pos[i * 3 + 2];
+        if (z > pa && z < pb) R.peito++;
+        const d0 = Math.hypot(S.pos[i * 3] - P.pos[vi * 3], S.pos[i * 3 + 1] - P.pos[vi * 3 + 1], S.pos[i * 3 + 2] - P.pos[vi * 3 + 2]);
+        const d1 = Math.hypot(S.P[i * 3] - P.P[vi * 3], S.P[i * 3 + 1] - P.P[vi * 3 + 1], S.P[i * 3 + 2] - P.P[vi * 3 + 2]);
+        R.desvio = Math.max(R.desvio, Math.abs(d1 - d0)); R.n++;
+      }
+    }
+    for (const v in out) { out[v].peitoTotal = peitoTotal; out[v].cobrePeito = peitoTotal ? out[v].peito / peitoTotal : 0; }
+    // distribuição da peça na altura do tronco (repouso): quanto dela está no peito e quanto na barriga
+    const ba = z0 + 0.15 * h, bb = z0 + 0.5 * h;
+    for (const v of COBRE) for (const P of C.peles[v] || []) {
+      if (!P.pos) continue;
+      let np = 0, nb = 0, nt = 0;
+      for (let i = 2; i < P.pos.length; i += 3) { const z = P.pos[i]; if (z >= z0 && z <= z1) nt++; if (z > pa && z < pb) np++; else if (z > ba && z < bb) nb++; }
+      const R = out[v] || (out[v] = { peito: 0, desvio: 0, n: 0, cobrePeito: 0 });
+      R.noPeito = (R.noPeito || 0) + np; R.naBarriga = (R.naBarriga || 0) + nb; R.noTronco = (R.noTronco || 0) + nt;
+    }
+    for (const v in out) if (out[v].noTronco) { out[v].massaPeito = out[v].noPeito / out[v].noTronco; out[v].massaBarriga = out[v].naBarriga / out[v].noTronco; }
+    return out;
+  }
+
   // ------------------------------------------------------------ formato do rosto
   // Sete controles de 5 passos (−2 a +2; 0 = o rosto como veio): deformações suaves (gaussianas)
   // em volta de pontos do rosto medidos no corpo (nariz, alto da cabeça, pescoço, largura e
@@ -540,7 +584,7 @@ const Criacao3D = (function () {
     const at = { cor: tela(LADO, '#6a5a52'), mat: tela(LADO / 2, 'rgb(0,150,128)'), nrm: tela(LADO / 2, 'rgb(128,128,255)') };
     m.tex = { canvas: at.cor, mat: at.mat, nrm: at.nrm, bump: 0, pbr: true, glow: null };
     m.cria = { def, corpo: P.corpo, at, ids: {}, peles: {}, pintadas: {}, tinta: tintas(def), forma: formaDe(def) };
-    por(m, 'corpo', P.corpo); por(m, 'rosto', P.rosto);
+    por(m, 'corpo', P.corpo); if (P.rosto) por(m, 'rosto', P.rosto);
     if (P.cabelo) por(m, 'cabelo', P.cabelo);
     if (P.barba) por(m, 'barba', P.barba);
     if (P.bigode) por(m, 'bigode', P.bigode);
@@ -550,7 +594,7 @@ const Criacao3D = (function () {
     m.dqs = true;   // pele por quatérnios duplos: cotovelos, joelhos, ombros e quadris sem perder volume (R3D.skin)
     // medidas para as peças procedurais do Arsenal (as que não têm GLB): corpo e cabeça
     if (typeof PecasRig !== 'undefined' && PecasRig.medidas) {
-      const R = PecasRig.medidas({ skins: m.cria.peles.corpo.concat(m.cria.peles.rosto) });
+      const R = PecasRig.medidas({ skins: m.cria.peles.corpo.concat(m.cria.peles.rosto || []) });
       if (R && R.head && P.cabelo) { const hd = R.head; R.head = { x0: hd.x0 - 0.45, x1: hd.x1, y0: hd.y0 - 0.45, y1: hd.y1 + 0.45, z0: hd.z0, z1: hd.z1 + 0.45 }; }
       m.medidasPecas = R;
     }
@@ -619,5 +663,5 @@ const Criacao3D = (function () {
     return MINI[id].complete && MINI[id].naturalWidth ? MINI[id] : null;
   }
 
-  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, preparar, encaixe, OPC, recuarCorpo, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
+  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, preparar, encaixe, ancoras, OPC, recuarCorpo, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
 })();

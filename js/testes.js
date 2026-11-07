@@ -60,10 +60,13 @@ const EclipseTests = {
       await this.criacaoGLB();
       await this.criacaoTroca();
       await this.criacaoEncaixe();
+      await this.criacaoAncoras();
       await this.estruturasMundo();
       await this.agua();
       this.megacidades();
       this.mundoContinuo();
+      this.metropoleSegura();
+      await this.moradoresMeshy();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
@@ -138,8 +141,9 @@ const EclipseTests = {
   // Mira travada (js/heroes/mira.js): trava no mais perto da frente, passa para o próximo,
   // segurar solta; o golpe começa virado para o alvo; o alvo morto passa a mira adiante
   mira() {
-    const g = game, p = g.player, salva = g.enemies.slice();
+    const g = game, p = g.player, salva = g.enemies.slice(), est0 = g.state;
     let erro = null;
+    g.state = 'playing';   // (a mira só age em jogo)
     try {
       g.enemies.length = 0;
       const R = g.room, cx = R.w / 2, cy = R.h / 2;
@@ -168,7 +172,7 @@ const EclipseTests = {
       Mira.travar(p); g.renderWorld(g.ctx);
       this.ok('mira: teclado X e botão do meio do mouse, R3 no controle (a troca de arma vai para Q e LB + R3)', KEYMAP.lockOn.includes('KeyX') && KEYMAP.lockOn.includes('MouseMiddle') && PADMAP.lockOn[0] === 11 && !KEYMAP.swapWeapon.includes('KeyX') && PAD_LAYER_MAP.swapWeapon === 11);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
-    Mira.soltar(); g.enemies.length = 0; for (const e of salva) g.enemies.push(e);
+    Mira.soltar(); g.enemies.length = 0; for (const e of salva) g.enemies.push(e); g.state = est0;
     this.ok('mira: sem exceção', !erro, erro);
   },
 
@@ -739,7 +743,8 @@ const EclipseTests = {
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
-      this.ok(`${R.id}: um acampamento de chefe com o inimigo do chefe`, zs.filter((z) => (z.camps || []).some((c) => c.boss && c.mobs[R.boss.type])).length === 1);
+      const seguraR = zs.length && zs.every((z) => z.seguro);   // cidade segura (Metrópole): o chefe regional fica na masmorra
+      this.ok(`${R.id}: um acampamento de chefe com o inimigo do chefe${seguraR ? ' (cidade segura: o chefe está na masmorra)' : ''}`, seguraR ? Object.values(WORLD_MASMORRAS).some((M) => M.reg === R.id && M.chefe.regional && M.chefe.tipo === R.boss.type) : zs.filter((z) => (z.camps || []).some((c) => c.boss && c.mobs[R.boss.type])).length === 1);
       const ligada = zs.every((z) => zs.length === 1 || Object.values(WORLD_DIRS).some(([dr, dc]) => worldZoneAt(z.r + dr, z.c + dc, R.id)));
       this.ok(`${R.id}: toda zona tem passagem para outra`, ligada);
       this.igual(`${R.id}: 3 missões`, WorldQuests.lista(R.id).length, 3);
@@ -856,7 +861,7 @@ const EclipseTests = {
       this.ok(`${id}: 9 zonas (3 × 3) com a cidade no centro`, zs.length === 9 && hub && hub.r === 1 && hub.c === 1 && hub.hub && hub.portal && !hub.camps.length, `${zs.length} ${hub && hub.r},${hub && hub.c}`);
       this.ok(`${id}: níveis da faixa`, zs.every((z) => z.lv >= R.lv[0] && z.lv <= R.lv[1]), zs.map((z) => z.lv).join(','));
       this.ok(`${id}: cidade com 4+ moradores de serviço (ferreiro, curandeiro, artesão, treinador)`, ['ferreiro', 'curandeiro', 'artesao', 'treinador'].every((sv) => WORLD_POVO.some((P) => P.zona === R.hub && (P.servicos || []).includes(sv))));
-      this.ok(`${id}: masmorra de 3 andares, tesouros e chefe`, Object.values(WORLD_MASMORRAS).some((M) => M.reg === id && WORLD_ZONES[`${M.id}_2`]) && Object.values(WORLD_TESOUROS).filter((T) => WORLD_ZONES[T.zona].region === id).length >= 2 && zs.some((z) => z.camps.some((c) => c.boss)));
+      this.ok(`${id}: masmorra de 3 andares, tesouros e chefe`, Object.values(WORLD_MASMORRAS).some((M) => M.reg === id && WORLD_ZONES[`${M.id}_2`]) && Object.values(WORLD_TESOUROS).filter((T) => WORLD_ZONES[T.zona].region === id).length >= 2 && (zs.some((z) => z.camps.some((c) => c.boss)) || Object.values(WORLD_MASMORRAS).some((M) => M.reg === id && M.chefe.regional)));
       this.ok(`${id}: 3 missões da região e 3 secundárias`, WorldQuests.lista(id).length === 3 && WORLD_AVENTURAS.filter((q) => q.reg === id).length === 3);
       this.ok(`${id}: tema, facção, clima, contratos e material`, zs.every((z) => THEMES[z.theme]) && WORLD_FACCOES[id] && CLIMA_REGIAO[id] && WORLD_CLIMA_REG[id] && WORLD_CONTRATO_ALVOS[id].every((t) => ENEMY_VARIANTS[t] || ENEMY_TYPES[t]) && WORLD_MAT_REG[id]);
       // acesso: só com o nível da faixa (o chefe anterior não basta)
@@ -1224,6 +1229,7 @@ const EclipseTests = {
       if (Rg.id === 'carmesin') continue;
       const vs = new Set();
       for (const zz of worldZonesOf(Rg.id)) for (const c of zz.camps || []) for (const t in c.mobs) if (ENEMY_VARIANTS[t]) vs.add(t);
+      for (const M of Object.values(WORLD_MASMORRAS)) if (M.reg === Rg.id && worldZonesOf(Rg.id).every((z) => z.seguro)) for (const t of M.mobs) if (ENEMY_VARIANTS[t]) vs.add(t);   // (cidade segura: os da masmorra)
       this.ok(`${Rg.id}: inimigos próprios da região`, vs.size >= 1, [...vs].join(','));
     }
     const sala = g.enemies.slice();
@@ -1902,7 +1908,7 @@ const EclipseTests = {
       const portas = g.npcs.filter((n) => n instanceof PortaBairro);
       this.igual('bairro: 7 portas (5 prédios com interior e 2 casas)', portas.length, 7);
       this.ok('bairro: volta para a praça', g.npcs.some((n) => n instanceof WorldProp && n.kind === 'gate' && n.data.to === CIDADE_ID));
-      this.igual('bairro: ao meio-dia, 6 moradores na rua (guarda, Nina, Jorge, o bardo, o viajante no banco e o domador Tobias)', g.npcs.filter((n) => n instanceof Morador).length, 6);
+      this.igual('bairro: ao meio-dia, 7 moradores na rua (guarda, Nina, Jorge, o bardo, o viajante no banco, o domador Tobias e o ferreiro Osvaldo, do Meshy)', g.npcs.filter((n) => n instanceof Morador).length, 7);
       this.ok('bairro: lampiões, poço, carroça e o resto da rua (objetos do Blender com colisão)', Bairro.objetos.length >= 15 && R.pillars.filter((q) => q.cenario).length >= Bairro.objetos.length, Bairro.objetos.length);
       // prédios: dentro da sala, sem sobrepor, o fundo dentro do recuo, a porta na frente
       const Ls = BAIRRO_PREDIOS.map((B) => ({ B, L: Bairro.lugar(B, R), m: Bairro.medidas(B) }));
@@ -2080,7 +2086,7 @@ const EclipseTests = {
       this.ok('criaturas: LODs cada vez mais leves e o LOD 0 no orçamento (até 18 mil triângulos, só de perto)', tr.length === 4 && tr[0] <= 18000 && tr.every((t, i) => !i || t < tr[i - 1]), tr.join(' > '));
       const RZ = Criaturas3D.dados.lobo_raiz;
       this.ok('criaturas: as pelagens (raiz, neve, cinzento, cães) usam a malha e as animações do lobo neon (o arquivo só traz texturas)', RZ && RZ.base === 'lobo_sombra_neon' && RZ.SK === N.SK && RZ.clipes === N.clipes && RZ.tex.src !== N.tex.src);
-      this.ok('criaturas: o lobo neon está na Metrópole', ENEMY_VARIANTS.lobo_neon.modelo === 'lobo_sombra_neon' && Object.values(WORLD_ZONES).some((z) => z.region === 'metropole' && (z.camps || []).some((c) => c.mobs && c.mobs.lobo_neon)));
+      this.ok('criaturas: o lobo neon está na Metrópole (no Cofre Ômega: a cidade é segura)', ENEMY_VARIANTS.lobo_neon.modelo === 'lobo_sombra_neon' && WORLD_MASMORRAS.cofre_omega.mobs.includes('lobo_neon'));
       const AV = ['idle', 'andar', 'voar', 'planar', 'decolar', 'pousar', 'comer', 'dormir', 'sentar', 'brincar', 'carinho', 'chamar', 'dano'];
       this.ok('criaturas: Asa Noturna (ave) com esqueleto de ave, 4 LODs e 13 animações', A && A.nb >= 24 && A.lods === 4 && AV.every((k) => A.clipes[k]), A && Object.keys(A.clipes).join(','));
       World.loadZone('velmora_trilha', null);
@@ -2897,8 +2903,16 @@ const EclipseTests = {
       if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
       World.loadZone('velmora_lago', null);
       const R = g.room, C = Agua.corpos(), L = C[0];
+      this.ok('motor 3D: os programas de perspectiva (cores e textura) ligam (a água tem precisão igual nos dois shaders)', !R3D.active || (R3D.progsP && R3D.progsP.length === 2 && R3D.progs.length === 2), R3D.progsP && R3D.progsP.length);
       this.ok('água: o Lago Escuro tem o lago (e as zonas da lista têm rios e lagos)', C.length === 1 && L.lago && Object.keys(Agua.AGUA_ZONAS).length >= 10);
-      this.ok('água: fundo no meio, raso na margem, seco fora', Agua.profundidade(L.x, L.y) === 1 && Agua.profundidade(L.x + L.rx - 10, L.y) > 0 && Agua.profundidade(L.x + L.rx - 10, L.y) < 1 && Agua.profundidade(L.x + L.rx + 30, L.y) === 0);
+      // margem natural: anda do centro para fora em 12 direções até secar; a margem fica perto da
+      // elipse (±15%), mas não é a elipse lisa (o raio relativo varia)
+      const margem = (a) => { const c = Math.cos(a), s = Math.sin(a); let d = 0; while (d < 4 * L.rx && Agua.profundidade(L.x + c * d, L.y + s * d) > 0) d += 2; return d; };
+      const elipse = (a) => L.rx * L.ry / Math.hypot(L.ry * Math.cos(a), L.rx * Math.sin(a));
+      const rel = [...Array(12)].map((_, i) => margem(i * Math.PI / 6) / elipse(i * Math.PI / 6)), m0 = margem(0);
+      const pr = (dx) => Agua.profundidade(L.x + dx, L.y);
+      this.ok('água: fundo no meio, raso na margem, seco fora', pr(0) === 1 && pr(m0 - 10) > 0 && pr(m0 - 10) < 1 && pr(m0 + 30) === 0, m0);
+      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', rel.every((r) => r > 0.85 && r < 1.15) && Math.max(...rel) / Math.min(...rel) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
       this.ok("água: nenhuma árvore, pedra, morador ou estrutura dentro d'água", !R.pillars.some((q) => !q.cenario && Agua.funda(q.x, q.y)) && !g.npcs.some((n) => Agua.profundidade(n.x, n.y) > 0));
       const p = g.player; p.x = L.x; p.y = L.y; p.air = false; p.state = 'idle'; p.vx = p.vy = 0;
       Agua.update(1 / 60);
@@ -2967,6 +2981,51 @@ const EclipseTests = {
       this.ok('mundo contínuo: a dissolução some em menos de meio segundo', !g.dissolve);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('mundo contínuo: sem exceção', !erro, erro);
+  },
+
+  // Metrópole: cidade segura (sem inimigos nas 9 zonas); a luta da região fica no Cofre Ômega, onde
+  // está o Supervisor Ômega (o chefe regional, que conclui a região)
+  metropoleSegura() {
+    const g = game;
+    let erro = null;
+    try {
+      const zs = worldZonesOf('metropole');
+      this.ok('Metrópole: as 9 zonas sem acampamentos nem chefe (cidade segura)', zs.length === 9 && zs.every((z) => z.seguro && !z.camps.length && !z.chests.some((c) => c.boss)));
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      let inimigos = 0;
+      for (const z of zs) { World.loadZone(z.id, null); inimigos += g.enemies.length; }
+      this.igual('Metrópole: nenhum inimigo ao entrar em qualquer zona da cidade', inimigos, 0);
+      const M = WORLD_MASMORRAS.cofre_omega;
+      this.ok('Metrópole: o Supervisor Ômega é o chefe do Cofre Ômega (com sentinelas para a missão de abate)', M.chefe.nome === 'SUPERVISOR ÔMEGA' && M.chefe.regional && M.mobs.includes('sentinela_neon'));
+      const ch0 = Object.assign({}, World.state.chefes || {}); if (World.state.chefes) delete World.state.chefes.metropole;
+      const msg = g.hud.message; g.hud.message = () => {};
+      Locais.vencer('cofre_omega', { x: 0, y: 0 });
+      g.hud.message = msg;
+      this.ok('Metrópole: vencer o Supervisor no Cofre conclui o chefe da região', World.bossDone('metropole'));
+      World.state.chefes = ch0;
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('Metrópole segura: sem exceção', !erro, erro);
+  },
+
+  // Moradores gerados no Meshy (js/mundo/npc3d.js): corpo inteiro no esqueleto do jogo, na cidade
+  async moradoresMeshy() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    let erro = null;
+    try {
+      const ids = ['mes_ferreiro', 'mes_hacker', 'mes_operario', 'mes_comerciante'];
+      this.ok('moradores do Meshy: 4 no povo, cada um com o NPC convertido (tipo npc no catálogo, fora da criação)',
+        ids.every((id) => WORLD_POVO.some((P) => P.id === id) && NPC3D[id] && Criacao3D.disponivel(NPC3D[id].ap.npc) && Criacao3D.POR_ID[NPC3D[id].ap.npc].tipo === 'npc') && !CRIA_MINI.corpoG().some((c) => c.startsWith('npc_')));
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      World.loadZone('metro_centro', null);
+      const P = WORLD_POVO.find((q) => q.id === 'mes_hacker'), k = NpcModelo.chave(P), d = NpcModelo.defs.mes_hacker;
+      this.ok('moradores do Meshy: o modelo próprio é montado sem rosto nem cabelo à parte (o NPC inteiro)', !!k && !!d && Criacao3D.pecasDe(d).corpo === 'npc_hacker' && !Criacao3D.pecasDe(d).rosto);
+      for (let i = 0; i < 300 && Criacao3D.preparar(d) !== true; i++) await espera(50);
+      MODELS3D[k].model = null;
+      const m = g.model3(k);
+      this.ok('moradores do Meshy: o corpo tem pele no esqueleto do jogo (anda e senta com as posturas dos moradores)', !!m && !m.criaVazio && m.skins.length > 0 && m.skins.every((sk) => sk.bones.length > 0));
+      g.renderWorld(g.ctx);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('moradores do Meshy: sem exceção', !erro, erro);
   },
 
   // Câmeras (js/terceira.js): a 3D é a padrão sem escolha guardada; a isométrica é a opção; o
@@ -3086,6 +3145,42 @@ const EclipseTests = {
       g.renderWorld(g.ctx);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('estruturas: sem exceção', !erro, erro);
+  },
+
+  // Âncora do peitoral (padrão de encaixe, docs/CRIACAO_ENCAIXE.md): os peitorais iniciais (a couraça
+  // do Guerreiro e do Guardião e o gibão das outras classes) e um de nível 30, nos dois corpos: cobrem
+  // o PEITO (não a barriga) e acompanham o tronco em repouso, correndo, golpeando e no ar
+  async criacaoAncoras() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Criacao3D === 'undefined' || !Criacao3D.ancoras || !R3D.active) { this.ok('âncoras (sem o motor 3D, nada a conferir)', true); return; }
+    const POSES = [['parado', { state: 'idle', idleVariant: 'idle_breathing', idleBlend: 0, wpnOut: false }], ['correndo', { state: 'run', wpnOut: true }],
+      ['golpe', { state: 'attack', wpnOut: true }], ['no ar', { state: 'jump', air: true, wpnOut: true }]];
+    let erro = null;
+    try {
+      for (const [c, corpoG, peca] of [['guerreiro', 0, 'ini_armadura'], ['guerreiro', 1, 'ini_armadura'], ['mago', 0, 'ini_peitoral'], ['mago', 1, 'ini_peitoral'], ['assassino', 1, 'n30_assassino_peitoral']]) {
+        const def = Perfis.registrar({ id: `p_teste_anc_${c}_${corpoG}`, nome: 'Âncora', classe: c, aparencia: Object.assign(persAparenciaPadrao(c), { estilo: 0, corpoG, cabeloG: 0, barbaG: 0, bigodeG: 0 }) });
+        for (let i = 0; i < 400 && Criacao3D.preparar(def) !== true; i++) await espera(50);
+        MODELS3D[def.model].model = null;
+        const M = g.model3(def.model), it = Arsenal.gerarCat(peca, 0), v = new Player(0, 0, def);
+        v.vitrine = true; v.pecasPrevia = { peitoral: it }; v.facing = v.viewFacing = 0;
+        let vestiu = false;
+        for (let i = 0; i < 600 && !vestiu; i++) { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); vestiu = M.cria.ids.peitoral === peca; if (!vestiu) await espera(50); }
+        let pior = 0, cob = 1;
+        const A0 = Criacao3D.ancoras(M).peitoral || {};
+        for (const [, P] of POSES) for (const tt of [0.2, 0.6]) {
+          Object.assign(v, P); v.animTime = tt * 3; v.stateTime = tt; v.moveSpeed = v.vx = P.state === 'run' ? v.baseSpeed : 0; v.z = P.air ? 30 : 0;
+          if (P.state === 'attack') { const T = CHARACTER_COMBOS[def.base] || COMBO_TABLE, id = T && T.L, d = ATTACKS[id]; v.attack = d ? { id, def: d, t: tt * 0.4, dir: 0, serial: 1 } : null; } else v.attack = null;
+          MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+          (function anda(nd, Pm) { M3.mul(nd.w, Pm, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make());
+          for (const sk of M.skins) R3D.skin(sk, 0, !!M.dqs);
+          const A = Criacao3D.ancoras(M).peitoral;
+          if (A) { pior = Math.max(pior, A.desvio); cob = Math.min(cob, A.cobrePeito); }
+        }
+        this.ok(`âncora ${peca} (${c}, corpo ${corpoG + 1}): no peito, não na barriga (${Math.round((A0.massaPeito || 0) * 100)}% da peça na faixa do peito, ${Math.round((A0.massaBarriga || 0) * 100)}% na da barriga) e acompanha o tronco em 4 poses (desvio máximo ${pior.toFixed(2)})`,
+          vestiu && A0.massaPeito > A0.massaBarriga && pior < 1.5, `vestiu ${vestiu} peito ${(A0.massaPeito || 0).toFixed(2)} barriga ${(A0.massaBarriga || 0).toFixed(2)} desvio ${pior.toFixed(2)}`);
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('âncoras do peitoral sem exceção', !erro, erro);
   },
 
   async criacaoGLB() {

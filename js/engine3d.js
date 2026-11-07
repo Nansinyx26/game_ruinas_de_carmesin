@@ -201,18 +201,30 @@ void main() {
 // Perspectiva (câmera em terceira pessoa, js/terceira.js): posições já no mundo, matriz da câmera
 const R3D_VS_P = `
 attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol;
-uniform mat4 uMVP;
+uniform mat4 uMVP; uniform mediump vec4 uAgua;   // (mediump explícito: o mesmo do fragmento, ou o programa não liga)
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 void main() {
-  gl_Position = uMVP * vec4(aPos, 1.0);
-  vNor = aNor; vCol = aCol; vPos = aPos;
+  vec3 P = aPos;
+  if (uAgua.x > 0.5) {
+    // água (js/mundo/agua.js): a superfície sobe e desce com ondas que andam (menos perto da margem; aCol.a = margem)
+    float t = uAgua.y;
+    vec2 q = P.xy - uAgua.zw;
+    P.z += (sin(dot(q, vec2(0.8, 0.6)) * 0.045 + t * 1.6) * 1.1 + sin(dot(q, vec2(-0.5, 0.85)) * 0.07 + t * 2.1) * 0.6
+          + sin(dot(q, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.25) * (1.0 - 0.85 * aCol.a);
+  }
+  gl_Position = uMVP * vec4(P, 1.0);
+  vNor = aNor; vCol = aCol; vPos = P;
 }`;
 const R3D_FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
-uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar; uniform vec4 uWet;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar; uniform vec4 uWet; uniform mediump vec4 uAgua;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
@@ -231,6 +243,34 @@ void main() {
     float tk = uVar.w * (1.0 - smoothstep(0.12, 0.3, sat));
     float tl = max(dot(uVar.rgb, vec3(0.299, 0.587, 0.114)), 0.25);
     col = mix(col, clamp(uVar.rgb * (0.35 + 1.3 * lum / tl), 0.0, 1.0), tk);
+  }
+  if (uAgua.x > 0.5) {
+    // ÁGUA (js/mundo/agua.js; vCol.rgb = cor pela profundidade, da margem rasa ao fundo; vCol.a =
+    // quanto é margem): normal das ondas somadas (4 direções e tamanhos, andando no tempo), Fresnel
+    // (de lado reflete o céu, de cima mostra a cor da água), brilho do sol, espuma que respira na
+    // margem e a névoa por cima
+    if (uPass > 0.5) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+    float t = uAgua.y, sh = vCol.a;
+    vec2 p = vPos.xy - uAgua.zw, g = vec2(0.0);   // (perto do centro da água: números pequenos, sem serrilhar)
+    g += vec2(0.8, 0.6) * cos(dot(p, vec2(0.8, 0.6)) * 0.045 + t * 1.6) * 0.9;
+    g += vec2(-0.5, 0.85) * cos(dot(p, vec2(-0.5, 0.85)) * 0.07 + t * 2.1) * 0.65;
+    g += vec2(0.95, -0.3) * cos(dot(p, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.4;
+    g += vec2(-0.2, -0.98) * cos(dot(p, vec2(-0.2, -0.98)) * 0.23 + t * 3.7) * 0.25;
+    g += vec2(0.6, -0.8) * cos(dot(p, vec2(0.6, -0.8)) * 0.41 + t * 5.3) * 0.12;
+    vec3 nw = normalize(vec3(-g * 0.16 * (1.0 - 0.7 * sh), 1.0));
+    float ndv = clamp(dot(nw, V), 0.0, 1.0);
+    float fr = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);
+    vec3 ceu = mix(uFog.rgb, uAmb * 1.5 + uKeyCol * 0.3, 0.4);
+    vec3 agua = col * (uAmb * 0.85 + uKeyCol * 0.45 * max(uKeyDir.z, 0.2));
+    vec3 c = mix(agua, ceu, clamp(0.1 + fr * 1.3, 0.0, 0.85));
+    vec3 H = normalize(uKeyDir + V);
+    float nh = max(dot(nw, H), 0.0);
+    c += uKeyCol * (pow(nh, 220.0) * 2.4 + pow(nh, 24.0) * 0.1);
+    float esp = smoothstep(0.8, 0.97, sh + 0.05 * sin(p.x * 0.11 + t * 2.0) + 0.05 * sin(p.y * 0.14 - t * 1.6));
+    c = mix(c, vec3(0.9, 0.95, 0.97) * (uAmb + uKeyCol * 0.7), esp * 0.8);
+    c = mix(c, uFog.rgb, fogK());
+    gl_FragColor = vec4(c, 1.0);
+    return;
   }
   float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
   if (uHolo > 0.5) {
@@ -440,7 +480,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -768,6 +808,8 @@ const R3D = {
     if (L.uVar) { const vc = o.vart; if (vc) gl.uniform4f(L.uVar, vc[0], vc[1], vc[2], vc[3]); else gl.uniform4f(L.uVar, 0, 0, 0, 0); }
     // clima no corpo: molhado, neve assentada e geada (js/mundo/clima.js, Clima.roupa)
     if (L.uWet) { const w = o.clima; if (w) gl.uniform4f(L.uWet, w[0], w[1], w[2], 0); else gl.uniform4f(L.uWet, 0, 0, 0, 0); }
+    // água (js/mundo/agua.js): material com ondas, reflexo e espuma; o tempo anda sozinho
+    if (L.uAgua) { const c = o.agua && o.aguaC; gl.uniform4f(L.uAgua, o.agua ? 1 : 0, o.agua ? (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 62.832 : 0, c ? c[0] : 0, c ? c[1] : 0); }
   },
 
   // Cena inteira em perspectiva (câmera em terceira pessoa): os itens enfileirados já trazem a
