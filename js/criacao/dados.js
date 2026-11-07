@@ -85,7 +85,8 @@ const PERS_ORDEM = ['guerreiro', 'mago', 'assassino', 'patrulheiro', 'guardiao']
 
 // Opções da aparência (todas desenhadas de verdade pelo modelo, js/criacao/modelo.js)
 const PERS_PELES = ['#f2d0b6', '#e8b896', '#d29f7a', '#b98563', '#9a6a4c', '#7b5139', '#5a3a29', '#3e281c'];
-const PERS_CABELOS = [['Preto', '#141216'], ['Castanho', '#4a2e1c'], ['Ruivo', '#8a3a1a'], ['Loiro', '#c9a35e'], ['Grisalho', '#8a8a90'], ['Branco', '#e4e4ea'], ['Azul', '#2a4a9a'], ['Carmesim', '#8a1a2a']];
+const PERS_CABELOS = [['Preto', '#141216'], ['Castanho', '#4a2e1c'], ['Ruivo', '#8a3a1a'], ['Loiro', '#c9a35e'], ['Grisalho', '#8a8a90'], ['Branco', '#e4e4ea'], ['Azul', '#2a4a9a'], ['Carmesim', '#8a1a2a'],
+  ['Castanho-claro', '#7a5434'], ['Loiro-escuro', '#9a7440'], ['Acaju', '#5a2018']];   // (no fim: os salvos guardam o índice)
 const PERS_OLHOS = [['Castanhos', '#4a2c18', 0], ['Verdes', '#2e6a3a', 0], ['Azuis', '#2f5aa8', 0], ['Cinzentos', '#6a7480', 0], ['Âmbar', '#b07a1e', 0], ['Arcanos', '#7ad0ff', 1],
   ['Mel', '#8a5a26', 0], ['Violeta', '#6a3aa8', 0], ['Carmesim', '#9a1a2a', 0], ['Gelo', '#a8d8f0', 0], ['Dourados', '#c89a22', 0], ['Esmeralda', '#1a8a5a', 0]];
 const PERS_CORES = [['Ônix', '#1c1b20'], ['Aço', '#4a5260'], ['Floresta', '#2c4a2e'], ['Índigo', '#2e2a5a'], ['Vinho', '#5a1e26'], ['Couro', '#5c3e26'], ['Areia', '#8a7452'], ['Musgo', '#4a5232']];
@@ -106,6 +107,8 @@ const PERS_GLB = {
     'Por fazer (mechas)', 'Curta com bigode (mechas)', 'Média com bigode (mechas)', 'Cheia (mechas)', 'Longa (mechas)',
     'Cavanhaque (mechas)', 'Contorno sem bigode (mechas)', 'Bigode (mechas)', 'Bigode guidão (mechas)', 'Cheia sem bigode (mechas)', 'Cavanhaque sem bigode (mechas)'],
 };
+// as barbas e bigodes gerados no Meshy por texto, quando convertidos (na mesma ordem de Criacao3D.BARBAS)
+if (typeof CRIA_CATALOGO !== 'undefined') for (const c of CRIA_CATALOGO) if (c.tipo === 'barba' && c.texto && c.convertido) PERS_GLB.barbaG.push(c.nome);
 // id do catálogo da criação de cada opção de cabelo (null: sem cabelo)
 const PERS_CABELOS_GLB = [null, 'cabelo_1', 'cabelo_2', 'cabelo_3', 'cabelo_4', 'cabelo_5', 'cabelo_6', 'cabelo_7', 'cabelo_8',
   'cabelo_curto', 'cabelo_medio', 'cabelo_longo', 'cabelo_espetado', 'cabelo_ondulado', 'cabelo_coque', 'cabelo_rabo', 'cabelo_trancas', 'cabelo_franja', 'cabelo_repicado',
@@ -138,6 +141,12 @@ const PERS_APAR = {
   bigodeG: { nome: 'Bigode', ops: ['Nenhum', 'Bigode', 'Guidão', 'Fino', 'Ferradura'], curtos: ['—', 'BIGODE', 'GUIDÃO', 'FINO', 'FERRAD.'], glb: true },
   // (a primeira: a barba na mesma cor do cabelo; a amostra dela é desenhada meio a meio)
   corBarba: { nome: 'Cor da barba', ops: ['Como o cabelo'].concat(PERS_CABELOS.map((c) => c[0])), cores: [null].concat(PERS_CABELOS.map((c) => c[1])), glb: true },
+  // os fios da barba e do bigode (js/criacao/barba_encaixe.js e a tintura de js/criacao/montagem.js)
+  barbaComp: { nome: 'Comprimento da barba', ops: ['Bem curta', 'Curta', 'Como veio', 'Longa', 'Bem longa'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  barbaVol: { nome: 'Volume da barba', ops: ['Bem rente', 'Rente', 'Como veio', 'Cheia', 'Bem cheia'], curtos: ['−−', '−', '•', '+', '++'], glb: true },
+  barbaDens: { nome: 'Densidade dos fios', ops: ['Rala', 'Falhada', 'Como veio', 'Densa', 'Bem densa'], curtos: ['RALA', 'FALHA', '•', 'DENSA', '++'], glb: true },
+  barbaTom: { nome: 'Tonalidade', ops: ['Bem fria', 'Fria', 'Como a cor', 'Quente', 'Bem quente'], curtos: ['FRIA+', 'FRIA', '•', 'QUENTE', 'QUENTE+'], glb: true },
+  barbaGris: { nome: 'Grisalho', ops: ['Nenhum', 'Poucos fios', 'Salpicado', 'Grisalho', 'Quase branco'], curtos: ['0', 'POUCO', 'SAL', 'GRIS.', 'BRANCO'], glb: true },
   barba: { nome: 'Barba e bigode', ops: ['Sem', 'Por fazer', 'Cavanhaque', 'Bigode', 'Cheia'] },
   marcas: { nome: 'Marcas', ops: ['Sem', 'Cicatriz no olho', 'Cicatriz na face', 'Tatuagem tribal', 'Runas acesas', 'Pintura de guerra'] },
   roupa: { nome: 'Roupa inicial', ops: null },   // por classe (PERS_CLASSES[c].roupas)
@@ -149,7 +158,7 @@ const PERS_CAMPOS = Object.keys(PERS_APAR);
 function persAparenciaPadrao(classe = 'guerreiro') {
   const C = PERS_CLASSES[classe] || PERS_CLASSES.guerreiro;
   return { estilo: 0, corpoG: 0, rostoG: { guerreiro: 0, mago: 2, assassino: 3, patrulheiro: 1, guardiao: 2 }[classe] || 0, cabeloG: classe === 'mago' ? 8 : classe === 'assassino' ? 2 : 1, barbaG: classe === 'guerreiro' ? 2 : 0,
-    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, corBarba: 0, bigodeG: 0, porte: 1, rLargura: 2, rMandibula: 2, rQueixo: 2, rNariz: 2, rBoca: 2, rOlhos: 2, rSobrancelha: 2, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
+    corpo: classe === 'guerreiro' ? 2 : classe === 'assassino' ? 0 : 1, altura: 2, pele: 2, rosto: 0, olhos: classe === 'mago' || classe === 'guardiao' ? 5 : 0, sobrancelhas: 1, cabelo: 1, corCabelo: 1, corBarba: 0, bigodeG: 0, barbaComp: 2, barbaVol: 2, barbaDens: 2, barbaTom: 2, barbaGris: 0, porte: 1, rLargura: 2, rMandibula: 2, rQueixo: 2, rNariz: 2, rBoca: 2, rOlhos: 2, rSobrancelha: 2, barba: classe === 'guerreiro' ? 4 : 0, marcas: 0, roupa: 0, corRoupa: C.cores[0], corDetalhe: C.cores[1] };
 }
 // Personagem salvo antes das peças GLB: as escolhas do modelo paramétrico viram as mais parecidas
 // (corpo curvilíneo → feminino; o penteado e a barba pelo formato)

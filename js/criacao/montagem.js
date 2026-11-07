@@ -24,6 +24,8 @@ const Criacao3D = (function () {
   const BARBAS = ['barba_cacheada', 'barba_curta', 'barba_longa', 'barba_media', 'barba_viking',
     'barba_b_por_fazer', 'barba_b_curta', 'barba_b_media', 'barba_b_cheia', 'barba_b_longa', 'barba_b_cavanhaque', 'barba_b_queixo', 'barba_b_bigode', 'barba_b_guidao',
     'barba_b_cheia_sem', 'barba_b_cavanhaque_sem'];
+  // as barbas e bigodes gerados no Meshy por texto (tools/meshy/gerar_barbas.py), quando convertidos
+  for (const c of CAT) if (c.tipo === 'barba' && c.texto && c.convertido) BARBAS.push(c.id);
   // Bigode separado (campo bigodeG): peças do Blender com a mesma textura de fios das barbas em
   // mechas; divide a célula da barba no atlas (por isso não combina com as barbas do Meshy)
   const BIGODES = ['barba_b_bigode', 'barba_b_guidao', 'barba_b_fino', 'barba_b_ferradura'];
@@ -87,17 +89,20 @@ const Criacao3D = (function () {
       cabelo: (typeof PERS_CABELOS_GLB !== 'undefined' ? PERS_CABELOS_GLB[A.cabeloG | 0] : A.cabeloG > 0 ? `cabelo_${Math.min(8, A.cabeloG)}` : null) || null,
       barba: A.barbaG > 0 ? BARBAS[Math.min(BARBAS.length, A.barbaG) - 1] : null,
       bigode: bigodeDe(A),
+      // o rosto de referência das barbas (o Rosto 1, onde o conversor as encaixou): com barba num outro
+      // rosto, ela é conformada ao escolhido a partir dele (js/criacao/barba_encaixe.js)
+      ref: (A.barbaG > 0 || bigodeDe(A)) && Math.max(0, Math.min(7, A.rostoG | 0)) !== 0 ? 'rosto_1' : null,
     };
   }
   // O personagem usa o modelo com as peças GLB (estilo 'Realista') e as peças dele existem
   function usa(def) {
     if (!def || !def.aparencia || def.aparencia.estilo === 1 || !CAT.length) return false;
     const P = pecasDe(def);
-    return [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode].every((id) => !id || disponivel(id));
+    return [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode].every((id) => !id || disponivel(id));   // (sem a referência, a barba só não é conformada)
   }
   // Tudo da aparência carregado? (pede o que falta e chama cb quando completar)
   function pronto(def, cb) {
-    const P = pecasDe(def), ids = [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode].filter(Boolean);
+    const P = pecasDe(def), ids = [P.corpo, P.rosto, P.cabelo, P.barba, P.bigode, P.ref && disponivel(P.ref) ? P.ref : null].filter(Boolean);
     let falta = 0;
     for (const id of ids) if (!tem(id)) { falta++; carregar(id, () => { if (--falta === 0 && cb) cb(); }); }
     return falta === 0;
@@ -118,6 +123,7 @@ const Criacao3D = (function () {
       const I = imagens(id);
       if (I.ok < I.n) ok = false;
     }
+    if (P.ref && disponivel(P.ref) && !tem(P.ref)) { carregar(P.ref); ok = false; }   // (só a malha: a referência não é desenhada)
     return ok;
   }
 
@@ -194,6 +200,44 @@ const Criacao3D = (function () {
       px[i + 2] = Math.min(255, alvo[2] * 255 * f + br);
     }
   }
+  // Fios da barba e do bigode (depois da cor): DENSIDADE — rala ou falhada, manchas de ruído em duas
+  // escalas mostram a pele por entre os fios (a cor da pele do personagem, com a sombra do fio); densa,
+  // os reflexos claros e as falhas da textura se fecham; GRISALHO — fios brancos espalhados, em
+  // traços curtos, numa fração dos pixels
+  const hashP = (x, y, s) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  function ruidoV(x, y, e, s) {
+    const X = Math.floor(x / e), Y = Math.floor(y / e), fx = x / e - X, fy = y / e - Y, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+    const a = hashP(X, Y, s), b = hashP(X + 1, Y, s), c = hashP(X, Y + 1, s), d = hashP(X + 1, Y + 1, s);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+  function fiosBarba(px, lado, F, pele) {
+    const dens = F.dens, gris = F.gris;
+    if (dens === 1 && !gris) return;
+    for (let y = 0; y < lado; y++) for (let x = 0; x < lado; x++) {
+      const i = (y * lado + x) * 4;
+      let r = px[i], g = px[i + 1], b = px[i + 2];
+      if (dens < 1 && pele) {
+        const n = 0.62 * ruidoV(x, y, lado / 9, 3) + 0.38 * ruidoV(x, y, lado / 40, 7);
+        const w = Math.max(0, Math.min(1, (dens - n) * 6 + 0.5)), sombra = 0.55 + 0.25 * (1 - w);
+        r = r * w + pele[0] * 255 * sombra * (1 - w); g = g * w + pele[1] * 255 * sombra * (1 - w); b = b * w + pele[2] * 255 * sombra * (1 - w);
+      } else if (dens > 1) {
+        const l = 0.3 * r + 0.59 * g + 0.11 * b, k = Math.min(1, (dens - 1) * 1.6);
+        if (l > 70) { const f = 1 - k * 0.35 * Math.min(1, (l - 70) / 90); r *= f; g *= f; b *= f; }
+      }
+      if (gris > 0) {
+        // fios inteiros (traços de 2 px ao longo do fio, de comprimentos variados): pontos soltos
+        // sumiam na redução da textura de longe
+        const cx2 = x >> 1, seg = lado / 9, sy = Math.floor((y + hashP(cx2, 0, 21) * seg) / seg);
+        if (hashP(cx2, sy, 11) < gris * (0.55 + 0.45 * ruidoV(x, y, lado / 12, 5))) {
+          const l = Math.min(232, 150 + 0.4 * (0.3 * r + 0.59 * g + 0.11 * b) + 50 * hashP(cx2, sy, 4));
+          r = r * 0.12 + l * 0.88; g = g * 0.12 + l * 0.86; b = b * 0.12 + l * 0.82;   // (branco quente, não azulado)
+        }
+      }
+      px[i] = r; px[i + 1] = g; px[i + 2] = b;
+    }
+  }
+  const DENS = [0.42, 0.68, 1, 1.4, 1.8], GRIS = [0, 0.07, 0.16, 0.32, 0.6], TOM = [[0.86, 0.95, 1.14], [0.93, 0.98, 1.07], [1, 1, 1], [1.07, 1, 0.9], [1.14, 1, 0.8]];
+  const campo5 = (A, k, p) => (Number.isInteger(A[k]) && A[k] >= 0 && A[k] < 5 ? A[k] : p);
   // Olhos: a íris (máscara feita pelo conversor a partir da posição de cada pixel na cabeça) vai
   // para a cor escolhida, com a luminância de cada pixel em relação à média da íris; a pupila
   // (bem escura) e o brilho (bem claro) ficam como estão
@@ -212,6 +256,7 @@ const Criacao3D = (function () {
     }
     return n;
   }
+  const tom = (c, k) => (c ? [Math.min(1, c[0] * k[0]), Math.min(1, c[1] * k[1]), Math.min(1, c[2] * k[2])] : c);
   function tintas(def) {
     const A = def.aparencia || {};
     if (A.npc) return { olhos: null, pele: null, cabelo: null, barba: null };   // (as cores do NPC vêm na textura dele)
@@ -220,8 +265,10 @@ const Criacao3D = (function () {
       pele: typeof PERS_PELES !== 'undefined' && PERS_PELES[A.pele] ? cor01(PERS_PELES[A.pele]) : null,
       cabelo: typeof PERS_CABELOS !== 'undefined' && PERS_CABELOS[A.corCabelo] ? cor01(PERS_CABELOS[A.corCabelo][1]) : null,
       // a barba: a cor própria ou a do cabelo
-      barba: typeof PERS_CABELOS !== 'undefined' && A.corBarba > 0 && PERS_CABELOS[A.corBarba - 1] ? cor01(PERS_CABELOS[A.corBarba - 1][1])
-        : typeof PERS_CABELOS !== 'undefined' && PERS_CABELOS[A.corCabelo] ? cor01(PERS_CABELOS[A.corCabelo][1]) : null,
+      barba: tom(typeof PERS_CABELOS !== 'undefined' && A.corBarba > 0 && PERS_CABELOS[A.corBarba - 1] ? cor01(PERS_CABELOS[A.corBarba - 1][1])
+        : typeof PERS_CABELOS !== 'undefined' && PERS_CABELOS[A.corCabelo] ? cor01(PERS_CABELOS[A.corCabelo][1]) : null, TOM[campo5(A, 'barbaTom', 2)]),
+      // densidade e grisalho dos fios da barba
+      fios: { dens: DENS[campo5(A, 'barbaDens', 2)], gris: GRIS[campo5(A, 'barbaGris', 0)] },
     };
   }
 
@@ -247,6 +294,7 @@ const Criacao3D = (function () {
         g.drawImage(I.tex, 0, 0, s, s);
         const d = g.getImageData(0, 0, s, s);
         if (T) { if (TINTA[cel] === 'pele') tingirPele(d.data, T); else tingirCabelo(d.data, T); }
+        if (TINTA[cel] === 'barba' && C.tinta.fios) fiosBarba(d.data, s, C.tinta.fios, C.tinta.pele || [0.78, 0.6, 0.5]);
         if (olhos) {
           const mk = tela(s, '#000'), gk = mk.getContext('2d');
           gk.drawImage(I.iris, 0, 0, s, s);
@@ -324,7 +372,7 @@ const Criacao3D = (function () {
   // corpo DESTE personagem recua para dentro dela (cópia própria das posições; as compartilhadas
   // ficam como estão). Refeito quando as peças mudam.
   const COBRE = ['peitoral', 'ombroE', 'ombroD', 'luvas', 'calcas', 'botas', 'capacete'];
-  const OPC = { herdarPesos: true };   // (os testes de encaixe desligam para comparar o antes e o depois)
+  const OPC = { herdarPesos: true, rostoSobBarba: false, encaixeBarba: true };   // (os testes de encaixe desligam para comparar o antes e o depois)
   const RECUA = ['corpo', 'rosto', 'barba', 'bigode'];
   function recuarCorpo(m) {
     const C = m && m.cria;
@@ -340,7 +388,9 @@ const Criacao3D = (function () {
     // (o cabelo em mechas do Blender também cobre: o couro cabeludo de rostos maiores que a cabeça
     // de referência atravessava as mechas curtas)
     // de referência atravessava as mechas curtas); ali o recuo é menor (a testa sob a franja)
-    const barbas = (C.ids.barba ? C.peles.barba || [] : []).concat(C.ids.bigode ? C.peles.bigode || [] : []);   // (a barba também cobre: o queixo e a mandíbula de rostos maiores atravessavam)
+    // (a barba não cobre mais: ela se adapta ao rosto escolhido em js/criacao/barba_encaixe.js, e o
+    // rosto não recua sob ela; OPC.rostoSobBarba volta ao recuo antigo, para comparar)
+    const barbas = OPC.rostoSobBarba ? (C.ids.barba ? C.peles.barba || [] : []).concat(C.ids.bigode ? C.peles.bigode || [] : []) : [];
     const mechas = (C.ids.cabelo && POR_ID[C.ids.cabelo] && POR_ID[C.ids.cabelo].fisica ? C.peles.cabelo || [] : []).concat(barbas);
     const pecas = COBRE.flatMap((v) => C.peles[v] || []).concat(mechas);
     if (!pecas.length) return;
@@ -563,6 +613,29 @@ const Criacao3D = (function () {
     if (C.pintadas[cel] !== id) comImagens(id, (I) => pintar(m, cel, id, I));
     return true;
   }
+  // A barba e o bigode se adaptam ao rosto escolhido (com o formato dele), a partir do rosto de
+  // referência em que o conversor os encaixou (js/criacao/barba_encaixe.js); o relatório do encaixe
+  // fica em C.encaixeBarba (a tela de criação e os testes leem)
+  function encaixarBarba(m, P, B) {
+    const C = m.cria;
+    C.encaixeBarba = null;
+    const barbas = (C.peles.barba || []).concat(C.peles.bigode || []);
+    if (!barbas.length || !C.peles.rosto || !OPC.encaixeBarba || typeof BarbaEncaixe === 'undefined' || !B || !B.medida) return;
+    let ref = C.peles.rosto;
+    if (P.ref) {
+      const R = tem(P.ref) && geo(P.ref, C.corpo, 'rosto');
+      if (!R) return;   // (a referência ainda não chegou: a barba fica como veio)
+      ref = R.map((S) => {
+        let pos = S.pos;
+        if (C.forma) { pos = new Float32Array(S.pos); deformarRosto(pos, B.medida, C.forma); }
+        return { pos, nor: S.nor, idx: S.idx };
+      });
+    }
+    const cb = P.barba && POR_ID[P.barba];
+    const casca = !!(cb && !cb.blender_barba && !cb.id.startsWith('barba_b_'));   // (as do Meshy são cascas fechadas; as do Blender, mechas)
+    try { C.encaixeBarba = BarbaEncaixe.encaixar(barbas, C.peles.rosto, ref, B.medida, C.def.aparencia || {}, casca); }
+    catch (e) { console.error(e); }
+  }
   function juntar(m) { const C = m.cria, out = []; for (const k in C.peles) for (const S of C.peles[k]) out.push(S); m.skins = out; }
   // Modelo do personagem; null se ele não usa as peças GLB. Sem as peças carregadas ainda: o
   // esqueleto vazio (criaVazio), refeito quando terminarem de carregar
@@ -588,6 +661,7 @@ const Criacao3D = (function () {
     if (P.cabelo) por(m, 'cabelo', P.cabelo);
     if (P.barba) por(m, 'barba', P.barba);
     if (P.bigode) por(m, 'bigode', P.bigode);
+    encaixarBarba(m, P, B);
     juntar(m);
     recuarCorpo(m);
     m.sec = true;   // cabelo comprido e capa com movimento secundário (molas do rig do Kael)

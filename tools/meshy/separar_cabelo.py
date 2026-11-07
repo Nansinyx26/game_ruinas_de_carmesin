@@ -10,7 +10,11 @@ Depois, a malha é reduzida (Decimate, uns 60 mil triângulos: o conversor da cr
 o jogo e reassa a textura a partir desta). Saída: assets/Criar_Personagem/Cabelo_Meshy/<id>.glb, o molde do
 encaixe <id>.json (nariz e pescoço do manequim, medir_manequim) e a miniatura <id>.png, renderizada da peça já separada (a fonte do Meshy, em .cache_criacao/meshy_cabelos/,
 não muda). As regras de cada cabelo ficam em tools/meshy/cabelos.json ("separar").
-Uso: python3 tools/meshy/separar_cabelo.py <id> [<id> ...]
+Barbas e bigodes (--tipo barba, tools/meshy/barbas.json, gerados por tools/meshy/gerar_barbas.py): o mesmo
+caminho (pele quente fora, giro, perfil do manequim); além disso fica só o que está abaixo do nariz (as
+sobrancelhas escuras do manequim não passam por barba). Saída em assets/personagens/barbas/<categoria>/
+<id>.glb e .json, a miniatura em previews/<id>.png e a textura de cor em texturas/<id>.png.
+Uso: python3 tools/meshy/separar_cabelo.py [--tipo cabelo|barba] <id> [<id> ...]
 """
 import json
 import os
@@ -23,11 +27,13 @@ from mathutils import Matrix
 from scipy import ndimage
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-FONTE = os.path.join(RAIZ, '.cache_criacao', 'meshy_cabelos', 'fonte')
+TIPO = 'barba' if '--tipo' in sys.argv and sys.argv[sys.argv.index('--tipo') + 1] == 'barba' else 'cabelo'
+FONTE = os.path.join(RAIZ, '.cache_criacao', 'meshy_barbas' if TIPO == 'barba' else 'meshy_cabelos', 'fonte')
 PASTA = os.path.join(RAIZ, 'assets', 'Criar_Personagem', 'Cabelo_Meshy')
+BARBAS = os.path.join(RAIZ, 'assets', 'personagens', 'barbas')
 sys.path.insert(0, os.path.join(RAIZ, 'tools', 'blender'))
 import utils as U  # noqa: E402  (a prévia em Cycles, a mesma das miniaturas dos cabelos do Blender)
-LISTA = json.load(open(os.path.join(RAIZ, 'tools', 'meshy', 'cabelos.json'), encoding='utf-8'))
+LISTA = json.load(open(os.path.join(RAIZ, 'tools', 'meshy', 'barbas.json' if TIPO == 'barba' else 'cabelos.json'), encoding='utf-8'))
 
 
 def textura_fios(S=512, seed=7):
@@ -129,8 +135,9 @@ def separar(id_):
     src = os.path.join(FONTE, id_ + '.glb')
     if not os.path.exists(src):
         src = os.path.join(FONTE, id_ + '_previa.glb')
-    os.makedirs(PASTA, exist_ok=True)
-    out = os.path.join(PASTA, id_ + '.glb')
+    pasta = os.path.join(BARBAS, LISTA[id_]['categoria']) if TIPO == 'barba' else PASTA
+    os.makedirs(pasta, exist_ok=True)
+    out = os.path.join(pasta, id_ + '.glb')
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=src)
     objs = [o for o in bpy.context.scene.objects if o.type == 'MESH']
@@ -186,7 +193,14 @@ def separar(id_):
     molde = medir_manequim(P, H)
     molde['giro'] = round(float(np.degrees(giro)), 2)
     molde['giroDepois'] = round(float(np.degrees(giro_do_manequim(P))), 2)
-    json.dump(molde, open(os.path.join(PASTA, id_ + '.json'), 'w', encoding='utf-8'), indent=1)
+    if cfg.get('abaixo_do_nariz'):
+        # barba e bigode: só o que está abaixo do nariz do manequim (as sobrancelhas ficam de fora)
+        vi = np.empty(sum(len(p.vertices) for p in me.polygons), np.int32); me.polygons.foreach_get('vertices', vi)
+        lt = np.empty(nf, np.int32); me.polygons.foreach_get('loop_total', lt)
+        idx = np.repeat(np.arange(nf), lt)
+        zc = np.zeros(nf); np.add.at(zc, idx, co[vi, 2]); zc /= lt
+        manter &= zc < molde['nariz'][2] + 0.02 * molde['altura']
+    json.dump(molde, open(os.path.join(pasta, id_ + '.json'), 'w', encoding='utf-8'), indent=1)
     print(f'{id_}: manequim', molde, flush=True)
     bm = bmesh.new(); bm.from_mesh(me); bm.faces.ensure_lookup_table()
     tirar = [f for f, k in zip(bm.faces, manter) if not k]
@@ -219,10 +233,19 @@ def separar(id_):
         bsdf.inputs['Roughness'].default_value = 0.55
         me.materials.clear(); me.materials.append(mat)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', use_selection=False, export_apply=True)
-    U.renderizar_previa(os.path.join(PASTA, id_ + '.png'), [ob], lado=360, amostras=12, angulo=(78, 0, 28))
+    if TIPO == 'barba':
+        U.renderizar_previa(os.path.join(BARBAS, 'previews', id_ + '.png'), [ob], lado=360, amostras=12, angulo=(80, 0, 20))
+        for m in me.materials:   # a textura de cor, à parte (a referência da peça)
+            for nd in (m.node_tree.nodes if m and m.use_nodes else []):
+                if nd.type == 'TEX_IMAGE' and nd.image:
+                    os.makedirs(os.path.join(BARBAS, 'texturas'), exist_ok=True)
+                    nd.image.filepath_raw = os.path.join(BARBAS, 'texturas', id_ + '.png'); nd.image.file_format = 'PNG'; nd.image.save()
+                    break
+    else:
+        U.renderizar_previa(os.path.join(PASTA, id_ + '.png'), [ob], lado=360, amostras=12, angulo=(78, 0, 28))
     return out
 
 
 if __name__ == '__main__':
-    for x in sys.argv[1:]:
+    for x in [a for i, a in enumerate(sys.argv[1:], 1) if a != '--tipo' and sys.argv[i - 1] != '--tipo']:
         print('PRONTO', separar(x), flush=True)

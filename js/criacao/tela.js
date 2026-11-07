@@ -26,6 +26,7 @@ const CRIA_CATS = [
   { id: 'forma', nome: 'FORMA', campos: ['rLargura', 'rMandibula', 'rQueixo', 'rNariz', 'rBoca', 'rOlhos', 'rSobrancelha'] },   // (deformações do rosto)
   { id: 'cabelo', nome: 'CABELO', campos: ['cabeloG'] },
   { id: 'barba', nome: 'BARBA', campos: ['barbaG', 'bigodeG', 'corBarba'] },   // (barba e bigode; a cor, própria ou a do cabelo)
+  { id: 'fios', nome: 'FIOS', campos: ['barbaComp', 'barbaVol', 'barbaDens', 'barbaTom', 'barbaGris'] },   // (comprimento, volume, densidade, tonalidade e grisalho da barba)
   { id: 'olhos', nome: 'OLHOS', campos: ['olhos'] },   // (a íris do rosto pintada na cor)
   { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo'] },
 ];
@@ -475,6 +476,20 @@ const CriacaoTela = {
     if (catAt.id === 'barba' && A.bigodeG > 0 && typeof Criacao3D !== 'undefined' && !Criacao3D.pecasDe({ aparencia: A }).bigode) {
       ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,190,150,0.85)';
       wrapText(ctx, 'O bigode separado combina com as barbas em mechas ou sem barba (as cinco primeiras barbas já vêm com o bigode delas).', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+    }
+    if (catAt.id === 'barba' || catAt.id === 'fios') {
+      // o encaixe da barba no rosto escolhido (js/criacao/barba_encaixe.js): aprovado ou não
+      const d = CHARACTERS_BY_ID.p_previa, M = d && MODELS3D[d.model] && MODELS3D[d.model].model, E = M && M.cria && M.cria.encaixeBarba;
+      const tem = A.barbaG > 0 || A.bigodeG > 0;
+      let txt = null, cor = 'rgba(180,170,210,0.75)';
+      if (!tem) txt = catAt.id === 'fios' ? 'Escolha uma barba ou um bigode: comprimento, volume, densidade, tonalidade e grisalho valem para os dois.' : null;
+      else if (E && E.ok) { txt = `Encaixe no rosto: aprovado${E.tentativas > 1 ? ' (refeito com margem maior)' : ''} — acompanha mandíbula, queixo e bochechas, sem atravessar a pele, sem vãos, olhos e nariz livres.`; cor = 'rgba(150,230,170,0.85)'; }
+      else if (E) { txt = `Encaixe no rosto: com ressalvas neste rosto (atravessa ${(E.pen * 100).toFixed(1)}%, vãos ${(E.vao * 100).toFixed(0)}%, olhos ${E.olhos}, nariz ${E.nariz}).`; cor = 'rgba(255,190,150,0.9)'; }
+      if (txt) {
+        ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = cor;
+        const y2 = catAt.id === 'barba' && A.bigodeG > 0 && !Criacao3D.pecasDe({ aparencia: A }).bigode ? yy + 36 : yy;
+        wrapText(ctx, txt, w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, y2 + i * 16));
+      }
     }
     if (catAt.id === 'cores') {
       ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';

@@ -122,6 +122,16 @@ for _b in BARBAS_BLENDER:
     if os.path.exists(_j):
         PECAS.append(dict(id=f'barba_b_{_b}', tipo='barba', blender_barba=True, nome=json.load(open(_j, encoding='utf-8'))['nome'],
                           arq=f'Barbas_Blender/{_b}.glb', mini=f'Barbas_Blender/{_b}.png', tri=16000, tex=512))
+# Barbas e bigodes gerados no Meshy por texto (tools/meshy/gerar_barbas.py → separar_cabelo.py --tipo
+# barba → assets/personagens/barbas/<categoria>/): entram quando o GLB existe, com o encaixe pelo molde
+# do manequim e, no jogo, a conformação ao rosto escolhido (js/criacao/barba_encaixe.js)
+_BM = os.path.join(RAIZ, 'tools', 'meshy', 'barbas.json')
+for _b, _v in (json.load(open(_BM, encoding='utf-8')) if os.path.exists(_BM) else {}).items():
+    _g = os.path.join(RAIZ, 'assets', 'personagens', 'barbas', _v['categoria'], _b + '.glb')
+    if os.path.exists(_g):
+        PECAS.append(dict(id=_b, tipo='barba', texto=True, categoria=_v['categoria'], nome=_v['nome'], tri=12000, tex=512,
+                          arq=f"../personagens/barbas/{_v['categoria']}/{_b}.glb", mini=f'../personagens/barbas/previews/{_b}.png',
+                          molde=f"../personagens/barbas/{_v['categoria']}/{_b}.json"))
 L1 = 'Armaduras_Inicial_Level_1/'
 PECAS += [
     dict(id='ini_capuz', tipo='peca', vaga='capacete', nome='Capuz do Iniciado', arq=L1 + 'Capuz_level_1.glb', mini=L1 + 'Capuz_level_1.png', nivel=1),
@@ -800,7 +810,7 @@ def perfil_fatias(V, zs, d):
     return np.array(r), np.array(c)
 
 
-def ajuste_molde(molde, ref, Vp):
+def ajuste_molde(molde, ref, Vp, modo='cabelo'):
     """Cabelo do Meshy: a cabeça de manequim que veio com ele (medida em tools/meshy/separar_cabelo.py, já
     virada de frente) é o molde. O perfil do manequim (raio e centro de cada fatia) é encaixado no da cabeça
     do corpo (o corpo e o rosto de referência) do queixo aos olhos: a escala e a altura saem da forma da
@@ -820,9 +830,16 @@ def ajuste_molde(molde, ref, Vp):
     # a escala fica entre a que deixa o alto da peça da largura da cabeça e 1,6 vez ela (o cabelo cobre
     # a cabeça e tem volume; sem esse limite, o pescoço comprido do manequim passava por cabeça)
     mn, mx = Vp.min(0), Vp.max(0)
-    s_cab = m['largCabeca'] / max(np.ptp(Vp[Vp[:, 2] > mx[2] - 0.35 * (mx[2] - mn[2])][:, 1]), 1e-6)
+    if modo == 'barba':
+        # barba: a escala perto da razão entre os raios da cabeça do corpo e da do manequim (acima do pescoço)
+        cab = zm > molde['pescoco']
+        s_cab = np.nanmax(rg) / max(np.max(rm[cab]) if cab.any() else np.max(rm), 1e-6)
+        faixa = np.geomspace(0.6, 1.6, 70)
+    else:
+        s_cab = m['largCabeca'] / max(np.ptp(Vp[Vp[:, 2] > mx[2] - 0.35 * (mx[2] - mn[2])][:, 1]), 1e-6)
+        faixa = np.geomspace(0.9, 1.6, 60)
     melhor = None
-    for s in s_cab * np.geomspace(0.9, 1.6, 60):
+    for s in s_cab * faixa:
         for tz in np.linspace(zs[0] - s * zm.max(), zs[-1] - s * zm.min(), 160):
             q = (zs - tz) / s
             dentro = (q >= zm.min()) & (q <= zm.max())
@@ -989,7 +1006,7 @@ def processar_cobertura(p, refs, modo):
     porCorpo, info = {}, {}
     for cid, ref in refs.items():
         if p.get('molde'):
-            s, t, (HV, HN, kdH, hh) = ajuste_molde(json.load(open(os.path.join(ORIG, p['molde']), encoding='utf-8')), ref, R['Vr'])
+            s, t, (HV, HN, kdH, hh) = ajuste_molde(json.load(open(os.path.join(ORIG, p['molde']), encoding='utf-8')), ref, R['Vr'], modo)
         else:
             s, t, (HV, HN, kdH, hh) = ajuste_cobertura(R['Vr'], R['Fr'], ref, modo)
         P = R['Vr'] * s + t
@@ -1465,7 +1482,7 @@ def gravar_catalogo():
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
     for p in PECAS:
         it = dict(id=p['id'], tipo=p['tipo'], nome=p['nome'], arq='assets/Criar_Personagem/' + p['arq'], mini='assets/Criar_Personagem/' + p['mini'], js='js/assets/criacao/' + p['id'] + '.js')
-        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica', 'sem_iris'):
+        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica', 'sem_iris', 'texto', 'categoria'):
             if p.get(k) is not None:
                 it[k] = p[k]
         if 'esconde' in p or p.get('vaga') in ESCONDE:

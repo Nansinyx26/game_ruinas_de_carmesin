@@ -61,6 +61,7 @@ const EclipseTests = {
       await this.criacaoTroca();
       await this.criacaoEncaixe();
       await this.criacaoAncoras();
+      await this.barbasEncaixe();
       await this.terrenos();
       await this.fogoAguaAnimacao();
       await this.estruturasMundo();
@@ -3290,6 +3291,72 @@ const EclipseTests = {
   // Âncora do peitoral (padrão de encaixe, docs/CRIACAO_ENCAIXE.md): os peitorais iniciais (a couraça
   // do Guerreiro e do Guardião e o gibão das outras classes) e um de nível 30, nos dois corpos: cobrem
   // o PEITO (não a barriga) e acompanham o tronco em repouso, correndo, golpeando e no ar
+  // Barbas: a barba se adapta ao rosto (js/criacao/barba_encaixe.js), o rosto não recua; validação;
+  // volume, comprimento, densidade, grisalho e tonalidade; a biblioteca do Meshy e a fila de geração
+  async barbasEncaixe() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Criacao3D === 'undefined' || typeof BarbaEncaixe === 'undefined' || !R3D.active) { this.ok('barbas (sem o motor 3D, nada a conferir)', true); return; }
+    let erro = null, n = 0;
+    const montar = async (ap) => {
+      const def = Perfis.registrar({ id: `p_teste_barba_${n++}`, nome: 'Barba', classe: 'guerreiro', aparencia: Object.assign(persAparenciaPadrao('guerreiro'), { estilo: 0, corpoG: 0, rostoG: 0, cabeloG: 0, barbaG: 0, bigodeG: 0 }, ap) });
+      for (let i = 0; i < 600 && Criacao3D.preparar(def) !== true; i++) await espera(40);
+      MODELS3D[def.model].model = null;
+      return g.model3(def.model);
+    };
+    const posDe = (L) => { let k = 0; const out = new Float32Array(L.reduce((a, S) => a + S.pos.length, 0)); for (const S of L) { out.set(S.pos, k); k += S.pos.length; } return out; };
+    const caixa = (L) => { let z0 = 1e9, z1 = -1e9; for (const S of L) for (let i = 2; i < S.pos.length; i += 3) { z0 = Math.min(z0, S.pos[i]); z1 = Math.max(z1, S.pos[i]); } return [z0, z1]; };
+    try {
+      // 1. o rosto não recua sob a barba (a barba é que se adapta)
+      const Ms = await montar({ rostoG: 3 }), Mb = await montar({ rostoG: 3, barbaG: 5 });
+      const fs = posDe(Ms.cria.peles.rosto), fb = posDe(Mb.cria.peles.rosto);
+      let dif = 0; for (let i = 0; i < fs.length; i++) dif = Math.max(dif, Math.abs(fs[i] - fb[i]));
+      this.ok('barba: o rosto não é deformado nem recua sob a barba (o mesmo rosto com e sem barba)', fs.length === fb.length && dif < 1e-5, `dif ${dif}`);
+      // 2. a mesma barba muda com o rosto (conformação) e fica igual à do conversor no rosto de referência
+      const Mr = await montar({ rostoG: 0, barbaG: 2 });
+      Criacao3D.OPC.encaixeBarba = false; const Mo = await montar({ rostoG: 0, barbaG: 2 }); Criacao3D.OPC.encaixeBarba = true;
+      const M4 = await montar({ rostoG: 3, barbaG: 2 });
+      const pr = posDe(Mr.cria.peles.barba), po = posDe(Mo.cria.peles.barba), p4 = posDe(M4.cria.peles.barba);
+      let dRef = 0, d4 = 0; for (let i = 0; i < pr.length; i++) { dRef = Math.max(dRef, Math.abs(pr[i] - po[i])); d4 = Math.max(d4, Math.abs(p4[i] - po[i])); }
+      this.ok('barba: conformada ao rosto escolhido (o Rosto 4 muda a malha; no Rosto 1, o de referência, só a colisão e os vãos mexem pouco)', d4 > 0.05 && dRef < d4 + 1e-6 && Mr.cria.encaixeBarba && Mr.cria.encaixeBarba.ok, `ref ${dRef.toFixed(3)} rosto4 ${d4.toFixed(3)}`);
+      // 3. validação: todas as barbas e bigodes num rosto diferente da referência, nos dois corpos, e formatos extremos
+      const rep = [];
+      for (let b = 1; b <= Criacao3D.BARBAS.length; b++) { const M = await montar({ rostoG: 5, barbaG: b }); const E = M.cria.encaixeBarba; if (!E || !E.ok) rep.push(`barba ${b}: ${JSON.stringify(E)}`); }
+      for (let b = 1; b <= Criacao3D.BIGODES.length; b++) { const M = await montar({ rostoG: 6, barbaG: 0, bigodeG: b }); const E = M.cria.encaixeBarba; if (!E || !E.ok) rep.push(`bigode ${b}: ${JSON.stringify(E)}`); }
+      for (const ap of [{ corpoG: 1, rostoG: 4, barbaG: 5 }, { corpoG: 1, rostoG: 7, barbaG: 9 }, { rostoG: 2, barbaG: 2, rLargura: 0, rMandibula: 0 }, { rostoG: 2, barbaG: 10, rLargura: 4, rMandibula: 4, rQueixo: 4 }, { rostoG: 1, barbaG: 4, rQueixo: 0, rBoca: 4 }]) {
+        const M = await montar(ap); const E = M.cria.encaixeBarba; if (!E || !E.ok) rep.push(`${JSON.stringify(ap)}: ${JSON.stringify(E)}`);
+      }
+      this.ok(`barba: encaixe aprovado nas ${Criacao3D.BARBAS.length} barbas (Rosto 6) e nos ${Criacao3D.BIGODES.length} bigodes (Rosto 7), no corpo feminino e com formatos extremos (sem atravessar a pele, olhos e nariz livres, sem vãos)`, rep.length === 0, rep.slice(0, 3).join(' | '));
+      // 4. volume e comprimento
+      const Mv = await montar({ rostoG: 0, barbaG: 5, barbaVol: 4 }), Mc = await montar({ rostoG: 0, barbaG: 5, barbaComp: 4 }), Mp = await montar({ rostoG: 0, barbaG: 5 });
+      const cz = caixa(Mc.cria.peles.barba), pz = caixa(Mp.cria.peles.barba), pv = posDe(Mv.cria.peles.barba), pp = posDe(Mp.cria.peles.barba);
+      let mv = 0; for (let i = 0; i < pv.length; i++) mv = Math.max(mv, Math.abs(pv[i] - pp[i]));
+      this.ok('barba: comprimento (a ponta desce) e volume (a folga cresce) mudam a malha, ainda aprovada', cz[0] < pz[0] - 0.3 && mv > 0.1 && Mc.cria.encaixeBarba.ok && Mv.cria.encaixeBarba.ok, `ponta ${pz[0].toFixed(2)}→${cz[0].toFixed(2)} volume ${mv.toFixed(2)}`);
+      // 5. tintura: densidade, grisalho e tonalidade
+      const lumCel = async (M) => { for (let i = 0; i < 200 && !Criacao3D.pintado(M); i++) await espera(40); const d = M.cria.at.cor.getContext('2d').getImageData(1536, 1536, 256, 256).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; return s / (d.length / 4); };
+      const lp = await lumCel(Mp), lg = await lumCel(await montar({ rostoG: 0, barbaG: 5, barbaGris: 4 })), lr = await lumCel(await montar({ rostoG: 0, barbaG: 5, barbaDens: 0 }));
+      const Mt = await montar({ rostoG: 0, barbaG: 5, barbaTom: 4 });
+      this.ok('barba: grisalho clareia os fios, rala mostra a pele entre eles, tonalidade quente puxa o vermelho', lg > lp + 10 && Math.abs(lr - lp) > 3 && Mt.cria.tinta.barba[0] > Mp.cria.tinta.barba[0] - 1e-6 && Mt.cria.tinta.barba[2] < Mp.cria.tinta.barba[2], `normal ${lp.toFixed(0)} grisalho ${lg.toFixed(0)} rala ${lr.toFixed(0)}`);
+      // 6. paleta e salvamento
+      const ap = Object.assign(persAparenciaPadrao('guerreiro'), { estilo: 0, barbaG: 4, corBarba: 9, barbaComp: 3, barbaVol: 1, barbaDens: 0, barbaTom: 4, barbaGris: 2 });
+      const P = Perfis.criar('Barbudo', 'guerreiro', ap, null, {});
+      Perfis.dados = null; Perfis.carregar();   // (relê do armazenamento)
+      const salvo = P && P.perfil && Perfis.obter(P.perfil.id), As = salvo && salvo.aparencia;
+      this.ok('barba: paleta com preto, castanho, castanho-claro, loiro, ruivo, grisalho e branco; os ajustes da barba voltam iguais ao carregar o personagem',
+        ['Preto', 'Castanho', 'Castanho-claro', 'Loiro', 'Ruivo', 'Grisalho', 'Branco'].every((c) => PERS_CABELOS.some((x) => x[0] === c)) && !!As && ['barbaG', 'corBarba', 'barbaComp', 'barbaVol', 'barbaDens', 'barbaTom', 'barbaGris'].every((k) => As[k] === ap[k]),
+        As ? JSON.stringify(['barbaComp', 'barbaVol', 'barbaDens', 'barbaTom', 'barbaGris'].map((k) => As[k])) : 'não salvou');
+      if (salvo) Perfis.excluir(salvo.id);
+      // 7. tela: categoria FIOS com os cinco controles
+      const cat = CRIA_CATS.find((c) => c.id === 'fios');
+      this.ok('barba: a criação tem a categoria FIOS (comprimento, volume, densidade, tonalidade e grisalho) ao lado de BARBA', !!cat && cat.campos.length === 5 && cat.campos.every((k) => PERS_APAR[k] && PERS_APAR[k].glb && PERS_APAR[k].ops.length === 5));
+      // 8. biblioteca do Meshy: 31 estilos, cada um com a própria descrição
+      const B = await fetch('tools/meshy/barbas.json').then((r) => r.json()).catch(() => null);
+      const cats = B ? [...new Set(Object.values(B).map((v) => v.categoria))].sort().join(',') : '';
+      this.ok('barba: biblioteca do Meshy com 31 estilos em curtas, médias, longas, bigodes e especiais, sem descrição repetida',
+        !!B && Object.keys(B).length === 31 && cats === 'bigodes,curtas,especiais,longas,medias' && new Set(Object.values(B).map((v) => v.prompt)).size === 31, `${B ? Object.keys(B).length : 0} ${cats}`);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Criacao3D.OPC.encaixeBarba = true;
+    this.ok('barbas: sem exceção', !erro, erro);
+  },
   async criacaoAncoras() {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
     if (typeof Criacao3D === 'undefined' || !Criacao3D.ancoras || !R3D.active) { this.ok('âncoras (sem o motor 3D, nada a conferir)', true); return; }

@@ -1,0 +1,281 @@
+{
+ "barba_m_por_fazer": {
+  "categoria": "curtas",
+  "nome": "Por fazer",
+  "prompt": "very short stubble beard, a few days of growth, dense tiny hairs covering jaw, cheeks, chin and upper lip, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_curta_uniforme": {
+  "categoria": "curtas",
+  "nome": "Curta uniforme",
+  "prompt": "short even beard trimmed to the same length all over, full coverage of jaw, chin, cheeks and moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_curta_degrade": {
+  "categoria": "curtas",
+  "nome": "Curta degradê",
+  "prompt": "short faded beard, longer on the chin and shorter towards the sideburns, gradient fade into the sideburns, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_curta_desenhada": {
+  "categoria": "curtas",
+  "nome": "Curta desenhada",
+  "prompt": "short sharply groomed beard with crisp defined cheek lines and neckline, clean shaped edges, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_boxed": {
+  "categoria": "curtas",
+  "nome": "Boxed beard",
+  "prompt": "boxed beard, short full beard with squared rounded bottom, trimmed cheek line, connected moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_curta_bigode": {
+  "categoria": "curtas",
+  "nome": "Curta com bigode",
+  "prompt": "short beard with an integrated thicker moustache that blends into the beard, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_media_cheia": {
+  "categoria": "medias",
+  "nome": "Média cheia",
+  "prompt": "medium length full beard, thick and natural, covering jaw, chin and cheeks with moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_lenhador": {
+  "categoria": "medias",
+  "nome": "Lenhador curta",
+  "prompt": "short lumberjack beard, rugged thick and slightly unkempt, full coverage with moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_arredondada": {
+  "categoria": "medias",
+  "nome": "Arredondada",
+  "prompt": "medium beard with a rounded bottom outline, full and soft, connected moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_quadrada": {
+  "categoria": "medias",
+  "nome": "Quadrada",
+  "prompt": "medium beard with a square flat bottom and straight sides, strong masculine shape, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_laterais_baixas": {
+  "categoria": "medias",
+  "nome": "Laterais baixas",
+  "prompt": "medium beard with very short sides and a longer chin portion, tapered sideburns, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_queixo_alongado": {
+  "categoria": "medias",
+  "nome": "Queixo alongado",
+  "prompt": "medium beard elongated at the chin into a longer point, short cheeks, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_longa_natural": {
+  "categoria": "longas",
+  "nome": "Longa natural",
+  "prompt": "long natural beard falling to the chest, full and flowing with moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_viking": {
+  "categoria": "longas",
+  "nome": "Viking",
+  "prompt": "long viking beard, thick and wild, falling to the upper chest, braided strands at the chin, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_volumosa": {
+  "categoria": "longas",
+  "nome": "Volumosa",
+  "prompt": "long voluminous bushy beard, very thick and wide, big wild volume, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_trancada": {
+  "categoria": "longas",
+  "nome": "Trançada",
+  "prompt": "long beard gathered into a single thick braid at the chin with a metal bead, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_longa_pontuda": {
+  "categoria": "longas",
+  "nome": "Longa pontiaguda",
+  "prompt": "long pointed beard tapering into a sharp point below the chin, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_longa_trancas": {
+  "categoria": "longas",
+  "nome": "Longa com tranças",
+  "prompt": "long beard split into two braided sections with hair ties, side divisions, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_classico": {
+  "categoria": "bigodes",
+  "nome": "Bigode clássico",
+  "prompt": "classic full moustache only, no beard, covering the upper lip, isolated moustache only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the moustache attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_chevron": {
+  "categoria": "bigodes",
+  "nome": "Chevron",
+  "prompt": "chevron moustache only, thick and wide covering the top of the upper lip, no beard, isolated moustache only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the moustache attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_handlebar": {
+  "categoria": "bigodes",
+  "nome": "Handlebar",
+  "prompt": "handlebar moustache only, long ends curled upwards, no beard, isolated moustache only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the moustache attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_fino": {
+  "categoria": "bigodes",
+  "nome": "Bigode fino",
+  "prompt": "thin pencil moustache only, narrow line above the upper lip, no beard, isolated moustache only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the moustache attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_grosso": {
+  "categoria": "bigodes",
+  "nome": "Bigode grosso",
+  "prompt": "very thick bushy walrus moustache only, no beard, isolated moustache only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the moustache attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_integrado": {
+  "categoria": "bigodes",
+  "nome": "Bigode integrado",
+  "prompt": "moustache blending into a short chin beard, connected goatee and moustache, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "bigode_m_militar": {
+  "categoria": "bigodes",
+  "nome": "Militar",
+  "prompt": "military style trimmed moustache only, short and neat, no beard, isolated moustache only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the moustache attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_cicatrizes": {
+  "categoria": "especiais",
+  "nome": "Com cicatrizes",
+  "prompt": "medium full beard with visible bald scar lines crossing the cheek and jaw, hairless scar gaps, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_irregular": {
+  "categoria": "especiais",
+  "nome": "Irregular",
+  "prompt": "patchy irregular beard with uneven growth and sparse areas on the cheeks, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_grisalha": {
+  "categoria": "especiais",
+  "nome": "Grisalha",
+  "prompt": "medium full beard, salt and pepper grey, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, salt and pepper grey hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_envelhecida": {
+  "categoria": "especiais",
+  "nome": "Envelhecida",
+  "prompt": "long old man beard, thin wispy and aged, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, white and grey hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_fios_brancos": {
+  "categoria": "especiais",
+  "nome": "Com fios brancos",
+  "prompt": "medium full beard with scattered white hairs mixed in, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, dark brown with white hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ },
+ "barba_m_futurista": {
+  "categoria": "especiais",
+  "nome": "Futurista",
+  "prompt": "stylized futuristic sci-fi beard, sharp geometric sculpted lines, short sides and angular chin, subtle cyberpunk style, isolated beard only, on a smooth pale skin-toned bald mannequin head with a neutral closed mouth, the beard attached to the jaw, cheeks, chin and upper lip, separate individual hair strands and clumps with natural variation in length, density and direction, realistic AAA game asset, PBR, no plastic look, black with neon blue tips hair",
+  "separar": {
+   "modo": "cor",
+   "abaixo_do_nariz": true
+  }
+ }
+}
