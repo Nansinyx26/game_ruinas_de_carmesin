@@ -30,10 +30,10 @@
       { id: 'lagoa_abismo', name: 'Borda do Abismo', theme: 'lagoa', lv: 20, boss: true },
     ] },
     nexus: { mobs: ['drone', 'atirador', 'legionario', 'cacador', 'atirador', 'sacerdote'], zones: [
-      { id: 'nexus_portao', name: 'Portão de Nexus', theme: 'city', lv: 10, hub: true, portal: true },
-      { id: 'nexus_avenida', name: 'Avenida Central', theme: 'city', lv: 12 },
+      { id: 'nexus_portao', name: 'Portão de Nexus', theme: 'metropole', lv: 10, hub: true, portal: true },
+      { id: 'nexus_avenida', name: 'Avenida Central', theme: 'metropole', lv: 12 },
       { id: 'nexus_metro', name: 'Metrô Abandonado', theme: 'tunnel', lv: 14, terminal: ['Linha 7: última viagem registrada às 03:11 do Dia Zero.', 'Passageiros a bordo: 412. Passageiros que desceram: 0.'] },
-      { id: 'nexus_mercado', name: 'Mercado Vertical', theme: 'refuge', lv: 15, portal: true },
+      { id: 'nexus_mercado', name: 'Mercado Vertical', theme: 'metropole', lv: 15, portal: true },
       { id: 'nexus_laboratorio', name: 'Laboratório Corporativo', theme: 'lab', lv: 17, secret: true },
       { id: 'nexus_cupula', name: 'Cúpula do Arauto', theme: 'tower', lv: 19, boss: true },
     ] },

@@ -23,6 +23,9 @@ const EclipseTests = {
     g.slot = 2; g.startRun();
     await new Promise((r) => setTimeout(r, 300));
     const salvar = g.saveGame; g.saveGame = () => {};          // os testes não gravam
+    const cam0 = ThirdView.on, mov0 = ThirdView.movMundo;
+    this.cameras();
+    ThirdView.on = false; ThirdView.movMundo = false;          // os testes partem da isométrica e voltam à câmera de antes no fim
     // malha de uma armadura especial (carregada por <script>, como no jogo; espera até 15 s)
     ArmorModels.ensure('lyra_n1');
     for (let i = 0; i < 150 && ArmorModels.estado.lyra_n1 === 'carregando'; i++) await new Promise((r) => setTimeout(r, 100));
@@ -33,6 +36,7 @@ const EclipseTests = {
       this.armas();
       this.encaixes();
       this.sacarGuardar();
+      this.mira();
       this.combate();
       this.combos();
       this.arvore();
@@ -55,10 +59,16 @@ const EclipseTests = {
       await this.montarias();
       await this.criacaoGLB();
       await this.criacaoTroca();
+      await this.criacaoEncaixe();
+      await this.estruturasMundo();
+      await this.agua();
+      this.megacidades();
+      this.mundoContinuo();
     } catch (err) {
       this.ok('sem exceção durante os testes', false, err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err);
     }
     g.saveGame = salvar;
+    ThirdView.on = cam0 && R3D.active; ThirdView.movMundo = mov0;
     const falhas = this.lista.filter((t) => !t.ok);
     const res = { ok: this.lista.length - falhas.length, falhas: falhas.length, total: this.lista.length, lista: this.lista.slice() };
     window.__testes = res;
@@ -123,6 +133,43 @@ const EclipseTests = {
       const g0 = m.nodes.wHandR.geo; m.reset(); M.pose(m, e, {});
       this.ok(`${c}: geometria reaproveitada entre quadros`, m.nodes.wHandR.geo === g0);
     }
+  },
+
+  // Mira travada (js/heroes/mira.js): trava no mais perto da frente, passa para o próximo,
+  // segurar solta; o golpe começa virado para o alvo; o alvo morto passa a mira adiante
+  mira() {
+    const g = game, p = g.player, salva = g.enemies.slice();
+    let erro = null;
+    try {
+      g.enemies.length = 0;
+      const R = g.room, cx = R.w / 2, cy = R.h / 2;
+      p.x = cx; p.y = cy; p.facing = 0; p.state = 'idle'; p.vx = p.vy = 0; p.attack = null;
+      const perto = createEnemy('rastejador', cx + 120, cy, 1), longe = createEnemy('rastejador', cx - 260, cy + 40, 1), fora = createEnemy('rastejador', cx + 2000, cy, 1);
+      for (const e of [perto, longe, fora]) { e.state = 'idle'; e.stateTime = 1; g.enemies.push(e); }
+      const inp = (pr, hd) => ({ pressed: { lockOn: pr }, held: { lockOn: hd } });
+      Mira.soltar();
+      Mira.update(1 / 60, inp(true, true)); Mira.update(1 / 60, inp(false, false));
+      this.ok('mira: trava no inimigo mais perto da frente (o fora de alcance não conta)', Mira.alvo === perto);
+      Mira.update(1 / 60, inp(true, true)); Mira.update(1 / 60, inp(false, false));
+      this.ok('mira: apertar de novo passa para o próximo', Mira.alvo === longe);
+      // golpe para o outro lado: começa virado para o alvo
+      p.facing = 0; p.startAttack(p.kit ? 'l1' : 'light1', { x: 1, y: 0 }); p.state = 'attack';
+      Mira.update(1 / 60, inp(false, false));
+      const a = Math.atan2(longe.y - p.y, longe.x - p.x);
+      this.ok('mira: o golpe começa virado para o alvo travado', Math.abs(angleDiff(p.facing, a)) < 1e-6 && Math.abs(angleDiff(p.attack.dir, a)) < 1e-6);
+      p.attack = null; p.state = 'idle';
+      // o alvo morre: a mira passa para o próximo vivo perto
+      longe.state = 'dying';
+      Mira.update(1 / 60, inp(false, false));
+      this.ok('mira: alvo morto passa a mira para o próximo perto', Mira.alvo === perto);
+      // segurar solta
+      Mira.update(1 / 60, inp(true, true)); for (let i = 0; i < 30; i++) Mira.update(1 / 60, inp(false, true));
+      this.ok('mira: segurar o botão solta a mira', Mira.alvo === null);
+      Mira.travar(p); g.renderWorld(g.ctx);
+      this.ok('mira: teclado X e botão do meio do mouse, R3 no controle (a troca de arma vai para Q e LB + R3)', KEYMAP.lockOn.includes('KeyX') && KEYMAP.lockOn.includes('MouseMiddle') && PADMAP.lockOn[0] === 11 && !KEYMAP.swapWeapon.includes('KeyX') && PAD_LAYER_MAP.swapWeapon === 11);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Mira.soltar(); g.enemies.length = 0; for (const e of salva) g.enemies.push(e);
+    this.ok('mira: sem exceção', !erro, erro);
   },
 
   // Máquina de estados da arma: golpe saca na hora; 4 s de calma guardam com o gesto
@@ -1230,7 +1277,7 @@ const EclipseTests = {
       p.state = 'run'; p.x = R.w - 2; p.y = R.h / 2; p.vx = 200; p.vy = 0;
       World.update(1 / 60);
       const cb = g.fadeCb;
-      this.ok('campo aberto: atravessar a borda leste começa a viagem', !!cb);
+      this.ok('campo aberto: atravessar a borda leste leva à vizinha (mundo contínuo: sem tela preta)', !cb && World.zone.id === viz.id);
       g.fadeCb = null; if (cb) cb();
       this.ok('campo aberto: chega na zona vizinha pelo lado oeste', World.zone.id === viz.id && p.x < 160, `${World.zone.id} x=${Math.round(p.x)}`);
       p.state = s0; p.vx = 0;
@@ -2840,6 +2887,206 @@ const EclipseTests = {
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('criação: troca de peças sem exceção', !erro, erro);
     if (g.state === 'criacao') CriacaoTela.fechar();
+  },
+
+  // Rios e lagos (js/mundo/agua.js): profundidade da margem ao fundo, nado (devagar, sem golpes),
+  // inimigos param na margem, nada nasce dentro d'água, desenho nas duas câmeras
+  async agua() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    let erro = null;
+    try {
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      World.loadZone('velmora_lago', null);
+      const R = g.room, C = Agua.corpos(), L = C[0];
+      this.ok('água: o Lago Escuro tem o lago (e as zonas da lista têm rios e lagos)', C.length === 1 && L.lago && Object.keys(Agua.AGUA_ZONAS).length >= 10);
+      this.ok('água: fundo no meio, raso na margem, seco fora', Agua.profundidade(L.x, L.y) === 1 && Agua.profundidade(L.x + L.rx - 10, L.y) > 0 && Agua.profundidade(L.x + L.rx - 10, L.y) < 1 && Agua.profundidade(L.x + L.rx + 30, L.y) === 0);
+      this.ok("água: nenhuma árvore, pedra, morador ou estrutura dentro d'água", !R.pillars.some((q) => !q.cenario && Agua.funda(q.x, q.y)) && !g.npcs.some((n) => Agua.profundidade(n.x, n.y) > 0));
+      const p = g.player; p.x = L.x; p.y = L.y; p.air = false; p.state = 'idle'; p.vx = p.vy = 0;
+      Agua.update(1 / 60);
+      this.ok('água: no fundo o herói nada, a 55% da velocidade, com a arma guardada', p.nadando === true && Agua.ritmo(p) === 0.55 && p.wpnOut === false);
+      const lt = { pressed: { light: true, heavy: true, jump: true, dash: true }, held: {} };
+      p.combo.takeBuffer(); p.jumpBuffer = 0; p.dashBuffer = 0;
+      p.captureInput(lt);
+      this.ok('água: nadando não golpeia nem pula; a esquiva vira braçada', !p.combo.hasBuffer() && p.jumpBuffer === 0 && p.dashBuffer > 0);
+      p.x = L.x + L.rx - 12; Agua.update(1 / 60);
+      this.ok('água: na margem rasa anda mais devagar, sem nadar', !p.nadando && Agua.ritmo(p) < 1 && Agua.ritmo(p) > 0.55);
+      const e = createEnemy('rastejador', L.x + L.rx + 40, L.y, 1); e.state = 'idle'; g.enemies.push(e);
+      Agua.update(1 / 60); e.x = L.x; Agua.update(1 / 60);
+      this.ok('água: inimigos não entram no fundo (voltam para a margem)', !Agua.funda(e.x, e.y));
+      g.enemies.splice(g.enemies.indexOf(e), 1);
+      p.x = L.x; p.y = L.y; Agua.update(1 / 60);
+      g.renderWorld(g.ctx);
+      if (R3D.active) { ThirdView.set(true, true); g.renderWorld(g.ctx); ThirdView.set(false, true); }
+      p.x = L.x + L.rx + 80; Agua.update(1 / 60);
+      this.ok('água: fora dela volta ao normal', !p.nadando && Agua.ritmo(p) === 1);
+    } catch (x) { erro = x.stack ? x.stack.split('\n').slice(0, 3).join(' | ') : x.message; }
+    this.ok('água: desenho nas duas câmeras sem exceção', !erro, erro);
+    await espera(1);
+  },
+
+  // Megacidades subterrâneas (js/mundo/expansao.js): a Metrópole e a cidade de Nexus ficam sob o
+  // teto de uma caverna — a luz não segue o sol, não chove, o teto tem as luzes neon nas duas câmeras
+  megacidades() {
+    const g = game, th = THEMES.metropole;
+    let erro = null;
+    try {
+      this.ok('megacidade: tema subterrâneo (teto de caverna, sem chuva, luz própria)', th.subsolo === true && th.sky === 'indoor' && !th.rain && WorldTime.aberto(th) <= 0.15);
+      const luz0 = WorldTime.luz;
+      WorldTime.luz = () => 1; const dia = WorldTime.escuridao(th); WorldTime.luz = () => 0; const noite = WorldTime.escuridao(th); WorldTime.luz = luz0;
+      this.ok('megacidade: a escuridão quase não muda do meio-dia à meia-noite', Math.abs(dia - noite) < 0.05, `${dia.toFixed(2)} / ${noite.toFixed(2)}`);
+      this.ok('megacidade: o clima da Metrópole e de Nexus não tem chuva nem tempestade', ['metropole', 'nexus'].every((r) => WORLD_CLIMA_REG[r] && !WORLD_CLIMA_REG[r].chuva && !WORLD_CLIMA_REG[r].tempestade));
+      this.ok('megacidade: Portão, Avenida e Mercado de Nexus também são subterrâneos', ['nexus_portao', 'nexus_avenida', 'nexus_mercado'].every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].theme === 'metropole'));
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      World.loadZone('metro_mercado', null);
+      g.renderWorld(g.ctx);
+      if (R3D.active) { ThirdView.set(true, true); g.renderWorld(g.ctx); ThirdView.set(false, true); }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('megacidade: a cidade desenha nas duas câmeras sem exceção', !erro, erro);
+  },
+
+  // Mundo contínuo (js/world.js): pela borda do campo aberto a zona vizinha entra sem tela preta,
+  // com o herói no mesmo passo; perto da borda, os modelos da vizinha já começam a carregar
+  mundoContinuo() {
+    const g = game;
+    let erro = null;
+    try {
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      World.loadZone('velmora_clareira', null);
+      const z = World.zone, R = g.room, viz = worldZoneAt(z.r, z.c + 1, z.region), p = g.player;
+      this.ok('mundo contínuo: a clareira tem vizinha a leste (campo aberto)', !!viz && z.aberto);
+      // perto da borda leste: a vizinha começa a carregar os modelos
+      const alvo = (Estruturas.ZONAS[viz.id] || []).map((L) => L[0]).filter((id) => Estruturas.IDX[id]);
+      p.x = R.w - 200; p.y = R.h * 0.4; p.vx = 0; World.preT = 0; World.preCarregar(1 / 60);
+      this.ok('mundo contínuo (streaming): perto da borda, as estruturas da zona vizinha já estão carregando', !alvo.length || alvo.every((id) => Estruturas.estado[id]), `${viz.id}: ${alvo.map((id) => id + ':' + Estruturas.estado[id]).join(',')}`);
+      // cruza a borda andando
+      p.x = R.w - 10; p.y = R.h * 0.4; p.vx = 260; p.vy = 30; p.state = 'run'; p.facing = 0.1;
+      const y0 = p.y / R.h;
+      g.fadeCb = null; g.fade = g.fadeTarget = 0; World.update(1 / 60);
+      this.ok('mundo contínuo: cruza para a zona vizinha sem tela preta (dissolução curta)', World.zone.id === viz.id && !g.fadeCb && g.fadeTarget === 0 && !!g.dissolve, `${World.zone.id} fade=${g.fade} cb=${!!g.fadeCb}`);
+      this.ok('mundo contínuo: chega pela borda oposta, no mesmo ponto e no mesmo passo', p.x < 60 && Math.abs(p.y / g.room.h - y0) < 0.08 && p.vx === 260 && Math.abs(p.facing - 0.1) < 1e-9, `${p.x.toFixed(0)},${p.y.toFixed(0)} v=${p.vx}`);
+      g.render(); g.update(0.5);
+      this.ok('mundo contínuo: a dissolução some em menos de meio segundo', !g.dissolve);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('mundo contínuo: sem exceção', !erro, erro);
+  },
+
+  // Câmeras (js/terceira.js): a 3D é a padrão sem escolha guardada; a isométrica é a opção; o
+  // movimento pode ser relativo à câmera ou ao mundo (W = norte do mapa em qualquer giro)
+  cameras() {
+    const T = ThirdView, k = THIRD_KEY, ler = (c) => { try { return localStorage.getItem(c); } catch (e) { return null; } };
+    const grava = (c, v) => { try { if (v === null) localStorage.removeItem(c); else localStorage.setItem(c, v); } catch (e) {} };
+    const a0 = ler(k), m0 = ler(k + '_mov'), on0 = T.on, mv0 = T.movMundo;
+    grava(k, null); grava(k + '_mov', null); T.load();
+    this.ok('câmera: sem escolha guardada, a 3D (3ª pessoa) é a padrão quando o motor 3D está ativo', T.on === !!R3D.active && T.movMundo === false);
+    grava(k, 'iso'); T.load();
+    this.ok('câmera: a isométrica escolhida antes continua valendo', T.on === false);
+    const o = { x: 0, y: 0 }, iso = { x: 0, y: 0 };
+    T.movMundo = true;
+    const giros = [0, 1.2, 2.9, -2], r = giros.map((y) => { T.yaw = y; T.inputDir(0, -1, o); return [o.x, o.y]; });
+    const wx = -1, l = Math.SQRT2;   // a mesma direção da isométrica para o W: (-1, -1)/√2
+    this.ok('câmera: movimento relativo ao mundo — o W anda para o norte do mapa com a câmera em qualquer giro', r.every(([x, y]) => Math.abs(x - wx / l) < 1e-6 && Math.abs(y - wx / l) < 1e-6), JSON.stringify(r));
+    T.movMundo = false; T.yaw = 0; T.inputDir(0, -1, o); const a = [o.x, o.y]; T.yaw = Math.PI / 2; T.inputDir(0, -1, o);
+    this.ok('câmera: movimento relativo à câmera — o W segue o giro da câmera', Math.abs(a[0] - 1) < 1e-6 && Math.abs(o.y - 1) < 1e-6, `${a} ${o.x},${o.y}`);
+    grava(k, a0); grava(k + '_mov', m0); T.on = on0; T.movMundo = mv0;
+  },
+
+  // Encaixe da armadura no corpo (js/criacao/montagem.js): a pele coberta herda os pesos da peça
+  // que a cobre, e a lista de ossos da região do corpo ganha os que faltavam. Medido nos dois casos
+  // que mais furavam antes (Guerreiro corpo 2 nível 75 e Patrulheiro corpo 1 nível 100), em cinco
+  // poses e três instantes de cada: sem a herança a pele fura a peça; com ela, em nenhum ponto
+  async criacaoEncaixe() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Criacao3D === 'undefined' || !Criacao3D.CAT.length || !R3D.active || !Criacao3D.encaixe) { this.ok('encaixe da armadura (sem o motor 3D, nada a conferir)', true); return; }
+    const POSES = [['parado', { state: 'idle', idleVariant: 'idle_breathing', idleBlend: 0, wpnOut: false }], ['guarda', { state: 'idle', idleVariant: 'idle_combat_ready', idleBlend: 1, wpnOut: true }],
+      ['vitoria', { state: 'idle', idleVariant: 'idle_victory', idleBlend: 1, wpnOut: true }], ['correndo', { state: 'run', wpnOut: true }], ['golpe', { state: 'attack', wpnOut: true }]];
+    let erro = null;
+    try {
+      for (const [c, corpoG, nv] of [['guerreiro', 1, 75], ['patrulheiro', 0, 100]]) {
+        const def = Perfis.registrar({ id: `p_teste_enc_${c}`, nome: 'Encaixe', classe: c, aparencia: Object.assign(persAparenciaPadrao(c), { estilo: 0, corpoG, cabeloG: 0, barbaG: 0, bigodeG: 0 }) });
+        for (let i = 0; i < 400 && Criacao3D.preparar(def) !== true; i++) await espera(50);
+        MODELS3D[def.model].model = null;
+        const M = g.model3(def.model);
+        if (!M || !M.cria) { this.ok(`encaixe ${c} ${nv}: modelo montado`, false); continue; }
+        const prev = {};
+        for (const q of CRIA_CATALOGO.filter((x) => x.tipo === 'peca' && x.nivel === nv && x.classe === c)) { const it = Arsenal.gerarCat(q.id, 0); if (it) prev[it.slot] = it; }
+        const v = new Player(0, 0, def); v.vitrine = true; v.pecasPrevia = prev; v.facing = v.viewFacing = 0;
+        const ombrosNoPeito = prev.peitoral && Criacao3D.POR_ID[prev.peitoral.cat] && Criacao3D.POR_ID[prev.peitoral.cat].ombros;
+        const quer = Object.keys(prev).filter((s) => !((s === 'ombroE' || s === 'ombroD') && ombrosNoPeito));
+        let vestiu = false;
+        for (let i = 0; i < 600 && !vestiu; i++) { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); vestiu = quer.every((s) => M.cria.ids[s] === prev[s].cat); if (!vestiu) await espera(50); }
+        const medir = () => {
+          let fura = 0, pior = -1e9, n = 0;
+          for (const [, P] of POSES) for (const tt of [0.15, 0.45, 0.8]) {
+            Object.assign(v, P); v.animTime = tt * 3; v.stateTime = tt; v.moveSpeed = v.vx = P.state === 'run' ? v.baseSpeed : 0;
+            if (P.state === 'attack') { const T = CHARACTER_COMBOS[def.base] || COMBO_TABLE, id = T && T.L, d = ATTACKS[id]; v.attack = d ? { id, def: d, t: tt * ((d.windup || 0.1) + (d.active || 0.1) + (d.recovery || 0.3)), dir: 0, serial: 1 } : null; } else v.attack = null;
+            MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+            (function anda(nd, Pm) { M3.mul(nd.w, Pm, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make());
+            for (const sk of M.skins) R3D.skin(sk, 0, !!M.dqs);
+            const E = Criacao3D.encaixe(M);
+            for (const s in E) { fura += E[s].fura; n += E[s].n; pior = Math.max(pior, E[s].pior); }
+          }
+          return { fura, n, pior };
+        };
+        const ossos = () => M.skins.map((s) => s.bones.length).join();
+        const marca = () => { let h = 0; for (const s of M.skins) for (const A of [s.pos, s.bi, s.bw]) for (let i = 0; i < A.length; i++) h = (h * 31 + Math.round(A[i] * 1000)) | 0; return h; };
+        Criacao3D.OPC.herdarPesos = false; Criacao3D.recuarCorpo(M);
+        const sem = medir(), ossosSem = ossos(), marcaSem = marca();
+        Criacao3D.OPC.herdarPesos = true; Criacao3D.recuarCorpo(M);
+        const com = medir(), ossosCom = ossos();
+        Criacao3D.OPC.herdarPesos = false; Criacao3D.recuarCorpo(M);
+        const ossosVolta = ossos(), marcaVolta = marca();
+        Criacao3D.OPC.herdarPesos = true; Criacao3D.recuarCorpo(M);
+        this.ok(`encaixe ${c} corpo ${corpoG + 1} nível ${nv}: as ${quer.length} peças vestidas e a pele medida (sem a herança dos pesos ela fura a peça: a medida acusa)`, vestiu && sem.n > 1000 && sem.fura > 0, `vestiu ${vestiu} pontos ${sem.n} furam ${sem.fura}`);
+        this.igual(`encaixe ${c} corpo ${corpoG + 1} nível ${nv}: com a herança, nenhum ponto da pele fura a armadura em 5 poses × 3 instantes`, com.fura, 0);
+        this.ok(`encaixe ${c}: a herança acrescenta ossos à pele, e desligá-la devolve os ossos e os pesos originais (posições, índices e pesos iguais aos de antes)`,
+          ossosCom !== ossosSem && ossosVolta === ossosSem && marcaVolta === marcaSem, `ossos ${ossosSem} → ${ossosCom} → ${ossosVolta} · pele ${marcaSem} → ${marcaVolta}`);
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Criacao3D.OPC.herdarPesos = true;
+    this.ok('encaixe da armadura sem exceção', !erro, erro);
+  },
+
+  // Estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js): índice leve no index.html, o
+  // modelo de cada uma baixado só quando a zona dela carrega, colisor já na chegada, foto na vista
+  // isométrica, modelo na 3ª pessoa e a malha indexada decodificada inteira
+  async estruturasMundo() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Estruturas === 'undefined' || typeof ESTRUTURAS_INDICE === 'undefined') { this.ok('estruturas: módulo e índice carregados', false); return; }
+    const I = ESTRUTURAS_INDICE, ids = Object.keys(I);
+    this.ok('estruturas: índice com nome, tipo, estilo e medidas no jogo de cada uma', ids.length >= 3 && ids.every((id) => I[id].nome && I[id].tipo && /^(medieval|cyberpunk)$/.test(I[id].estilo) && I[id].h > 0 && I[id].r > 0), ids.length);
+    this.ok('estruturas: o índice traz só medidas (as malhas e texturas ficam no arquivo de cada uma, carregado quando a zona pede)', ids.every((id) => !I[id].a && !I[id].tc) && [...document.scripts].every((s) => !/assets\/estruturas\/(?!indice)/.test(s.src) || Estruturas.estado[s.src.split('/').pop().replace('.js', '')]));
+    let erro = null;
+    try {
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      World.loadZone('velmora_clareira', null);
+      const A = Estruturas.atual(), lug = A ? A.lug : [];
+      this.ok('estruturas: a zona da clareira põe as estruturas da lista no lugar, com colisor desde a chegada', lug.length >= 1 && lug.every((L) => g.room.pillars.some((q) => q.estrutura === L.id)), lug.map((L) => L.id).join(','));
+      for (let i = 0; i < 200 && lug.some((L) => !L.obj && Estruturas.estado[L.id] !== 'falhou'); i++) await espera(50);
+      this.ok('estruturas: os modelos chegam (um arquivo por estrutura) e entram na zona', lug.length && lug.every((L) => L.obj && g.npcs.includes(L.obj) && PROPS3D[L.id] && MODELS3D['cen_' + L.id]), lug.map((L) => `${L.id}:${Estruturas.estado[L.id]}`).join(','));
+      const L0 = lug.find((L) => L.obj), W = L0 && PROPS3D[L0.id];
+      if (W) {
+        const geo = Cenario.geo(L0.id), nTri = W.ix ? atob(W.ix).length / (W.i32 ? 4 : 2) / 3 : 0;
+        this.ok('estruturas: a malha indexada vira um canto por vez, inteira (posição, normal, UV)', !!W.ix && geo.length === nTri * 30 && Number.isFinite(geo[geo.length - 1]), `${geo.length} / ${nTri * 30}`);
+        const m = g.model3('cen_' + L0.id);
+        this.ok('estruturas: no tamanho real (altura do índice = altura do modelo)', !!m && Math.abs(W.h - I[L0.id].h) < 0.5);
+        g.renderWorld(g.ctx);
+        for (let i = 0; i < 300 && !Estruturas.FOTOS.size; i++) { Estruturas.processar(); await espera(30); }
+        this.ok('estruturas: vista isométrica com a foto do modelo (motor 3D)', !R3D.active || Estruturas.FOTOS.size > 0, Estruturas.FOTOS.size);
+        if (R3D.active) {
+          const Q = []; Estruturas.fila3P(g.room, Q, [L0.x + 700, L0.y + 700, 140]);
+          const Qd = []; Estruturas.fila3P(g.room, Qd, [L0.x, L0.y, 140]);
+          this.ok('estruturas: 3ª pessoa com as estruturas paradas (matriz e vértices guardados); a que tem a câmera dentro some', Q.length > 0 && Q.every((it) => it.o && it.o.fixo) && Qd.length === Q.length - 1, `${Q.length} ${Qd.length}`);
+          this.ok('estruturas: fora da fila dos moradores na 3ª pessoa (sem refazer vértices a cada quadro)', lug.every((L) => !L.obj || !L.obj.key));
+        }
+        const p = g.player, x0 = p.x, y0 = p.y;
+        p.x = L0.x; p.y = L0.y;
+        const dentro = !g.room.canStand(L0.x, L0.y, p.radius || 14);
+        p.x = x0; p.y = y0;
+        this.ok('estruturas: ninguém fica dentro de uma estrutura (colisor)', dentro);
+      }
+      g.renderWorld(g.ctx);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('estruturas: sem exceção', !erro, erro);
   },
 
   async criacaoGLB() {

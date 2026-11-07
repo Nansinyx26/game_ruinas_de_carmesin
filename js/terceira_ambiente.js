@@ -38,6 +38,22 @@ const Ambiente3P = {
   rgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; },
   mix(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; },
   css(c, a = 1) { return `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`; },
+  // Teto da caverna das megacidades subterrâneas: faixas e pontos de neon, dutos e o brilho da
+  // cidade de baixo refletido na rocha (dx, dy: deslocamento da câmera, para o teto andar devagar)
+  tetoNeon(ctx, t, dx, dy) {
+    const L = this._teto || (this._teto = Array.from({ length: 70 }, (_, i) => { const r = mulberry32(i * 131 + 7); return { x: r(), y: r() * 0.42, w: 10 + r() * 90, c: r() < 0.5 ? '255,80,220' : r() < 0.6 ? '90,240,255' : '255,190,90', f: r() * 6, k: r() < 0.3 }; }));
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, VIEW_H * 0.5);
+    g.addColorStop(0, 'rgba(40,18,60,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H * 0.5);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of L) {
+      const x = ((s.x * (VIEW_W + 300) - dx) % (VIEW_W + 300) + VIEW_W + 300) % (VIEW_W + 300) - 150, y = s.y * VIEW_H - dy * 0.3, a = 0.25 + 0.15 * Math.sin(t * 2 + s.f);
+      ctx.fillStyle = `rgba(${s.c},${a})`;
+      if (s.k) ctx.fillRect(x, y, s.w, 2); else { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.restore();
+  },
   tipo(R) { const th = R.theme; return th.deco === 'natural' ? R.def.theme : th.sky === 'city' || th.sky === 'tower' ? 'cidade' : 'interior'; },
   hora() { return game.world && typeof WorldTime !== 'undefined' ? WorldTime.hora() : 23; },
   luz() { return game.world && typeof WorldTime !== 'undefined' ? WorldTime.luz() : 0; },
@@ -73,6 +89,7 @@ const Ambiente3P = {
       g.addColorStop(0, '#020306'); g.addColorStop(0.45, rgba(th.dark, 1)); g.addColorStop(1, '#000');
       ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       ctx.fillStyle = rgba(th.lamp, 0.06); ctx.fillRect(0, 0, VIEW_W, VIEW_H * 0.4);
+      if (th.subsolo) this.tetoNeon(ctx, t, ThirdView.yaw * 180, 0);   // megacidade subterrânea
       return null;
     }
     const E = ThirdView.eye, yaw = ThirdView.yaw;

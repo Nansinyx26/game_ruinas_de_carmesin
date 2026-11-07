@@ -17,7 +17,8 @@ const KEYMAP = {
   charPrev: ['KeyZ'], charNext: ['KeyC'],   // árvore de habilidades: trocar de personagem
   view3d: ['KeyV'],
   worldMap: ['KeyM'],   // mapa do mundo aberto (no mundo, M deixa de ser o mudo)
-  swapWeapon: ['KeyQ', 'KeyX'],   // em jogo: troca para a próxima arma liberada do personagem
+  swapWeapon: ['KeyQ'],   // em jogo: troca para a próxima arma liberada do personagem
+  lockOn: ['KeyX', 'MouseMiddle'],       // em jogo: trava a mira no inimigo (js/heroes/mira.js; também o botão do meio do mouse)
   camToggle: ['KeyV'], camLeft: ['KeyZ'], camRight: ['KeyC'],   // em jogo: câmera isométrica / 3ª pessoa e girar
   bag: ['KeyB'], capsule: ['Digit5', 'Numpad5'],   // mundo aberto: mochila (relíquias, loja, missões) e cápsula de reparo
   journal: ['KeyY'],  // mundo aberto: diário de missões
@@ -36,12 +37,12 @@ const PADMAP = {
   pause: [9], confirm: [0], reroll: [2], buyHeal: [3], toTitle: [8], erase: [2],
   charPrev: [6], charNext: [7],   // LT/RT (L2/R2) na árvore de habilidades: trocar de personagem
   view3d: [3],
-  swapWeapon: [11],     // R3
+  lockOn: [11],         // R3: trava a mira (js/heroes/mira.js); a troca de arma vai para LB + R3
   respec: [3],          // Y/△ na árvore de habilidades: redistribuir os pontos
   grenade: [10],        // L3: Granada de Plasma
 };
 const PAD_LAYER = 4;                                  // LB/L1: modificador das habilidades
-const PAD_LAYER_MAP = { ab1: 2, ab2: 3, ab3: 1, ab4: 0 };   // LB + X, Y, B, A
+const PAD_LAYER_MAP = { ab1: 2, ab2: 3, ab3: 1, ab4: 0, swapWeapon: 11 };   // LB + X, Y, B, A; LB + R3 troca a arma
 // Nomes dos botões por família de controle (detectada pelo id que o navegador informa)
 const PAD_LABELS = {
   xbox: { name: 'Xbox', a: 'A', b: 'B', x: 'X', y: 'Y', lb: 'LB', rb: 'RB', lt: 'LT', rt: 'RT', back: 'View', start: 'Menu', ls: 'L3', rs: 'R3' },
@@ -105,9 +106,11 @@ class Input {
     canvas.addEventListener('mousedown', (e) => {
       const p = game ? game.toLogical(e.clientX, e.clientY) : { x: 0, y: 0 };
       this.mouse.x = p.x; this.mouse.y = p.y; this.mouse.clicked = true;
+      if (e.button === 1) { this.keys.add('MouseMiddle'); this.keyPressed.add('MouseMiddle'); e.preventDefault(); }   // mira travada
       this.lastDevice = 'kb';
       if (this.onFirstInput) this.onFirstInput();
     });
+    window.addEventListener('mouseup', (e) => { if (e.button === 1 && this.keys.delete('MouseMiddle')) this.keyReleased.add('MouseMiddle'); });
     // Toque solto (celular): conta como gesto para o navegador. Em jogo os toques não viram
     // cliques (js/touch.js), então é aqui que o áudio volta depois de suspenso (tela bloqueada,
     // troca de app, ligação)
@@ -201,7 +204,7 @@ class Input {
       const btns = lb !== undefined ? (layer ? [lb] : null) : PADMAP[a];
       if (btns) {
         for (const b of btns) {
-          if (layer && b <= 3 && lb === undefined) continue;
+          if (layer && (b <= 3 || b === 11) && lb === undefined) continue;   // (com LB, o R3 é a troca de arma, não a mira)
           if (this.padNow[b]) h = true;
           if (this.padNow[b] && !this.padPrev[b]) p = true;
           if (!this.padNow[b] && this.padPrev[b]) r = true;

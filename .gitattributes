@@ -8,3 +8,7 @@ assets/fontes/** filter=lfs diff=lfs merge=lfs -text
 assets/Creatures/**/fonte/*.glb filter=lfs diff=lfs merge=lfs -text
 # Saídas do lote de topologia inteligente (candidatas validadas peça a peça; o jogo não carrega)
 assets/_retopo/**/*.glb filter=lfs diff=lfs merge=lfs -text
+# Estruturas geradas no Meshy (comprimidas com Draco: tools/estruturas/comprimir_draco.mjs) e as
+# versões reduzidas no Blender (o jogo usa as convertidas em js/assets/estruturas/)
+assets/estruturas_ambiente/**/Meshy/*.glb filter=lfs diff=lfs merge=lfs -text
+assets/models/estruturas/*.glb filter=lfs diff=lfs merge=lfs -text

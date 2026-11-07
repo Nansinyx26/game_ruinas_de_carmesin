@@ -20,8 +20,11 @@
 // ---------------------------------------------------------------------------
 (function () {
   // ------------------------------------------------------------ cenário das cidades
-  THEMES.metropole = { floor: [200, 14, 14], wall: [205, 14], lamp: '90,240,255', accent: '255,80,220', dark: '2,6,16', darkness: 0.72,
-    sky: 'city', decor: 'neon', pillar: 'pylon', deco: 'circuit', ruined: 0.08, cables: 5, rain: true, ambient: 'Neon e chuva fina' };
+  // As cidades tecnológicas são megacidades SUBTERRÂNEAS (Metrópole e a cidade de Nexus): teto de
+  // caverna em vez de céu (sky 'indoor' + subsolo: as luzes neon do teto nas duas câmeras), a luz
+  // não depende do sol (aberto 0.1) e não chove (só a fumaça e o vapor da neblina)
+  THEMES.metropole = { floor: [200, 14, 14], wall: [205, 14], lamp: '90,240,255', accent: '255,80,220', dark: '2,6,16', darkness: 0.7,
+    sky: 'indoor', subsolo: true, aberto: 0.1, decor: 'neon', pillar: 'pylon', deco: 'circuit', ruined: 0.08, cables: 5, ambient: 'Neon sob o teto da caverna' };
   THEMES.carmim = { floor: [352, 22, 11], wall: [354, 20], lamp: '255,70,90', accent: '255,40,70', dark: '16,2,5', darkness: 0.8,
     sky: 'city', decor: 'graffiti', pillar: 'stone', deco: 'stone', ruined: 0.55, cables: 2, ambient: 'Brasas vermelhas no ar' };
   THEMES.nulo = { floor: [262, 30, 9], wall: [266, 26], lamp: '170,130,255', accent: '120,255,240', dark: '6,3,16', darkness: 0.86,
@@ -41,7 +44,7 @@
   });
   Object.assign(CLIMA_REGIAO, { metropole: [18, 9], ruinas: [24, 14], nexuszero: [12, 6] });
   Object.assign(WORLD_CLIMA_REG, {
-    metropole: { limpo: 3, chuva: 4, tempestade: 2, neblina: 1 },
+    metropole: { limpo: 5, neblina: 2 },   // subterrânea: sem chuva (a neblina é o vapor dos dutos)
     ruinas: { limpo: 3, brasas: 3, chuva: 2, neblina: 2 },
     nexuszero: { limpo: 3, neblina: 3, tempestade: 2 },
   });

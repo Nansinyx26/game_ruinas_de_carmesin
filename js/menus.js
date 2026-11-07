@@ -1419,7 +1419,7 @@ class Menus {
   layPause() {
     const x = Math.max(32, Math.min(70, VIEW_W * 0.05)), w = 320;
     const items = [['resume', 'RETOMAR', 'play'], ['skills', 'HABILIDADES', 'tree'], ['chars', t('rosterTitle'), 'people'],
-      ['camera', `CÂMERA: ${ThirdView.on ? '3ª PESSOA' : 'ISOMÉTRICA'}`, 'sword'], ['world', game.world ? 'MAPA DO MUNDO' : 'MUNDO ABERTO', 'star'],
+      ['camera', `CÂMERA: ${ThirdView.on ? '3ª PESSOA' : 'ISOMÉTRICA'}`, 'sword'], ...(ThirdView.on ? [['mov', `MOVIMENTO: ${ThirdView.movMundo ? 'PELO MUNDO' : 'PELA CÂMERA'}`, 'sword']] : []), ['world', game.world ? 'MAPA DO MUNDO' : 'MUNDO ABERTO', 'star'],
       ...(game.world ? [['bag', 'MOCHILA E OFÍCIOS', 'people'], ['journal', 'DIÁRIO DE MISSÕES', 'folder']] : []),
       ['settings', 'CONFIGURAÇÕES', 'gear'], ['restart', game.world ? 'VOLTAR AO PORTAL' : 'REINICIAR SETOR', 'restart'], ['menu', 'SAIR PARA O MENU', 'exit'], ['quit', 'SAIR DO JOGO', 'power']];
     const f = this.fitList(items.length, 46, 8, 152, VIEW_H - 60, 96), h = f.h, gap = f.gap, y0 = f.y0 - 22;
@@ -1435,6 +1435,7 @@ class Menus {
       else if (id === 'skills') game.openSkills('paused');
       else if (id === 'chars') this.open('char');
       else if (id === 'camera') { ThirdView.toggle(); game.audio.play('uiSelect'); }
+      else if (id === 'mov') { ThirdView.setMov(!ThirdView.movMundo); game.audio.play('uiSelect'); }
       else if (id === 'bag') WorldInv.abrir('mochila', false);
       else if (id === 'journal') WorldInv.abrir('diario', false);
       else if (id === 'world') {

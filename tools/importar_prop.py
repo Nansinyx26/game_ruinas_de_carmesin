@@ -20,6 +20,7 @@ Uso (na pasta do projeto):
   python3 tools/importar_prop.py                   # todos os .glb de assets/models/cenario/
   python3 tools/importar_prop.py torre_neon        # só alguns (os outros ficam como estão)
   python3 tools/importar_prop.py --grupo natureza  # o kit da natureza
+  python3 tools/importar_prop.py --grupo estruturas [ids]   # estruturas enviadas (um .js por objeto + índice)
 """
 import argparse
 import base64
@@ -57,9 +58,17 @@ def data_url(img, lado, qualidade=88):
     return 'data:image/webp;base64,' + base64.b64encode(b.tobytes()).decode('ascii')
 
 
-def converter(caminho, lado_max=1024):
+def converter(caminho, lado_max=1024, escala=None, indexado=False):
+    """escala: unidades do jogo por unidade do arquivo (padrão: metros → 34); indexado: vértices
+    únicos + índices (as estruturas enviadas, malhas grandes: ~40% menor que um canto por vez)."""
     V, UV, F, mapas = ler_glb(caminho)
-    V = V @ R_JOGO.T * ESCALA
+    if indexado:
+        # estruturas enviadas: mapas que faltam viram neutros (as de Draco trazem só cor e metal/aspereza)
+        if mapas.get('cor') is not None and mapas.get('nrm') is None:
+            mapas['nrm'] = np.full(mapas['cor'].shape, (255, 128, 128), np.uint8)          # BGR: normal (0, 0, 1)
+        if mapas.get('cor') is not None and mapas.get('mr') is None:
+            mapas['mr'] = np.full(mapas['cor'].shape, (0, 200, 255), np.uint8)             # BGR: sem metal, aspereza 0,78
+    V = V @ R_JOGO.T * (ESCALA if escala is None else escala)
     F = F[:, [0, 2, 1]]                      # a troca de eixos espelha: desvira os triângulos
     N = mapas.get('normais')
     if N is None:
@@ -80,6 +89,13 @@ def converter(caminho, lado_max=1024):
     # texturas embutidas; sem elas, a cor amostrada por canto (o formato das armas)
     tex = mapas.get('cor') is not None and mapas.get('nrm') is not None and mapas.get('mr') is not None
     reg = bytearray()
+    if indexado and tex:
+        for v in range(len(V)):
+            x, y, z = (int(round(a * q)) for a in V[v])
+            nx, ny, nz = (int(round(a * 127)) for a in N[v])
+            u, w = (int(round(np.clip(a, 0, 1) * 65535)) for a in UV[v])
+            reg += struct.pack('<hhhbbbxHH', x, y, z, nx, ny, nz, u, w)
+        c = []                                                     # (sem o laço por canto abaixo)
     for i, v in enumerate(c):
         x, y, z = (int(round(a * q)) for a in V[v])
         nx, ny, nz = (int(round(a * 127)) for a in N[v])
@@ -119,16 +135,69 @@ def converter(caminho, lado_max=1024):
         info.update(uv=1, lado=lado, tc=data_url(mapas['cor'], lado), tm=data_url(mat, lado, 92), tn=data_url(mapas['nrm'], lado, 92))
         kb_tex = sum(len(info[k]) for k in ('tc', 'tm', 'tn')) // 1024
     info['a'] = base64.b64encode(bytes(reg)).decode('ascii')
+    if indexado and tex:
+        i32 = len(V) > 65535
+        info['ix'] = base64.b64encode(F.reshape(-1).astype('<u4' if i32 else '<u2').tobytes()).decode('ascii')
+        if i32:
+            info['i32'] = 1
     print(f"{os.path.basename(caminho)}: {len(F)} triângulos, {ext.round(1).tolist()} unidades, raio {raio:.1f}, emissivos {float((e > 0.3).mean()):.0%}, "
           f"{len(reg) // 1024} KB de malha" + (f", texturas {info['lado']}px {kb_tex} KB" if tex else ', cor por canto'))
     return info
 
 
+def estruturas(ids):
+    """Grupo 'estruturas' (as estruturas e plantas enviadas, reduzidas por tools/blender/cenario/estruturas.py):
+    um arquivo por objeto (js/assets/estruturas/<id>.js, carregado sob demanda por js/mundo/estruturas.js) e o
+    índice leve com as medidas de todos (js/assets/estruturas/indice.js, no index.html). Só as aprovadas na
+    redução; tamanho real pela tabela tools/estruturas/escalas.json; malha indexada."""
+    pasta = os.path.join(RAIZ, 'assets', 'models', 'estruturas')
+    saida = os.path.join(RAIZ, 'js', 'assets', 'estruturas')
+    os.makedirs(saida, exist_ok=True)
+    rel = json.load(open(os.path.join(pasta, 'estruturas.json'), encoding='utf-8'))
+    esc = json.load(open(os.path.join(RAIZ, 'tools', 'estruturas', 'escalas.json'), encoding='utf-8'))
+    p_idx = os.path.join(saida, 'indice.js')
+    indice = {}
+    if os.path.exists(p_idx):
+        m = re.search(r'ESTRUTURAS_INDICE = (\{.*\});', open(p_idx, encoding='utf-8').read(), re.S)
+        if m:
+            indice = json.loads(m.group(1))
+    for r in rel:
+        id_ = r['id']
+        if ids and id_ not in ids:
+            continue
+        if not r.get('aprovada') or 'glb' not in r:
+            print(f"{id_}: fora (reprovada na redução: {'; '.join(r.get('falhas') or [r.get('erro', '')])})")
+            indice.pop(id_, None)
+            continue
+        E = esc.get(id_) if ('altura' in esc.get(id_, {}) or 'lado' in esc.get(id_, {})) else dict(esc['_tipos'].get(r['tipo'], {'altura': 4}), **esc.get(id_, {}))   # (a medida da peça manda; o padrão do tipo só sem ela)
+        dx, dy, dz = r['dims']                       # Blender: z para cima
+        k = E['altura'] * ESCALA / dz if 'altura' in E else E['lado'] * ESCALA / max(dx, dy)
+        info = converter(os.path.join(RAIZ, r['glb']), 1024 if r['tipo'] in ('estrutura', 'arvore') else 512, escala=k, indexado=True)
+        info.update(tipo=r['tipo'], estilo=r['estilo'])
+        js = os.path.join(saida, f'{id_}.js')
+        with open(js, 'w', encoding='utf-8') as f:
+            f.write("'use strict';\n// ECLIPSE ZERO · Estrutura enviada '" + id_ + "' (" + r['fonte'].replace('\n', ' ') + ')\n'
+                    '// reduzida por tools/blender/cenario/estruturas.py e convertida por tools/importar_prop.py --grupo estruturas;\n'
+                    '// não edite à mão. Carregada sob demanda por js/mundo/estruturas.js.\n')
+            f.write('Object.assign(PROPS3D, ' + json.dumps({id_: info}, separators=(',', ':')) + ');\n')
+            f.write(f"if (typeof Estruturas !== 'undefined') Estruturas.chegou('{id_}');\n")
+        indice[id_] = dict(nome=E.get('nome', id_), tipo=r['tipo'], estilo=r['estilo'], w=info['w'], d=info['d'], h=info['h'], r=info['r'],
+                           kb=os.path.getsize(js) // 1024)
+    with open(p_idx, 'w', encoding='utf-8') as f:
+        f.write("'use strict';\n// ECLIPSE ZERO · Índice das estruturas enviadas (medidas no jogo, para pôr e colidir antes de o modelo chegar).\n"
+                '// Gerado por tools/importar_prop.py --grupo estruturas; não edite à mão. Uso: js/mundo/estruturas.js\n')
+        f.write('const ESTRUTURAS_INDICE = ' + json.dumps(dict(sorted(indice.items())), ensure_ascii=False, separators=(',', ':')) + ';\n')
+    print('gravado', os.path.relpath(p_idx, RAIZ), len(indice), 'estruturas,', sum(v['kb'] for v in indice.values()) // 1024, 'MB nos arquivos')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('ids', nargs='*', help='ids (nome do .glb sem extensão); padrão: todos')
-    ap.add_argument('--grupo', default='cenario', choices=sorted(GRUPOS))
+    ap.add_argument('--grupo', default='cenario', choices=sorted(GRUPOS) + ['estruturas'])
     a = ap.parse_args()
+    if a.grupo == 'estruturas':
+        estruturas(a.ids)
+        return
     PASTA, SAIDA, lado_max = GRUPOS[a.grupo]
     junta = a.grupo != 'cenario'
     arqs = {os.path.splitext(os.path.basename(x))[0]: x for x in sorted(glob.glob(os.path.join(RAIZ, PASTA, '*.glb')))}

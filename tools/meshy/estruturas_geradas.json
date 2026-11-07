@@ -1,0 +1,146 @@
+{
+ "castelo_medieval": {
+  "task_id": "01a1b1e4-291c-76c8-b8d0-7bd369f66e1f",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "cais_com_barco": {
+  "task_id": "01a1b1e4-3cee-73f3-91b8-be369e5e1743",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "escadaria_ruinas": {
+  "task_id": "01a1b2b1-2ba3-714f-9206-cf6c37bdc7f6",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "canhao_medieval": {
+  "task_id": "01a1b2b1-44b3-70d6-b3f8-0e77c6f60a2d",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "muro_ruinas_placa": {
+  "task_id": "01a1b2b1-5e01-7114-8a4f-9c2835c30c4a",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "forno_pedra": {
+  "task_id": "01a1b1e4-50c1-71e1-96e2-71e3d008c642",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "banca_ceramica": {
+  "task_id": "01a1b2b1-72b8-74eb-8185-a7edf2d2e728",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "rochas_grupo": {
+  "task_id": "01a1b2b1-8883-7799-9b6f-44af4d8fcb45",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "arco_braseiros": {
+  "task_id": "01a1b2b1-9f62-7662-9fd9-c895b7824d80",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "hotel_neon": {
+  "task_id": "01a1b1e4-6271-717f-ac2a-eeb8e5a97544",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "torre_antena": {
+  "task_id": "01a1b2b1-b921-71e1-993c-a0afb74ac1b7",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "loja_armas": {
+  "task_id": "01a1b1e4-7759-769b-a9c6-f37f6fea102d",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "loja_tecnologia": {
+  "task_id": "01a1b2b1-cdb7-732f-951d-5ea7096d4b21",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "oficina_mecanica": {
+  "task_id": "01a1b2b1-e13d-75ec-9e1f-51c874867474",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "estufa_cupula": {
+  "task_id": "01a1b1e4-8a5e-767f-ab31-d410a087eb5b",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "portao_setor": {
+  "task_id": "01a1b2b2-0cde-703e-ae0d-7eab007899e8",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "carro_neon": {
+  "task_id": "01a1b2b2-3e71-73b7-8c90-f6ac91ab9589",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "moto_neon": {
+  "task_id": "01a1b2b2-543c-7061-a025-d1ce3b545f84",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "drone_carga": {
+  "task_id": "01a1b2b2-6867-73e3-a541-3a9d3642cbf6",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "ponto_onibus": {
+  "task_id": "01a1b2b2-7c64-72e7-be2f-6c0d7329ec24",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "arco_neon": {
+  "task_id": "01a1b2b5-8655-70a2-b6b9-89cc419258d1",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "maquina_venda": {
+  "task_id": "01a1b2b2-a65f-7207-a807-9d4792522fa1",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "painel_anuncio": {
+  "task_id": "01a1b2b5-93c0-77b5-b2e3-48055f0640ba",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ },
+ "totem_info": {
+  "task_id": "01a1b2b5-a1b9-7035-9846-6a33f6a705f5",
+  "recurso": "image-to-3d",
+  "modelo": "standard (meshy-7), texturizado, PBR, 2k",
+  "creditos": 30
+ }
+}
