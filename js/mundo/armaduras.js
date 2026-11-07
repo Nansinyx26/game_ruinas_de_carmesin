@@ -30,12 +30,15 @@ const ARM_CONJUNTOS = {
   patrulheiro30: { nome: 'Conjunto do Patrulheiro', classe: 'patrulheiro', completo: 7, bonus: [[2, { veloc: 0.03 }], [4, { critico: 0.03, dano: 0.04 }], [7, { dano: 0.08, veloc: 0.03 }]] },
   guardiao30: { nome: 'Conjunto do Guardião Arcano', classe: 'guardiao', completo: 7, bonus: [[2, { defesa: 0.03 }], [4, { energia: 14, vida: 30 }], [7, { defesa: 0.05, recarga: 0.05 }]] },
 };
+// Peças avulsas (peitorais enviados prontos, fora dos conjuntos de classe): sem bônus de conjunto
+ARM_CONJUNTOS.avulsas = { nome: 'Peças avulsas', completo: 99, bonus: [] };
 // Atributos que a raridade sorteia, pelo tema do conjunto
 const ARM_TEMAS = {
   iniciado: ['vida', 'defesa', 'energia', 'veloc'],
   guerreiro30: ['vida', 'defesa', 'dano', 'critico'], mago30: ['energia', 'recarga', 'dano', 'critico'],
   assassino30: ['critico', 'dano', 'veloc', 'energia'], patrulheiro30: ['veloc', 'critico', 'dano', 'vida'],
   guardiao30: ['defesa', 'energia', 'vida', 'recarga'],
+  avulsas: ['vida', 'defesa', 'dano', 'critico'],
 };
 // Faixas de nível dos conjuntos de classe e a força de cada uma (atributos de base e bônus)
 const ARM_FAIXAS = [30, 50, 75, 100];
@@ -68,25 +71,29 @@ const ARMADURAS_GLB = (function () {
   if (typeof CRIA_CATALOGO === 'undefined') return out;
   for (const c of CRIA_CATALOGO) {
     if (c.tipo !== 'peca') continue;
-    const cls = c.classe || null, lv = c.nivel || 1, set = cls ? `${cls}${lv}` : 'iniciado', V = ARS_VAGAS[c.vaga];
+    const cls = c.classe || null, lv = c.nivel || 1, set = c.conjunto || (cls ? `${cls}${lv}` : 'iniciado'), V = ARS_VAGAS[c.vaga];
     if (!V || !ARM_CONJUNTOS[set]) continue;
     // atributos de base: os pesos da vaga (defesa, vida) na força do nível; o peitoral pesado
     // protege mais e pesa; o amuleto dá o atributo do tema
-    const tk = ARM_FORCA[lv] || 1, nk = 1 + lv * 0.01, base = {};
+    // (força: a da faixa; nos avulsos, interpolada entre as faixas vizinhas pelo nível)
+    const fx = Object.keys(ARM_FORCA).map(Number).sort((a, b) => a - b), lo = fx.filter((f) => f <= lv).pop() || 1, hi = fx.find((f) => f >= lv) || lo;
+    const tk = ARM_FORCA[lv] || (hi === lo ? ARM_FORCA[lo] : ARM_FORCA[lo] + (ARM_FORCA[hi] - ARM_FORCA[lo]) * (lv - lo) / (hi - lo)), nk = 1 + lv * 0.01, base = {};
     if (V.def) base.defesa = +(V.def * tk * nk * (c.ombros ? 1.35 : 1)).toFixed(4);
     if (V.vida) base.vida = Math.round(V.vida * tk * nk * (c.ombros ? 1.25 : 1));
     if (c.ombros) base.veloc = -0.01;
     if (c.vaga === 'botas') base.veloc = +(0.01 * (lv >= 30 ? 1.5 : 1)).toFixed(3);
     if (c.vaga === 'acessorio') { const k = ARM_TEMAS[set][0]; base[k] = +(WORLD_ATRIB[k].base * 2.2 * tk).toFixed(4); }
-    const fam = ARM_FAMILIA[c.id] || ARM_FAMILIA[cls] || 'viajante';
+    const fam = ARM_FAMILIA[c.id] || ARM_FAMILIA[cls] || (c.conjunto === 'avulsas' ? 'placas' : 'viajante');
     const nomeC = cls ? { guerreiro: 'Guerreiro', mago: 'Mago', assassino: 'Assassino', patrulheiro: 'Patrulheiro', guardiao: 'Guardião Arcano' }[cls] : null;
     out[c.id] = {
       id: c.id, nome: c.nome, setId: set, fam,
-      itemLevel: lv, rarity: 'comum', requiredLevel: lv, allowedClasses: cls ? [cls] : ARM_CLASSES.slice(),
+      itemLevel: lv, rarity: 'comum', requiredLevel: lv, allowedClasses: cls ? [cls] : c.classes ? c.classes.slice() : ARM_CLASSES.slice(),
       equipmentSlot: c.vaga, baseStats: base, bonusStats: ARM_TEMAS[set],
       modelPath: c.arq, iconPath: c.mini, convertido: !!c.convertido, ombros: !!c.ombros,
-      description: cls ? `${ARM_DESC[c.vaga]}. Parte do conjunto de nível ${lv} da classe ${nomeC}${c.blender ? ' (modelada no Blender)' : ''}.` : `${ARM_DESC[c.vaga]}. Equipamento inicial de quem chega ao mundo aberto.`,
-      sellValue: Math.round((cls ? 90 * (ARM_FORCA[lv] / 2.05) : 8) * Math.max(0.5, V.peso || 0.3)),
+      description: cls ? `${ARM_DESC[c.vaga]}. Parte do conjunto de nível ${lv} da classe ${nomeC}${c.blender ? ' (modelada no Blender)' : ''}.`
+        : c.conjunto === 'avulsas' ? `${ARM_DESC[c.vaga]}. Peça avulsa de nível ${lv}, forjada fora dos conjuntos de classe; cai de elites e chefes e a Armaria vende.`
+        : `${ARM_DESC[c.vaga]}. Equipamento inicial de quem chega ao mundo aberto.`,
+      sellValue: Math.round((cls || c.conjunto ? 90 * (tk / 2.05) : 8) * Math.max(0.5, V.peso || 0.3)),
     };
   }
   return out;
@@ -168,7 +175,17 @@ Object.assign(Arsenal, {
   // Peças de classe: um dos chefes das zonas 25+ sempre larga uma (para a classe do personagem
   // criado), as elites às vezes; o conjunto é o da faixa da zona (nível 30 nas zonas 25+, 50 nas
   // 45+, 75 nas 70+, 100 nas 95+); a raridade é sorteada
+  // Peças avulsas que o herói pode usar perto do nível da zona (até 5 acima, 15 abaixo)
+  pecasAvulsas(lv, h = this.heroi()) {
+    const c = this.classeDe(h);
+    return Object.keys(ARMADURAS_GLB).filter((k) => { const D = ARMADURAS_GLB[k]; return D.setId === 'avulsas' && D.convertido && D.requiredLevel <= lv + 5 && D.requiredLevel >= lv - 15 && (!c || D.allowedClasses.includes(c)); });
+  },
   onKillClasse(e, z) {
+    // avulsos: elites e chefes da faixa largam, para qualquer herói da classe
+    if (z && (e.worldBoss || e.elite)) {
+      const av = this.pecasAvulsas(z.lv);
+      if (av.length && (e.worldBoss ? Math.random() < 0.35 : Math.random() < 0.04)) this.guardar(this.gerarCat(pick(av), this.rolar(e.worldBoss ? 1 : 0, 0.25)));
+    }
     const c = this.classeDe(this.heroi());
     if (!c || !z || z.lv < 25) return;
     const ids = this.pecasClasse(c, this.faixaClasse(z.lv));

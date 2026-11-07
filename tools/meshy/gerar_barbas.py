@@ -14,7 +14,9 @@ cada um com a descrição própria de forma, comprimento, densidade e direção 
 Créditos: nada é gasto sem --confirmar (sem ele: o plano, o custo e o saldo).
 A sessão é a do meshy-cli (login pelo navegador): nenhuma chave passa por aqui, pelo código ou pelo
 jogo — o jogo só carrega os arquivos já convertidos.
-Uso: python3 tools/meshy/gerar_barbas.py [--etapa previa|refino|tudo] [--ids a,b] [--confirmar]
+A mesma fila gera os penteados (--lista cabelos: tools/meshy/cabelos.json, registro em
+.cache_criacao/meshy_cabelos/; tools/meshy/gerar_cabelos.py chama esta).
+Uso: python3 tools/meshy/gerar_barbas.py [--lista barbas|cabelos] [--etapa previa|refino|tudo] [--ids a,b] [--confirmar]
 """
 import argparse
 import json
@@ -27,6 +29,14 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 LISTA = os.path.join(RAIZ, 'tools', 'meshy', 'barbas.json')
 REG = os.path.join(RAIZ, '.cache_criacao', 'meshy_barbas')
 FONTE = os.path.join(REG, 'fonte')
+
+
+def usar_lista(nome):
+    """Barbas (padrão) ou cabelos: a lista de estilos e a pasta do registro."""
+    global LISTA, REG, FONTE
+    LISTA = os.path.join(RAIZ, 'tools', 'meshy', nome + '.json')
+    REG = os.path.join(RAIZ, '.cache_criacao', 'meshy_' + nome)
+    FONTE = os.path.join(REG, 'fonte')
 CLI = ['npm', 'exec', '--yes', '--package=meshy-cli@0.4.0', '--', 'meshy']
 AMB = dict(os.environ, NODE_USE_ENV_PROXY='1', NODE_NO_WARNINGS='1')
 CUSTO = {'previa': 20, 'refino': 10}
@@ -106,7 +116,7 @@ def passo(id_, cfg, etapa, r):
                 d = meshy('text-to-3d', 'create', '--mode', 'preview', '--prompt', cfg['prompt'], '--pose-mode', 'auto', '--data', json.dumps(PREVIA), '--async')
             else:
                 d = meshy('text-to-3d', 'create', '--mode', 'refine', '--preview-task-id', r['previa'], '--enable-pbr', 'true', '--texture-resolution', '4k',
-                          '--remove-lighting', 'true', '--texture-prompt', 'realistic individual hair strands, natural colour variation, matte skin', '--async')
+                          '--remove-lighting', 'true', '--texture-prompt', cfg.get('textura', 'realistic individual hair strands, natural colour variation, matte skin'), '--async')
             tid = tarefa_id(d)
             if not tid:
                 r['erro'] = (d.get('error') or {}).get('message', 'sem id da tarefa')
@@ -133,12 +143,14 @@ def passo(id_, cfg, etapa, r):
     return False
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap.add_argument('--lista', choices=['barbas', 'cabelos'], default='barbas')
     ap.add_argument('--etapa', choices=['previa', 'refino', 'tudo'], default='tudo')
     ap.add_argument('--ids', default='', help='estilos separados por vírgula (sem: todos)')
     ap.add_argument('--confirmar', action='store_true', help='gasta os créditos')
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
+    usar_lista(a.lista)
     lista = json.load(open(LISTA, encoding='utf-8'))
     ids = [x for x in (a.ids.split(',') if a.ids else lista.keys()) if x in lista]
     etapas = ['previa', 'refino'] if a.etapa == 'tudo' else [a.etapa]
@@ -148,13 +160,13 @@ def main():
         r = reg(id_)
         for e in etapas:
             if not r.get(e + '_ok'):
-                plano.append((id_, e))
-    custo = sum(CUSTO[e] for _, e in plano)
+                plano.append((id_, e, 0 if r.get(e) else CUSTO[e]))   # (tarefa já criada: só esperar e baixar, sem custo)
+    custo = sum(c for _, _, c in plano)
     s = saldo()
     log(f'fila: {len(plano)} passos em {len(ids)} estilos, {custo} créditos; saldo {s}')
     if not a.confirmar:
-        for id_, e in plano[:40]:
-            print(f'  {id_:28s} {e:7s} {CUSTO[e]:3d}  ({lista[id_]["categoria"]}: {lista[id_]["nome"]})')
+        for id_, e, c in plano[:40]:
+            print(f'  {id_:28s} {e:7s} {c:3d}  ({lista[id_].get("categoria", a.lista)}: {lista[id_]["nome"]})')
         print('(nada foi gasto: rode com --confirmar)')
         return
     for id_ in ids:

@@ -1,5 +1,5 @@
 'use strict';
-// ECLIPSE ZERO · Encaixe anatômico da barba e do bigode no rosto escolhido (BarbaEncaixe)
+// ECLIPSE ZERO · Encaixe anatômico da barba, do bigode e do cabelo no rosto escolhido (BarbaEncaixe)
 // ---------------------------------------------------------------------------
 // A barba se adapta ao rosto, e não o rosto à barba. Cada barba e bigode (do Meshy ou em mechas do
 // Blender) foi encaixada pelo conversor (tools/importar_criacao.py) no rosto de referência (o Rosto 1
@@ -30,8 +30,11 @@ const BarbaEncaixe = (function () {
 
   // Centro dos raios: atrás da boca, na altura entre o nariz e o queixo (a região da barba fica
   // "estrelada" em volta dele: cada raio sai da pele uma vez só na bochecha, no buço e no queixo)
-  function centro(md) {
+  function centro(md, tipo) {
     const hh = md.topo - md.pescoco;
+    // (o cabelo: o centro do crânio, na altura das sobrancelhas — couro cabeludo, testa, têmporas,
+    // orelhas e nuca saem uma vez só de cada raio)
+    if (tipo === 'cabelo') return [md.cx + 0.12 * md.profCabeca, md.cy, md.nariz + 0.22 * hh];
     return [md.cx + 0.1 * md.profCabeca, md.cy, md.nariz - 0.1 * hh];
   }
   const celula = (t, p) => {
@@ -102,6 +105,31 @@ const BarbaEncaixe = (function () {
       if (tt > 0 && tt > melhor) melhor = tt;
     }
     return melhor;
+  }
+  // A entrada mais perto do raio na malha depois de tmin (a camada de dentro do cabelo, sobre o crânio)
+  function raioPerto(G, d, tmin) {
+    const t = Math.atan2(d[1], d[0]), p = Math.asin(Math.max(-1, Math.min(1, d[2])));
+    const L = G.cel[celula(t, p)];
+    if (!L) return -1;
+    const T = G.T, c = G.c;
+    let melhor = 1e9;
+    for (const n of L) {
+      const o = n * 9;
+      const e1x = T[o + 3] - T[o], e1y = T[o + 4] - T[o + 1], e1z = T[o + 5] - T[o + 2];
+      const e2x = T[o + 6] - T[o], e2y = T[o + 7] - T[o + 1], e2z = T[o + 8] - T[o + 2];
+      const px = d[1] * e2z - d[2] * e2y, py = d[2] * e2x - d[0] * e2z, pz = d[0] * e2y - d[1] * e2x;
+      const det = e1x * px + e1y * py + e1z * pz;
+      if (Math.abs(det) < 1e-9) continue;
+      const inv = 1 / det, sx = c[0] - T[o], sy = c[1] - T[o + 1], sz = c[2] - T[o + 2];
+      const u = (sx * px + sy * py + sz * pz) * inv;
+      if (u < -1e-4 || u > 1.0001) continue;
+      const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+      const v = (d[0] * qx + d[1] * qy + d[2] * qz) * inv;
+      if (v < -1e-4 || u + v > 1.0001) continue;
+      const tt = (e2x * qx + e2y * qy + e2z * qz) * inv;
+      if (tt > tmin && tt < melhor) melhor = tt;
+    }
+    return melhor < 1e9 ? melhor : -1;
   }
   // Vértices soldados (mesma posição) e vizinhos pela malha, de todas as peles da barba
   function vizinhanca(peles) {
@@ -183,11 +211,22 @@ const BarbaEncaixe = (function () {
     return { nx, nz, hh, L, olho };
   }
 
+  // Âncoras do cabelo no rosto escolhido: onde a pele está, vista do centro do crânio, na linha da
+  // testa, nas têmporas, acima das orelhas, na nuca e no alto da cabeça
+  function ancorasCabelo(rosto, md) {
+    const c = centro(md, 'cabelo'), G = grade(rosto, c), A = {};
+    const dirs = { testa: [0.82, 0, 0.57], temporaE: [0.45, -0.75, 0.48], temporaD: [0.45, 0.75, 0.48], orelhaE: [-0.05, -0.95, 0.3], orelhaD: [-0.05, 0.95, 0.3], nuca: [-0.9, 0, -0.2], topo: [0, 0, 1] };
+    for (const k in dirs) {
+      const d = dirs[k], l = Math.hypot(d[0], d[1], d[2]), u = [d[0] / l, d[1] / l, d[2] / l], t = raio(G, u);
+      A[k] = t > 0 ? [c[0] + u[0] * t, c[1] + u[1] * t, c[2] + u[2] * t].map((v) => +v.toFixed(3)) : null;
+    }
+    return A;
+  }
   // Conforma as peles da barba e do bigode (C.peles.barba / .bigode, já com o formato do rosto) ao
   // rosto escolhido (rosto) a partir do de referência (ref). op: { vol, comp, casca, margem }
   function conformar(barbas, rosto, ref, md, op = {}) {
     const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
-    const hh = md.topo - md.pescoco, c = centro(md);
+    const hh = md.topo - md.pescoco, c = centro(md, op.tipo);
     const Gk = grade(rosto, c), Gr = ref === rosto ? Gk : grade(ref, c);
     const V = vizinhanca(barbas), n = V.n;
     // posição de cada vértice soldado
@@ -224,7 +263,7 @@ const BarbaEncaixe = (function () {
     // mais estreito ou mais curto puxava o alto da barba da bochecha para dentro, até a pálpebra)
     const M = marcos(rosto, md), L = md.largCabeca;
     let mascarados = 0;
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < (op.tipo === 'cabelo' ? 0 : n); i++) {   // (o cabelo não tem máscara: a franja pode cair sobre a testa e os olhos)
       const x = X[i * 3], y = X[i * 3 + 1], z = X[i * 3 + 2], dy = Math.abs(y - md.cy);
       const zo = M.nz + 0.11 * hh, zn = M.nz + 0.05 * hh;
       if (z > zo && dy > 0.09 * L && dy < 0.27 * L && x > M.olho[y < md.cy ? 0 : 1] - 0.45) { X[i * 3 + 2] = zo - 0.02 * (z - zo); mascarados++; }
@@ -234,7 +273,7 @@ const BarbaEncaixe = (function () {
     // até a pele pelo seu ponto mais perto dela (as costeletas não ficam em pé, afastadas da têmpora);
     // nas barbas em casca do Meshy o pedaço é a barba toda, que já encosta
     let enraizadas = 0;
-    {
+    if (op.tipo !== 'cabelo') {   // (no cabelo, o rabo de cavalo e as pontas soltas pendem longe do crânio de propósito)
       const comp = new Int32Array(n).fill(-1), fila = [];
       let nc = 0;
       for (let i = 0; i < n; i++) {
@@ -283,7 +322,7 @@ const BarbaEncaixe = (function () {
 
   // 5. Validação do encaixe no rosto escolhido
   function validar(barbas, rosto, md, op = {}) {
-    const c = centro(md), Gk = grade(rosto, c), M = marcos(rosto, md), hh = M.hh, L = M.L;
+    const c = centro(md, op.tipo), Gk = grade(rosto, c), M = marcos(rosto, md), hh = M.hh, L = M.L, cab = op.tipo === 'cabelo';
     const perto = mapaPele(rosto, 0.8);
     let n = 0, pen = 0, olhos = 0, nariz = 0, casca = 0, vao = 0;
     for (const S of barbas) {
@@ -295,13 +334,13 @@ const BarbaEncaixe = (function () {
         if (q && q.d < 0.8 && q.s < -0.08) pen++;
         const dy = Math.abs(y - md.cy);
         // olhos: a faixa da pálpebra à sobrancelha, à frente, dos dois lados do nariz
-        if (z > M.nz + 0.12 * hh && z < M.nz + 0.22 * hh && dy > 0.1 * L && dy < 0.25 * L && x > M.olho[y < md.cy ? 0 : 1] - 0.35) { olhos++; if (op.debug) op.debug.push(['o', +(x - M.nx).toFixed(2), +(dy / L).toFixed(2), +((z - M.nz) / hh).toFixed(2)]); }
+        if (!cab && z > M.nz + 0.12 * hh && z < M.nz + 0.22 * hh && dy > 0.1 * L && dy < 0.25 * L && x > M.olho[y < md.cy ? 0 : 1] - 0.35) { olhos++; if (op.debug) op.debug.push(['o', +(x - M.nx).toFixed(2), +(dy / L).toFixed(2), +((z - M.nz) / hh).toFixed(2)]); }
         // nariz: acima da base do nariz, perto do meio, bem à frente
-        if (z > M.nz + 0.06 * hh && dy < 0.08 * L && x > M.nx - 0.5) { nariz++; if (op.debug) op.debug.push(['n', +(x - M.nx).toFixed(2), +(dy / L).toFixed(2), +((z - M.nz) / hh).toFixed(2)]); }
+        if (!cab && z > M.nz + 0.06 * hh && dy < 0.08 * L && x > M.nx - 0.5) { nariz++; if (op.debug) op.debug.push(['n', +(x - M.nx).toFixed(2), +(dy / L).toFixed(2), +((z - M.nz) / hh).toFixed(2)]); }
         // vãos: a face de dentro (normal para o centro) no rosto, longe da pele
         if (op.casca) {
           const dx = x - c[0], dyy = y - c[1], dz = z - c[2], r = Math.hypot(dx, dyy, dz) || 1;
-          if (-(N[v] * dx + N[v + 1] * dyy + N[v + 2] * dz) / r > 0.3 && z > M.nz - 0.27 * hh) {
+          if (-(N[v] * dx + N[v + 1] * dyy + N[v + 2] * dz) / r > 0.3 && (cab ? z > M.nz + 0.32 * hh : z > M.nz - 0.27 * hh)) {   // (cabelo: o couro cabeludo)
             const tk = raio(Gk, [dx / r, dyy / r, dz / r]);
             if (tk > 0) { casca++; if (r - tk > 0.4) vao++; }
           }
@@ -314,6 +353,24 @@ const BarbaEncaixe = (function () {
     return R;
   }
 
+  // O cabelo: o mesmo caminho (raios do centro do crânio, folga até o couro cabeludo preservada,
+  // colisão, vãos da touca), sem volume, comprimento nem máscaras; validação de atravessamentos e
+  // vãos no couro cabeludo. Devolve o relatório, com as âncoras.
+  function encaixarCabelo(peles, rosto, ref, md) {
+    const op = { tipo: 'cabelo', casca: true, margem: 0.05, suave: 3 };
+    const orig = peles.map((S) => S.pos);
+    let info = conformar(peles, rosto, ref, md, op), R = validar(peles, rosto, md, op);
+    R.tentativas = 1;
+    if (!R.ok) {
+      peles.forEach((S, i) => { S.pos = orig[i]; });
+      const op2 = Object.assign({}, op, { margem: 0.09, suave: 8, fechar: 1.6 });
+      info = conformar(peles, rosto, ref, md, op2);
+      R = validar(peles, rosto, md, op2);
+      R.tentativas = 2;
+    }
+    Object.assign(R, info, { ms: AQUI.ms, ancoras: ancorasCabelo(rosto, md) });
+    return R;
+  }
   // Na montagem: conforma, valida e, se reprovar, refaz uma vez mais firme. Devolve o relatório.
   function encaixar(barbas, rosto, ref, md, A, casca) {
     const op = { vol: VOL[Number.isInteger(A.barbaVol) ? A.barbaVol : 2] || 1, comp: COMP[Number.isInteger(A.barbaComp) ? A.barbaComp : 2] || 1, casca, margem: 0.05, suave: 3 };
@@ -330,5 +387,5 @@ const BarbaEncaixe = (function () {
     Object.assign(R, info, { ms: AQUI.ms });
     return R;
   }
-  return { encaixar, conformar, validar, grade, raio, centro, marcos, VOL, COMP, AQUI };
+  return { encaixar, encaixarCabelo, ancorasCabelo, conformar, validar, grade, raio, raioPerto, centro, marcos, VOL, COMP, AQUI };
 })();

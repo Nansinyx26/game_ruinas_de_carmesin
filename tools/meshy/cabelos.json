@@ -4,15 +4,98 @@
   "prompt": "long straight flowing hair wig with a side part, falling past the shoulders to mid-back, separate hair strands, isolated hair piece only, hollow inside where the head goes, no head, no face, no mannequin, no body, realistic game asset, dark brown hair",
   "separar": {
    "modo": "cor",
-   "lum_max": 0.3
-  }
+   "lum_max": 0.3,
+   "tri": 150000
+  },
+  "tri_jogo": 40000
  },
  "cabelo_meshy_cyber": {
   "nome": "Cyber espetado",
   "prompt": "cyberpunk undercut hairstyle, spiky textured top swept back, short shaved sides, isolated hair piece only, hollow inside where the head goes, no head, no face, no mannequin, no body, stylized realistic game asset, black hair",
   "separar": {
    "modo": "altura",
-   "acima": 0.74
+   "acima": 0.72,
+   "tirar_couro": 0.035
+  }
+ },
+ "cabelo_meshy_curto_masc": {
+  "nome": "Curto masculino",
+  "prompt": "short masculine textured crop haircut, slightly longer messy top, tapered sides and nape, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_ondulado_fem": {
+  "nome": "Longo ondulado",
+  "prompt": "long feminine wavy hair with soft loose waves past the shoulders, middle part, face-framing strands, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, chestnut brown hair",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_cacheado": {
+  "nome": "Cacheado volumoso",
+  "prompt": "voluminous curly hair, defined springy ringlet curls of varied size, rounded silhouette, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_rabo_alto": {
+  "nome": "Rabo de cavalo alto",
+  "prompt": "high ponytail, sleek pulled back top with a hair tie, the tail made of many tapered clumps with flyaways, baby hairs at the hairline, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, honey blonde hair",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_franja_lateral": {
+  "nome": "Franja lateral",
+  "prompt": "shoulder length hair with a long side-swept fringe of fine strands across the forehead, layered sides, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, ash brown hair",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_assimetrico": {
+  "nome": "Assimétrico cyber",
+  "prompt": "asymmetric cyberpunk haircut, one side shaved with a short buzz, the other side long and side-swept across the face down to the jaw, layered fringe, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, black hair with neon green and magenta streaks",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_moicano_cyber": {
+  "nome": "Moicano cyber",
+  "prompt": "futuristic mohawk, tall swept back crest of sharp spiky clumps, shaved sides with thin engraved lines, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, black hair with electric blue tips",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_coque_samurai": {
+  "nome": "Coque samurai",
+  "prompt": "samurai top knot, hair pulled into a bun on the crown, short undercut sides and back, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, black hair",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_trancas_tech": {
+  "nome": "Tranças tech",
+  "prompt": "two long box braids with small metallic rings, tight braided rows on the scalp, futuristic warrior style, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, dark brown hair with silver rings",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
+  }
+ },
+ "cabelo_meshy_bob_neon": {
+  "nome": "Bob neon",
+  "prompt": "sharp angular chin-length bob with blunt bangs, sleek futuristic style, glowing fiber optic strands, isolated hair piece only on a smooth pale skin-toned bald mannequin head, hair attached to the scalp with a natural hairline at the forehead, temples and nape, separate strands and clumps with tapered broken tips and flyaway hairs, natural volume, no helmet look, realistic AAA game asset, PBR, platinum hair with cyan glowing strands",
+  "separar": {
+   "modo": "cor",
+   "lum_pele": 0.3
   }
  }
 }

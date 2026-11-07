@@ -58,3 +58,27 @@ Em `criacaoGLB` (`js/testes.js`):
 - O cyber veio da prévia, sem textura do Meshy. A textura de fios é gerada.
 - As peças não têm a física em mechas dos cortes do Blender. Só as pontas do longo balançam, pelo osso `hair`, como nos outros cabelos do Meshy.
 - Restam 5 créditos na conta do Meshy, que não bastam para outra prévia (20).
+
+## Correções depois dos testes no jogo
+
+Problemas vistos nas capturas do jogo, e o que mudou na separação (`tools/meshy/separar_cabelo.py`) e na montagem:
+
+- **Cyber espetado com cara de capacete.** Era o couro cabeludo liso do manequim do Meshy, uma faixa embaixo das mechas com corte reto.
+  - O raio horizontal do crânio é medido logo abaixo do corte, em cada direção.
+  - Na faixa logo acima, sai o que não passa desse raio (627 mil triângulos de couro) e ficam as mechas.
+  - A borda passa a ser a implantação dos fios, irregular.
+- **Espetos perto das orelhas.** Eram pontas das orelhas do manequim e lascas na borda do corte.
+  - Saem os pedaços soltos pequenos junto da linha do corte (96 pedaços).
+  - Isso vale só no corte por altura: no Longo liso, cada mecha é um pedaço separado e fica.
+- **Rachaduras claras no Longo liso.** Três causas:
+  - **Tintura:** numa textura quase preta, uma manchinha clara chegava a 5× a média e virava branco puro. Agora o ganho é amaciado acima de 1,3× e não passa de 1,75×.
+  - **Buracos:** o teste de cor tirava também os reflexos quentes das mechas. Agora só saem os pedaços grandes de pele, que são o manequim (rosto, pescoço e busto).
+  - **Textura:** o Meshy pinta o manequim em ilhas cor de pele, e as mechas vizinhas puxavam essa cor. Os pixels de pele viram a cor de cabelo mais próxima antes de exportar.
+  - A peça também ganhou mais triângulos (150 mil na separação, 40 mil no jogo): as placas finas de mechas abriam frestas ao reduzir.
+- **Couro cabeludo sob o cabelo** (`js/criacao/montagem.js`, `couroCabeludo`). Os triângulos do rosto cobertos de perto pelo cabelo ficam na cor do cabelo, mais escura, como a sombra das raízes.
+  - A cobertura é medida a partir do centro do crânio, até a camada de dentro do cabelo.
+  - As frestas não mostram mais pele clara, e a linha de implantação perde a borda reta.
+  - Vale para todos os cabelos. A testa, os olhos e o rosto abaixo das sobrancelhas não entram.
+- **O cabelo se adapta ao crânio do rosto escolhido**, como as barbas (`BarbaEncaixe.encaixarCabelo`), com âncoras na testa, nas têmporas, nas orelhas, na nuca e no alto da cabeça. O couro cabeludo não recua mais sob as mechas: esse recuo abria um buraco escuro na testa.
+- **Limite:** nas pontas da cortina da frente do Longo liso, apoiadas no peito, ainda aparecem lascas. É o próprio modelo do Meshy, feito de milhares de placas finas. A solução definitiva é um cabelo longo em mechas feito no Blender.
+

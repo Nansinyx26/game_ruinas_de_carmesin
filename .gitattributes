@@ -19,3 +19,7 @@ assets/npcs/**/*.glb filter=lfs diff=lfs merge=lfs -text
 assets/Criar_Personagem/Cabelo_Meshy/*.glb filter=lfs diff=lfs merge=lfs -text
 # Barbas e bigodes gerados no Meshy, separados da cabeça de manequim (tools/meshy/separar_cabelo.py --tipo barba)
 assets/personagens/barbas/**/*.glb filter=lfs diff=lfs merge=lfs -text
+# Peitorais avulsos e corpos atléticos enviados (GLB/STL do Meshy; o jogo usa os convertidos)
+assets/Criar_Personagem/Armaduras_Avulsas/*.glb filter=lfs diff=lfs merge=lfs -text
+assets/Criar_Personagem/Corpos_Atleticos/*.glb filter=lfs diff=lfs merge=lfs -text
+assets/Criar_Personagem/Corpos_Atleticos/*.stl filter=lfs diff=lfs merge=lfs -text

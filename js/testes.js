@@ -3353,8 +3353,19 @@ const EclipseTests = {
       const cats = B ? [...new Set(Object.values(B).map((v) => v.categoria))].sort().join(',') : '';
       this.ok('barba: biblioteca do Meshy com 31 estilos em curtas, médias, longas, bigodes e especiais, sem descrição repetida',
         !!B && Object.keys(B).length === 31 && cats === 'bigodes,curtas,especiais,longas,medias' && new Set(Object.values(B).map((v) => v.prompt)).size === 31, `${B ? Object.keys(B).length : 0} ${cats}`);
+      // 9. o cabelo também se adapta ao crânio do rosto escolhido (âncoras), e o rosto não recua sob ele
+      const Mh0 = await montar({ rostoG: 7, corpoG: 1 }), Mh = await montar({ rostoG: 7, corpoG: 1, cabeloG: 17 });
+      const h0 = posDe(Mh0.cria.peles.rosto), h1 = posDe(Mh.cria.peles.rosto);
+      let dh = 0; for (let i = 0; i < h0.length; i++) dh = Math.max(dh, Math.abs(h0[i] - h1[i]));
+      const EC = Mh.cria.encaixeCabelo, An = EC && EC.ancoras;
+      const repC = [];
+      for (const ap of [{ rostoG: 3, cabeloG: 9 }, { rostoG: 5, cabeloG: 3 }, { rostoG: 6, cabeloG: 11 }, { rostoG: 2, corpoG: 1, cabeloG: 15 }, { rostoG: 4, cabeloG: 24 }, { rostoG: 1, cabeloG: 13, rLargura: 4 }]) {
+        const M = await montar(ap); const E = M.cria.encaixeCabelo; if (!E || !E.ok) repC.push(`${JSON.stringify(ap)}: ${JSON.stringify(E && Object.assign({}, E, { ancoras: undefined }))}`);
+      }
+      this.ok('cabelo: adaptado ao crânio do rosto escolhido (âncoras na testa, têmporas, orelhas, nuca e alto da cabeça), sem atravessar nem recuar o rosto, aprovado em 7 combinações de rosto, corpo e formato',
+        dh < 1e-5 && EC && EC.ok && An && ['testa', 'temporaE', 'temporaD', 'orelhaE', 'orelhaD', 'nuca', 'topo'].every((k) => An[k]) && repC.length === 0, `rosto ${dh.toExponential(1)} ${repC.slice(0, 2).join(' | ')}`);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
-    Criacao3D.OPC.encaixeBarba = true;
+    Criacao3D.OPC.encaixeBarba = true; Criacao3D.OPC.encaixeCabelo = true;
     this.ok('barbas: sem exceção', !erro, erro);
   },
   async criacaoAncoras() {
@@ -3410,7 +3421,16 @@ const EclipseTests = {
     this.igual('catálogo: 7 peças do nível 1 (Armaduras_Inicial_Level_1/)', ini.filter((c) => c.arq.startsWith('assets/Criar_Personagem/Armaduras_Inicial_Level_1/') && c.arq.endsWith('.glb')).length, 7);
     this.ok('catálogo: 7 peças de nível 30 para cada uma das 5 classes (Armaduras_Level_30/<classe>/)', ARM_CLASSES.every((c) => n30.filter((q) => q.classe === c && q.arq.startsWith('assets/Criar_Personagem/Armaduras_Level_30/')).length === 7), n30.length);
     const campos = ['itemLevel', 'rarity', 'requiredLevel', 'allowedClasses', 'equipmentSlot', 'baseStats', 'bonusStats', 'modelPath', 'iconPath', 'description', 'sellValue', 'setId'];
-    this.ok('catálogo: cada armadura com os 12 campos', Object.values(ARMADURAS_GLB).length === 42 + 135 && Object.values(ARMADURAS_GLB).every((D) => campos.every((k) => D[k] !== undefined && D[k] !== '')), Object.keys(ARMADURAS_GLB).length);
+    this.ok('catálogo: cada armadura com os 12 campos (42 do início e do nível 30, 135 dos níveis 50 a 100 e 3 peitorais avulsos)', Object.values(ARMADURAS_GLB).length === 42 + 135 + 3 && Object.values(ARMADURAS_GLB).every((D) => campos.every((k) => D[k] !== undefined && D[k] !== '')), Object.keys(ARMADURAS_GLB).length);
+    {
+      // peitorais avulsos enviados (Lobo, Corvo e Bronze): fora dos conjuntos, classes próprias, força pelo nível, Armaria e saques
+      const av = Object.values(ARMADURAS_GLB).filter((D) => D.setId === 'avulsas');
+      const lobo = ARMADURAS_GLB.av_lobo_peitoral, bronze = ARMADURAS_GLB.av_bronze_peitoral;
+      this.ok('peitorais avulsos: Lobo (20), Corvo (35) e Bronze (45), convertidos, com classes próprias e defesa crescente com o nível; a Armaria e os saques usam a faixa do herói',
+        av.length === 3 && av.every((D) => D.convertido && D.equipmentSlot === 'peitoral' && D.allowedClasses.length >= 2 && D.allowedClasses.length < 5) &&
+        lobo && bronze && bronze.baseStats.defesa > lobo.baseStats.defesa && Arsenal.pecasAvulsas(40, null).includes('av_corvo_peitoral') && !Arsenal.pecasAvulsas(5, null).includes('av_bronze_peitoral'),
+        av.map((D) => `${D.id}:${D.itemLevel}:${D.baseStats.defesa}`).join(' '));
+    }
     this.ok('catálogo: todas convertidas para o motor', CRIA_CATALOGO.every((c) => c.convertido), CRIA_CATALOGO.filter((c) => !c.convertido).map((c) => c.id).join(','));
     // ------------------------------------------------ níveis 50, 75 e 100 (feitos no Blender a partir das imagens)
     for (const nv of [50, 75, 100]) {

@@ -247,6 +247,12 @@ const Arsenal = {
       for (let i = 0; i < 2 && ids.length; i++) S.loja.itens.push(this.gerarCat(ids.splice(Math.floor(rnd() * ids.length), 1)[0], Math.floor(rnd() * 3), rnd));
       S.loja.classe = c;
     }
+    // e um peitoral avulso da faixa do herói (js/mundo/armaduras.js), quando houver
+    if (!S.loja.avulso && this.pecasAvulsas) {
+      S.loja.avulso = true;
+      const rnd = mulberry32((dia * 15485863 + 3) >>> 0), av = this.pecasAvulsas(lv);
+      if (av.length) S.loja.itens.push(this.gerarCat(av[Math.floor(rnd() * av.length)], Math.floor(rnd() * 3), rnd));
+    }
     const out = S.loja.itens.map((it, k) => ({ peca: k }));
     for (const f of FAB_PLANOS) if (f !== 'eclipse' && !Fabrica.sabePlano(f) && lv >= this.nivelPlano(f)) out.push({ plano: f });
     return out;

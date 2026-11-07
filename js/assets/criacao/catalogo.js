@@ -560,6 +560,59 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "av_lobo_peitoral",
+  "tipo": "peca",
+  "nome": "Peitoral do Emblema do Lobo",
+  "arq": "assets/Criar_Personagem/Armaduras_Avulsas/Peitoral_Emblema_Lobo.glb",
+  "mini": "assets/Criar_Personagem/Armaduras_Avulsas/Peitoral_Emblema_Lobo.png",
+  "js": "js/assets/criacao/av_lobo_peitoral.js",
+  "vaga": "peitoral",
+  "nivel": 20,
+  "real": true,
+  "classes": [
+   "guerreiro",
+   "guardiao",
+   "patrulheiro"
+  ],
+  "conjunto": "avulsas",
+  "convertido": true
+ },
+ {
+  "id": "av_corvo_peitoral",
+  "tipo": "peca",
+  "nome": "Couraça do Emblema do Corvo",
+  "arq": "assets/Criar_Personagem/Armaduras_Avulsas/Peitoral_Emblema_Corvo.glb",
+  "mini": "assets/Criar_Personagem/Armaduras_Avulsas/Peitoral_Emblema_Corvo.png",
+  "js": "js/assets/criacao/av_corvo_peitoral.js",
+  "vaga": "peitoral",
+  "nivel": 35,
+  "real": true,
+  "classes": [
+   "assassino",
+   "patrulheiro",
+   "mago"
+  ],
+  "conjunto": "avulsas",
+  "convertido": true
+ },
+ {
+  "id": "av_bronze_peitoral",
+  "tipo": "peca",
+  "nome": "Couraça de Bronze Musculosa",
+  "arq": "assets/Criar_Personagem/Armaduras_Avulsas/Peitoral_Bronze_Musculoso.glb",
+  "mini": "assets/Criar_Personagem/Armaduras_Avulsas/Peitoral_Bronze_Musculoso.png",
+  "js": "js/assets/criacao/av_bronze_peitoral.js",
+  "vaga": "peitoral",
+  "nivel": 45,
+  "real": true,
+  "classes": [
+   "guerreiro",
+   "guardiao"
+  ],
+  "conjunto": "avulsas",
+  "convertido": true
+ },
+ {
   "id": "ini_capuz",
   "tipo": "peca",
   "nome": "Capuz do Iniciado",

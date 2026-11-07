@@ -110,7 +110,7 @@ for _c in CORTES_FISICA:
 _CM = os.path.join(RAIZ, 'tools', 'meshy', 'cabelos.json')
 for _c, _v in (json.load(open(_CM, encoding='utf-8')) if os.path.exists(_CM) else {}).items():
     if os.path.exists(os.path.join(ORIG, 'Cabelo_Meshy', _c + '.glb')):
-        PECAS.append(dict(id=_c, tipo='cabelo', nome=_v['nome'], arq=f'Cabelo_Meshy/{_c}.glb', mini=f'Cabelo_Meshy/{_c}.png', tri=16000, tex=512,
+        PECAS.append(dict(id=_c, tipo='cabelo', nome=_v['nome'], arq=f'Cabelo_Meshy/{_c}.glb', mini=f'Cabelo_Meshy/{_c}.png', tri=_v.get('tri_jogo', 16000), tex=512,
                           molde=f'Cabelo_Meshy/{_c}.json'))
 for b, n in [('Cacheada', 'Cacheada'), ('Curta', 'Curta'), ('Longa', 'Longa'), ('Média', 'Média'), ('Viking', 'Viking')]:
     PECAS.append(dict(id='barba_' + unicodedata.normalize('NFKD', b).encode('ascii', 'ignore').decode().lower(), tipo='barba', nome='Barba ' + n,
@@ -132,6 +132,16 @@ for _b, _v in (json.load(open(_BM, encoding='utf-8')) if os.path.exists(_BM) els
         PECAS.append(dict(id=_b, tipo='barba', texto=True, categoria=_v['categoria'], nome=_v['nome'], tri=12000, tex=512,
                           arq=f"../personagens/barbas/{_v['categoria']}/{_b}.glb", mini=f'../personagens/barbas/previews/{_b}.png',
                           molde=f"../personagens/barbas/{_v['categoria']}/{_b}.json"))
+# Peitorais avulsos enviados (GLB do Meshy, sem ombreiras): fora dos conjuntos de classe; caem de elites e
+# chefes da faixa de nível e a Armaria vende (js/mundo/armaduras.js, conjunto 'avulsas')
+AV = 'Armaduras_Avulsas/'
+for _id, _arq, _nome, _nv, _cls in [
+        ('av_lobo_peitoral', 'Peitoral_Emblema_Lobo', 'Peitoral do Emblema do Lobo', 20, ['guerreiro', 'guardiao', 'patrulheiro']),
+        ('av_corvo_peitoral', 'Peitoral_Emblema_Corvo', 'Couraça do Emblema do Corvo', 35, ['assassino', 'patrulheiro', 'mago']),
+        ('av_bronze_peitoral', 'Peitoral_Bronze_Musculoso', 'Couraça de Bronze Musculosa', 45, ['guerreiro', 'guardiao'])]:
+    if os.path.exists(os.path.join(ORIG, AV + _arq + '.glb')):
+        PECAS.append(dict(id=_id, tipo='peca', vaga='peitoral', nivel=_nv, classes=_cls, conjunto='avulsas', nome=_nome, real=True,
+                          arq=AV + _arq + '.glb', mini=AV + _arq + '.png'))
 L1 = 'Armaduras_Inicial_Level_1/'
 PECAS += [
     dict(id='ini_capuz', tipo='peca', vaga='capacete', nome='Capuz do Iniciado', arq=L1 + 'Capuz_level_1.glb', mini=L1 + 'Capuz_level_1.png', nivel=1),
@@ -1482,7 +1492,7 @@ def gravar_catalogo():
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
     for p in PECAS:
         it = dict(id=p['id'], tipo=p['tipo'], nome=p['nome'], arq='assets/Criar_Personagem/' + p['arq'], mini='assets/Criar_Personagem/' + p['mini'], js='js/assets/criacao/' + p['id'] + '.js')
-        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica', 'sem_iris', 'texto', 'categoria'):
+        for k in ('vaga', 'classe', 'nivel', 'ombros', 'blender', 'real', 'fisica', 'sem_iris', 'texto', 'categoria', 'classes', 'conjunto'):
             if p.get(k) is not None:
                 it[k] = p[k]
         if 'esconde' in p or p.get('vaga') in ESCONDE:

@@ -68,6 +68,32 @@ def pele_principal(me, co, pele):
     return P[rot[tuple(q.T)] == maior], H
 
 
+def faces_pele_principal(me, co, pele):
+    """As faces de pele que pertencem ao manequim (os pedaços contínuos grandes de pele, na mesma grade
+    de pele_principal). Os reflexos quentes espalhados pelas mechas também passam pelo teste de cor, mas
+    não fazem parte do manequim: tirá-los abria buracos no cabelo, e a cabeça aparecia por eles."""
+    nf = len(me.polygons)
+    vi = np.empty(sum(len(p.vertices) for p in me.polygons), np.int32); me.polygons.foreach_get('vertices', vi)
+    lt = np.empty(nf, np.int32); me.polygons.foreach_get('loop_total', lt)
+    G = np.stack([-co[:, 1], -co[:, 0], co[:, 2]], 1)
+    H = np.ptp(G[:, 2]); o = G.min(0)
+    idx = np.unique(vi[np.repeat(pele, lt)])
+    q = np.floor((G[idx] - o) / (H / 120)).astype(int)
+    occ = np.zeros(q.max(0) + 1, bool)
+    occ[tuple(q.T)] = True
+    rot, _ = ndimage.label(ndimage.binary_closing(occ, iterations=1) | occ)
+    cont = np.bincount(rot[tuple(q.T)])
+    cont[0] = 0
+    grandes = np.nonzero(cont >= max(cont.max() * 0.01, 30))[0]   # (o rosto, o pescoço e o busto, mesmo separados pelas mechas)
+    f = np.repeat(np.arange(nf), lt)
+    C = np.zeros((nf, 3)); np.add.at(C, f, G[vi]); C /= lt[:, None]
+    qf = np.floor((C - o) / (H / 120)).astype(int)
+    dentro = np.all((qf >= 0) & (qf < np.array(rot.shape)), 1)
+    lab = np.zeros(nf, int)
+    lab[dentro] = rot[tuple(qf[dentro].T)]
+    return pele & np.isin(lab, grandes)
+
+
 def pescoco(P):
     """A fatia mais estreita da pele entre o busto e a cabeça (raio horizontal, sem depender do giro)."""
     z0, z1 = P[:, 2].min(), P[:, 2].max()
@@ -174,6 +200,27 @@ def separar(id_):
         # neutro e fica (tirar o claro todo abria buracos nas mechas)
         quente = (rgb[:, 0] > rgb[:, 1]) & (rgb[:, 1] > rgb[:, 2]) & (rgb[:, 0] - rgb[:, 2] > cfg.get('quente', 0.08))
         manter = ~(quente & (lum > cfg.get('lum_pele', 0.3)))
+        # a textura: o Meshy pinta o rosto e o busto do manequim em ilhas cor de pele espalhadas pela
+        # textura, e as mechas vizinhas (perto da borda de cada ilha) puxavam essa cor: linhas claras
+        # no cabelo, como rachaduras, e um brilho de pele na boca das barbas. Os pixels de pele viram
+        # a cor de cabelo mais perto (antes de exportar; a fonte do Meshy não muda)
+        if cfg.get('limpar_textura', True):
+            rgbI = px[:, :, :3]
+            lumI = rgbI @ np.array([0.299, 0.587, 0.114])
+            peleI = (rgbI[:, :, 0] > rgbI[:, :, 1]) & (rgbI[:, :, 1] > rgbI[:, :, 2]) & (rgbI[:, :, 0] - rgbI[:, :, 2] > cfg.get('quente', 0.08)) & (lumI > cfg.get('lum_pele', 0.3) - 0.06)
+            peleI = ndimage.binary_dilation(peleI, iterations=3)
+            _, (iy, ix) = ndimage.distance_transform_edt(peleI, return_indices=True)
+            limpa = px.copy()
+            limpa[:, :, :3] = px[iy, ix, :3]
+            novo = bpy.data.images.new(id_ + '_cor', W, H, alpha=True)
+            novo.pixels.foreach_set(limpa.astype(np.float32).ravel())
+            os.makedirs(FONTE, exist_ok=True)
+            novo.filepath_raw = os.path.join(FONTE, id_ + '_cor_limpa.png'); novo.file_format = 'PNG'; novo.save(); novo.pack()
+            for m in me.materials:
+                for nd in (m.node_tree.nodes if m and m.use_nodes else []):
+                    if nd.type == 'TEX_IMAGE' and nd.image == img:
+                        nd.image = novo
+            print(f'{id_}: textura limpa ({int(peleI.mean() * 100)}% dos pixels eram pele do manequim)', flush=True)
     else:
         z = co[:, 2]
         corte = z.min() + (z.max() - z.min()) * cfg.get('acima', 0.75)
@@ -182,6 +229,10 @@ def separar(id_):
         idx = np.repeat(np.arange(nf), lt)
         zmin = np.full(nf, np.inf); np.minimum.at(zmin, idx, z[vi])
         manter = zmin > corte
+    if modo == 'cor' and cfg.get('so_pele_principal', True):
+        antes = int((~manter).sum())
+        manter = ~faces_pele_principal(me, co, ~manter)
+        print(f'{id_}: pele pela cor {antes} triângulos; do manequim {int((~manter).sum())} (o resto é reflexo das mechas e fica)', flush=True)
     P, H = pele_principal(me, co, ~manter)
     giro = giro_do_manequim(P)
     if abs(giro) > 0.03:
@@ -200,11 +251,62 @@ def separar(id_):
         idx = np.repeat(np.arange(nf), lt)
         zc = np.zeros(nf); np.add.at(zc, idx, co[vi, 2]); zc /= lt
         manter &= zc < molde['nariz'][2] + 0.02 * molde['altura']
+    if cfg.get('tirar_couro'):
+        # o couro cabeludo liso do manequim (a faixa embaixo das mechas, com o corte reto que dava ao
+        # cabelo a cara de capacete): um elipsoide ajustado ao crânio pela pele logo abaixo do corte
+        # (sem as orelhas, que saem como pontos fora da curva); o que fica colado a ele sai, o que se
+        # afasta (as mechas) fica — a borda passa a ser a da implantação dos fios, irregular
+        # (critério local: o raio horizontal do crânio logo abaixo do corte, em cada direção, a partir do
+        # eixo da cabeça; na faixa logo acima, o que não passa desse raio é o couro liso, o que passa é
+        # mecha. Um elipsoide ajustado só à faixa do crânio virava quase um cilindro e engolia tudo)
+        G = np.stack([-co[:, 1], -co[:, 0], co[:, 2]], 1)
+        vi = np.empty(sum(len(p.vertices) for p in me.polygons), np.int32); me.polygons.foreach_get('vertices', vi)
+        lt = np.empty(nf, np.int32); me.polygons.foreach_get('loop_total', lt)
+        idx = np.repeat(np.arange(nf), lt)
+        Cf = np.zeros((nf, 3)); np.add.at(Cf, idx, G[vi]); Cf /= lt[:, None]
+        zc = float(Cf[manter][:, 2].min())                      # o corte (o pé da parte que ficou)
+        fx = P[(P[:, 2] > zc - 0.03 * H) & (P[:, 2] < zc)]       # a pele logo abaixo dele
+        cx, cy = np.median(fx[:, 0]), np.median(fx[:, 1])
+        NB = 36
+        ang = lambda X: ((np.arctan2(X[:, 1] - cy, X[:, 0] - cx) + np.pi) / (2 * np.pi) * NB).astype(int) % NB
+        rr = lambda X: np.hypot(X[:, 0] - cx, X[:, 1] - cy)
+        Rc = np.array([np.median(rr(fx)[ang(fx) == b]) if (ang(fx) == b).sum() > 5 else np.nan for b in range(NB)])
+        Rc = np.where(np.isnan(Rc), np.nanmedian(Rc), Rc)
+        faixa = manter & (Cf[:, 2] < zc + cfg.get('faixa', 0.12) * H)
+        couro = faixa & (rr(Cf) < Rc[ang(Cf)] * (1 + cfg['tirar_couro']))
+        print(f'{id_}: couro cabeludo do manequim: {couro.sum()} triângulos saem', flush=True)
+        manter &= ~couro
     json.dump(molde, open(os.path.join(pasta, id_ + '.json'), 'w', encoding='utf-8'), indent=1)
     print(f'{id_}: manequim', molde, flush=True)
     bm = bmesh.new(); bm.from_mesh(me); bm.faces.ensure_lookup_table()
     tirar = [f for f, k in zip(bm.faces, manter) if not k]
     bmesh.ops.delete(bm, geom=tirar, context='FACES')
+    # pedaços soltos (pontas das orelhas do manequim, lascas na borda do corte): viravam espetos
+    # finos saindo da cabeça depois da redução da malha
+    bm.faces.ensure_lookup_table()
+    visto, pedacos = set(), []
+    for f0 in bm.faces:
+        if f0.index in visto:
+            continue
+        pilha, pe = [f0], []
+        visto.add(f0.index)
+        while pilha:
+            f = pilha.pop(); pe.append(f)
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g.index not in visto:
+                        visto.add(g.index); pilha.append(g)
+        pedacos.append(pe)
+    # (só no corte por altura, e só os pedaços pequenos junto da linha do corte: nos cabelos com textura,
+    # como o Longo liso, cada mecha é um pedaço separado da malha e não pode sair)
+    minimo = cfg.get('pedaco_min', 0.004 if modo != 'cor' else 0) * len(bm.faces)
+    zcorte = min(v.co.z for f in bm.faces for v in f.verts) if minimo else 0
+    hz = max(v.co.z for v in bm.verts) - zcorte if minimo else 1
+    perto = lambda pe: sum(f.calc_center_median().z for f in pe) / len(pe) < zcorte + 0.25 * hz
+    soltas = [f for pe in pedacos if len(pe) < minimo and perto(pe) for f in pe]
+    if soltas:
+        print(f'{id_}: {len(soltas)} triângulos em {sum(1 for pe in pedacos if len(pe) < minimo)} pedaços soltos saem', flush=True)
+        bmesh.ops.delete(bm, geom=soltas, context='FACES')
     soltos = [v for v in bm.verts if not v.link_faces]
     bmesh.ops.delete(bm, geom=soltos, context='VERTS')
     bm.to_mesh(me); bm.free()

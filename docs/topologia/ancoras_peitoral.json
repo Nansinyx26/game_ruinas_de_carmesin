@@ -1,4 +1,64 @@
 {
+ "av_bronze_peitoral@corpo_f": {
+  "topo": 49.46,
+  "base": 34.4,
+  "axila": 40.8,
+  "ombro": 43.1,
+  "pescoco": 49.7,
+  "quadril": 28.18,
+  "cobre_peito": true,
+  "ok": true
+ },
+ "av_bronze_peitoral@corpo_m": {
+  "topo": 51.99,
+  "base": 36.35,
+  "axila": 43.16,
+  "ombro": 45.6,
+  "pescoco": 54.06,
+  "quadril": 29.89,
+  "cobre_peito": true,
+  "ok": true
+ },
+ "av_corvo_peitoral@corpo_f": {
+  "topo": 50.8,
+  "base": 28.32,
+  "axila": 40.8,
+  "ombro": 43.1,
+  "pescoco": 49.7,
+  "quadril": 28.18,
+  "cobre_peito": true,
+  "ok": true
+ },
+ "av_corvo_peitoral@corpo_m": {
+  "topo": 53.85,
+  "base": 32.25,
+  "axila": 43.16,
+  "ombro": 45.6,
+  "pescoco": 54.06,
+  "quadril": 29.89,
+  "cobre_peito": true,
+  "ok": true
+ },
+ "av_lobo_peitoral@corpo_f": {
+  "topo": 49.86,
+  "base": 31.61,
+  "axila": 40.8,
+  "ombro": 43.1,
+  "pescoco": 49.7,
+  "quadril": 28.18,
+  "cobre_peito": true,
+  "ok": true
+ },
+ "av_lobo_peitoral@corpo_m": {
+  "topo": 52.4,
+  "base": 33.23,
+  "axila": 43.16,
+  "ombro": 45.6,
+  "pescoco": 54.06,
+  "quadril": 29.89,
+  "cobre_peito": true,
+  "ok": true
+ },
  "ini_armadura@corpo_f": {
   "topo": 49.17,
   "base": 32.92,
