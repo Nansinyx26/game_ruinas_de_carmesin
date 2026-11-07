@@ -10,9 +10,11 @@
 // Os inimigos (e os animais) não entram no fundo: param na margem. Árvores, pedras e enfeites que
 // cairiam dentro d'água saem; objetos de cenário e estruturas procuram lugar fora dela; os
 // moradores que nasceriam na água vão para a margem.
-// Desenho: vista isométrica (a água por cima do chão, margem com espuma, reflexos que andam e a
-// água cobrindo o corpo de quem está dentro) e 3ª pessoa (a superfície na cena do motor 3D: o que
-// está abaixo dela some pela profundidade).
+// Desenho: vista isométrica (faixas da margem rasa ao fundo, areia molhada, espuma que respira,
+// ondas e brilhos do sol que andam, ondinhas em volta de quem nada) e 3ª pessoa (uma malha por
+// corpo d'água com o material de água do motor: ondas na superfície, normal animada, reflexo do
+// céu por Fresnel, brilho do sol e espuma na margem; o que está abaixo dela some pela
+// profundidade). A margem é irregular (lagos e rios naturais), igual na física e no desenho.
 // ---------------------------------------------------------------------------
 const Agua = (() => {
   const RASO = 46;   // largura da faixa rasa da margem (unidades)
@@ -34,26 +36,37 @@ const Agua = (() => {
   let corpos = [], R0 = null, t = 0;
 
   // ------------------------------------------------------------ geometria
+  // Margem natural: o contorno do lago varia com o ângulo e a largura do rio com o caminho (a mesma
+  // forma vale para a física e para os dois desenhos)
   function montar(z, R) {
     const L = AGUA_ZONAS[z.id] || [], m = Math.min(R.w, R.h), out = [];
-    for (const c of L) {
-      if (c.lago) { const [x, y, rx, ry] = c.lago; out.push({ lago: true, x: x * R.w, y: y * R.h, rx: rx * m, ry: ry * m }); }
-      else out.push({ rio: true, pts: c.rio.map(([x, y]) => [x * R.w, y * R.h]), w: c.w * m });
-    }
+    L.forEach((c, k) => {
+      const sd = [1.3 + k * 2.1, 4.7 + k * 1.3, 2.2 + k * 3.1];
+      if (c.lago) { const [x, y, rx, ry] = c.lago; out.push({ lago: true, x: x * R.w, y: y * R.h, rx: rx * m, ry: ry * m, sd }); return; }
+      const pts = c.rio.map(([x, y]) => [x * R.w, y * R.h]), ac = [0];
+      for (let i = 1; i < pts.length; i++) ac.push(ac[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      out.push({ rio: true, pts, ac, w: c.w * m, sd });
+    });
     return out;
   }
+  const borda = (c, a) => 1 + 0.07 * Math.sin(3 * a + c.sd[0]) + 0.045 * Math.sin(7 * a + c.sd[1]) + 0.025 * Math.sin(13 * a + c.sd[2]);
+  const largura = (c, s) => c.w * (1 + 0.14 * Math.sin(s * 0.011 + c.sd[0]) + 0.07 * Math.sin(s * 0.031 + c.sd[1]));
   // Distância "para dentro" da água (negativa fora): o maior valor entre os corpos
   function dentro(x, y) {
     let best = -1e9;
     for (const c of corpos) {
       let d;
       if (c.lago) {
-        const qx = (x - c.x) / c.rx, qy = (y - c.y) / c.ry, q = Math.hypot(qx, qy);
+        const qx = (x - c.x) / c.rx, qy = (y - c.y) / c.ry, q = Math.hypot(qx, qy) / borda(c, Math.atan2(qy, qx));
         d = (1 - q) * Math.min(c.rx, c.ry);
       } else {
-        let md = 1e9;
-        for (let i = 0; i + 1 < c.pts.length; i++) md = Math.min(md, pointSegDist(x, y, c.pts[i][0], c.pts[i][1], c.pts[i + 1][0], c.pts[i + 1][1]));
-        d = c.w / 2 - md;
+        let md = 1e9, s = 0;
+        for (let i = 0; i + 1 < c.pts.length; i++) {
+          const [ax, ay] = c.pts[i], [bx, by] = c.pts[i + 1], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+          const u = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)), dd = Math.hypot(x - ax - dx * u, y - ay - dy * u);
+          if (dd < md) { md = dd; s = c.ac[i] + Math.sqrt(l2) * u; }
+        }
+        d = largura(c, s) / 2 - md;
       }
       if (d > best) best = d;
     }
@@ -117,52 +130,84 @@ const Agua = (() => {
   function travado(e) { return !!e.nadando; }
 
   // ------------------------------------------------------------ desenho (vista isométrica)
-  function caminho(ctx, c, enc) {
-    ctx.beginPath();
+  // Contorno do corpo d'água recuado 'enc' unidades da margem (lista de pontos do mundo)
+  function contorno(c, enc) {
+    const P = [];
     if (c.lago) {
-      const rx = Math.max(4, c.rx - enc), ry = Math.max(4, c.ry - enc);
-      for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 2, x = c.x + Math.cos(a) * rx, y = c.y + Math.sin(a) * ry; if (i) ctx.lineTo(isoX(x, y), isoY(x, y)); else ctx.moveTo(isoX(x, y), isoY(x, y)); }
-    } else {
-      const P = c.pts, w = Math.max(4, c.w / 2 - enc), esq = [], dir = [];
-      for (let i = 0; i < P.length; i++) {
-        const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
-        esq.push([P[i][0] + nx * w, P[i][1] + ny * w]); dir.push([P[i][0] - nx * w, P[i][1] - ny * w]);
+      for (let i = 0; i < 72; i++) {
+        const a = i / 72 * Math.PI * 2, b = borda(c, a), rx = Math.max(3, c.rx * b - enc), ry = Math.max(3, c.ry * b - enc * c.ry / c.rx);
+        P.push([c.x + Math.cos(a) * rx, c.y + Math.sin(a) * ry]);
       }
-      const T = esq.concat(dir.reverse());
-      T.forEach(([x, y], i) => (i ? ctx.lineTo(isoX(x, y), isoY(x, y)) : ctx.moveTo(isoX(x, y), isoY(x, y))));
+      return P;
     }
+    const esq = [], dir = [], tot = c.ac[c.ac.length - 1];
+    for (let s = 0; s <= tot + 0.1; s += Math.max(12, c.w * 0.25)) {
+      let i = 0; while (i < c.pts.length - 2 && c.ac[i + 1] < s) i++;
+      const [ax, ay] = c.pts[i], [bx, by] = c.pts[i + 1], L = c.ac[i + 1] - c.ac[i] || 1, u = Math.min(1, (s - c.ac[i]) / L);
+      const x = ax + (bx - ax) * u, y = ay + (by - ay) * u, nx = -(by - ay) / L, ny = (bx - ax) / L, w = Math.max(3, largura(c, s) / 2 - enc);
+      esq.push([x + nx * w, y + ny * w]); dir.push([x - nx * w, y - ny * w]);
+    }
+    return esq.concat(dir.reverse());
+  }
+  function caminho(ctx, P) {
+    ctx.beginPath();
+    P.forEach(([x, y], i) => (i ? ctx.lineTo(isoX(x, y), isoY(x, y)) : ctx.moveTo(isoX(x, y), isoY(x, y))));
     ctx.closePath();
   }
+  // Faixas da margem ao fundo (rasa → funda), espuma na margem, ondas e brilhos do sol que andam
   function desenhar(ctx) {
     if (!corpos.length || game.room !== R0) return;
-    const noite = typeof WorldTime !== 'undefined' ? 1 - WorldTime.luz() : 0.3;
+    const luz = typeof WorldTime !== 'undefined' ? WorldTime.luz() : 0.7, k = 0.35 + 0.65 * luz;
+    const tom = (r, g, b, a) => `rgba(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * (0.55 + 0.45 * k))},${a})`;
     ctx.save();
     for (const c of corpos) {
-      caminho(ctx, c, 0); ctx.fillStyle = `rgba(${Math.round(70 - 40 * noite)},${Math.round(130 - 60 * noite)},${Math.round(150 - 50 * noite)},0.88)`; ctx.fill();   // raso
-      ctx.strokeStyle = 'rgba(220,240,245,0.55)'; ctx.lineWidth = 2.2; ctx.stroke();                                                                    // espuma da margem
-      caminho(ctx, c, RASO); ctx.fillStyle = `rgba(${Math.round(18 - 10 * noite)},${Math.round(62 - 30 * noite)},${Math.round(98 - 40 * noite)},0.92)`; ctx.fill();   // fundo
-      // reflexos que andam (presos ao desenho da água)
-      ctx.save(); ctx.clip();
-      ctx.strokeStyle = `rgba(190,225,240,${0.22 + 0.1 * Math.sin(t)})`; ctx.lineWidth = 1.4;
-      const bx = c.lago ? c.x : c.pts[0][0], by = c.lago ? c.y : c.pts[0][1], ext = c.lago ? Math.max(c.rx, c.ry) : 900;
-      for (let i = 0; i < 18; i++) {
-        const u = ((i * 0.618 + t * 0.04) % 1) * 2 - 1, v = (((i * 0.382) % 1) * 2 - 1), x = bx + u * ext, y = by + v * ext * 0.8, s = 10 + (i % 4) * 6;
-        ctx.beginPath(); ctx.moveTo(isoX(x - s, y), isoY(x - s, y)); ctx.lineTo(isoX(x + s, y), isoY(x + s, y)); ctx.stroke();
+      const P0 = contorno(c, 0);
+      // areia molhada logo antes da água
+      caminho(ctx, contorno(c, -7)); ctx.fillStyle = tom(70, 74, 60, 0.35); ctx.fill();
+      // faixas de profundidade (a margem rasa mostra o fundo; o meio é escuro)
+      const F = [[0, [92, 150, 150]], [10, [62, 128, 140]], [24, [40, 100, 126]], [RASO, [24, 74, 108]], [RASO + 40, [14, 54, 88]], [RASO + 110, [8, 38, 70]]];
+      for (const [enc, [r, g, b]] of F) { const P = contorno(c, enc); caminho(ctx, P); ctx.fillStyle = tom(r, g, b, 0.95); ctx.fill(); }
+      // ondas e brilhos (presos à água)
+      caminho(ctx, P0); ctx.save(); ctx.clip();
+      const bx = c.lago ? c.x : c.pts[0][0], by = c.lago ? c.y : c.pts[0][1], ext = c.lago ? Math.max(c.rx, c.ry) * 1.2 : 1400;
+      ctx.lineWidth = 1.3;
+      for (let i = 0; i < 26; i++) {
+        const fase = i * 0.618, u = (((fase + t * 0.025) % 1) * 2 - 1), v = ((i * 0.382) % 1) * 2 - 1;
+        const x = bx + u * ext, y = by + v * ext * 0.9, L = 14 + (i % 5) * 7, a = 0.12 + 0.1 * Math.sin(t * 1.3 + i);
+        ctx.strokeStyle = `rgba(200,232,245,${Math.max(0, a)})`;
+        ctx.beginPath();
+        for (let q = 0; q <= 6; q++) { const xx = x - L + q * L / 3, yy = y + Math.sin(q * 1.2 + t * 2 + i) * 2.2; if (q) ctx.lineTo(isoX(xx, yy), isoY(xx, yy)); else ctx.moveTo(isoX(xx, yy), isoY(xx, yy)); }
+        ctx.stroke();
+      }
+      if (luz > 0.25) for (let i = 0; i < 40; i++) {   // brilhos do sol (piscam)
+        const u = ((i * 0.7548 + t * 0.012) % 1) * 2 - 1, v = ((i * 0.5698) % 1) * 2 - 1, a = Math.max(0, Math.sin(t * 3.1 + i * 2.3)) ** 6;
+        if (a < 0.05) continue;
+        const x = bx + u * ext, y = by + v * ext * 0.9;
+        ctx.fillStyle = `rgba(255,252,235,${a * 0.9 * luz})`; ctx.fillRect(isoX(x, y) - 2, isoY(x, y), 4, 1.3);
       }
       ctx.restore();
+      // espuma que respira na margem
+      caminho(ctx, contorno(c, 2 + Math.sin(t * 1.4) * 1.5));
+      ctx.setLineDash([10, 6, 3, 7]); ctx.lineDashOffset = -t * 6;
+      ctx.strokeStyle = `rgba(235,246,250,${0.5 * k + 0.2})`; ctx.lineWidth = 2; ctx.stroke();
+      ctx.setLineDash([]);
+      caminho(ctx, P0); ctx.strokeStyle = `rgba(210,232,236,${0.35 * k + 0.1})`; ctx.lineWidth = 1.2; ctx.stroke();
     }
     ctx.restore();
   }
-  // Por cima de quem está na água: a água cobre o corpo até a linha d'água
+  // Por cima de quem está na água: a água cobre o corpo até a linha d'água e as ondinhas em volta
   function cobrir(ctx, e) {
     const pr = e.agua !== undefined ? e.agua : profundidade(e.x, e.y);
     if (!(pr > 0.05)) return;
     const sx = isoX(e.x, e.y), sy = isoY(e.x, e.y), r = (e.radius || 16) * 1.5, h = (e.height || 56) * (pr >= 1 ? 0.12 : 0.18 * pr);
     ctx.save();
-    ctx.fillStyle = pr >= 1 ? 'rgba(18,62,98,0.95)' : 'rgba(70,130,150,0.8)';
+    ctx.fillStyle = pr >= 1 ? 'rgba(14,54,88,0.96)' : 'rgba(62,128,140,0.82)';
     ctx.beginPath(); ctx.ellipse(sx, sy - h, r, r * 0.5, 0, 0, Math.PI); ctx.lineTo(sx - r, sy + (e.height || 56) * 0.8); ctx.lineTo(sx + r, sy + (e.height || 56) * 0.8); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(225,245,250,0.7)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(sx, sy - h, r * (1 + 0.08 * Math.sin(t * 5)), r * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    for (let k = 0; k < 3; k++) {   // ondinhas que se afastam
+      const f = ((t * 0.6 + k / 3) % 1), rr = r * (1 + f * 1.6);
+      ctx.strokeStyle = `rgba(225,245,250,${0.6 * (1 - f)})`; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.ellipse(sx, sy - h, rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    }
     ctx.restore();
   }
   function desenharNadadores(ctx) {
@@ -177,30 +222,59 @@ const Agua = (() => {
   }
 
   // ------------------------------------------------------------ 3ª pessoa
-  function fila3P(Q) {
-    if (!corpos.length || game.room !== R0) return;
-    const pool = fila3P.pool || (fila3P.pool = []);
-    let n = 0;
-    const add = (m, x, y, sx, sy, z) => {
-      const o = pool[n] || (pool[n] = { m: M3.make(), flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0 });
-      n++;
-      M3.trs(o.m, [x, y, z], [0, 0, 0], [sx, sy, 1]);
-      const it = R3D.queue(m, null, null, o); it.ent = null; Q.push(it);
-    };
-    for (const c of corpos) {
-      if (c.lago) { add(modelo('raso'), c.x, c.y, c.rx, c.ry, 0.5); add(modelo('fundo'), c.x, c.y, Math.max(4, c.rx - RASO), Math.max(4, c.ry - RASO), 0.7); continue; }
-      for (let i = 0; i + 1 < c.pts.length; i++) {   // rio: discos ao longo da linha
-        const [ax, ay] = c.pts[i], [bx, by] = c.pts[i + 1], L = Math.hypot(bx - ax, by - ay), k = Math.max(1, Math.ceil(L / (c.w * 0.35)));
-        for (let j = 0; j <= k; j++) { const u = j / k, x = ax + (bx - ax) * u, y = ay + (by - ay) * u; add(modelo('raso'), x, y, c.w / 2, c.w / 2, 0.5); add(modelo('fundo'), x, y, Math.max(4, c.w / 2 - RASO), Math.max(4, c.w / 2 - RASO), 0.7); }
+  // Uma malha por corpo d'água (anéis da margem ao fundo; rio: faixas ao longo do leito), com a cor
+  // pela profundidade e a "margem" em cada vértice (o shader da água do motor faz ondas, reflexo,
+  // brilho do sol e espuma: js/engine3d.js, uAgua)
+  const RASA = [0.36, 0.58, 0.58], MEIA = [0.13, 0.36, 0.44], FUNDA = [0.03, 0.13, 0.22];
+  function corProf(d) {   // d: distância da margem (unidades)
+    const a = Math.min(1, d / RASO), b = Math.min(1, Math.max(0, (d - RASO) / 120));
+    const c1 = RASA.map((v, i) => v + (MEIA[i] - v) * a);
+    return c1.map((v, i) => v + (FUNDA[i] - v) * b);
+  }
+  function malha(c) {
+    const d = [];
+    const vert = (x, y, dist) => { const k = corProf(dist); d.push(x, y, 0.8, 0, 0, 1, k[0], k[1], k[2], Math.max(0, 1 - dist / 30)); };
+    if (c.lago) {
+      const S = 72, A = [0, 6, 16, 30, 46, 70, 110, 170, 260, 1e9];
+      const ring = (enc) => { const L = []; for (let i = 0; i < S; i++) { const a = i / S * Math.PI * 2, b = borda(c, a), rx = c.rx * b - enc, ry = c.ry * b - enc * c.ry / c.rx; L.push(rx > 2 && ry > 2 ? [c.x + Math.cos(a) * rx, c.y + Math.sin(a) * ry, enc] : null); } return L; };
+      let R0r = ring(-6);   // um pouco além da margem (espuma sobre a areia)
+      for (let k = 0; k < A.length; k++) {
+        const R1 = A[k] >= 1e9 ? null : ring(A[k]);
+        for (let i = 0; i < S; i++) {
+          const j = (i + 1) % S, a = R0r[i], b = R0r[j];
+          if (!a || !b) continue;
+          const c1 = R1 && R1[i], c2 = R1 && R1[j];
+          if (c1 && c2) { vert(a[0], a[1], Math.max(0, a[2])); vert(b[0], b[1], Math.max(0, b[2])); vert(c2[0], c2[1], c2[2]); vert(a[0], a[1], Math.max(0, a[2])); vert(c2[0], c2[1], c2[2]); vert(c1[0], c1[1], c1[2]); }
+          else { vert(a[0], a[1], Math.max(0, a[2])); vert(b[0], b[1], Math.max(0, b[2])); vert(c.x, c.y, Math.min(c.rx, c.ry)); }
+        }
+        if (!R1 || R1.every((q) => !q)) break;
+        R0r = R1.map((q, i) => q || R0r[i] && [c.x, c.y, Math.min(c.rx, c.ry)]);
+      }
+    } else {
+      const tot = c.ac[c.ac.length - 1], U = [-1.12, -1, -0.8, -0.5, 0, 0.5, 0.8, 1, 1.12], passo = Math.max(14, c.w * 0.3);
+      let prev = null;
+      for (let s = 0; s <= tot + passo; s += passo) {
+        const ss = Math.min(s, tot);
+        let i = 0; while (i < c.pts.length - 2 && c.ac[i + 1] < ss) i++;
+        const [ax, ay] = c.pts[i], [bx, by] = c.pts[i + 1], L = c.ac[i + 1] - c.ac[i] || 1, u = Math.min(1, (ss - c.ac[i]) / L);
+        const x = ax + (bx - ax) * u, y = ay + (by - ay) * u, nx = -(by - ay) / L, ny = (bx - ax) / L, w = largura(c, ss) / 2;
+        const lin = U.map((q) => [x + nx * w * q, y + ny * w * q, Math.max(0, (1 - Math.abs(q)) * w)]);
+        if (prev) for (let q = 0; q + 1 < U.length; q++) { const a = prev[q], b = prev[q + 1], c1 = lin[q], c2 = lin[q + 1]; vert(a[0], a[1], a[2]); vert(b[0], b[1], b[2]); vert(c2[0], c2[1], c2[2]); vert(a[0], a[1], a[2]); vert(c2[0], c2[1], c2[2]); vert(c1[0], c1[1], c1[2]); }
+        prev = lin;
+        if (ss >= tot) break;
       }
     }
+    const nd = new N3('agua');
+    nd.geo = new Float32Array(d);
+    return new Model3(nd);
   }
-  function modelo(k) {
-    const C = modelo.C || (modelo.C = {});
-    if (C[k]) return C[k];
-    const g = new G3();
-    g.cyl(0, 0, 0, 1, 1, 0.3, 28, k === 'raso' ? '#3f7f92' : '#123e60', 0.12);
-    return (C[k] = new Model3(new N3('agua_' + k, g)));
+  function fila3P(Q) {
+    if (!corpos.length || game.room !== R0) return;
+    for (const c of corpos) {
+      const m = c.m3 || (c.m3 = malha(c));
+      const o = c.o3 || (c.o3 = { m: M3.make(), fixo: true, agua: true, aguaC: c.lago ? [c.x, c.y] : [c.pts[0][0], c.pts[0][1]], flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0 });
+      const it = R3D.queue(m, null, null, o); it.ent = null; Q.push(it);
+    }
   }
 
   return { AGUA_ZONAS, RASO, aoCarregar, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };

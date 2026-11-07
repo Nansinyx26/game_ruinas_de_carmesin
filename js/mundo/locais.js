@@ -217,6 +217,7 @@ const Locais = {
     g.hud.message('MASMORRA CONCLUÍDA', M.nome.toUpperCase(), 3, false, true);
     g.audio.play('upgrade');
     if (primeira) { g.gainXP(80 * M.lv, e.x, e.y); Oficios.ganharRep(M.reg, 100); }
+    if (M.chefe && M.chefe.regional && !World.bossDone(M.reg)) { (World.state.chefes || (World.state.chefes = {}))[M.reg] = true; WorldQuests.check(); }   // chefe da região numa masmorra (cidade segura)
     else Oficios.ganharRep(M.reg, 20);
     // a saída (para outra zona, quando a masmorra tem caminho alternativo)
     const S = M.saida || { zona: M.zona, at: M.at }, pt = npcSpot(g.room, 0.5, 0.9);

@@ -130,7 +130,7 @@ const TexturasMundo = (function () {
       ga.fillStyle = pa; ga.fillRect(0, 0, A >> 1, A >> 1);
       // variações grandes de cor (manchas do tamanho de algumas placas)
       const r = mulberry32((R.seed || 1) * 7 + 3), S = R.theme.speck || ['80,80,80'];
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0, nm = Math.min(320, Math.round(60 * (L / 1300) * (L / 1300))); i < nm; i++) {   // (zonas extensas: mais manchas)
         const x = r() * A, y = r() * A, rad = (40 + r() * 140) * k * 2.2, c = S[(r() * S.length) | 0];
         const gr = g.createRadialGradient(x, y, 0, x, y, rad);
         gr.addColorStop(0, `rgba(${c},${0.12 + r() * 0.12})`); gr.addColorStop(1, `rgba(${c},0)`);

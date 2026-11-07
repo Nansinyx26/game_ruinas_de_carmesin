@@ -48,7 +48,7 @@ const WORLD_REGIONS = [
   // Faixas altas: cidades enormes com distritos, cada uma com a sua chegada (a cidade no centro)
   { id: 'metropole', name: 'Metrópole Tecnológica', biome: 'Megacidade subterrânea', lv: [25, 50], minLv: 25, rgb: '80,225,255', at: [0.92, 0.37], r: 0.085,
     order: 7, hub: 'metro_centro', boss: { name: 'SUPERVISOR ÔMEGA', type: 'legionario', hp: 4.4 },
-    desc: 'Uma megacidade enterrada sob a rocha: torres que sobem até o teto da caverna, trens suspensos, neon e a corporação que ainda vigia cada rua. A cidade de quem chega ao nível 25.' },
+    desc: 'Uma megacidade enterrada sob a rocha e SEGURA: torres até o teto da caverna, trens suspensos e neon, sem inimigos nas ruas. A luta da região fica no Cofre Ômega, sob os Subníveis. A cidade de quem chega ao nível 25.' },
   { id: 'ruinas', name: 'Cidade das Ruínas Carmesins', biome: 'Cidade em ruínas', lv: [50, 75], minLv: 50, rgb: '230,50,80', at: [0.07, 0.45], r: 0.08,
     order: 8, hub: 'rc_cidadela', boss: { name: 'REI CARMESIM', type: 'sacerdote', hp: 5.2 },
     desc: 'A capital antiga, partida pela energia vermelha: catedrais, mercados mortos e a cidadela onde os sobreviventes resistem.' },
@@ -421,7 +421,7 @@ const World = {
     }
     g.camera.snap(isoX(p.x, p.y), isoY(p.x, p.y) - 30);
     const dif = z.lv - g.activeProgress().level;   // zona acima do nível do herói: aviso no letreiro
-    g.hud.message(z.name.toUpperCase(), dif >= 4 ? `${z.sub} · PERIGOSA PARA VOCÊ` : z.vila ? `${z.vila.nome.toUpperCase()} · ${z.sub}` : z.sub, 2.2);
+    g.hud.message(z.name.toUpperCase(), z.seguro ? `${z.sub.replace(/ · NÍVEL RECOMENDADO \d+/, '')} · CIDADE SEGURA` : dif >= 4 ? `${z.sub} · PERIGOSA PARA VOCÊ` : z.vila ? `${z.vila.nome.toUpperCase()} · ${z.sub}` : z.sub, 2.2);
     // Descoberta
     if (!this.state.descobertos.includes(id)) {
       this.state.descobertos.push(id);

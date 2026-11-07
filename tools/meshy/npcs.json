@@ -1,0 +1,38 @@
+{
+ "npc_ferreiro": {
+  "nome": "Ferreiro",
+  "estilo": "medieval",
+  "prompt": "medieval blacksmith villager man, leather apron over linen shirt, rolled sleeves, sturdy leather boots, short beard, full body, standing in A-pose, stylized realistic game character, no weapon, no props",
+  "corpo": "m"
+ },
+ "npc_camponesa": {
+  "nome": "Camponesa",
+  "estilo": "medieval",
+  "prompt": "medieval peasant woman villager, long linen dress, wool shawl, cloth apron, braided hair, full body, standing in A-pose, stylized realistic game character, no props",
+  "corpo": "f"
+ },
+ "npc_guarda": {
+  "nome": "Guarda da cidade",
+  "estilo": "medieval",
+  "prompt": "medieval town guard man, chainmail shirt, blue tabard with gold trim, leather belt and boots, open steel helmet, full body, standing in A-pose, stylized realistic game character, no weapon, no shield",
+  "corpo": "m"
+ },
+ "npc_hacker": {
+  "nome": "Hacker de rua",
+  "estilo": "cyberpunk",
+  "prompt": "cyberpunk street hacker young woman, cropped jacket with neon cyan trims, cargo pants, chunky boots, visor glasses on head, full body, standing in A-pose, stylized realistic game character, no weapon, no logos",
+  "corpo": "f"
+ },
+ "npc_operario": {
+  "nome": "Operário do subsolo",
+  "estilo": "cyberpunk",
+  "prompt": "cyberpunk underground city worker man, orange reflective work vest over dark overalls, utility belt, respirator mask hanging at neck, work boots, full body, standing in A-pose, stylized realistic game character, no weapon, no logos",
+  "corpo": "m"
+ },
+ "npc_comerciante": {
+  "nome": "Comerciante neon",
+  "estilo": "cyberpunk",
+  "prompt": "cyberpunk street vendor middle-aged man, long dark coat with magenta neon piping, flat cap, fingerless gloves, full body, standing in A-pose, stylized realistic game character, no weapon, no logos",
+  "corpo": "m"
+ }
+}

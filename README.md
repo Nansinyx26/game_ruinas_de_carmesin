@@ -218,7 +218,7 @@ python3 tools/importar_criacao.py --minis           # só miniaturas e catálogo
 - **Corpos** (masculino e feminino, 1,5 milhão de triângulos e textura 4K cada): reduzidos a 18 mil triângulos e ligados ao esqueleto pelas silhuetas (o mesmo processo dos heróis); a cabeça careca sai e o corpo é dividido em regiões (tronco, braços, mãos, pernas, pés) para esconder o que fica dentro de botas, luvas e calças.
 - **Rostos**: crânio do busto encaixado no crânio do corpo (escala e posição pela distância entre as superfícies), pescoço levado à forma do pescoço do corpo.
 - **Cabelos, barbas e capuzes**: escala e posição que melhor cobrem a cabeça sem entrar nela nem tapar os olhos.
-- **Armaduras**: botas e luvas em par (separadas e postas em cada pé e mão), peitoral e calças na caixa da região, capa presa na base do pescoço e pendurada nas abas do casaco do Kael (balança), amuleto no peito.
+- **Armaduras**: botas e luvas em par (separadas e postas em cada pé e mão), peitoral pelo **encaixe anatômico** (escala pela cobertura do tronco, topo entre o ombro e o pescoço, centro no peito; validado na conversão, ver `docs/CRIACAO_ENCAIXE.md`), calças na caixa da região, capa presa na base do pescoço e pendurada nas abas do casaco do Kael (balança), amuleto no peito.
 
 ## Mundo aberto
 
@@ -232,6 +232,11 @@ Menu inicial ou menu principal → **MUNDO ABERTO** (vista isométrica), **MUNDO
 - **82 estruturas** no mundo (`js/mundo/estruturas.js`): as enviadas em `assets/estruturas_ambiente/` e 24 geradas no Meshy a partir das folhas de referência, reduzidas no Blender, no tamanho real e carregadas só quando a zona pede; a mesma coleção numa **biblioteca de assets do Blender** (`assets/fontes/bibliotecas/eclipse_estruturas.blend`).
 - **Mira travada** (X / botão do meio do mouse / R3): o golpe começa virado para o alvo e a câmera o enquadra.
 - **Painel do Meshy** (`node tools/meshy/painel.mjs`): fila de gerações com referência e prévia, saldo, custo e confirmação antes de gastar créditos; a chave nunca passa pelo navegador.
+- **Metrópole Tecnológica é cidade segura**: as 9 zonas não têm acampamentos, chefe nem eventos com inimigos; o Supervisor Ômega (chefe da região) ficou no Cofre Ômega, a masmorra da Metrópole.
+- **Água realista** (`js/mundo/agua.js` + o programa de água do motor): lagos com margem irregular e rios de largura variável; na 3ª pessoa, a superfície tem ondas somadas que mexem os vértices, reflexo do céu por Fresnel, brilho do sol e espuma na margem; na isométrica, faixas de profundidade, areia molhada, ondulações e espuma animada.
+- **Mapas extensos**: as zonas do campo aberto ficaram maiores (46 a 50 ladrilhos) e o anel de árvores e rochas só fecha o lado que não tem vizinha; para o lado que continua, o terreno segue aberto até a borda, sem parede.
+- **Moradores do Meshy**: ferreiro (Aurora), hacker e operário (Praça Central da Metrópole) e comerciante (Mercado Neon), gerados por texto no Meshy e ligados ao esqueleto do jogo pelo rig automático.
+- **Cidades com os assets do Meshy**: a praça do Refúgio da Aurora (fonte, bancas, forno, carroças, estandartes, lampiões, canhão) e as ruas da Metrópole e de Nexus (lojas, hotel, ponto de ônibus, máquinas de venda, carro, moto, totens, painel, arco neon, drone).
 
 **Câmera em 3ª pessoa** (`js/terceira.js`, `ThirdView`): o mesmo jogo (campanha e mundo aberto) visto de trás do ombro, em perspectiva. O motor 3D (`R3D.renderScene`) desenha numa passada a sala montada em 3D a partir da `Room` (piso em ladrilhos, paredes com as aberturas da porta e das passagens, pilares e luminárias), os heróis com armaduras, cabelo e armas, os inimigos, NPCs, baús, coletáveis e sombras, com névoa na cor do tema. Os efeitos 2D (partículas, auras, projéteis, números de dano, barras de vida) usam a projeção da câmera e aparecem no lugar. O movimento é relativo à câmera; parado sem girar, ela volta para trás do herói quando ele anda. O pilar que fica entre a câmera e o herói some. A arena antiga de 3ª pessoa continua no menu como **ARENA 3D (TREINO)**.
 

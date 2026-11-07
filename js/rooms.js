@@ -201,9 +201,14 @@ class Room {
       if (this.pillars.some((p) => dist(px, py, p.x, p.y) < 150)) continue;
       this.pillars.push(this.makePillar(r, px, py, r() < 0.6));
     }
+    // a mata em volta: densa só onde o mundo acaba; do lado de uma zona vizinha, poucas árvores
+    // soltas (a paisagem continua e a travessia é contínua: não aparece uma parede de árvores)
+    const D = this.def, viz = (dr, dc) => typeof worldZoneAt === 'function' && D && D.region && D.r !== undefined && !!worldZoneAt(D.r + dr, D.c + dc, D.region);
+    const lado = { N: viz(-1, 0), S: viz(1, 0), W: viz(0, -1), E: viz(0, 1) }, aceita = (s) => !lado[s] || r() < 0.18;
     const anel = [];
-    for (let x = -M + 40; x < w + M; x += 95 + r() * 55) { anel.push([x, -M * (0.2 + 0.65 * r())]); anel.push([x, h + M * (0.25 + 0.6 * r())]); }
-    for (let y = -M + 40; y < h + M; y += 95 + r() * 55) { anel.push([-M * (0.2 + 0.65 * r()), y]); anel.push([w + M * (0.25 + 0.6 * r()), y]); }
+    for (let x = -M + 40; x < w + M; x += 95 + r() * 55) { if (aceita('N')) anel.push([x, -M * (0.2 + 0.65 * r())]); if (aceita('S')) anel.push([x, h + M * (0.25 + 0.6 * r())]); }
+    for (let y = -M + 40; y < h + M; y += 95 + r() * 55) { if (aceita('W')) anel.push([-M * (0.2 + 0.65 * r()), y]); if (aceita('E')) anel.push([w + M * (0.25 + 0.6 * r()), y]); }
+    this.ladosAbertos = lado;
     for (const [x, y] of anel) { const p = this.makePillar(r, x, y, r() < 0.75); p.deco = true; this.pillars.push(p); }
     if (typeof Natureza3D !== 'undefined') Natureza3D.espalhar(this, r);   // floresta: arbustos, samambaias, pedras… (não bloqueiam)
   }

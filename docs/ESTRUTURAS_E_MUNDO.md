@@ -67,7 +67,16 @@ Para essas peças falta outro caminho: desbastar as folhas, mantendo a cobertura
 - **Fundo:** o herói **nada** a 55% da velocidade. Não golpeia, não pula, não defende nem usa poderes; a esquiva vira braçada e a arma fica guardada. O corpo afunda até o peito nas duas câmeras.
 - **Inimigos** param na margem.
 - **Nada nasce dentro d'água:** árvores, pedras, moradores, objetos de cenário e estruturas ficam fora.
-- **Desenho:** na isométrica, água rasa e funda, espuma na margem e reflexos que andam; na 3ª pessoa, a superfície entra na cena 3D.
+- **Forma:** o lago não é mais uma elipse lisa; a margem tem reentrâncias (a borda varia com o ângulo, por uma semente de cada lago). O rio muda de largura ao longo do curso.
+- **Na isométrica:** areia molhada em volta, seis faixas de profundidade (da margem rasa ao fundo escuro), linhas de onda que andam, brilhos do sol e espuma tracejada e animada na margem. Quem nada fica coberto até o peito e solta anéis na água.
+- **Na 3ª pessoa** (programa de água do motor, `js/engine3d.js`, ativado por `o.agua`):
+  - a malha vem em anéis (lagos) ou faixas (rios), com a cor pela profundidade em cada vértice e a margem marcada;
+  - os vértices sobem e descem com as ondas;
+  - no fragmento, a normal sai de cinco ondas somadas, em direções e tamanhos diferentes, andando no tempo;
+  - Fresnel: de lado a água reflete o céu, de cima mostra a cor do fundo;
+  - brilho do sol (especular estreito) e espuma que respira na margem;
+  - a névoa da cena por cima.
+- **Limite:** a água é opaca. Não há refração do chão por baixo nem reflexo dos objetos da cena (só do céu).
 
 ## 4. Megacidades subterrâneas
 
@@ -87,7 +96,36 @@ Para essas peças falta outro caminho: desbastar as folhas, mantendo a cobertura
 
 **Continuam com o escurecer:** portais e passagens das cidades, que são teletransporte e portas.
 
+**Mapas extensos, sem parede na borda.** As zonas do campo aberto ficaram maiores: 46 a 50 ladrilhos de lado (eram 20 ou 21, ou seja, cerca de cinco vezes a área), com mais acampamentos espalhados. O anel denso de árvores e rochas agora só fecha os lados **sem zona vizinha**. Para o lado que continua, o terreno segue aberto até a borda, com poucas árvores soltas, e a travessia leva à vizinha. O chão ganhou mais manchas, proporcionais à área.
+
 **Limite:** o motor ainda trabalha com uma zona por vez. A zona vizinha não aparece desenhada além da borda antes de cruzar; isso exige desenhar as vizinhas juntas, em blocos (*chunks*), e é a próxima etapa.
+
+### Metrópole: cidade segura
+
+As 9 zonas da Metrópole Tecnológica (`seguro: true` em `js/mundo/regioes.js`) não têm acampamentos, chefe na rua nem eventos com inimigos (`js/mundo/eventos.js`). O letreiro diz **CIDADE SEGURA** em vez do nível recomendado. O chefe da região, o **Supervisor Ômega**, fica no **Cofre Ômega**, a masmorra da Metrópole, e vencê-lo conta como o chefe regional (`js/mundo/locais.js`).
+
+### Cidades com os assets do Meshy
+
+As listas de `js/mundo/estruturas.js` (`ZONAS`) foram refeitas:
+- **Refúgio da Aurora:** a praça do mercado ganhou a Fonte do Guardião, bancas, forno de pedra, carroças, estandartes, lampiões, poços e o canhão. Os prédios que já existiam continuam.
+- **Praça Central da Metrópole:** loja de armas, loja de tecnologia, hotel neon, ponto de ônibus, máquinas de venda, carro e moto estacionados, totens de informação, painel de anúncio, arco neon e drone.
+- **Mercado Neon:** bar, hotel, loja de armas, café, máquina de venda, painel, totem e moto.
+- **Cidade de Nexus:** portão de setor na chegada, arco neon, prédios, carro, ponto de ônibus, café e loja de tecnologia.
+
+### Moradores gerados no Meshy
+
+Seis moradores foram gerados por texto no Meshy, em A-pose, a 30 créditos cada (`tools/meshy/gerar_npcs.py`, lista em `tools/meshy/npcs.json`):
+- **medievais:** ferreiro, camponesa e guarda;
+- **cyberpunk:** hacker, operário e comerciante.
+
+A conversão passa cada um pelo **rig automático** do jogo, o mesmo dos corpos da criação (`tools/importar_criacao.py --so npc_ferreiro`). A fonte com Draco é descomprimida numa cópia antes.
+
+**No jogo, quatro** (`js/mundo/npc3d.js`), com nome, rotina e fala dos moradores:
+- o ferreiro, no Bairro da Muralha;
+- o hacker e o operário, na Praça Central da Metrópole;
+- o comerciante, no Mercado Neon.
+
+**Fora do jogo, dois:** a camponesa e o guarda vieram com os braços quase em T. O rig automático pesou mal as mãos, que deformavam ao andar. Estão convertidos, mas fora das cidades, até serem gerados de novo com os braços baixos.
 
 ## 6. Câmeras
 
@@ -113,3 +151,6 @@ Testes novos na suíte do jogo (`js/testes.js`):
 - `megacidades`
 - `mundoContinuo`
 - `criacaoEncaixe` (encaixe das armaduras, da etapa anterior)
+- `criacaoAncoras` (peitoral no peito, em quatro poses)
+- `metropoleSegura`
+- `moradoresMeshy`

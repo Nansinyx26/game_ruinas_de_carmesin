@@ -26,7 +26,8 @@ const CRIA_CATS = [
   { id: 'forma', nome: 'FORMA', campos: ['rLargura', 'rMandibula', 'rQueixo', 'rNariz', 'rBoca', 'rOlhos', 'rSobrancelha'] },   // (deformações do rosto)
   { id: 'cabelo', nome: 'CABELO', campos: ['cabeloG'] },
   { id: 'barba', nome: 'BARBA', campos: ['barbaG', 'bigodeG', 'corBarba'] },   // (barba e bigode; a cor, própria ou a do cabelo)
-  { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo', 'olhos'] },   // (olhos: a íris do rosto pintada na cor)
+  { id: 'olhos', nome: 'OLHOS', campos: ['olhos'] },   // (a íris do rosto pintada na cor)
+  { id: 'cores', nome: 'CORES', campos: ['pele', 'corCabelo'] },
 ];
 const CRIA_LINHAS_GLB = ['estilo'].concat(...CRIA_CATS.map((c) => c.campos));
 // Miniaturas (ids do catálogo da criação) de cada opção; null = 'sem'

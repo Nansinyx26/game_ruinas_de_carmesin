@@ -32,6 +32,7 @@ Requer o mesmo que tools/importar_modelo.py, mais o DracoPy (os GLB do Blender v
 import argparse
 import base64
 import json
+import subprocess
 import os
 import pickle
 import sys
@@ -55,6 +56,27 @@ CACHE = os.path.join(RAIZ, '.cache_criacao')
 
 # ============================================================ catálogo (arquivos reais)
 # tipo: corpo | rosto | cabelo | barba | peca; vaga do Arsenal (js/mundo/arsenal.js) nas peças
+# NPCs gerados no Meshy (tools/meshy/gerar_npcs.py → assets/npcs/meshy/<id>.glb, em A-pose, com Draco):
+# cada um é um CORPO INTEIRO (roupa, rosto e cabelo próprios) que recebe o esqueleto do jogo pelo
+# mesmo rig automático dos corpos da criação; no catálogo com tipo 'npc' (não aparece na criação)
+NPCS = [dict(id=k, nome=v['nome'], arq=os.path.join('assets', 'npcs', 'meshy', k + '.glb'), mini=os.path.join('assets', 'npcs', 'meshy', k + '.png'), estilo=v['estilo'],
+             altura=61.0 if v.get('corpo', 'm') == 'm' else 57.5, inteiro=True, tipo='npc')
+        for k, v in json.load(open(os.path.join(RAIZ, 'tools', 'meshy', 'npcs.json'), encoding='utf-8')).items()] if os.path.exists(os.path.join(RAIZ, 'tools', 'meshy', 'npcs.json')) else []
+
+
+def sem_draco(caminho):
+    """Cópia sem Draco (o leitor de GLB daqui não decodifica Draco): pelo tools/estruturas/descomprimir_draco.mjs,
+    com as bibliotecas temporárias em NODE_PATH (ou GLTF_NODE_PATH)."""
+    with open(caminho, 'rb') as f:
+        if b'KHR_draco_mesh_compression' not in f.read(600000):
+            return caminho
+    saida = os.path.join(CACHE, 'sem_draco')
+    os.makedirs(saida, exist_ok=True)
+    env = dict(os.environ, NODE_PATH=os.environ.get('GLTF_NODE_PATH', os.environ.get('NODE_PATH', '/tmp/gltf/node_modules')))
+    subprocess.run(['node', os.path.join(RAIZ, 'tools', 'estruturas', 'descomprimir_draco.mjs'), saida, caminho], check=True, env=env, cwd=RAIZ)
+    return os.path.join(saida, os.path.basename(caminho))
+
+
 CORPOS = [
     dict(id='corpo_m', nome='Masculino', arq='Corpo_Masculino/Corpo_Masculino.glb', mini='Corpo_Masculino/Corpor_Mascuilino.png', altura=61.0),
     dict(id='corpo_f', nome='Feminino', arq='Corpo_Feminino/Corpo_Feminino.glb', mini='Corpo_Feminino/Corpo_Feminino.png', altura=57.5),
@@ -96,7 +118,7 @@ for _b in BARBAS_BLENDER:
 L1 = 'Armaduras_Inicial_Level_1/'
 PECAS += [
     dict(id='ini_capuz', tipo='peca', vaga='capacete', nome='Capuz do Iniciado', arq=L1 + 'Capuz_level_1.glb', mini=L1 + 'Capuz_level_1.png', nivel=1),
-    dict(id='ini_peitoral', tipo='peca', vaga='peitoral', nome='Gibão do Iniciado', arq=L1 + 'Peitoral_leve_level_1.glb', mini=L1 + 'Peitoral_leve_level_1.png', nivel=1),
+    dict(id='ini_peitoral', tipo='peca', vaga='peitoral', nome='Gibão do Iniciado', arq=L1 + 'Peitoral_leve_level_1.glb', mini=L1 + 'Peitoral_leve_level_1.png', nivel=1, sem_ombros=True),
     dict(id='ini_armadura', tipo='peca', vaga='peitoral', nome='Couraça do Iniciado', arq=L1 + 'madura_pesada_level1.glb', mini=L1 + 'madura_pesada_level1.png', nivel=1, ombros=True),
     dict(id='ini_luvas', tipo='peca', vaga='luvas', nome='Luvas do Iniciado', arq=L1 + 'Luvas_level_1.glb', mini=L1 + 'Luvas_level_1.png', nivel=1),
     dict(id='ini_calca', tipo='peca', vaga='calcas', nome='Calças do Iniciado', arq=L1 + 'Calça_level_1.glb', mini=L1 + 'Calça_level_1.png', nivel=1),
@@ -335,7 +357,8 @@ def gravar(id_, dados, mapas):
 # ============================================================ corpos
 def processar_corpo(c):
     t0 = time.time()
-    a = SimpleNamespace(arquivo=os.path.join(ORIG, c['arq']), id=c['id'], cima='+y', frente='+z', max_tri=18000, tex=1024)
+    arq = sem_draco(os.path.join(RAIZ, c['arq'])) if c.get('inteiro') else os.path.join(ORIG, c['arq'])
+    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=18000, tex=1024)
     r = im.rigar(a, c['altura'], False)
     V, F, Fo, Uo, o2r, rot, nomes, ix = r['V'], r['F'], r['Fo'], r['Uo'], r['o2r'], r['rot'], r['nomes'], r['ix']
     k, H, props, inv = r['k'], r['H'], r['props'], dict(r['inv'])
@@ -382,6 +405,8 @@ def processar_corpo(c):
     vo_reg = reg[o2r]
     Zo = V[o2r][:, 2]
     tri_cabeca = np.all(Zo[Fo] > corte, axis=1)
+    if c.get('inteiro'):
+        tri_cabeca[:] = False   # NPC: a cabeça é dele (rosto e cabelo do modelo), não sai
     skins = []
     Vo, No = V[o2r], N[o2r]
     W = np.zeros((len(V), len(nomes)))
@@ -405,6 +430,8 @@ def processar_corpo(c):
     mp = mapas_js(dict(cor=r['cor'], mr=r['mr'], nrm=r['nrm']), 1024)
     destino = gravar(c['id'], dados, mp)
     print(f"{c['id']}: {len(Vo)} vértices, {len(Fo)} triângulos → {destino} ({os.path.getsize(destino) // 1024} KB, {time.time() - t0:.0f}s)", flush=True)
+    if c.get('inteiro'):
+        return   # NPC inteiro: não é referência para encaixar peças
     # referência para encaixar as peças: malha soldada inteira (com a cabeça), normais e pesos
     ref = dict(V=V, N=N, F=F, ordem=ordem, w=w, nomes=nomes, medida=medida, k={kk: (v if not isinstance(v, dict) else {str(s): np.asarray(x) for s, x in v.items()}) for kk, v in k.items()},
                bones={kk: (np.asarray(v[0]), np.asarray(v[1])) for kk, v in r['bones'].items()}, reg=reg, props=props)
@@ -708,12 +735,14 @@ def ajuste_cobertura(Vp, Fp, ref, modo):
     return s, t, (HV, HN, kdH, hh)
 
 
-def ajuste_peitoral(Vp, Fp, ref):
+def ajuste_peitoral(Vp, Fp, ref, bracos=True):
     """Escala e posição do peitoral pronto (GLB realista) pela cobertura do tronco e dos ombros do
     corpo. A caixa da região esticava a peça entre o quadril e os ombros: a gola alta ficava no meio
     do peito e as ombreiras nos braços (no corpo feminino o colo atravessava por cima da gola)."""
     m, V0, N0, reg = ref['medida'], ref['V'], ref['N'], ref['reg']
-    alvo = ((reg == 'tronco') & (V0[:, 2] > m['quadrilZ'] + 1) & (V0[:, 2] < m['ombroZ'] + 1.5)) | ((reg == 'bracos') & (V0[:, 2] > m['axila'] - 3))
+    # alvo: o tronco e, se a peça tem ombreiras ou mangas, o alto dos braços (sem ombreira, só o tronco:
+    # mirar os braços inflava o colete para cobri-los)
+    alvo = ((reg == 'tronco') & (V0[:, 2] > m['quadrilZ'] + 1) & (V0[:, 2] < m['ombroZ'] + 1.5)) | (bracos & (reg == 'bracos') & (V0[:, 2] > m['axila'] - 3))
     A, AN = V0[alvo], N0[alvo]
     rng = np.random.default_rng(5)
     if len(A) > 2000:
@@ -747,6 +776,31 @@ def ajuste_peitoral(Vp, Fp, ref):
     nota, s, t, cob, dentro, queixo, folga = melhor
     print(f"  ajuste peitoral: escala {s:.2f} (caixa {s0:.2f}) topo {s * mx[2] + t[2]:.1f} (ombro {m['ombroZ']:.1f}, pescoço {m['pescoco']:.1f}) cobertura {cob:.2f} dentro {dentro:.3f} queixo {queixo:.3f} folga {folga:.2f}", flush=True)
     return s, t
+
+
+ANCORAS = os.path.join(RAIZ, 'docs', 'topologia', 'ancoras_peitoral.json')
+
+
+def ancora_peitoral(pid, cid, P, ref):
+    """Valida a âncora do peitoral encaixado (regra: o peito coberto, sem descer para a barriga):
+    a parte de cima da peça (os 25% mais altos) tem de ficar entre a axila e o pescoço, e a
+    altura da axila (o peito) tem de estar coberta na frente. Grava o resultado em
+    docs/topologia/ancoras_peitoral.json e reprova (erro) a peça que sair da regra."""
+    m = ref['medida']
+    z = P[:, 2]
+    topo = float(np.percentile(z, 97))
+    base = float(np.percentile(z, 3))
+    frente = P[(np.abs(z - (m['axila'] - 1.0)) < 1.0)]
+    cobre_peito = len(frente) > 20
+    ok = (m['axila'] - 1.5 <= topo <= m['pescoco'] + 2.5) and cobre_peito and base < m['axila'] - 4
+    R = json.load(open(ANCORAS, encoding='utf-8')) if os.path.exists(ANCORAS) else {}
+    R[f'{pid}@{cid}'] = dict(topo=round(topo, 2), base=round(base, 2), axila=round(m['axila'], 2), ombro=round(m['ombroZ'], 2), pescoco=round(m['pescoco'], 2),
+                            quadril=round(m['quadrilZ'], 2), cobre_peito=cobre_peito, ok=ok)
+    os.makedirs(os.path.dirname(ANCORAS), exist_ok=True)
+    json.dump(dict(sorted(R.items())), open(ANCORAS, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    print(f"  âncora do peitoral ({cid}): topo {topo:.1f} (axila {m['axila']:.1f}, pescoço {m['pescoco']:.1f}) base {base:.1f} (quadril {m['quadrilZ']:.1f}) peito {'coberto' if cobre_peito else 'DESCOBERTO'} → {'ok' if ok else 'REPROVADO'}", flush=True)
+    if not ok:
+        raise ValueError(f'peitoral {pid} fora da âncora no corpo {cid}')
 
 
 def ajuste_ombreira(pares, ref):
@@ -1201,10 +1255,16 @@ def processar_armadura(p, refs):
                 P[idx] = Pi
         elif vaga in ('ombroE', 'ombroD'):
             P = ajuste_ombreira(pares, ref)[lado](Vr)
-        elif vaga == 'peitoral' and p.get('real'):
-            s, t = ajuste_peitoral(Vr, R['Fr'], ref)
+        elif vaga == 'peitoral':
+            # PADRÃO DE ENCAIXE DO PEITORAL (todas as peças vindas de GLB): âncora anatômica — o topo
+            # da peça entre o ombro e a base do pescoço, o centro no peito (altura da axila) e a escala
+            # pela cobertura do tronco e dos ombros, sem atravessar a pele. A caixa da região esticava
+            # a peça entre o quadril e os ombros: com gola alta e ombreiras (a couraça inicial), a gola
+            # ia para a altura do ombro e o peito descia para a barriga
+            s, t = ajuste_peitoral(Vr, R['Fr'], ref, bracos=not p.get('sem_ombros'))
             P = Vr * s + t
-        elif vaga in ('peitoral', 'calcas'):
+            ancora_peitoral(p['id'], cid, P, ref)
+        elif vaga == 'calcas':
             amn, amx = caixa_regiao(ref, 'saia' if p.get('saia') else vaga)
             P = encaixar_caixa(Vr, amn, amx, 0.12)
         elif vaga == 'capa':
@@ -1291,6 +1351,9 @@ def gravar_catalogo():
     itens = []
     for c in CORPOS:
         itens.append(dict(id=c['id'], tipo='corpo', nome=c['nome'], arq='assets/Criar_Personagem/' + c['arq'], mini='assets/Criar_Personagem/' + c['mini'], js='js/assets/criacao/' + c['id'] + '.js',
+                          convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
+    for c in NPCS:
+        itens.append(dict(id=c['id'], tipo='npc', nome=c['nome'], estilo=c['estilo'], arq=c['arq'].replace(os.sep, '/'), mini=c['mini'].replace(os.sep, '/'), js='js/assets/criacao/' + c['id'] + '.js',
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
     for p in PECAS:
         it = dict(id=p['id'], tipo=p['tipo'], nome=p['nome'], arq='assets/Criar_Personagem/' + p['arq'], mini='assets/Criar_Personagem/' + p['mini'], js='js/assets/criacao/' + p['id'] + '.js')
@@ -1393,6 +1456,9 @@ def main():
         for c in CORPOS:
             if not a.so or c['id'] in a.so or not os.path.exists(os.path.join(CACHE, c['id'] + '.pkl')):
                 processar_corpo(c)
+    for c in NPCS:   # NPCs do Meshy: só quando pedidos pelo id (--so npc_ferreiro …)
+        if a.so and c['id'] in a.so:
+            processar_corpo(c)
     lista = [p for p in PECAS if not a.so or p['id'] in a.so]
     erros = []
     if lista:

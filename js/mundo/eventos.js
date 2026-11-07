@@ -84,7 +84,7 @@ const Eventos = {
   sortear(tipo = null, zona = null) {
     const z0 = World.zone;
     if (!z0 || z0.instancia || this.S.atual) return null;
-    const reg = z0.region, ok = (z) => !z.hub && !z.instancia && !z.cidade && !(z.camps || []).some((c) => c.boss) && World.state.descobertos.includes(z.id);
+    const reg = z0.region, ok = (z) => !z.hub && !z.instancia && !z.cidade && !z.seguro && !(z.camps || []).some((c) => c.boss) && World.state.descobertos.includes(z.id);
     const cand = worldZonesOf(reg).filter(ok);
     if (!cand.length && !zona) return null;
     const z = zona ? WORLD_ZONES[zona] : ok(z0) && Math.random() < 0.5 ? z0 : pick(cand);

@@ -134,3 +134,40 @@ const NpcModelo = {
     }
   },
 };
+
+// ---------------------------------------------------------------------------
+// MORADORES GERADOS NO MESHY (tools/meshy/gerar_npcs.py → assets/npcs/meshy/, convertidos por
+// tools/importar_criacao.py --so npc_…: corpo inteiro com roupa, rosto e cabelo próprios, no
+// esqueleto do jogo pelo mesmo rig automático dos corpos da criação): o ferreiro no Bairro da
+// Muralha e três cyberpunk (a Praça Central e o Mercado Neon da Metrópole), com a rotina, as falas
+// e as posturas dos outros moradores. (A camponesa e o guarda foram gerados com os braços quase em
+// T e o rig automático deforma as mãos: ficam fora até serem refeitos — docs/CRIACAO_ENCAIXE.md.)
+// ---------------------------------------------------------------------------
+(function () {
+  const M = [
+    { id: 'mes_ferreiro', npc: 'npc_ferreiro', nome: 'OSVALDO', zona: 'aurora_bairro', at: [0.56, 0.62], facing: 2.4, papel: 'Ferreiro ambulante',
+      personalidade: 'Fala pouco e mostra muito: tudo o que diz cabe numa martelada.',
+      ola: ['Ferradura, prego, dobradiça. Espada não: espada é com a ferraria grande.', 'O fogo da forja esfria se eu parar de falar com você. Brincadeira. Mas nem tanto.'],
+      temas: [['Trabalha onde?', 'Onde precisarem. Hoje, nas portas do bairro: metade das dobradiças desta rua fui eu que fiz.']] },
+    { id: 'mes_hacker', npc: 'npc_hacker', nome: 'NOVA', zona: 'metro_centro', at: [0.7, 0.36], facing: 3.3, papel: 'Hacker de rua',
+      personalidade: 'Rápida, irônica, sempre com um olho no visor.',
+      ola: ['Seu chip está desatualizado. Brincadeira. Você nem tem chip. Isso é ótimo, aliás.', 'A praça é segura porque eu deixo ela invisível para eles.'],
+      temas: [['O que você faz?', 'Escondo a cidade das câmeras do Supervisor. Ele vê um parque vazio. Nós vemos a feira.']] },
+    { id: 'mes_operario', npc: 'npc_operario', nome: 'BRAGA', zona: 'metro_centro', at: [0.3, 0.32], facing: 0.6, papel: 'Operário do subsolo',
+      personalidade: 'Cansado, honesto, cheira a óleo e a café.',
+      ola: ['Turno de doze horas nos dutos. Se eu dormir em pé, me acorda.', 'O teto da caverna pinga. Sempre pingou. A gente só parou de reparar.'],
+      temas: [['Como é o trabalho?', 'Mantenho o ar circulando. Sem os exaustores, a Metrópole vira uma garrafa fechada.']] },
+    { id: 'mes_comerciante', npc: 'npc_comerciante', nome: 'SILAS', zona: 'metro_mercado', at: [0.42, 0.62], facing: 5.6, papel: 'Comerciante neon',
+      personalidade: 'Sorriso largo, preço mais largo ainda.',
+      ola: ['Tudo original, tudo com garantia. A garantia sou eu.', 'Neon novo pro seu casaco? Fica lindo na escuridão.'],
+      temas: [['O que você vende?', 'Luz. Em fios, em placas, em casacos. Aqui embaixo, luz é o que mais vende.']] },
+  ];
+  for (const P of M) {
+    NPC3D[P.id] = { ap: { npc: P.npc }, roupa: {} };
+    if (typeof WORLD_POVO !== 'undefined' && !WORLD_POVO.some((q) => q.id === P.id)) {
+      const { npc, ...dados } = P;
+      WORLD_POVO.push(Object.assign({ model: 'civil', variant: 0, servicos: [], meshy: npc }, dados));
+    }
+  }
+  if (typeof Povo !== 'undefined' && Povo.montar) Povo.montar();   // (entram na lista da zona; quem já estava é ignorado)
+})();

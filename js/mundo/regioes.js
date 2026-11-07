@@ -62,7 +62,9 @@
       { id: 'obsidiano_nucleo', name: 'Núcleo de Obsidiana', theme: 'vulcao', lv: 39, boss: true },
     ] },
     // ------------------------------------------------ faixa 25–50: a megacidade (centro: a cidade)
-    metropole: { mobs: ['sentinela_neon', 'lobo_neon', 'atirador', 'executor', 'drone', 'cacador', 'legionario'], zones: [
+    // A Metrópole é uma CIDADE SEGURA (seguro: sem acampamentos, chefe ou eventos com inimigos nas 9
+    // zonas). A luta da região fica no Cofre Ômega, sob os Subníveis, onde o Supervisor se escondeu
+    metropole: { seguro: true, mobs: ['sentinela_neon', 'lobo_neon', 'atirador', 'executor', 'drone', 'cacador', 'legionario'], zones: [
       { id: 'metro_porto', name: 'Porto Aéreo', theme: 'metropole', lv: 27, portal: true },
       { id: 'metro_torres', name: 'Torres de Vidro', theme: 'tower', lv: 30, terminal: ['Andar 212: a diretoria ainda recebe relatórios. Ninguém lê.', 'Os elevadores sobem sozinhos às 03:11. Todos os dias.'] },
       { id: 'metro_trilhos', name: 'Trilhos Suspensos', theme: 'metropole', lv: 33 },
@@ -123,13 +125,15 @@
     R.zones.forEach((d, i) => {
       const r = Math.floor(i / 3), c = i % 3, lv = d.lv;
       // tamanho do grupo cresce com o nível; o chefe vem com escolta
-      const lugares = d.hub ? [] : ABERTOS.has(d.theme) ? CAMP_AT[c].concat([[0.82, 0.82], [0.18, 0.72]]) : CAMP_AT[c];   // campo aberto: mais grupos
+      const seguro = !!R.seguro;
+      // campo aberto EXTENSO (estilo mundo aberto de exploração): ~80 m de lado, grupos espalhados pela área toda
+      const lugares = d.hub || seguro ? [] : ABERTOS.has(d.theme) ? CAMP_AT[c].concat([[0.82, 0.82], [0.18, 0.72], [0.14, 0.14], [0.86, 0.16], [0.5, 0.86]]) : CAMP_AT[c];
       const camps = lugares.map((at, k) => {
         const mobs = {}, n = Math.min(8, 3 + Math.floor(lv / 10)) + (k === 0 ? 1 : 0);   // até 9 por grupo (as zonas de nível alto não lotam)
         for (let q = 0; q < n; q++) { const t = M[(q + k + i) % M.length]; mobs[t] = (mobs[t] || 0) + 1; }
         return { at, mobs };
       });
-      if (d.boss) {
+      if (d.boss && !seguro) {
         const B = worldRegion(reg).boss, mobs = {};
         mobs[B.type] = 1;
         for (let q = 0; q < 3; q++) { const t = M[q % M.length]; mobs[t] = (mobs[t] || 0) + 1; }
@@ -138,11 +142,11 @@
       const cells = Math.round(8 + lv * 2.4);
       const aberto = ABERTOS.has(d.theme);
       const z = {
-        region: reg, r, c, name: d.name, theme: d.theme, aberto, lv,
-        tiles: d.tiles || (aberto ? 20 + (i % 2) : 15 + (i % 3)), pillars: d.pillars !== undefined ? d.pillars : aberto ? (d.hub ? 7 : 10 + (i % 3)) : d.hub ? 4 : 4 + (i % 2),
+        region: reg, r, c, name: d.name, theme: d.theme, aberto, lv, seguro,
+        tiles: d.tiles || (aberto ? 46 + (i % 2) * 4 : 15 + (i % 3)), pillars: d.pillars !== undefined ? d.pillars : aberto ? (d.hub ? 30 : 52 + (i % 3) * 6) : d.hub ? 4 : 4 + (i % 2),
         portal: !!d.portal, hub: !!d.hub, camps,
         chests: [Object.assign({ at: CHEST_AT[c], cells, xp: lv * 8 }, d.hub || i % 2 ? { heal: true } : {}),
-          ...(d.boss ? [{ at: [0.5, 0.12], cells: cells * 3, xp: lv * 30, heal: true, boss: true }] : [])],
+          ...(d.boss && !seguro ? [{ at: [0.5, 0.12], cells: cells * 3, xp: lv * 30, heal: true, boss: true }] : [])],
       };
       if (d.secret) z.secret = { at: SECRET_AT[c], cells: cells * 2, xp: lv * 18 };
       if (d.terminal) z.terminal = { at: TERM_AT[c], lines: d.terminal };
