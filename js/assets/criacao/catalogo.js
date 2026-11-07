@@ -161,7 +161,7 @@ const CRIA_CATALOGO = [
   "id": "cabelo_1",
   "tipo": "cabelo",
   "nome": "Cabelo 1",
-  "arq": "assets/Criar_Personagem/Cabelo/cabelo_1.glb",
+  "arq": "assets/Criar_Personagem/../_retopo/meshy/cabelo_1_alinhado.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_1.png",
   "js": "js/assets/criacao/cabelo_1.js",
   "convertido": true

@@ -94,7 +94,7 @@ const EclipseTests = {
       let fin = true, emax = 0;
       for (let i = 0; i < raw.length; i += 10) { if (!isFinite(raw[i]) || !isFinite(raw[i + 1]) || !isFinite(raw[i + 2])) { fin = false; break; } emax = Math.max(emax, raw[i + 9]); }
       this.ok(`arma ${id}: posições válidas`, fin);
-      this.ok(`arma ${id}: GLB de origem registrado (${W.src})`, /^assets\/armas\/eclipse\/.+\.glb$/.test(W.src));
+      this.ok(`arma ${id}: GLB de origem registrado (${W.src})`, /^assets\/(armas\/eclipse|_retopo\/meshy)\/.+\.glb$/.test(W.src));   // (a variação da espada do Kael lê o remesh do Meshy)
       this.ok(`arma ${id}: comprimento coerente`, Math.abs(W.len - 64) <= 50, W.len);
       this.ok(`arma ${id}: encaixe nas costas definido`, !!WeaponRig.BACK[id]);
     }
@@ -141,12 +141,13 @@ const EclipseTests = {
   // Mira travada (js/heroes/mira.js): trava no mais perto da frente, passa para o próximo,
   // segurar solta; o golpe começa virado para o alvo; o alvo morto passa a mira adiante
   mira() {
-    const g = game, p = g.player, salva = g.enemies.slice(), est0 = g.state;
+    const g = game, p = g.player, salva = g.enemies.slice(), est0 = g.state, pil0 = g.room.pillars;
     let erro = null;
     g.state = 'playing';   // (a mira só age em jogo)
     try {
       g.enemies.length = 0;
       const R = g.room, cx = R.w / 2, cy = R.h / 2;
+      R.pillars = [];   // a sala do teste é sorteada: um pilar no meio cortaria a linha de visão (a mira, não a sala, é o que se testa)
       p.x = cx; p.y = cy; p.facing = 0; p.state = 'idle'; p.vx = p.vy = 0; p.attack = null;
       const perto = createEnemy('rastejador', cx + 120, cy, 1), longe = createEnemy('rastejador', cx - 260, cy + 40, 1), fora = createEnemy('rastejador', cx + 2000, cy, 1);
       for (const e of [perto, longe, fora]) { e.state = 'idle'; e.stateTime = 1; g.enemies.push(e); }
@@ -173,6 +174,7 @@ const EclipseTests = {
       this.ok('mira: teclado X e botão do meio do mouse, R3 no controle (a troca de arma vai para Q e LB + R3)', KEYMAP.lockOn.includes('KeyX') && KEYMAP.lockOn.includes('MouseMiddle') && PADMAP.lockOn[0] === 11 && !KEYMAP.swapWeapon.includes('KeyX') && PAD_LAYER_MAP.swapWeapon === 11);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     Mira.soltar(); g.enemies.length = 0; for (const e of salva) g.enemies.push(e); g.state = est0;
+    g.room.pillars = pil0;
     this.ok('mira: sem exceção', !erro, erro);
   },
 
@@ -364,6 +366,7 @@ const EclipseTests = {
     this.igual('Orion com a pistola: J J J → rajada', ['L', 'L', 'L'].map((b) => cs.resolve(b)).join(','), 'orion_shot1,orion_shot2,orion_shot3');
     this.igual('Orion com a pistola: a pistola na mão', WeaponRig.visualOf('orion').main[0], 'orion_pistola');
     g.enemies.length = 0; g.projectiles.clear(); g.waves.state = 'cleared';
+    const pil0 = g.room.pillars; g.room.pillars = [];   // (sala sorteada: um pilar entre o Orion e o alvo pararia o tiro)
     const e = createEnemy('rastejador', p.x + 160, p.y, 1); e.hp = e.maxHp = 5000; e.spawnT = 0; e.state = 'idle'; g.enemies.push(e);
     const step = (s) => { for (let t = 0; t < s; t += 1 / 60) { p.update(1 / 60, this.entrada()); g.projectiles.update(1 / 60); } };
     p.facing = 0; p.state = 'idle';
@@ -372,6 +375,7 @@ const EclipseTests = {
     this.ok('tiro da pistola causa dano', h1 < 5000, h1);
     p.startAttack('orion_shot3', null); step(0.7);
     this.ok('rajada acerta mais de uma vez', 5000 - e.hp > 2 * (5000 - h1) * 0.8, `${5000 - h1} → ${5000 - e.hp}`);
+    g.room.pillars = pil0;
     RosterManager.equipWeapon('orion', 'laminas_duplas');
     this.igual('Orion com as lâminas volta a cortar', p.combatStyle(), 'orion');
     g.enemies.length = 0; g.projectiles.clear();
@@ -829,6 +833,7 @@ const EclipseTests = {
         const f = R3D.active ? R3D.foto(g.model3('cen_carvalho'), { yaw: 0, scale: 1, lift: 0, roll: 0, pitch: 0, flash: 0, emi: 1, holo: false, ghost: null, tint: null }, 1) : { canvas: { width: 1 } };
         this.ok('motor: foto de um modelo parado vira sprite (as árvores da vista isométrica)', !!f && f.canvas.width > 0);
         this.ok('floresta: a vila da clareira (carroça, feno, poço, cerca, placa) nas zonas do cenário', ['carroca', 'fardo_feno', 'poco', 'cerca', 'placa_estrada'].every((id) => Cenario.ZONAS.velmora_clareira.some((q) => q[0] === id)));
+        this.ok('lote do Meshy: a pilha de caixotes (remesh) no motor e na clareira de Velmora', !!PROPS3D.caixotes && PROPS3D.caixotes.n <= 6000 && /_retopo\/meshy\//.test(PROPS3D.caixotes.src) && !!MODELS3D.cen_caixotes && Cenario.ZONAS.velmora_clareira.some((q) => q[0] === 'caixotes'));
         this.ok('floresta: fora da floresta o kit não entra', Natureza3D.escolha({ seed: 5 }, THEMES.neve) === null);
       }
       this.campoAberto();

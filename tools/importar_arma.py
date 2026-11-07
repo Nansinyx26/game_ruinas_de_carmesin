@@ -61,7 +61,9 @@ SAIDA = 'js/assets/armas3d.js'
 ARMAS = {
     # Kael: a espada oficial (Kael_Espada_oficial) e a versão anterior como variação
     'kael_espada': dict(arq='kael_espada_oficial.glb', cortar=[(50, 70, -9, -2.4)], eixo='y', largura='x', inv=True, invz=False, cabo=0.1, len=64, tri=2600, glow='60,150,255'),
-    'kael_espada_alt': dict(arq='kael_espada.glb', pca=True, eixo='x', largura='z', inv=True, invz=False, cabo=0.12, len=64, tri=2400, glow='60,150,255'),
+    # a variação lê o remesh do Meshy (lote de teste, docs/topologia/LOTE_MESHY.md: 2.986 triângulos,
+    # desvio de 95% 0,04%), já devolvido à escala da fonte; a fonte continua em assets/armas/eclipse/kael_espada.glb
+    'kael_espada_alt': dict(arq='kael_espada_alinhado.glb', pasta='assets/_retopo/meshy', pca=True, eixo='x', largura='z', inv=True, invz=False, cabo=0.12, len=64, tri=2400, glow='60,150,255'),
     'drakos_machado': dict(arq='drakos_machado.glb', eixo='y', largura='x', inv=False, invz=True, cabo=0.2, len=60, tri=2800, glow='255,46,61'),
     'drakos_martelo': dict(arq='drakos_martelo.glb', eixo='y', largura='x', inv=False, invz=False, cabo=0.2, len=60, tri=2800, glow='255,46,61'),
     'lyra_arco': dict(arq='lyra_arco.glb', eixo='y', largura='x', inv=False, invz=False, cabo=0.5, len=46, tri=2600, glow='190,90,255',

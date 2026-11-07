@@ -41,6 +41,11 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRUPOS = {'cenario': (os.path.join('assets', 'models', 'cenario'), os.path.join('js', 'assets', 'props3d.js'), 1024),
           'natureza': (os.path.join('assets', 'models', 'natureza'), os.path.join('js', 'assets', 'natureza3d.js'), 512),
           'arquitetura': (os.path.join('assets', 'models', 'arquitetura'), os.path.join('js', 'assets', 'arquitetura3d.js'), 1024)}
+# Objetos que não saem do Blender, por grupo: id → GLB (caminho a partir da raiz do projeto)
+#   caixotes: a pilha de caixotes enviada (assets/estruturas_ambiente/Estruturas_Superficie/item_ambiente_md_1.glb,
+#   183 mil triângulos) pelo remesh do Meshy (lote de teste, docs/topologia/LOTE_MESHY.md: 4.893 triângulos),
+#   já devolvido à escala da fonte
+EXTRAS = {'natureza': {'caixotes': os.path.join('assets', '_retopo', 'meshy', 'item_ambiente_md_1_alinhado.glb')}}
 ESCALA = 34.0
 R_JOGO = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]], float)   # linhas: frente, direita, cima do jogo no glTF
 
@@ -195,17 +200,18 @@ def main():
         return
     PASTA, SAIDA, lado_max = GRUPOS[a.grupo]
     junta = a.grupo != 'cenario'
-    arqs = sorted(glob.glob(os.path.join(RAIZ, PASTA, '*.glb')))
+    arqs = {os.path.splitext(os.path.basename(x))[0]: x for x in sorted(glob.glob(os.path.join(RAIZ, PASTA, '*.glb')))}
+    arqs.update({k: os.path.join(RAIZ, v) for k, v in EXTRAS.get(a.grupo, {}).items()})
     if a.ids:
-        arqs = [x for x in arqs if os.path.splitext(os.path.basename(x))[0] in a.ids]
+        arqs = {k: x for k, x in arqs.items() if k in a.ids}
     destino = os.path.join(RAIZ, SAIDA)
     atuais = {}
     if os.path.exists(destino):
         m = re.search(r'Object\.assign\(PROPS3D, (\{.*\})\);' if junta else r'PROPS3D = (\{.*\});', open(destino, encoding='utf-8').read(), re.S)
         if m:
             atuais = json.loads(m.group(1))
-    for arq in arqs:
-        atuais[os.path.splitext(os.path.basename(arq))[0]] = converter(arq, lado_max)
+    for pid, arq in arqs.items():
+        atuais[pid] = converter(arq, lado_max)
     with open(destino, 'w', encoding='utf-8') as f:
         if a.grupo == 'arquitetura':
             f.write("'use strict';\n// ECLIPSE ZERO · Kit de arquitetura medieval da cidade (tools/blender/arquitetura.py → assets/models/arquitetura/*.glb),\n"

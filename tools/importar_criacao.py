@@ -94,6 +94,9 @@ for _p in PECAS:
 for i, (a, m) in enumerate([('cabelo_1.glb', 'cabelo_1.png'), ('Cabelo_2.glb', 'cabelo_2.png'), ('Cabelo_3.glb', 'Cabelo_3.png'), ('Cabelo_4.glb', 'Cabelo_4.png'),
                             ('Cabelo_5.glb', 'cabelo_5.png'), ('Cabelo_6.glb', 'cabelo_6.png'), ('cabelo_7.glb', 'cabelo_7.png'), ('Cabelo_8.glb', 'cabelo_8.png')]):
     PECAS.append(dict(id=f'cabelo_{i + 1}', tipo='cabelo', nome=f'Cabelo {i + 1}', arq='Cabelo/' + a, mini='Cabelo/' + m, tri=12000, tex=512))
+# o Cabelo 1 (1,4 milhão de triângulos) lê o remesh do Meshy (lote de teste, docs/topologia/LOTE_MESHY.md:
+# 11.529 triângulos, desvio de 95% 0,31%), já devolvido à escala da fonte; a fonte continua em Cabelo/cabelo_1.glb
+next(_p for _p in PECAS if _p['id'] == 'cabelo_1')['arq'] = '../_retopo/meshy/cabelo_1_alinhado.glb'
 # Cabelos com física feitos no Blender (tools/blender/cabelos.py): malha em mechas, cadeias de ossos
 # para a física do jogo (js/criacao/cabelo_fisica.js) e a mesma malha nos dois corpos (shape key)
 CORTES_FISICA = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado',
