@@ -33,7 +33,8 @@ const Cenario = (function () {
     // Floresta de Velmora (kit medieval e natural, tools/blender/natureza.py): a vila de estrada da
     // clareira (carroça, feno, poço, cerca e placa) e o que sobrou pelas trilhas
     velmora_clareira: [['carroca', 0.26, 0.3, 0.5, 1], ['fardo_feno', 0.16, 0.38, 0.2, 1], ['fardo_feno', 0.2, 0.22, 1.4, 0.9], ['poco', 0.72, 0.28, 0, 1],
-      ['placa_estrada', 0.6, 0.76, 0.8, 1], ['cerca', 0.22, 0.72, 0, 1], ['cerca', 0.33, 0.72, 0, 1], ['cerca', 0.78, 0.66, 1.57, 1], ['tronco_caido', 0.82, 0.82, 0.6, 1]],
+      ['placa_estrada', 0.6, 0.76, 0.8, 1], ['cerca', 0.22, 0.72, 0, 1], ['cerca', 0.33, 0.72, 0, 1], ['cerca', 0.78, 0.66, 1.57, 1], ['tronco_caido', 0.82, 0.82, 0.6, 1],
+      ['caixotes', 0.34, 0.24, 0.3, 0.65]],   // a pilha de caixotes (GLB enviado, remesh do Meshy: docs/topologia/LOTE_MESHY.md)
     velmora_trilha: [['placa_estrada', 0.42, 0.2, 2.2, 1], ['tronco_caido', 0.7, 0.35, 1.1, 1.1], ['cerca', 0.25, 0.8, 0.4, 1], ['fardo_feno', 0.78, 0.78, 0.3, 0.9]],
     velmora_ruinas: [['tronco_caido', 0.3, 0.7, 2.4, 1], ['carroca', 0.75, 0.25, 2.6, 0.95], ['placa_estrada', 0.2, 0.25, 0.5, 1]],
     velmora_raizes: [['tronco_caido', 0.25, 0.3, 0.9, 1.2], ['tronco_caido', 0.75, 0.7, 2.0, 1.1]],

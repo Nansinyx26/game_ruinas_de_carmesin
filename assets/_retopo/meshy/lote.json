@@ -1,0 +1,101 @@
+[
+  {
+    "id": "kael_espada",
+    "tipo": "arma",
+    "fonte": "assets/armas/eclipse/kael_espada.glb",
+    "tarefa_meshy": "01a1b1d5-da26-7240-abf8-32528e21416a",
+    "pedido": "triângulos, 3.000",
+    "triangulos_antes": 23850,
+    "triangulos_depois": 2986,
+    "quads_estimado": 0.0013395847287340924,
+    "escala_para_fonte": 0.949702636206298,
+    "desvio_medio": 0.00017240192558519573,
+    "desvio_p95": 0.00044915222894582034,
+    "texturas": [
+      "cor",
+      "metal_aspereza"
+    ],
+    "aprovada": true,
+    "falhas": []
+  },
+  {
+    "id": "kael_n6",
+    "tipo": "armadura",
+    "fonte": "assets/modelos/armaduras/kael/kael_n6.glb",
+    "tarefa_meshy": "01a1b1d5-de4c-7603-b6a6-ad3cb0c25546",
+    "pedido": "quads, 11.000",
+    "triangulos_antes": 220294,
+    "triangulos_depois": 21506,
+    "quads_estimado": 0.011159676369385288,
+    "escala_para_fonte": 0.9532512154698944,
+    "desvio_medio": 0.001320540239083868,
+    "desvio_p95": 0.003391779788974311,
+    "texturas": [
+      "cor",
+      "metal_aspereza"
+    ],
+    "aprovada": false,
+    "falhas": [
+      "21,506 triângulos acima do orçamento 12,000"
+    ]
+  },
+  {
+    "id": "cabelo_1",
+    "tipo": "cabelo",
+    "fonte": "assets/Criar_Personagem/Cabelo/cabelo_1.glb",
+    "tarefa_meshy": "01a1b1d5-e249-70bd-a067-5f8ef280ae1c",
+    "pedido": "triângulos, 12.000",
+    "triangulos_antes": 1399168,
+    "triangulos_depois": 11529,
+    "quads_estimado": 0.0024286581663630845,
+    "escala_para_fonte": 0.9244561585176766,
+    "desvio_medio": 0.0012966533646513252,
+    "desvio_p95": 0.003085104968752805,
+    "texturas": [
+      "cor",
+      "metal_aspereza"
+    ],
+    "aprovada": true,
+    "falhas": []
+  },
+  {
+    "id": "rosto_3",
+    "tipo": "rosto",
+    "fonte": "assets/Criar_Personagem/Rosto/rosto_3.glb",
+    "tarefa_meshy": "01a1b1d5-ea4e-728e-bc6c-376ba82d3d85",
+    "pedido": "quads, 11.000",
+    "triangulos_antes": 73594,
+    "triangulos_depois": 20038,
+    "quads_estimado": 0.03812755764048308,
+    "escala_para_fonte": 0.9494180313215561,
+    "desvio_medio": 0.0002798128842567409,
+    "desvio_p95": 0.0006534717773787422,
+    "texturas": [
+      "cor",
+      "metal_aspereza"
+    ],
+    "aprovada": false,
+    "falhas": [
+      "20,038 triângulos acima do orçamento 12,000"
+    ]
+  },
+  {
+    "id": "item_ambiente_md_1",
+    "tipo": "cenario",
+    "fonte": "assets/estruturas_ambiente/Estruturas_Superficie/item_ambiente_md_1.glb",
+    "tarefa_meshy": "01a1b1d5-edb0-7597-9b04-256d5e58632a",
+    "pedido": "triângulos, 5.000",
+    "triangulos_antes": 183296,
+    "triangulos_depois": 4893,
+    "quads_estimado": 0.0032699775189045576,
+    "escala_para_fonte": 0.9502576864617496,
+    "desvio_medio": 0.0005216147777543043,
+    "desvio_p95": 0.001452362625308416,
+    "texturas": [
+      "cor",
+      "metal_aspereza"
+    ],
+    "aprovada": true,
+    "falhas": []
+  }
+]
