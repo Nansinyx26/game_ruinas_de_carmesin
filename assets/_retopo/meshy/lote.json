@@ -62,22 +62,20 @@
     "id": "rosto_3",
     "tipo": "rosto",
     "fonte": "assets/Criar_Personagem/Rosto/rosto_3.glb",
-    "tarefa_meshy": "01a1b1d5-ea4e-728e-bc6c-376ba82d3d85",
-    "pedido": "quads, 11.000",
+    "tarefa_meshy": "01a1b429-b238-752a-8b89-79a664c0144c",
+    "pedido": "quads, 5.800 (2ª tentativa; a 1ª, com 11.000, passou do orçamento)",
     "triangulos_antes": 73594,
-    "triangulos_depois": 20038,
-    "quads_estimado": 0.03812755764048308,
-    "escala_para_fonte": 0.9494180313215561,
-    "desvio_medio": 0.0002798128842567409,
-    "desvio_p95": 0.0006534717773787422,
+    "triangulos_depois": 9654,
+    "quads_estimado": 0.015744769007665218,
+    "escala_para_fonte": 0.9501915469949737,
+    "desvio_medio": 0.0005222052403456542,
+    "desvio_p95": 0.0012525576377144171,
     "texturas": [
       "cor",
       "metal_aspereza"
     ],
-    "aprovada": false,
-    "falhas": [
-      "20,038 triângulos acima do orçamento 12,000"
-    ]
+    "aprovada": true,
+    "falhas": []
   },
   {
     "id": "item_ambiente_md_1",
