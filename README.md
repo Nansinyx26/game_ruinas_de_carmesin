@@ -449,10 +449,10 @@ Criaturas feitas no Blender (esqueleto, animações e LODs; veja `docs/CRIATURAS
   - cada peça é validada (desvio da superfície, faces ruins, orçamento), e a fonte nunca é alterada;
   - saídas em `assets/_retopo/`, relatório em `docs/topologia/LOTE.md`;
   - foram 18 peças e 15 aprovadas; as saídas ainda não foram trocadas no jogo.
-- **Lote de teste do Meshy** (remesh pela API do Meshy, 25 créditos; `tools/topologia/validar_meshy.py`):
+- **Lote de teste do Meshy** (remesh pela API do Meshy, 30 créditos; `tools/topologia/validar_meshy.py`):
   - uma arma, uma armadura, um cabelo, um rosto e um objeto de cenário, validados com os mesmos critérios do lote local;
-  - saídas em `assets/_retopo/meshy/`, relatório em `docs/topologia/LOTE_MESHY.md`; 3 de 5 aprovadas;
-  - no jogo: a variação da espada do Kael, o Cabelo 1 do criador e uma pilha de caixotes na clareira de Velmora.
+  - saídas em `assets/_retopo/meshy/`, relatório em `docs/topologia/LOTE_MESHY.md`; 4 de 5 aprovadas (o rosto na 2ª tentativa);
+  - no jogo: a variação da espada do Kael, o Cabelo 1 e o Rosto 3 do criador e uma pilha de caixotes na clareira de Velmora.
 
 - **Rastejador**: aranha mecânica de NEXUS que ataca em bando.
 - **Drone Sentinela**: mantém distância e dispara lasers.

@@ -1,13 +1,13 @@
 # Lote de teste do Meshy — remesh validado peça a peça
 
-Gerado por `tools/topologia/validar_meshy.py`. 5 peças processadas no remesh do Meshy (5 créditos cada, 25 no total), **3 aprovadas**. As fontes não foram alteradas; as saídas estão em `assets/_retopo/meshy/`. Critérios iguais aos do lote local (`LOTE.md`), com orçamentos próprios para arma e cenário.
+Gerado por `tools/topologia/validar_meshy.py`. 5 peças processadas no remesh do Meshy (5 créditos cada, 30 no total com a 2ª tentativa do rosto), **4 aprovadas**. As fontes não foram alteradas; as saídas estão em `assets/_retopo/meshy/`. Critérios iguais aos do lote local (`LOTE.md`), com orçamentos próprios para arma e cenário.
 
 | peça | tipo | pedido ao Meshy | triângulos antes → depois | desvio médio / 95% (da diagonal) | resultado |
 |---|---|---|---|---|---|
 | `assets/armas/eclipse/kael_espada.glb` | arma | triângulos, 3.000 | 23,850 → 2,986 | 0.02% / 0.04% | aprovada |
 | `assets/modelos/armaduras/kael/kael_n6.glb` | armadura | quads, 11.000 | 220,294 → 21,506 | 0.13% / 0.34% | reprovada: 21,506 triângulos acima do orçamento 12,000 |
 | `assets/Criar_Personagem/Cabelo/cabelo_1.glb` | cabelo | triângulos, 12.000 | 1,399,168 → 11,529 | 0.13% / 0.31% | aprovada |
-| `assets/Criar_Personagem/Rosto/rosto_3.glb` | rosto | quads, 11.000 | 73,594 → 20,038 | 0.03% / 0.07% | reprovada: 20,038 triângulos acima do orçamento 12,000 |
+| `assets/Criar_Personagem/Rosto/rosto_3.glb` | rosto | quads, 5.800 (2ª tentativa; a 1ª, com 11.000, passou do orçamento) | 73,594 → 9,654 | 0.05% / 0.13% | aprovada |
 | `assets/estruturas_ambiente/Estruturas_Superficie/item_ambiente_md_1.glb` | cenario | triângulos, 5.000 | 183,296 → 4,893 | 0.05% / 0.15% | aprovada |
 
 ## Critérios
@@ -37,8 +37,11 @@ Só as peças aprovadas entraram; as fontes continuam intactas e a troca se desf
   O remesh não traz mapa de normais, então o Cabelo 1 ficou sem ele (cor e metal/aspereza continuam).
 - **Cenário**: a pilha de caixotes (`caixotes`, `tools/importar_prop.py --grupo natureza` → `js/assets/natureza3d.js`)
   entrou na clareira de Velmora (`js/mundo/cenario.js`, escala 0,65).
-- **Armadura e rosto**: reprovados só pelo orçamento (11.000 quads = cerca de 21 mil triângulos); não entraram.
-  Refazer com cerca de 6.000 quads (5 créditos cada) deve caber nos 12 mil triângulos.
+- **Rosto**: o Rosto 3 do criador lê `rosto_3_alinhado.glb` (`tools/importar_criacao.py` → `js/assets/criacao/rosto_3.js`,
+  5.740 triângulos no jogo, antes cerca de 9 mil). A 1ª tentativa (11.000 quads, cerca de 20 mil triângulos) passou do
+  orçamento; a 2ª, com 5.800 quads, foi aprovada. Sem mapa de normais, como o Cabelo 1: olhos e boca um pouco mais suaves.
+- **Armadura**: reprovada só pelo orçamento (11.000 quads = cerca de 21 mil triângulos); não entrou.
+  Refazer com cerca de 6.000 quads (5 créditos) deve caber nos 12 mil triângulos.
 
 Testes: `node tools/testes_navegador.mjs` (inclui a pilha de caixotes na clareira e a origem da espada); capturas:
 `node tools/captura_meshy.mjs saida.png` (caixotes e um personagem criado com o Cabelo 1).
