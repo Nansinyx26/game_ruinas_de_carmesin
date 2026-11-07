@@ -135,16 +135,16 @@ const Cidade = {
   desenharFundo(ctx, R) {
     const P = (x, y, z = 0) => [isoX(x, y), isoY(x, y) - z];
     const poly = (pts, fill, stroke) => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); } };
-    // praça: anéis de pedra em volta da Chama
-    const cx = R.w * 0.42, cy = R.h * 0.42;
-    for (let k = 5; k >= 1; k--) {
+    // praça: anéis de pedra em volta da Chama (com o piso por região, js/terreno.js, eles já estão no chão)
+    const cx = R.w * 0.42, cy = R.h * 0.42, piso = !!R._terreno;
+    for (let k = 5; k >= 1 && !piso; k--) {
       const r = 46 + k * 34, pts = [];
       for (let i = 0; i < 40; i++) { const a = (i / 40) * TAU; pts.push(P(cx + Math.cos(a) * r, cy + Math.sin(a) * r)); }
       poly(pts, k % 2 ? 'rgba(70,64,80,0.55)' : 'rgba(40,38,52,0.55)', 'rgba(255,190,110,0.12)');
     }
     // ruas até os portões (faixas claras)
     ctx.lineWidth = 1;
-    for (const [x0, y0, x1, y1] of [[cx, cy, R.w * 0.5, R.h], [cx, cy, R.w, R.h * 0.55], [cx, cy, R.w * 0.6, CIDADE_RECUO], [cx, cy, CIDADE_RECUO, R.h * 0.55]]) {
+    for (const [x0, y0, x1, y1] of piso ? [] : [[cx, cy, R.w * 0.5, R.h], [cx, cy, R.w, R.h * 0.55], [cx, cy, R.w * 0.6, CIDADE_RECUO], [cx, cy, CIDADE_RECUO, R.h * 0.55]]) {
       const n = 26;
       for (let i = 0; i < n; i++) {
         const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
@@ -235,7 +235,7 @@ const Cidade = {
     };
     caixa({ x0: 0, x1: CIDADE_RECUO, y0: 0, y1: CIDADE_RECUO }, 300, '#2c2a3a', '#15141e');
     // praça: anéis de pedra em volta da Chama (como na vista isométrica)
-    for (let k = 5; k >= 1; k--) g.cyl(R.w * 0.42, R.h * 0.42, 0, 46 + k * 34, 46 + k * 34, 0.4 + (6 - k) * 0.05, 40, k % 2 ? '#3a3646' : '#2a2836', 0, { caps: true });
+    for (let k = 5; k >= 1 && !R._terreno; k--) g.cyl(R.w * 0.42, R.h * 0.42, 0, 46 + k * 34, 46 + k * 34, 0.4 + (6 - k) * 0.05, 40, k % 2 ? '#3a3646' : '#2a2836', 0, { caps: true });
     luz.box(CIDADE_RECUO / 2, CIDADE_RECUO / 2, 318, 18, 18, 18, '#ffd08a', 1);
     for (const B of CIDADE_PREDIOS) {
       const C = this.caixa(B, R), W = B.lado === 'W', L = W ? C.y1 - C.y0 : C.x1 - C.x0;

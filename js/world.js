@@ -482,6 +482,7 @@ const World = {
       if (d > perto) continue;
       const nz = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
       if (nz && typeof Estruturas !== 'undefined') Estruturas.preCarregar(nz.id);
+      if (nz && typeof Terreno !== 'undefined' && !(this.terrenoPre || (this.terrenoPre = {}))[nz.id]) { this.terrenoPre[nz.id] = 1; Terreno.aquecer(nz); }   // os materiais do chão da vizinha, no tempo livre
     }
   },
   // Recursos de coleta: prontos de novo a cada dia do mundo (js/mundo/tempo.js)

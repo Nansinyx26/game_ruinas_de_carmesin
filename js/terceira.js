@@ -216,7 +216,9 @@ const ThirdView = {
     const floor = new G3(), mg = R.aberto ? Math.round(R.margem / T) : 0;
     // campo aberto com textura (js/texturas.js): o piso vira um modelo à parte (chaoModel)
     const tipoAmb = Ambiente3P.tipo(R), comTextura = R.aberto && TexturasMundo.tem(tipoAmb) && (typeof Settings === 'undefined' || Settings.v.quality > 0);
-    this.chaoModel = comTextura ? this.chaoTexturizado(R, tipoAmb) : null;
+    // pisos e terrenos por região (js/terreno.js): atlas com materiais, emissão e detalhe de perto
+    const terreno = typeof Terreno !== 'undefined' ? Terreno.modelo(R) : null;
+    this.chaoModel = terreno || (comTextura ? this.chaoTexturizado(R, tipoAmb) : null);
     if (!this.chaoModel) for (let i = -mg; i < n + mg; i++) for (let j = -mg; j < n + mg; j++) {
       // campo aberto: chão sem xadrez, escurecendo além da borda (até o horizonte)
       const fora = Math.max(0, -i, -j, i - n + 1, j - n + 1);
@@ -225,7 +227,7 @@ const ThirdView = {
     }
     // frestas acesas entre os ladrilhos (cor de destaque), uma a cada duas
     const acc = rgbHex(th.accent);
-    for (let i = 2; i < n && th.deco !== 'natural' && !R.def.distrito; i += 2) {   // (nos biomas, no bairro e nos interiores, chão sem ladrilhos acesos)
+    for (let i = 2; i < n && th.deco !== 'natural' && !R.def.distrito && !terreno; i += 2) {   // (nos biomas, no bairro, nos interiores e com o piso por região, chão sem ladrilhos acesos)
       floor.quad([i * T - 0.6, 0, 0.12], [i * T + 0.6, 0, 0.12], [i * T + 0.6, h, 0.12], [i * T - 0.6, h, 0.12], hex(fh, fs, fl * 1.4), 0.08);
       floor.quad([0, i * T - 0.6, 0.12], [w, i * T - 0.6, 0.12], [w, i * T + 0.6, 0.12], [0, i * T + 0.6, 0.12], hex(fh, fs, fl * 1.4), 0.08);
     }
@@ -257,6 +259,7 @@ const ThirdView = {
       return root.add(new N3('parede' + name, g));
     };
     if (!R.aberto) { wall('N', 'x', w, -6, true); wall('S', 'x', w, h + 6, true); wall('W', 'y', h, -6, false); wall('E', 'y', h, w + 6, false); }
+    if (terreno) Terreno.geometria(root, R);   // meio-fio, trilhos, canaletas, anéis de luz, tubos e passarelas
     // luminárias das paredes do fundo (as mesmas tochas da vista isométrica)
     const lamps = new G3();
     for (const t of R.torches) {

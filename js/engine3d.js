@@ -201,16 +201,25 @@ void main() {
 // Perspectiva (câmera em terceira pessoa, js/terceira.js): posições já no mundo, matriz da câmera
 const R3D_VS_P = `
 attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol;
-uniform mat4 uMVP; uniform mediump vec4 uAgua;   // (mediump explícito: o mesmo do fragmento, ou o programa não liga)
+uniform mat4 uMVP; uniform mediump vec4 uAgua; uniform mediump vec4 uAgua2;   // (mediump explícito: o mesmo do fragmento, ou o programa não liga)
+// vento (js/animacao.js): x = força do item, y = tempo, zw = direção; o que é alto balança mais
+uniform vec4 uVento;
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 void main() {
   vec3 P = aPos;
   if (uAgua.x > 0.5) {
-    // água (js/mundo/agua.js): a superfície sobe e desce com ondas que andam (menos perto da margem; aCol.a = margem)
-    float t = uAgua.y;
-    vec2 q = P.xy - uAgua.zw;
+    // água (js/mundo/agua.js): a superfície sobe e desce com ondas que andam (menos perto da margem;
+    // aCol.a = margem); nos rios as ondas descem com a correnteza (aNor.xy); na tempestade, mais altas
+    float t = uAgua.y, ag = 1.0 + uAgua2.x;
+    vec2 q = P.xy - uAgua.zw - aNor.xy * t * 38.0;
     P.z += (sin(dot(q, vec2(0.8, 0.6)) * 0.045 + t * 1.6) * 1.1 + sin(dot(q, vec2(-0.5, 0.85)) * 0.07 + t * 2.1) * 0.6
-          + sin(dot(q, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.25) * (1.0 - 0.85 * aCol.a);
+          + sin(dot(q, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.25 * ag) * (1.0 - 0.85 * aCol.a) * ag;
+  }
+  if (uVento.x > 0.0) {
+    float hh = min(max(P.z, 0.0) / 90.0, 1.6), k = hh * hh * uVento.x * 5.0;
+    float fase = dot(P.xy, vec2(0.011, 0.017)) + uVento.y * 1.4;
+    float onda = sin(fase) * 0.55 + 0.45 + sin(fase * 2.7 + 1.3) * 0.25;
+    P.xy += uVento.zw * onda * k + vec2(sin(uVento.y * 6.3 + P.x * 0.21 + P.z * 0.15), cos(uVento.y * 5.1 + P.y * 0.19)) * k * 0.12;
   }
   gl_Position = uMVP * vec4(P, 1.0);
   vNor = aNor; vCol = aCol; vPos = P;
@@ -224,12 +233,33 @@ precision mediump float;
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
-uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar; uniform vec4 uWet; uniform mediump vec4 uAgua;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar; uniform vec4 uWet; uniform mediump vec4 uAgua; uniform mediump vec4 uAgua2;
+// ondulações na água (quem nada, entra, cai ou é atingido): x, y, instante, força
+uniform vec4 uOnda[4];
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
   return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.96);
 }
+#ifdef LUZES
+// luzes pontuais da 3ª pessoa (fogo, explosões): posição e raio; cor e força
+uniform vec4 uLuzP[4]; uniform vec4 uLuzC[4];
+vec3 pontuais(vec3 n, vec3 V, float shin, out vec3 spec) {
+  vec3 s = vec3(0.0); spec = vec3(0.0);
+  if (uPersp < 0.5) return s;
+  for (int i = 0; i < 4; i++) {
+    vec4 P = uLuzP[i];
+    if (P.w <= 0.0) continue;
+    vec3 d = P.xyz - vPos; float L = length(d);
+    float at = clamp(1.0 - L / P.w, 0.0, 1.0); at *= at;
+    if (at <= 0.0) continue;
+    vec3 l = d / max(L, 0.001), c = uLuzC[i].rgb * uLuzC[i].a * at;
+    s += c * (max(dot(n, l), 0.0) * 0.85 + 0.15);
+    spec += c * pow(max(dot(n, normalize(l + V)), 0.0), shin);
+  }
+  return s;
+}
+#endif
 void main() {
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
@@ -250,13 +280,38 @@ void main() {
     // (de lado reflete o céu, de cima mostra a cor da água), brilho do sol, espuma que respira na
     // margem e a névoa por cima
     if (uPass > 0.5) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
-    float t = uAgua.y, sh = vCol.a;
-    vec2 p = vPos.xy - uAgua.zw, g = vec2(0.0);   // (perto do centro da água: números pequenos, sem serrilhar)
+    float t = uAgua.y, sh = vCol.a, ag = 1.0 + uAgua2.x;
+    // correnteza (rios): as ondas e a espuma descem o rio (vNor.xy = sentido e força)
+    vec2 fl = vNor.xy, p = vPos.xy - uAgua.zw - fl * t * 38.0, g = vec2(0.0);   // (perto do centro da água: números pequenos, sem serrilhar)
     g += vec2(0.8, 0.6) * cos(dot(p, vec2(0.8, 0.6)) * 0.045 + t * 1.6) * 0.9;
     g += vec2(-0.5, 0.85) * cos(dot(p, vec2(-0.5, 0.85)) * 0.07 + t * 2.1) * 0.65;
-    g += vec2(0.95, -0.3) * cos(dot(p, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.4;
-    g += vec2(-0.2, -0.98) * cos(dot(p, vec2(-0.2, -0.98)) * 0.23 + t * 3.7) * 0.25;
-    g += vec2(0.6, -0.8) * cos(dot(p, vec2(0.6, -0.8)) * 0.41 + t * 5.3) * 0.12;
+    g += vec2(0.95, -0.3) * cos(dot(p, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.4 * ag;
+    g += vec2(-0.2, -0.98) * cos(dot(p, vec2(-0.2, -0.98)) * 0.23 + t * 3.7) * 0.25 * ag;
+    g += vec2(0.6, -0.8) * cos(dot(p, vec2(0.6, -0.8)) * 0.41 + t * 5.3) * 0.12 * ag;
+    float corr = length(fl);
+    if (corr > 0.01) g += fl / corr * cos(dot(p, fl / corr) * 0.3 - t * 6.0) * 0.5 * corr;   // marolas da correnteza
+    // ondulações circulares (quem nada, entra ou cai na água)
+    float aro = 0.0;
+    for (int i = 0; i < 4; i++) {
+      vec4 O = uOnda[i];
+      if (O.w <= 0.0) continue;
+      float idade = mod(t - O.z + 62.832, 62.832), r = idade * 55.0;
+      if (idade > 2.6) continue;
+      vec2 dv = vPos.xy - O.xy; float d = length(dv);
+      float anel = exp(-(d - r) * (d - r) / 40.0) * O.w * (1.0 - idade / 2.6);
+      g += dv / max(d, 0.5) * anel * 2.2 * sin((d - r) * 0.7);
+      aro += anel;
+    }
+    // chuva: aneizinhos que nascem e crescem em pontos sorteados
+    if (uAgua2.z > 0.0) {
+      vec2 cc = floor(vPos.xy / 26.0), fr = fract(vPos.xy / 26.0) - 0.5;
+      float h1 = fract(sin(dot(cc, vec2(12.9898, 78.233))) * 43758.5453), u = fract(t * 1.4 + h1);
+      vec2 o2 = vec2(fract(h1 * 7.13), fract(h1 * 3.71)) - 0.5;
+      float d2 = length(fr - o2 * 0.5) * 26.0, rr = u * 9.0;
+      float pingo = exp(-(d2 - rr) * (d2 - rr) / 3.0) * (1.0 - u) * uAgua2.z;
+      g += (fr - o2 * 0.5) / max(length(fr - o2 * 0.5), 0.01) * pingo * 1.4;
+      aro += pingo * 0.3;
+    }
     vec3 nw = normalize(vec3(-g * 0.16 * (1.0 - 0.7 * sh), 1.0));
     float ndv = clamp(dot(nw, V), 0.0, 1.0);
     float fr = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);
@@ -266,10 +321,19 @@ void main() {
     vec3 H = normalize(uKeyDir + V);
     float nh = max(dot(nw, H), 0.0);
     c += uKeyCol * (pow(nh, 220.0) * 2.4 + pow(nh, 24.0) * 0.1);
+#ifdef LUZES
+    // o fogo e as explosões refletem na água
+    vec3 spF; vec3 lF = pontuais(nw, V, 120.0, spF);
+    c += agua * lF * 0.25 + spF * 1.6;
+#endif
     float esp = smoothstep(0.8, 0.97, sh + 0.05 * sin(p.x * 0.11 + t * 2.0) + 0.05 * sin(p.y * 0.14 - t * 1.6));
+    esp = max(esp, clamp(aro * 0.35 + corr * smoothstep(0.55, 0.95, sin(dot(p, vec2(0.21, 0.17)) + t * 3.0) * 0.5 + 0.5) * 0.25, 0.0, 0.7));   // espuma dos aros e da correnteza
     c = mix(c, vec3(0.9, 0.95, 0.97) * (uAmb + uKeyCol * 0.7), esp * 0.8);
     c = mix(c, uFog.rgb, fogK());
-    gl_FragColor = vec4(c, 1.0);
+    // transparência: rasa na margem (o fundo aparece), funda no meio; de lado (Fresnel) e na
+    // espuma fica opaca; longe, a névoa também fecha
+    float alfa = clamp(max(max(mix(0.9, 0.38, sh), fr * 1.4), max(esp * 0.8, fogK())), 0.0, 1.0);
+    gl_FragColor = vec4(c, alfa);
     return;
   }
   float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
@@ -323,6 +387,10 @@ precision mediump float;
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform sampler2D uTex; uniform sampler2D uMat; uniform float uMatOn; uniform float uBump;
 uniform sampler2D uNrm; uniform float uNrmOn; uniform float uPbr; uniform float uEmiB;
+// pisos e terrenos (js/terreno.js): mapa de emissão do atlas (neon, lava, painéis) e o detalhe de
+// perto, repetido pela posição no mundo (uDetP = 1/tamanho da repetição, força do relevo,
+// profundidade do parallax, distância onde o detalhe some)
+uniform sampler2D uEmiT; uniform float uEmiOn; uniform sampler2D uDet; uniform vec4 uDetP;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
 uniform vec4 uGlow; uniform vec4 uTint; uniform vec4 uWet;
@@ -338,7 +406,7 @@ void main() {
   if (dot(n, V) < 0.0) n = -n;
   float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 2.0);
   bool painted = vCol.z > -0.5;
-  vec3 col; float e;
+  vec3 col; float e; vec3 emc = vec3(0.0);
   float mat = 0.0, metal = 0.0, rough = 1.0, specK = 0.0;
   if (painted) {
     col = texture2D(uTex, vCol.xy).rgb;
@@ -393,6 +461,21 @@ void main() {
       if (lt > 1e-10 && lb > 1e-10) n = normalize(T / lt * tn.x - B / lb * tn.y + n * tn.z);
     }
 #endif
+    if (uEmiOn > 0.5) emc = texture2D(uEmiT, vCol.xy).rgb;
+    if (uDetP.x > 0.0 && uPersp > 0.5) {
+      // detalhe de perto (chão): relevo, poros e grãos repetidos pela posição no mundo, com
+      // parallax (o que é alto anda com o olhar); some com a distância (sem cintilar ao longe)
+      float dist = length(uView - vPos);
+      float fk = 1.0 - smoothstep(uDetP.w * 0.35, uDetP.w, dist);
+      if (fk > 0.0) {
+        vec2 du = vPos.xy * uDetP.x;
+        float hd = texture2D(uDet, du).b;
+        du += V.xy / max(V.z, 0.35) * (hd - 0.5) * uDetP.z * uDetP.x * fk;
+        vec3 dd = texture2D(uDet, du).rgb;
+        n = normalize(n + vec3((dd.rg * 2.0 - 1.0) * uDetP.y * fk, 0.0));   // chão: tangentes = eixos do mundo
+        col *= mix(1.0, 0.8 + 0.4 * dd.b, fk);
+      }
+    }
   } else {
     float q = -vCol.z - 1.0;
     mat = floor((q + 0.5) * 0.5);
@@ -415,7 +498,7 @@ void main() {
     if (uPass < 0.5) { gl_FragColor = vec4(uGhost.rgb * (0.35 + 0.9 * fres), 1.0); } else { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); }
     return;
   }
-  if (uPass > 0.5) { gl_FragColor = vec4(col * e * uEmi * (1.0 - fogK()), 1.0); return; }
+  if (uPass > 0.5) { gl_FragColor = vec4((col * e + emc) * uEmi * (1.0 - fogK()), 1.0); return; }
   if (e < 0.05 && uWet.x + uWet.y + uWet.z > 0.0) {
     // clima no corpo (uWet = molhado, neve assentada, geada; js/mundo/clima.js). Molhado: tecido e
     // cabelo escurecem mais, couro menos, metal quase nada; tudo ganha brilho liso (aspereza baixa).
@@ -447,7 +530,14 @@ void main() {
     if (mat > 3.5 && mat < 4.5) sc = vec3(0.07, 0.09, 0.14);         // cabelo: reflexo azulado
     lit += (uKeyCol * sc * sp + uRimCol * metal * fres * 0.25) * specK;
   }
-  lit += col * e * uEmi;
+  if (uDetP.x > 0.0) {
+    // chão: reflexo controlado do ambiente (o céu ou o teto da caverna) no que é liso — vidro,
+    // metal polido, poças e gelo —, mais forte de lado (Fresnel)
+    float frT = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 4.0);
+    float liso = (1.0 - rough) * (1.0 - rough);
+    lit += mix(uFog.rgb, uAmb * 1.3 + uKeyCol * 0.15, 0.5) * (0.04 + frT) * liso * 0.7;
+  }
+  lit += (col * e + emc) * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
   lit = mix(lit, uFog.rgb, fogK());
   gl_FragColor = vec4(lit, 1.0);
@@ -480,7 +570,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -752,6 +842,8 @@ const R3D = {
       if (L.uTex) gl.uniform1i(L.uTex, 0);
       if (L.uMat) gl.uniform1i(L.uMat, 1);
       if (L.uNrm) gl.uniform1i(L.uNrm, 2);
+      if (L.uEmiT) gl.uniform1i(L.uEmiT, 3);
+      if (L.uDet) gl.uniform1i(L.uDet, 4);
       return L;
     };
     for (let pass = 0; pass < 2; pass++) {
@@ -785,10 +877,19 @@ const R3D = {
       // então as duas texturas são resolvidas antes de ligar cada uma na sua unidade
       const mt = tex.mat ? (tex.matTex || (tex.matTex = typeof tex.mat === 'string' ? { src: tex.mat } : { canvas: tex.mat })) : null;
       const nt = tex.nrm ? (tex.nrmTex || (tex.nrmTex = typeof tex.nrm === 'string' ? { src: tex.nrm } : { canvas: tex.nrm })) : null;
+      // pisos (js/terreno.js): emissão do atlas e o detalhe repetido (REPEAT)
+      const et = tex.emis ? (tex.emisTex || (tex.emisTex = { canvas: tex.emis })) : null;
+      const dt = tex.det ? (tex.detTex || (tex.detTex = { canvas: tex.det, repeat: true })) : null;
       const tg = this.texOf(tex), mg = mt ? this.texOf(mt) : null, ng = nt ? this.texOf(nt) : null;
+      const eg = et ? this.texOf(et) : null, dg = dt ? this.texOf(dt) : null;
       const matOn = mg && mg !== this.blankTex, nrmOn = ng && ng !== this.blankTex;
+      const emiOn = eg && eg !== this.blankTex, detOn = dg && dg !== this.blankTex && tex.detP;
       if (matOn) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mg); }
       if (nrmOn) { gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, ng); }
+      if (emiOn) { gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, eg); }
+      if (detOn) { gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, dg); }
+      if (L.uEmiOn) gl.uniform1f(L.uEmiOn, emiOn ? 1 : 0);
+      if (L.uDetP) { const d = detOn ? tex.detP : null; if (d) gl.uniform4f(L.uDetP, d[0], d[1], d[2], d[3]); else gl.uniform4f(L.uDetP, 0, 0, 0, 0); }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tg);
       gl.uniform1f(L.uMatOn, matOn ? 1 : 0); gl.uniform1f(L.uBump, matOn ? tex.bump || 0 : 0);
       gl.uniform1f(L.uNrmOn, nrmOn ? 1 : 0); gl.uniform1f(L.uPbr, tex.pbr ? 1 : 0); gl.uniform1f(L.uEmiB, tex.emiB ? 1 : 0);
@@ -853,22 +954,36 @@ const R3D = {
       if (L.uTex) gl.uniform1i(L.uTex, 0);
       if (L.uMat) gl.uniform1i(L.uMat, 1);
       if (L.uNrm) gl.uniform1i(L.uNrm, 2);
+      if (L.uEmiT) gl.uniform1i(L.uEmiT, 3);
+      if (L.uDet) gl.uniform1i(L.uDet, 4);
       return L;
     };
     for (let pass = 0; pass < 2; pass++) {
       // cor em cima (y do canvas 0..h), emissão logo abaixo em meia resolução (h..h + eh)
       if (pass) gl.viewport(0, this.H - h - eh, ew, eh); else gl.viewport(0, this.H - h, w, h);
       let cur = -1, L = null;
-      for (let i = 0; i < n; i++) {
-        const it = this.items[i];
-        if (!it.vn) continue;
+      const agua = [];
+      const desenha = (it) => {
         const tex = it.model.tex;
-        if (tex && this.progsP.length < 2) continue;
+        if (tex && this.progsP.length < 2) return;
         const want = tex ? 1 : 0;
         if (want !== cur) { cur = want; L = use(want, pass); }
         this.itemUniforms(L, it);
         gl.drawArrays(gl.TRIANGLES, it.v0, it.vn);
         it.ok = true;
+      };
+      for (let i = 0; i < n; i++) {
+        const it = this.items[i];
+        if (!it.vn) continue;
+        if (!pass && it.o && it.o.agua) { agua.push(it); continue; }
+        desenha(it);
+      }
+      // Água por último, misturada com o que já está embaixo (o fundo aparece na margem rasa); o
+      // alfa do destino continua 1 (a imagem 3D é composta por cima do céu desenhado no 2D)
+      if (agua.length) {
+        gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        for (const it of agua) desenha(it);
+        gl.disable(gl.BLEND);
       }
       if (!pass) gl.clear(gl.DEPTH_BUFFER_BIT);
     }
@@ -1006,10 +1121,12 @@ const R3D = {
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, tex.img);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    // Lados potência de 2: mipmaps (o Kael pequeno na tela não cintila)
+    // Lados potência de 2: mipmaps (o Kael pequeno na tela não cintila); tex.repeat: textura que se
+    // repete (o detalhe dos pisos; só potência de 2 no WebGL 1)
     const pot = !(iw & (iw - 1)) && !(ih & (ih - 1));
+    const wrap = tex.repeat && pot ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap);
     if (pot) gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, pot ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
     // Filtragem anisotrópica: a câmera isométrica vê as roupas e placas de viés, e só o mipmap
@@ -1026,7 +1143,7 @@ const R3D = {
   // Libera as texturas WebGL de um modelo que não vai mais ser usado (o atlas da sala anterior)
   freeTex(tex) {
     if (!tex || !this.gl) return;
-    for (const t of [tex, tex.matTex, tex.nrmTex]) if (t && t.gl) { this.gl.deleteTexture(t.gl); t.gl = null; }
+    for (const t of [tex, tex.matTex, tex.nrmTex, tex.emisTex, tex.detTex]) if (t && t.gl) { this.gl.deleteTexture(t.gl); t.gl = null; }
   },
 
   // Foto de um modelo parado (vista isométrica) num canvas próprio, para virar sprite fixo (as

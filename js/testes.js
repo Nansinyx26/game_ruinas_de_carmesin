@@ -61,6 +61,7 @@ const EclipseTests = {
       await this.criacaoTroca();
       await this.criacaoEncaixe();
       await this.criacaoAncoras();
+      await this.terrenos();
       await this.estruturasMundo();
       await this.agua();
       this.megacidades();
@@ -3012,8 +3013,8 @@ const EclipseTests = {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
     let erro = null;
     try {
-      const ids = ['mes_ferreiro', 'mes_hacker', 'mes_operario', 'mes_comerciante'];
-      this.ok('moradores do Meshy: 4 no povo, cada um com o NPC convertido (tipo npc no catálogo, fora da criação)',
+      const ids = ['mes_ferreiro', 'mes_camponesa', 'mes_guarda', 'mes_hacker', 'mes_operario', 'mes_comerciante'];
+      this.ok('moradores do Meshy: 6 no povo, cada um com o NPC convertido (tipo npc no catálogo, fora da criação)',
         ids.every((id) => WORLD_POVO.some((P) => P.id === id) && NPC3D[id] && Criacao3D.disponivel(NPC3D[id].ap.npc) && Criacao3D.POR_ID[NPC3D[id].ap.npc].tipo === 'npc') && !CRIA_MINI.corpoG().some((c) => c.startsWith('npc_')));
       if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
       World.loadZone('metro_centro', null);
@@ -3145,6 +3146,58 @@ const EclipseTests = {
       g.renderWorld(g.ctx);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('estruturas: sem exceção', !erro, erro);
+  },
+
+  // Pisos e terrenos por região (js/terreno.js): cada tema com os seus materiais (não uma textura
+  // só), emissão nas cidades de neon, detalhe de perto, leito sob a água, geometria de detalhe
+  // (meio-fio, trilhos, canaletas, tubos, passarelas), isométrica e 3ª pessoa
+  async terrenos() {
+    const g = game;
+    if (typeof Terreno === 'undefined') { this.ok('terrenos: módulo carregado', false); return; }
+    const ZS = ['velmora_clareira', 'seraph_dunas', 'asterion_passo', 'lagoa_cais', 'obsidiano_rios', 'aurora', 'aurora_bairro', 'metro_centro', 'metro_trilhos', 'metro_industrial',
+      'metro_mercado', 'nexus_avenida', 'galerias', 'avenida', 'rc_mercado', 'nz_borda', 'praca', 'laboratorio', 'nexus_cupula', 'mercado', 'gruta_0', 'aurora_taverna'];
+    const R0 = {}, assin = {};
+    let erro = null;
+    try {
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      for (const id of ZS) {
+        if (!WORLD_ZONES[id]) { R0[id] = 'sem zona'; continue; }
+        World.loadZone(id, null);
+        const R = g.room, A = R._terreno;
+        R0[id] = A ? { usados: A.usados, emi: !!A.emi, det: !!A.det && A.detP[0] > 0, geo: A.geo.map((q) => q.t), ms: A.ms, iso: !!A.iso } : null;
+        if (A) assin[id] = A.usados.slice().sort().join('+');
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    const faltam = ZS.filter((id) => !R0[id] || R0[id] === 'sem zona');
+    this.ok('terrenos: todas as zonas de teste com o piso por região (isométrica, com relevo sombreado)', !erro && !faltam.length && ZS.every((id) => R0[id].iso), erro || faltam.join(','));
+    const fora = ZS.filter((id) => R0[id] && !/taverna/.test(id) && R0[id].usados.length < 3);
+    this.ok('terrenos: cada zona combina 3 ou mais materiais (não uma textura só no mapa todo)', !fora.length, fora.map((id) => `${id}:${R0[id].usados}`).join(' '));
+    const unicas = new Set(Object.values(assin)).size;
+    this.ok('terrenos: combinações diferentes por região (quase todas únicas)', unicas >= Object.keys(assin).length - 2, `${unicas}/${Object.keys(assin).length}`);
+    const neon = ['metro_centro', 'metro_trilhos', 'nz_borda', 'nexus_cupula'].filter((id) => !(R0[id] && R0[id].emi));
+    this.ok('terrenos: neon, circuitos e painéis acesos nas cidades tecnológicas (mapa de emissão)', !neon.length, neon.join(','));
+    this.ok('terrenos: lava acesa nas frestas da cratera', !!(R0.obsidiano_rios && R0.obsidiano_rios.emi));
+    this.ok('terrenos: detalhe de perto (relevo repetido pela posição, com parallax) em todas', ZS.every((id) => R0[id] && R0[id].det));
+    this.ok('terrenos: leito e margem molhada sob a água da lagoa', !!(R0.lagoa_cais && R0.lagoa_cais.usados.includes('leito')), R0.lagoa_cais && R0.lagoa_cais.usados.join(','));
+    const geo = (id, t) => R0[id] && R0[id].geo.includes(t);
+    this.ok('terrenos: geometria de detalhe — meio-fio, trilhos, canaletas, tubulações e passarelas', geo('metro_centro', 'meiofio') && geo('metro_trilhos', 'trilho') && geo('galerias', 'canaleta') && geo('galerias', 'tubos') && geo('metro_centro', 'passarela'),
+      JSON.stringify({ c: R0.metro_centro && R0.metro_centro.geo, t: R0.metro_trilhos && R0.metro_trilhos.geo, g: R0.galerias && R0.galerias.geo }));
+    // 3ª pessoa: o piso vem do atlas (cor, material, emissão e detalhe) e a geometria entra na sala
+    if (R3D.active) {
+      let e3 = null, m = null, nos = [];
+      try {
+        World.loadZone('metro_centro', null);
+        ThirdView.room = null; m = ThirdView.roomFor(g.room);
+        const walk = (n) => { nos.push(n.name); n.kids.forEach(walk); }; walk(m.root);
+        ThirdView.set(true, true); g.renderWorld(g.ctx); ThirdView.set(false, true);
+      } catch (e) { e3 = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+      const ch = ThirdView.chaoModel, tx = ch && ch.tex;
+      this.ok('terrenos 3P: piso com cor, material (relevo), emissão e detalhe de perto', !e3 && !!ch && ch.terreno && !!tx.canvas && !!tx.mat && !!tx.emis && !!tx.det && tx.detP[0] > 0, e3);
+      this.ok('terrenos 3P: meio-fio e passarelas na sala (as passarelas somem com a parede)', nos.includes('terreno') && nos.includes('terrenoN') && nos.includes('terrenoW'), nos.filter((n) => /terreno/.test(n)).join(','));
+      this.ok('terrenos 3P: programas do motor ligam com os canais novos (emissão e detalhe)', R3D.progsP && R3D.progsP.length === 2 && !!R3D.progsP[1].loc.uDetP && !!R3D.progsP[1].loc.uEmiT);
+    }
+    const ms = Object.values(R0).filter((r) => r && r.ms !== undefined).map((r) => r.ms);
+    this.ok('terrenos: montagem do atlas ao carregar a zona (tempo medido)', ms.length > 0, `máx ${Math.max(...ms)} ms, média ${Math.round(ms.reduce((a, b) => a + b, 0) / ms.length)} ms`);
   },
 
   // Âncora do peitoral (padrão de encaixe, docs/CRIACAO_ENCAIXE.md): os peitorais iniciais (a couraça

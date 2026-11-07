@@ -60,7 +60,7 @@ CACHE = os.path.join(RAIZ, '.cache_criacao')
 # cada um é um CORPO INTEIRO (roupa, rosto e cabelo próprios) que recebe o esqueleto do jogo pelo
 # mesmo rig automático dos corpos da criação; no catálogo com tipo 'npc' (não aparece na criação)
 NPCS = [dict(id=k, nome=v['nome'], arq=os.path.join('assets', 'npcs', 'meshy', k + '.glb'), mini=os.path.join('assets', 'npcs', 'meshy', k + '.png'), estilo=v['estilo'],
-             altura=61.0 if v.get('corpo', 'm') == 'm' else 57.5, inteiro=True, tipo='npc')
+             altura=61.0 if v.get('corpo', 'm') == 'm' else 57.5, inteiro=True, tipo='npc', abaixar=bool(v.get('abaixar_bracos')))
         for k, v in json.load(open(os.path.join(RAIZ, 'tools', 'meshy', 'npcs.json'), encoding='utf-8')).items()] if os.path.exists(os.path.join(RAIZ, 'tools', 'meshy', 'npcs.json')) else []
 
 
@@ -352,10 +352,57 @@ def gravar(id_, dados, mapas):
 
 
 # ============================================================ corpos
+def abaixar_bracos(V, N, H, alvo=48.0):
+    """Braços abertos (em T, ou quase, como alguns modelos do Meshy vêm mesmo pedindo A-pose)
+    baixados para a pose "A" que o rig automático reconhece: cada braço gira em volta do ombro, no
+    plano de frente, até a direção média dele ficar a `alvo` graus abaixo da horizontal. A
+    rotação entra aos poucos no ombro (sem rasgar a malha) e não toca o tronco, a cabeça nem as
+    pernas. Coordenadas do jogo: z para cima, y para a direita do personagem."""
+    Y, Z = V[:, 1], V[:, 2]
+    s = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
+    # meia largura do tronco: o trecho central contínuo (sem vão) logo abaixo da axila
+    tws = []
+    for z in np.linspace(0.56 * H, 0.66 * H, 6):
+        a = np.abs(Y[np.abs(Z - z) < 0.01 * H])
+        if len(a) < 20:
+            continue
+        h = np.bincount(np.floor(a / (0.01 * H)).astype(int))
+        vazio = np.nonzero(h == 0)[0]
+        tws.append(((vazio[0] if len(vazio) else len(h))) * 0.01 * H)
+    tw = float(np.median(tws))
+    pY = 0.8 * tw
+    N2 = None if N is None else N.copy()
+    V2 = V.copy()
+    for sg in (1, -1):
+        u = sg * Y - pY
+        faixa = (u > tw - pY + 0.02 * H) & (u < tw - pY + 0.05 * H) & (Z > 0.62 * H)
+        if faixa.sum() < 10:
+            print(f'abaixar_bracos: lado {sg}: sem braço ao lado do tronco, nada feito')
+            continue
+        pZ = float(np.median(Z[faixa]))
+        w = s(u / (0.05 * H)) * np.maximum(s((Z - (pZ - 0.12 * H)) / (0.04 * H)), s((u - 0.06 * H) / (0.04 * H))) * s((Z - 0.42 * H) / (0.05 * H))
+        fora = (w > 0.95) & (u > 0.12 * H)
+        if fora.sum() < 20:
+            continue
+        phi = float(np.degrees(np.median(np.arctan2(-(Z[fora] - pZ), u[fora]))))
+        th = np.radians(np.clip(alvo - phi, 0, 70)) * w
+        c, sn = np.cos(th), np.sin(th)
+        v = Z - pZ
+        u2, v2 = u * c + v * sn, -u * sn + v * c
+        V2[:, 1] = np.where(w > 0, sg * (u2 + pY), V2[:, 1])
+        V2[:, 2] = np.where(w > 0, v2 + pZ, V2[:, 2])
+        if N2 is not None:
+            nu, nv = sg * N[:, 1], N[:, 2]
+            N2[:, 1] = np.where(w > 0, sg * (nu * c + nv * sn), N2[:, 1])
+            N2[:, 2] = np.where(w > 0, -nu * sn + nv * c, N2[:, 2])
+        print(f'abaixar_bracos: lado {sg}: tronco {tw:.2f}, ombro ({pY:.2f}, {pZ:.2f}), braço a {phi:.0f}° → {alvo:.0f}° ({(w > 0.5).sum()} vértices)')
+    return V2, N2
+
+
 def processar_corpo(c):
     t0 = time.time()
     arq = sem_draco(os.path.join(RAIZ, c['arq'])) if c.get('inteiro') else os.path.join(ORIG, c['arq'])
-    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=18000, tex=1024)
+    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=18000, tex=1024, pose=abaixar_bracos if c.get('abaixar') else None)
     r = im.rigar(a, c['altura'], False)
     V, F, Fo, Uo, o2r, rot, nomes, ix = r['V'], r['F'], r['Fo'], r['Uo'], r['o2r'], r['rot'], r['nomes'], r['ix']
     k, H, props, inv = r['k'], r['H'], r['props'], dict(r['inv'])

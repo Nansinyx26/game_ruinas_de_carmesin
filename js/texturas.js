@@ -105,6 +105,7 @@ const TexturasMundo = (function () {
 
   return {
     BIOMAS, bioma, ESCALA,
+    ruido: { hash, vnoise, fbm, celulas },   // (usado pelos pisos e terrenos, js/terreno.js)
     tem(tipo) { return !!BIOMAS[tipo]; },
     // Vista isométrica: preenche o chão (polígono já no caminho do ctx) com o padrão no plano do chão
     padraoIso(ctx, tipo) {

@@ -595,6 +595,10 @@ def rigar(a, H, casaco):
     else:
         Vs, Fs, inv0 = soldar(V, F)
         Nh = normais_vertices(Vs, Fs)[inv0]
+    if getattr(a, 'pose', None):
+        # correção de pose antes do esqueleto (ex.: braços abertos em T baixados para "A"); a UV e
+        # as texturas não mudam, as normais giram junto
+        V, Nh = a.pose(V, Nh, H)
     if len(F) > a.max_tri:
         # malha grande: reduzida, com UV nova e os mapas reassados da original (o detalhe da
         # geometria perdida vai para o mapa de normais)

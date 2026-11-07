@@ -378,6 +378,21 @@ class Room {
 
   drawFloor(ctx, r) {
     const n = this.def.tiles, th = this.theme, [fh, fs, fl] = th.floor, deco = th.deco;
+    // pisos e terrenos por região (js/terreno.js): o atlas da sala, com relevo e emissão; no campo
+    // aberto, por cima, os detalhes soltos do bioma (capim, pedras), mais espaçados
+    if (typeof Terreno !== 'undefined' && Terreno.iso(ctx, this)) {
+      if (this.aberto) {
+        const m = Math.round(this.margem / TILE);
+        for (let i = -m; i < n + m; i++) for (let j = -m; j < n + m; j++) {
+          const fora = Math.max(0, -i, -j, i - n + 1, j - n + 1);
+          if (fora < 2 && r() < 0.16) {
+            const x0 = i * TILE, y0 = j * TILE, pts = [[x0, y0], [x0 + TILE, y0], [x0 + TILE, y0 + TILE], [x0, y0 + TILE]].map(([x, y]) => [isoX(x, y), isoY(x, y)]);
+            this.floorDetail(ctx, r, 'natural', isoX(x0 + TILE / 2, y0 + TILE / 2), isoY(x0 + TILE / 2, y0 + TILE / 2), i, j, pts);
+          }
+        }
+      }
+      return;
+    }
     if (this.aberto) { this.drawFloorAberto(ctx, r); return; }
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {

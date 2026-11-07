@@ -52,9 +52,10 @@ const Agua = (() => {
   const borda = (c, a) => 1 + 0.07 * Math.sin(3 * a + c.sd[0]) + 0.045 * Math.sin(7 * a + c.sd[1]) + 0.025 * Math.sin(13 * a + c.sd[2]);
   const largura = (c, s) => c.w * (1 + 0.14 * Math.sin(s * 0.011 + c.sd[0]) + 0.07 * Math.sin(s * 0.031 + c.sd[1]));
   // Distância "para dentro" da água (negativa fora): o maior valor entre os corpos
-  function dentro(x, y) {
+  function dentro(x, y) { return dentroDe(corpos, x, y); }
+  function dentroDe(lista, x, y) {
     let best = -1e9;
-    for (const c of corpos) {
+    for (const c of lista) {
       let d;
       if (c.lago) {
         const qx = (x - c.x) / c.rx, qy = (y - c.y) / c.ry, q = Math.hypot(qx, qy) / borda(c, Math.atan2(qy, qx));
@@ -277,5 +278,13 @@ const Agua = (() => {
     }
   }
 
-  return { AGUA_ZONAS, RASO, aoCarregar, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };
+  // Rios e lagos de uma zona numa sala, sem mexer na água atual (o chão pinta o leito e a margem
+  // molhada antes de a zona terminar de carregar: js/terreno.js); devolve (x, y) → distância para
+  // dentro da água (negativa fora) ou null se a zona não tem água
+  function formas(zid, R) {
+    if (!AGUA_ZONAS[zid] || !R) return null;
+    const L = montar({ id: zid }, R);
+    return (x, y) => dentroDe(L, x, y);
+  }
+  return { AGUA_ZONAS, RASO, aoCarregar, formas, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };
 })();

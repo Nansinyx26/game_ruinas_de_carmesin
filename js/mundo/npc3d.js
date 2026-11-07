@@ -139,9 +139,10 @@ const NpcModelo = {
 // MORADORES GERADOS NO MESHY (tools/meshy/gerar_npcs.py → assets/npcs/meshy/, convertidos por
 // tools/importar_criacao.py --so npc_…: corpo inteiro com roupa, rosto e cabelo próprios, no
 // esqueleto do jogo pelo mesmo rig automático dos corpos da criação): o ferreiro no Bairro da
-// Muralha e três cyberpunk (a Praça Central e o Mercado Neon da Metrópole), com a rotina, as falas
-// e as posturas dos outros moradores. (A camponesa e o guarda foram gerados com os braços quase em
-// T e o rig automático deforma as mãos: ficam fora até serem refeitos — docs/CRIACAO_ENCAIXE.md.)
+// Muralha, a camponesa e o guarda na praça do Refúgio da Aurora e três cyberpunk (a Praça Central
+// e o Mercado Neon da Metrópole), com a rotina, as falas e as posturas dos outros moradores. (A
+// camponesa e o guarda vieram com os braços quase em T: a conversão baixa os braços para "A" antes
+// do rig — abaixar_bracos em tools/importar_criacao.py.)
 // ---------------------------------------------------------------------------
 (function () {
   const M = [
@@ -149,6 +150,14 @@ const NpcModelo = {
       personalidade: 'Fala pouco e mostra muito: tudo o que diz cabe numa martelada.',
       ola: ['Ferradura, prego, dobradiça. Espada não: espada é com a ferraria grande.', 'O fogo da forja esfria se eu parar de falar com você. Brincadeira. Mas nem tanto.'],
       temas: [['Trabalha onde?', 'Onde precisarem. Hoje, nas portas do bairro: metade das dobradiças desta rua fui eu que fiz.']] },
+    { id: 'mes_camponesa', npc: 'npc_camponesa', nome: 'LÚCIA', zona: 'aurora', at: [0.46, 0.33], facing: 1.2, papel: 'Camponesa da feira',
+      personalidade: 'Prática e risonha; sabe o preço de tudo e o nome de todo mundo.',
+      ola: ['Ovos de hoje, pão de ontem, conselho de graça.', 'Se for subir para a floresta, leve um casaco. A névoa de Velmora não perdoa.'],
+      temas: [['O que se vende aqui?', 'Do campo para a praça: trigo, lã e ervas. O ferreiro troca dobradiça por queijo, e todo mundo sai ganhando.']] },
+    { id: 'mes_guarda', npc: 'npc_guarda', nome: 'BRUNO', zona: 'aurora', at: [0.2, 0.52], facing: 0, papel: 'Guarda da praça',
+      personalidade: 'Sério no turno, piadista fora dele.',
+      ola: ['Praça segura, viajante. Mantenha a lâmina na bainha.', 'Ronda das seis, ronda das doze, ronda das dezoito. Entre uma e outra, um pão.'],
+      temas: [['Tem perigo por aqui?', 'Na praça, não. Passando os portões, cada região tem o seu. Pergunte no quadro de missões antes de sair.']] },
     { id: 'mes_hacker', npc: 'npc_hacker', nome: 'NOVA', zona: 'metro_centro', at: [0.7, 0.36], facing: 3.3, papel: 'Hacker de rua',
       personalidade: 'Rápida, irônica, sempre com um olho no visor.',
       ola: ['Seu chip está desatualizado. Brincadeira. Você nem tem chip. Isso é ótimo, aliás.', 'A praça é segura porque eu deixo ela invisível para eles.'],

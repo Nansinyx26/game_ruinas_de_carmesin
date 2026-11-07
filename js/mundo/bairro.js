@@ -352,9 +352,9 @@ const Bairro = {
   desenharFundo(ctx, R) {
     const P = (x, y, z = 0) => [isoX(x, y), isoY(x, y) - z];
     const poly = (pts, fill) => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
-    const r = mulberry32(4242), RX = BAIRRO_RECUO;
+    const r = mulberry32(4242), RX = BAIRRO_RECUO, piso = !!R._terreno;   // (com o piso por região, js/terreno.js, calçada, praça e ruas já estão no chão)
     // calçada de pedras diante das fachadas (as duas paredes)
-    for (const [ax, ay, bx, by] of [[RX, RX, R.w, RX + 120], [RX, RX + 120, RX + 120, R.h]]) {
+    for (const [ax, ay, bx, by] of piso ? [] : [[RX, RX, R.w, RX + 120], [RX, RX + 120, RX + 120, R.h]]) {
       for (let x = ax; x < bx; x += 28) for (let y = ay; y < by; y += 28) {
         const v = r();
         poly([P(x + 1, y + 1), P(x + 27, y + 1), P(x + 27, y + 27), P(x + 1, y + 27)], `rgba(${70 + v * 30 | 0},${64 + v * 26 | 0},${58 + v * 20 | 0},0.38)`);
@@ -362,13 +362,13 @@ const Bairro = {
     }
     // praça do poço: anéis de pedra
     const cx = R.w * 0.6, cy = R.h * 0.48;
-    for (let k = 4; k >= 1; k--) {
+    for (let k = 4; k >= 1 && !piso; k--) {
       const rr = 40 + k * 30, pts = [];
       for (let i = 0; i < 36; i++) { const a = (i / 36) * TAU; pts.push(P(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr)); }
       poly(pts, k % 2 ? 'rgba(84,76,66,0.42)' : 'rgba(58,52,46,0.42)');
     }
     // rua até a passagem da praça (sul) e até a carroça
-    for (const [x0, y0, x1, y1] of [[cx, cy, R.w * 0.3, R.h], [cx, cy, R.w * 0.84, R.h * 0.8], [cx, cy, R.w * 0.565, RX]]) {
+    for (const [x0, y0, x1, y1] of piso ? [] : [[cx, cy, R.w * 0.3, R.h], [cx, cy, R.w * 0.84, R.h * 0.8], [cx, cy, R.w * 0.565, RX]]) {
       for (let i = 0; i < 22; i++) {
         const t = i / 22, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
         poly([P(x - 22, y - 22), P(x + 22, y - 22), P(x + 22, y + 22), P(x - 22, y + 22)], i % 2 ? 'rgba(96,88,76,0.22)' : 'rgba(70,64,56,0.22)');

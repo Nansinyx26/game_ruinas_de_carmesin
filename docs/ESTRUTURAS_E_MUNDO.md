@@ -120,12 +120,19 @@ Seis moradores foram gerados por texto no Meshy, em A-pose, a 30 créditos cada 
 
 A conversão passa cada um pelo **rig automático** do jogo, o mesmo dos corpos da criação (`tools/importar_criacao.py --so npc_ferreiro`). A fonte com Draco é descomprimida numa cópia antes.
 
-**No jogo, quatro** (`js/mundo/npc3d.js`), com nome, rotina e fala dos moradores:
+**No jogo, os seis** (`js/mundo/npc3d.js`), com nome, rotina e fala dos moradores:
 - o ferreiro, no Bairro da Muralha;
+- a camponesa e o guarda, na praça do Refúgio da Aurora;
 - o hacker e o operário, na Praça Central da Metrópole;
 - o comerciante, no Mercado Neon.
 
-**Fora do jogo, dois:** a camponesa e o guarda vieram com os braços quase em T. O rig automático pesou mal as mãos, que deformavam ao andar. Estão convertidos, mas fora das cidades, até serem gerados de novo com os braços baixos.
+**Braços abertos.** A camponesa e o guarda vieram do Meshy com os braços quase em T, mesmo pedindo A-pose, e o rig automático deformava as mãos. A conversão agora baixa os braços antes do rig (`abaixar_bracos` em `tools/importar_criacao.py`, ligado por `"abaixar_bracos": true` em `tools/meshy/npcs.json`):
+- mede a largura do tronco logo abaixo da axila e acha o ombro de cada lado;
+- gira o braço em volta do ombro até a direção média dele ficar a 48° abaixo da horizontal;
+- a rotação entra aos poucos no ombro, sem rasgar a malha, e não toca o tronco, a cabeça nem as pernas;
+- as normais giram junto; a UV e as texturas não mudam.
+
+Sem gastar créditos. Os cotovelos continuam dobrados como no modelo original.
 
 ## 6. Câmeras
 

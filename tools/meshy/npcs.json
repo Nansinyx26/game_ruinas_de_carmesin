@@ -9,13 +9,15 @@
   "nome": "Camponesa",
   "estilo": "medieval",
   "prompt": "medieval peasant woman villager, long linen dress, wool shawl, cloth apron, braided hair, full body, standing in A-pose, stylized realistic game character, no props",
-  "corpo": "f"
+  "corpo": "f",
+  "abaixar_bracos": true
  },
  "npc_guarda": {
   "nome": "Guarda da cidade",
   "estilo": "medieval",
   "prompt": "medieval town guard man, chainmail shirt, blue tabard with gold trim, leather belt and boots, open steel helmet, full body, standing in A-pose, stylized realistic game character, no weapon, no shield",
-  "corpo": "m"
+  "corpo": "m",
+  "abaixar_bracos": true
  },
  "npc_hacker": {
   "nome": "Hacker de rua",

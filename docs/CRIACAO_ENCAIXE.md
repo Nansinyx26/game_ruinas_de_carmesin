@@ -51,7 +51,7 @@ Toda peça encaixa pelo **corpo de referência** (`corpo_m`/`corpo_f`), medido n
 5. **UV e materiais:** a UV da fonte é mantida; as texturas são reduzidas, e um mapa neutro é criado quando falta.
 6. **Rig:**
    - **peças da criação:** os pesos vêm do corpo de referência;
-   - **personagens inteiros (NPCs):** o rig automático do jogo (`importar_modelo.rigar`), o mesmo dos corpos da criação e dos heróis.
+   - **personagens inteiros (NPCs):** o rig automático do jogo (`importar_modelo.rigar`), o mesmo dos corpos da criação e dos heróis. Se o modelo veio com os braços abertos em T, marque `"abaixar_bracos": true` em `tools/meshy/npcs.json`: a conversão baixa os braços para "A" antes do rig.
 7. **Âncoras:** pela tabela acima.
 8. **Importar no jogo:** `tools/importar_criacao.py --so <id>` (peças) ou `tools/importar_prop.py --grupo estruturas` (cenário).
 9. **Testar no personagem:** capturas de frente, de lado e de costas (`.cache_criacao/cap_peitoral.mjs`) e a suíte.
