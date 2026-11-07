@@ -14,3 +14,6 @@ assets/estruturas_ambiente/**/Meshy/*.glb filter=lfs diff=lfs merge=lfs -text
 assets/models/estruturas/*.glb filter=lfs diff=lfs merge=lfs -text
 # NPCs gerados no Meshy (comprimidos com Draco: tools/estruturas/comprimir_draco.mjs)
 assets/npcs/**/*.glb filter=lfs diff=lfs merge=lfs -text
+# Cabelos gerados no Meshy por texto, já separados da cabeça de manequim e reduzidos no Blender
+# (tools/meshy/separar_cabelo.py); a fonte do Meshy fica fora do repositório (.cache_criacao)
+assets/Criar_Personagem/Cabelo_Meshy/*.glb filter=lfs diff=lfs merge=lfs -text

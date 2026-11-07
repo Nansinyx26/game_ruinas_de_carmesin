@@ -380,6 +380,24 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "cabelo_meshy_longo",
+  "tipo": "cabelo",
+  "nome": "Longo liso",
+  "arq": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_longo.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_longo.png",
+  "js": "js/assets/criacao/cabelo_meshy_longo.js",
+  "convertido": true
+ },
+ {
+  "id": "cabelo_meshy_cyber",
+  "tipo": "cabelo",
+  "nome": "Cyber espetado",
+  "arq": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_cyber.glb",
+  "mini": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_cyber.png",
+  "js": "js/assets/criacao/cabelo_meshy_cyber.js",
+  "convertido": true
+ },
+ {
   "id": "barba_cacheada",
   "tipo": "barba",
   "nome": "Barba Cacheada",

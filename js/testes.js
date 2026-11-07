@@ -3328,9 +3328,9 @@ const EclipseTests = {
     const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
-    this.igual('catálogo: 2 corpos, 8 rostos, 23 cabelos (8 do Meshy e 15 em mechas do Blender, 5 deles masculinos), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,23,18');
-    this.ok('opções da criação: 24 de cabelo, 17 de barba (com as combinações de barba e bigode), cor da barba (a do cabelo ou própria) e 12 cores de olhos',
-      PERS_GLB.cabeloG.length === 24 && PERS_CABELOS_GLB.length === 24 && PERS_GLB.barbaG.length === 17 && Criacao3D.BARBAS.length === 16 &&
+    this.igual('catálogo: 2 corpos, 8 rostos, 25 cabelos (8 enviados do Meshy, 15 em mechas do Blender, 5 deles masculinos, e 2 gerados no Meshy por texto), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,25,18');
+    this.ok('opções da criação: 26 de cabelo, 17 de barba (com as combinações de barba e bigode), cor da barba (a do cabelo ou própria) e 12 cores de olhos',
+      PERS_GLB.cabeloG.length === 26 && PERS_CABELOS_GLB.length === 26 && PERS_GLB.barbaG.length === 17 && Criacao3D.BARBAS.length === 16 &&
       Criacao3D.BARBAS.every((id) => Criacao3D.POR_ID[id] && Criacao3D.POR_ID[id].tipo === 'barba') && PERS_APAR.corBarba.ops.length === PERS_CABELOS.length + 1 && PERS_OLHOS.length === 12,
       `${PERS_GLB.cabeloG.length} ${PERS_GLB.barbaG.length} ${PERS_OLHOS.length}`);
     {
@@ -3388,6 +3388,17 @@ const EclipseTests = {
     const cabF = CRIA_CATALOGO.filter((c) => c.tipo === 'cabelo' && c.fisica);
     this.ok('cabelo em mechas: os quinze cortes do Blender no catálogo e nas opções da criação (curto, médio, longo, espetado, ondulado, coque, rabo, tranças, franja, repicado e os masculinos raspado, militar, topete, undercut e moicano)',
       cabF.length === 15 && cabF.every((c) => c.convertido && c.arq.startsWith('assets/Criar_Personagem/Cabelo_Fisica/') && PERS_CABELOS_GLB.includes(c.id)) && PERS_CABELOS_GLB.length === PERS_GLB.cabeloG.length, cabF.map((c) => c.id).join(','));
+    {
+      // cabelos gerados no Meshy por texto (tools/meshy): separados da cabeça de manequim, virados de frente
+      // e encaixados pelo perfil do manequim; a mesma ordem de grandeza de escala nos dois corpos
+      const cabM = CRIA_CATALOGO.filter((c) => c.tipo === 'cabelo' && c.arq.startsWith('assets/Criar_Personagem/Cabelo_Meshy/'));
+      const pd = (i) => Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('assassino'), { cabeloG: i }) }).cabelo;
+      await carregar(cabM.map((c) => c.id).concat('minis'));
+      const esc = cabM.map((c) => { const a = (window.CRIA3D[c.id] || {}).ajuste || {}; return a.corpo_m && a.corpo_f ? a.corpo_f.escala / a.corpo_m.escala : 0; });
+      this.ok('cabelos do Meshy por texto: Longo liso e Cyber espetado no catálogo, convertidos, nas opções 24 e 25, com o encaixe nos dois corpos',
+        cabM.length === 2 && cabM.every((c) => c.convertido && typeof CRIA_MINIS !== 'undefined' && CRIA_MINIS[c.id]) && pd(24) === 'cabelo_meshy_longo' && pd(25) === 'cabelo_meshy_cyber' &&
+        esc.every((r) => r > 0.75 && r < 1.45), `${cabM.map((c) => c.id)} ${esc.map((r) => r.toFixed(2))}`);
+    }
     this.ok('cabelo com física: a opção escolhida vira a peça do catálogo', Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('mago'), { cabeloG: 11 }) }).cabelo === 'cabelo_longo' && Criacao3D.pecasDe({ aparencia: Object.assign(persAparenciaPadrao('mago'), { cabeloG: 3 }) }).cabelo === 'cabelo_3');
     {
       // modelo mínimo: cabeça e uma cadeia de dois ossos; a cabeça anda de lado e para

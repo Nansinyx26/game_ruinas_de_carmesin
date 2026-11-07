@@ -105,6 +105,13 @@ for _c in CORTES_FISICA:
     _j = os.path.join(ORIG, 'Cabelo_Fisica', _c + '.json')
     if os.path.exists(_j):
         PECAS.append(dict(id=f'cabelo_{_c}', tipo='cabelo', fisica=True, nome=json.load(open(_j, encoding='utf-8'))['nome'], arq=f'Cabelo_Fisica/{_c}.glb', mini=f'Cabelo_Fisica/{_c}.png', tri=16000, tex=512))
+# Cabelos gerados no Meshy por texto (tools/meshy/gerar_cabelos.py), separados da cabeça de manequim e
+# reduzidos no Blender (tools/meshy/separar_cabelo.py): entram pelo mesmo encaixe por cobertura
+_CM = os.path.join(RAIZ, 'tools', 'meshy', 'cabelos.json')
+for _c, _v in (json.load(open(_CM, encoding='utf-8')) if os.path.exists(_CM) else {}).items():
+    if os.path.exists(os.path.join(ORIG, 'Cabelo_Meshy', _c + '.glb')):
+        PECAS.append(dict(id=_c, tipo='cabelo', nome=_v['nome'], arq=f'Cabelo_Meshy/{_c}.glb', mini=f'Cabelo_Meshy/{_c}.png', tri=16000, tex=512,
+                          molde=f'Cabelo_Meshy/{_c}.json'))
 for b, n in [('Cacheada', 'Cacheada'), ('Curta', 'Curta'), ('Longa', 'Longa'), ('Média', 'Média'), ('Viking', 'Viking')]:
     PECAS.append(dict(id='barba_' + unicodedata.normalize('NFKD', b).encode('ascii', 'ignore').decode().lower(), tipo='barba', nome='Barba ' + n,
                       arq=f'Barbas/Barba_{b}.glb', mini=f'Barbas/Barba_{b}.png', tri=5000, tex=512))
@@ -782,6 +789,57 @@ def ajuste_cobertura(Vp, Fp, ref, modo):
     return s, t, (HV, HN, kdH, hh)
 
 
+def perfil_fatias(V, zs, d):
+    """Raio (90º percentil da distância ao centro) e centro de cada fatia horizontal."""
+    r, c = [], []
+    for z in zs:
+        f = V[np.abs(V[:, 2] - z) < d]
+        cc = np.median(f[:, :2], 0) if len(f) >= 10 else np.array([np.nan, np.nan])
+        r.append(np.percentile(np.hypot(*(f[:, :2] - cc).T), 90) if len(f) >= 10 else np.nan)
+        c.append(cc)
+    return np.array(r), np.array(c)
+
+
+def ajuste_molde(molde, ref, Vp):
+    """Cabelo do Meshy: a cabeça de manequim que veio com ele (medida em tools/meshy/separar_cabelo.py, já
+    virada de frente) é o molde. O perfil do manequim (raio e centro de cada fatia) é encaixado no da cabeça
+    do corpo (o corpo e o rosto de referência) do queixo aos olhos: a escala e a altura saem da forma da
+    mandíbula e do crânio, e a posição na horizontal, dos centros das fatias. (Nariz e pescoço sozinhos
+    erravam: mechas claras soltas passavam por nariz e o pescoço comprido do manequim não marca altura.)
+    A busca por cobertura não serve aqui: a peça tem franja, cortina na frente do peito e volume, e
+    acabava grande demais ou caída sobre o rosto."""
+    HV, HN = cabeca_de_referencia(ref)
+    m = ref['medida']
+    hh = m['topo'] - m['pescoco']
+    zn = HV[np.argmax(HV[:, 0]), 2]
+    G = np.vstack([HV, ref['V'][ref['V'][:, 2] > m['pescoco'] - 0.4 * hh]])
+    zs = np.linspace(zn - 0.34 * hh, zn + 0.14 * hh, 28)
+    rg, cg = perfil_fatias(G, zs, hh / 45)
+    Pm = np.asarray(molde['perfil'], float)
+    zm, rm = Pm[:, 0], Pm[:, 1]
+    # a escala fica entre a que deixa o alto da peça da largura da cabeça e 1,6 vez ela (o cabelo cobre
+    # a cabeça e tem volume; sem esse limite, o pescoço comprido do manequim passava por cabeça)
+    mn, mx = Vp.min(0), Vp.max(0)
+    s_cab = m['largCabeca'] / max(np.ptp(Vp[Vp[:, 2] > mx[2] - 0.35 * (mx[2] - mn[2])][:, 1]), 1e-6)
+    melhor = None
+    for s in s_cab * np.geomspace(0.9, 1.6, 60):
+        for tz in np.linspace(zs[0] - s * zm.max(), zs[-1] - s * zm.min(), 160):
+            q = (zs - tz) / s
+            dentro = (q >= zm.min()) & (q <= zm.max())
+            if dentro.mean() < 0.95:
+                continue
+            e = np.nanmean(((rg - s * np.interp(q, zm, rm)) / rg) ** 2)
+            if melhor is None or e < melhor[0]:
+                melhor = (e, s, tz)
+    e, s, tz = melhor
+    q = (zs - tz) / s
+    cm = np.stack([np.interp(q, zm, Pm[:, 2]), np.interp(q, zm, Pm[:, 3])], 1)
+    txy = np.nanmedian(cg - s * cm, 0)
+    t = np.array([txy[0], txy[1], tz])
+    print(f"  ajuste pelo molde: escala {s:.3f} ({s / s_cab:.2f} da largura da cabeça) erro {np.sqrt(e):.3f}", flush=True)
+    return s, t, (HV, HN, cKDTree(HV), hh)
+
+
 def ajuste_peitoral(Vp, Fp, ref, bracos=True):
     """Escala e posição do peitoral pronto (GLB realista) pela cobertura do tronco e dos ombros do
     corpo. A caixa da região esticava a peça entre o quadril e os ombros: a gola alta ficava no meio
@@ -930,7 +988,10 @@ def processar_cobertura(p, refs, modo):
     R = reduzir_e_assar(V, UV, F, N, mapas, p['tri'], p['tex'])
     porCorpo, info = {}, {}
     for cid, ref in refs.items():
-        s, t, (HV, HN, kdH, hh) = ajuste_cobertura(R['Vr'], R['Fr'], ref, modo)
+        if p.get('molde'):
+            s, t, (HV, HN, kdH, hh) = ajuste_molde(json.load(open(os.path.join(ORIG, p['molde']), encoding='utf-8')), ref, R['Vr'])
+        else:
+            s, t, (HV, HN, kdH, hh) = ajuste_cobertura(R['Vr'], R['Fr'], ref, modo)
         P = R['Vr'] * s + t
         # o que ficou dentro da cabeça sai até a superfície
         cabeca = dict(V=HV, N=HN, kd=kdH)

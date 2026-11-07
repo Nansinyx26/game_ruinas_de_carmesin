@@ -1,0 +1,18 @@
+{
+ "cabelo_meshy_longo": {
+  "nome": "Longo liso",
+  "prompt": "long straight flowing hair wig with a side part, falling past the shoulders to mid-back, separate hair strands, isolated hair piece only, hollow inside where the head goes, no head, no face, no mannequin, no body, realistic game asset, dark brown hair",
+  "separar": {
+   "modo": "cor",
+   "lum_max": 0.3
+  }
+ },
+ "cabelo_meshy_cyber": {
+  "nome": "Cyber espetado",
+  "prompt": "cyberpunk undercut hairstyle, spiky textured top swept back, short shaved sides, isolated hair piece only, hollow inside where the head goes, no head, no face, no mannequin, no body, stylized realistic game asset, black hair",
+  "separar": {
+   "modo": "altura",
+   "acima": 0.74
+  }
+ }
+}

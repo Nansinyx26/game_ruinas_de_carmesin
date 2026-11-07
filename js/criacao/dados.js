@@ -95,10 +95,11 @@ const PERS_GLB = {
   corpoG: ['Masculino', 'Feminino'],
   rostoG: ['Rosto 1', 'Rosto 2', 'Rosto 3', 'Rosto 4', 'Rosto 5', 'Rosto 6', 'Rosto 7', 'Rosto 8'],
   // 1 a 8: os do Meshy (só a ponta do comprido balança); 9 a 23: feitos no Blender, em mechas com
-  // física (js/criacao/cabelo_fisica.js)
+  // física (js/criacao/cabelo_fisica.js); 24 e 25: gerados no Meshy por texto (tools/meshy/gerar_cabelos.py)
   cabeloG: ['Sem cabelo', 'Cabelo 1', 'Cabelo 2', 'Cabelo 3', 'Cabelo 4', 'Cabelo 5', 'Cabelo 6', 'Cabelo 7', 'Cabelo 8',
     'Curto (mechas)', 'Médio (mechas)', 'Longo (mechas)', 'Espetado (mechas)', 'Ondulado (mechas)', 'Coque (mechas)', 'Rabo de cavalo (mechas)', 'Tranças (mechas)', 'Franja (mechas)', 'Repicado (mechas)',
-    'Raspado (mechas)', 'Militar (mechas)', 'Topete (mechas)', 'Undercut (mechas)', 'Moicano (mechas)'],
+    'Raspado (mechas)', 'Militar (mechas)', 'Topete (mechas)', 'Undercut (mechas)', 'Moicano (mechas)',
+    'Longo liso', 'Cyber espetado'],
   // 1 a 5: as do Meshy; 6 a 14: feitas no Blender em mechas (tools/blender/barbas.py), com as
   // combinações de barba e bigode
   barbaG: ['Sem barba', 'Cacheada', 'Curta', 'Longa', 'Média', 'Viking',
@@ -108,7 +109,8 @@ const PERS_GLB = {
 // id do catálogo da criação de cada opção de cabelo (null: sem cabelo)
 const PERS_CABELOS_GLB = [null, 'cabelo_1', 'cabelo_2', 'cabelo_3', 'cabelo_4', 'cabelo_5', 'cabelo_6', 'cabelo_7', 'cabelo_8',
   'cabelo_curto', 'cabelo_medio', 'cabelo_longo', 'cabelo_espetado', 'cabelo_ondulado', 'cabelo_coque', 'cabelo_rabo', 'cabelo_trancas', 'cabelo_franja', 'cabelo_repicado',
-  'cabelo_raspado', 'cabelo_militar', 'cabelo_topete', 'cabelo_undercut', 'cabelo_moicano'];
+  'cabelo_raspado', 'cabelo_militar', 'cabelo_topete', 'cabelo_undercut', 'cabelo_moicano',
+  'cabelo_meshy_longo', 'cabelo_meshy_cyber'];
 const PERS_APAR = {
   estilo: { nome: 'Estilo do modelo', ops: ['Realista', 'Estilizado'] },
   corpoG: { nome: 'Corpo', ops: PERS_GLB.corpoG, glb: true },
