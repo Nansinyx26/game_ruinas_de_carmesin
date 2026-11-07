@@ -108,6 +108,7 @@ class GranadaPlasma {
     g.room.addScorch(this.x, this.y, 52);
     g.camera.shake(0.22);
     g.audio.play('explosion', 0.8); g.audio.play('zap', 0.6);
+    if (typeof Fogo !== 'undefined') Fogo.explosao(this.x, this.y, 16, 1.3, { energia: true, cor: 'azul', silencio: true });   // plasma: bola de energia, onda de choque e luz (js/fogo.js)
   }
   light(L) { L.add(isoX(this.x, this.y), isoY(this.x, this.y) - this.z, this.chao ? 80 : 50, this.chao ? 0.6 : 0.4); }
   draw(ctx) {

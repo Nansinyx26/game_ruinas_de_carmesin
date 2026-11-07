@@ -1475,6 +1475,7 @@ class Player extends Entity {
       game.arcs.spawn(this.x, this.y, 20, this.x + Math.cos(a) * r, this.y + Math.sin(a) * r, 4, { w: 2.2, life: 0.28, jag: 0.3 });
     }
     game.projectiles.clearInRadius(this.x, this.y, R);
+    if (typeof Fogo !== 'undefined') Fogo.explosao(this.x, this.y, 20, 1.7, { energia: true, cor: 'azul', silencio: true });   // onda de choque e luz da Ruptura (js/fogo.js)
     game.camera.shake(0.5);
     game.flashScreen('140,190,255', 0.25);
     game.audio.play('thunder', 0.7);

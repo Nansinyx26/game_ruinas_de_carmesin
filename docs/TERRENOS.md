@@ -115,7 +115,7 @@ O mesmo atlas entra na imagem pré-renderizada da sala, com o **relevo sombreado
 ## Desempenho
 
 - **Materiais:** gerados uma vez por sessão. A zona vizinha já tem os materiais preparados no tempo livre (`Terreno.aquecer`), quando o herói chega perto da borda.
-- **Atlas da sala:** 2048 px de cor, mais 1024 px de material e de emissão, com mipmaps. Na qualidade média, 1024/512. É composto pelo canvas (GPU), não pixel a pixel. Nos testes, a montagem leva **de 0,2 a 1 s** por zona, só ao carregar, nunca a cada quadro.
+- **Atlas da sala:** 2048 px de cor, mais 1024 px de material e de emissão, com mipmaps. Na qualidade média, 1024/512. É composto pelo canvas (GPU), não pixel a pixel, e **não lê pixels de volta** do canvas: o relevo sombreado da isométrica vem pronto de cada material, e a borda irregular é calculada num canvas próprio para leitura. Neste ambiente de teste, sem placa de vídeo, cada leitura (`getImageData`) custava de 1 a 3 s. Sem elas, a montagem leva **de 0,1 a 0,3 s** por zona, só ao carregar, nunca a cada quadro.
 - **Piso:** 72 triângulos.
 - **Geometria de detalhe:** caixas e cilindros simples, com poucas centenas de triângulos.
 - **Qualidade baixa:** o chão volta às placas de cor de antes.

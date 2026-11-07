@@ -263,7 +263,7 @@ const ThirdView = {
     // luminárias das paredes do fundo (as mesmas tochas da vista isométrica)
     const lamps = new G3();
     for (const t of R.torches) {
-      if (t.chao) { lamps.cyl(t.x, t.y, 0, 7, 2, 12, 6, trim, 1); continue; }   // lume no chão do campo aberto
+      if (t.chao) { if (!(typeof Fogo !== 'undefined' && Fogo.ehFogueira(R, t))) lamps.cyl(t.x, t.y, 0, 7, 2, 12, 6, trim, 1); continue; }   // lume no chão do campo aberto (fogueira de verdade: js/fogo.js)
       if (t.poste) { lamps.cyl(t.x, t.y, 0, 2.6, 2, 62, 6, '#24262e', 0); lamps.box(t.x, t.y, 64, 12, 12, 5, trim, 1); continue; }   // poste da cidade
       if (t.y === 0) lamps.box(t.x, 1, 104, 18, 6, 26, trim, 1);
       else lamps.box(1, t.y, 104, 6, 18, 26, trim, 1);
@@ -365,7 +365,12 @@ const ThirdView = {
     M3.trs(this.roomO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]);
     const ri = R3D.queue(rm, hideNear, null, this.roomO);
     ri.ent = null; Q.push(ri);
-    if (this.chaoModel) { M3.trs(this.chaoO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]); const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi); }
+    if (this.chaoModel) {
+      M3.trs(this.chaoO.m, [0, 0, 0], [0, 0, 0], [1, 1, 1]);
+      // luzes artificiais do chão (neon, painéis, circuitos) com pequenas variações
+      const tt = g.realTime || 0; this.chaoO.emi = 1 + 0.05 * Math.sin(tt * 7.1) * Math.sin(tt * 2.3) + (Math.sin(tt * 31) > 0.985 ? -0.25 : 0);
+      const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi);
+    }
     if (typeof Natureza3D !== 'undefined') Natureza3D.fila3P(R, Q, E, T, p);   // árvores, rochas e enfeites da floresta (kit do Blender)
     if (typeof Bairro !== 'undefined') Bairro.fila3P(R, Q, E);   // prédios do Bairro da Muralha (kit de arquitetura do Blender)
     if (typeof Estruturas !== 'undefined') Estruturas.fila3P(R, Q, E);   // estruturas enviadas e geradas no Meshy (paradas)
@@ -419,6 +424,12 @@ const ThirdView = {
     if (real) {
       try { rr = Realista3D.render(this, W, H); } catch (err) { console.error(err); Realista3D.ok = false; Realista3D.erro = String(err && err.message || err); }
     } else {
+      // luzes pontuais do fogo e das explosões, ondulações e estado da água, chão molhado e vento
+      if (typeof Fogo !== 'undefined') {
+        const V = Fogo.VENTO, ag = typeof Agua !== 'undefined' && Agua.estado3P ? Agua.estado3P() : [0, 0, 0, 0];
+        const molhado = g.world && typeof Clima !== 'undefined' ? Math.min(1, Clima.chuva() * 1.2 + (Clima.chao ? Clima.chao().agua || 0 : 0) * 0.6) : 0;
+        R3D.quadro3P(Fogo.luzes3P([], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
+      }
       try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
     }
     Ambiente3P.fim();   // a luz do sol volta ao padrão (a vista isométrica usa a mesma luz)
@@ -547,6 +558,7 @@ const ThirdView = {
       g.drawDanoDir(ctx);
       if (typeof Mira !== 'undefined') Mira.desenhar(ctx);
       if (g.world) { Cidade.desenhar(ctx); Clima.desenharAr(ctx); }   // teletransporte; neblina, pegadas, vapor e fogueiras
+      if (typeof Fogo !== 'undefined') Fogo.desenhar(ctx);   // chamas, fumaça e explosões na perspectiva (js/fogo.js)
       for (const e of g.enemies) {
         if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
         if (e.state === 'spawn') g.drawSpawnSigil(ctx, e);

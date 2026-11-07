@@ -161,6 +161,7 @@ class ProjectileSystem {
     game.audio.play('zap');
     game.audio.play('thunder', 0.3);
     game.camera.shake(0.25);
+    if (typeof Fogo !== 'undefined') Fogo.explosao(p.x, p.y, p.z || 20, 1, { energia: true, cor: 'roxo', silencio: true });   // explosão de energia (js/fogo.js)
     for (const e of game.enemies) {
       if (!e.canBeHit() || dist2(p.x, p.y, e.x, e.y) > R * R) continue;
       const dx = e.x - p.x, dy = e.y - p.y, l = Math.hypot(dx, dy) || 1;

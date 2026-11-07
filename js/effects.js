@@ -60,6 +60,12 @@ class ParticleSystem {
     if (this.count >= this.max) return null;
     // Qualidade dos efeitos (configurações): parte das partículas não é emitida
     if (this.quality < 1 && Math.random() > this.quality) return null;
+    // LOD por distância: longe do herói (fora do que a câmera mostra de perto), menos partículas
+    const ref = typeof game !== 'undefined' && game.player;
+    if (ref) {
+      const d2 = (x - ref.x) * (x - ref.x) + (y - ref.y) * (y - ref.y);
+      if (d2 > 1.6e6 && Math.random() < (d2 > 4.4e6 ? 0.85 : 0.5)) return null;
+    }
     const p = this.items[this.count++];
     p.type = type; p.x = x; p.y = y; p.z = z; p.vx = vx; p.vy = vy; p.vz = vz;
     p.life = p.max = life; p.size = size; p.size2 = size; p.rgb = rgb;

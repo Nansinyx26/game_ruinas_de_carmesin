@@ -5,7 +5,7 @@
 // teste falhar, se a página lançar exceção ou se o resultado não vier a tempo. O WebGL do
 // motor roda no SwiftShader (software), como num servidor sem placa de vídeo.
 // Uso (na pasta do projeto, com o Playwright instalado: npm install --no-save playwright):
-//   node tools/testes_navegador.mjs [--imagem testes.png] [--espera 600]
+//   node tools/testes_navegador.mjs [--imagem testes.png] [--espera 1500]
 // CHROMIUM=/caminho/do/chrome usa outro executável do Chromium.
 // É o que o workflow .github/workflows/testes.yml roda a cada push.
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import { chromium } from 'playwright';
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (nome, padrao) => { const i = process.argv.indexOf(nome); return i > 0 ? process.argv[i + 1] : padrao; };
-const imagem = arg('--imagem', null), espera = +arg('--espera', 600);
+const imagem = arg('--imagem', null), espera = +arg('--espera', 1500);   // (a suíte passa por dezenas de zonas; o job do CI tem 30 min)
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
   '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };

@@ -412,6 +412,7 @@ class Game {
     this.hazards.update(sdt);
     this.pickups.update(sdt);
     this.particles.update(sdt);
+    if (typeof Fogo !== 'undefined') Fogo.update(sdt);   // fogo, fumaça e explosões (js/fogo.js)
     this.texts.update(sdt);
     this.trails.update(sdt);
     this.arcs.update(sdt);
@@ -552,6 +553,7 @@ class Game {
       this.particles.debris(e.x, e.y, e.radius > 20 ? 14 : 7, '58,64,76');
       this.particles.blood(e.x, e.y, 18, rand(0, TAU), 8, e.T.blood);
       this.arcs.crackle(e.x, e.y, Math.min(e.height * 0.5, 60), 3, e.radius * 2.2, '140,200,255', 0.18);
+      if (typeof Fogo !== 'undefined') Fogo.explosao(e.x, e.y, Math.min(e.height * 0.4, 30), e.radius > 20 ? 0.8 : 0.5, { silencio: true });   // a máquina explode em fogo e fumaça (js/fogo.js)
     } else this.particles.blood(e.x, e.y, 22, rand(0, TAU), 14, e.T.blood);
     this.particles.smoke(e.x, e.y, 10, 6, '14,18,26', e.radius);
     this.particles.embers(e.x, e.y, 10, 10, e.T.glow, e.radius, 90);
@@ -704,6 +706,7 @@ class Game {
     this.checkRosterUnlocks();
     this.particles.flash(b.x, b.y, 60, 260, '170,240,255', 0.5);
     this.particles.ring(b.x, b.y, 380, '90,220,255', 1.0, 18);
+    if (typeof Fogo !== 'undefined') Fogo.explosao(b.x, b.y, 60, 3, { energia: true, cor: 'azul', silencio: true });
     for (let i = 0; i < 6; i++) this.particles.sparks(b.x, b.y, 60, (i / 6) * TAU, 14, '200,250,255', 700, 0.8);
     this.particles.embers(b.x, b.y, 20, 50, '120,240,255', 80, 200);
     for (let i = 0; i < 10; i++) {
@@ -1246,6 +1249,7 @@ class Game {
       CriacaoTela.draw(ctx, this.realTime);
     } else if (this.player && this.room) {
       this.renderWorld(ctx);
+      if (typeof Fogo !== 'undefined') Fogo.calor(ctx);   // o ar tremendo acima das chamas e a onda de choque das explosões
       if (this.world) { WorldTime.drawOverlay(ctx); Clima.desenharTela(ctx); }   // dia e noite, clima; calor, visibilidade e o frio e o calor extremos
       this.renderScreenFx(ctx);
       if (this.state === 'playing') { this.hud.draw(ctx); TouchControls.draw(ctx); }   // botões de toque (celular)
@@ -1469,6 +1473,7 @@ class Game {
     L.add(isoX(p.x, p.y), isoY(p.x, p.y) - 30, (p.state === 'special' ? 620 : 470) + flick, 1);
     room.addLights(L, this.realTime);
     if (this.world) Clima.luzes(L);   // fogueiras
+    if (typeof Fogo !== 'undefined') Fogo.luzes(L);   // a luz que tremula de cada foco de fogo e das explosões
     for (const n of this.npcs) if (n.lightRgb) L.add(isoX(n.x, n.y), isoY(n.x, n.y) - 30, n.holo ? 150 : 95, 0.5);
     this.projectiles.addLights(L);
     HeroObjects.addLights(L);
@@ -1497,6 +1502,7 @@ class Game {
     this.drawDanoDir(ctx);
     if (typeof Mira !== 'undefined') Mira.desenhar(ctx);
     if (this.world) { Cidade.desenhar(ctx); Clima.desenharAr(ctx); }   // teletransporte; neblina, vapor e fogueiras
+    if (typeof Fogo !== 'undefined') Fogo.desenhar(ctx);   // chamas, fumaça e explosões (js/fogo.js)
     for (const e of this.enemies) {
       if (e.telegraph) drawTelegraph(ctx, e.telegraph, e.tgProgress, t);
       if (e.state === 'spawn') this.drawSpawnSigil(ctx, e);

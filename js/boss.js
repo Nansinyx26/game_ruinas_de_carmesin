@@ -62,6 +62,8 @@ class HazardSystem {
           P_.embers(h.x, h.y, 0, 10, '120,240,255', h.r * 0.5, 120);
           game.camera.shake(0.18);
           game.audio.play('explosion');
+          // a explosão de verdade (js/fogo.js): bola de fogo ou de energia, fumaça, luz e onda de choque
+          if (typeof Fogo !== 'undefined') { const pal = Fogo.paletaDe(h.rgb || '140,240,255'); Fogo.explosao(h.x, h.y, 10, Math.max(0.6, h.r / 75), { cor: pal, energia: pal !== 'fogo' && pal !== 'carmim', silencio: true }); }
         }
         game.room.addScorch(h.x, h.y, h.r * 0.8);
       }

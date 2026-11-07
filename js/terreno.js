@@ -921,7 +921,9 @@ const Terreno = (function () {
     lab: { det: 'concreto', pintar(T, R) {
       const w = R.w, h = R.h;
       T.base('azulejo', { rot: 0, esc: 1 });
+      T.camada('concreto', T.manchas(0.1, 220, 131, 0.03));   // azulejos arrancados: o contrapiso aparece
       T.camada('metal', T.forma((g) => { g.fillRect(w * 0.18, h * 0.18, w * 0.22, h * 0.2); g.fillRect(w * 0.6, h * 0.62, w * 0.24, h * 0.2); }), { rot: 0 });
+      T.camada('grade', T.forma((g) => { for (const f of [0.3, 0.7]) { g.fillRect(f * w - 40, 28, 80, 26); g.fillRect(f * w - 40, h - 54, 80, 26); } }), { rot: 90, alt: -0.15 });   // grelhas de ventilação
       T.no('cor', (g) => { g.strokeStyle = 'rgba(210,170,30,0.7)'; g.lineWidth = 12; g.setLineDash([22, 18]); g.strokeRect(w * 0.25, h * 0.25, w * 0.5, h * 0.5); g.setLineDash([]); });
       for (const [x0, y0, x1, y1] of [[30, 30, w - 30, 30], [30, h - 30, w - 30, h - 30], [30, 30, 30, h - 30], [w - 30, 30, w - 30, h - 30]]) T.faixa(x0, y0, x1, y1, 5, NEON.vermelho.join(','), { a: 0.6, brilha: 0.7, traco: [60, 30] });
       T.sujeira(26, ['60,50,40', '30,30,30'], 16, 60, 0.12, 0.3);

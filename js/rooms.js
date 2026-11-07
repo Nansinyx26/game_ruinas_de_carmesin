@@ -1026,6 +1026,7 @@ class Room {
     // Luminárias de cada tema
     for (const tc of this.torches) {
       if (tc.chao) {
+        if (typeof Fogo !== 'undefined' && Fogo.ehFogueira(this, tc)) continue;   // fogueira de verdade (js/fogo.js)
         // lume no chão do campo aberto (fogueira, cristal ou brasa, na cor da luz do tema)
         const sx = isoX(tc.x, tc.y), sy = isoY(tc.x, tc.y), f = 0.8 + 0.2 * Math.sin(time * 9 + tc.ph);
         GlowCache.drawFlat(ctx, th.lamp, sx, sy, 70 * f, 0.4 * f);
@@ -1147,7 +1148,14 @@ function drawPillar(ctx, p, player) {
     if (Math.abs(px - sx) < (p.hw || p.r * ISO_RX) + 18 && py < sy + 10 && py > sy - p.h - 40) alpha = 0.38;
   }
   ctx.globalAlpha = alpha;
-  ctx.drawImage(p.sprite, sx - p.ox, sy - p.oy, p.sprite.width / game.room.scale, p.sprite.height / game.room.scale);
+  const R = game.room;
+  if (R.theme && R.theme.pillar === 'tree' && typeof Fogo !== 'undefined' && !p.cenario) {
+    // vento (js/fogo.js: Fogo.VENTO): a árvore e o arbusto balançam a partir da base
+    const V = Fogo.VENTO, ph = (p.seed || 0) % 100, sw = (0.025 + 0.03 * V.k) * (Math.sin(game.realTime * 1.25 + ph) * 0.7 + Math.sin(game.realTime * 2.9 + ph * 1.7) * 0.3) + (V.x - V.y) * V.k * 0.012;
+    ctx.save(); ctx.translate(sx, sy); ctx.transform(1, 0, -sw, 1, 0, 0);
+    ctx.drawImage(p.sprite, -p.ox, -p.oy, p.sprite.width / R.scale, p.sprite.height / R.scale);
+    ctx.restore();
+  } else ctx.drawImage(p.sprite, sx - p.ox, sy - p.oy, p.sprite.width / game.room.scale, p.sprite.height / game.room.scale);
   ctx.globalAlpha = 1;
 }
 

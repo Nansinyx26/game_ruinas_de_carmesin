@@ -34,6 +34,38 @@ const Agua = (() => {
     metro_arcologia: [{ lago: [0.3, 0.45, 0.13, 0.1] }],
   };
   let corpos = [], R0 = null, t = 0;
+  // ondulações (quem nada, entra ou cai na água, explosões): [x, y, instante (relógio do shader), força]
+  const ondas = [], cachoeiras = [];
+  const relogio = () => (typeof performance !== 'undefined' ? performance.now() / 1000 : t) % 62.832;
+  function onda(x, y, forca = 1) {
+    if (!corpos.length || profundidade(x, y) <= 0) return;
+    ondas.push({ x, y, t0: relogio(), t: 0, k: forca });
+    if (ondas.length > 6) ondas.shift();
+  }
+  // respingo: gotas que sobem e caem, o anel de espuma e a ondulação
+  function respingo(x, y, forca = 1) {
+    if (!corpos.length || profundidade(x, y) <= 0 || typeof game === 'undefined' || !game.particles) return;
+    const P_ = game.particles, n = Math.round(6 + 8 * forca);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = 30 + Math.random() * 70 * forca;
+      P_.emit(P.SPARK, x, y, 4, Math.cos(a) * v, Math.sin(a) * v, 120 + Math.random() * 140 * forca, 0.45 + Math.random() * 0.35, 1.2 + Math.random(), '205,235,255', 520, 0);
+    }
+    P_.ring(x, y, 34 + 30 * forca, '220,245,255', 0.5, 3);
+    onda(x, y, Math.min(1.6, 0.6 + forca * 0.5));
+  }
+  // correnteza no ponto (rios): sentido do rio × força, ou null
+  function fluxo(x, y) {
+    let best = null, bd = 1e9;
+    for (const c of corpos) {
+      if (!c.rio) continue;
+      for (let i = 0; i + 1 < c.pts.length; i++) {
+        const [ax, ay] = c.pts[i], [bx, by] = c.pts[i + 1], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+        const u = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)), d = Math.hypot(x - ax - dx * u, y - ay - dy * u);
+        if (d < bd && d < largura(c, c.ac[i] + Math.sqrt(l2) * u) / 2) { bd = d; const l = Math.sqrt(l2); best = [dx / l * (c.forca || 0.6), dy / l * (c.forca || 0.6)]; }
+      }
+    }
+    return best;
+  }
 
   // ------------------------------------------------------------ geometria
   // Margem natural: o contorno do lago varia com o ângulo e a largura do rio com o caminho (a mesma
@@ -83,7 +115,7 @@ const Agua = (() => {
 
   // ------------------------------------------------------------ zona
   function aoCarregar(z) {
-    corpos = []; R0 = null;
+    corpos = []; R0 = null; ondas.length = 0; cachoeiras.length = 0;
     const R = typeof game !== 'undefined' && game.room;
     if (!R || !z || !AGUA_ZONAS[z.id]) return 0;
     corpos = montar(z, R); R0 = R;
@@ -117,6 +149,31 @@ const Agua = (() => {
       p.wpnOut = false; if (p.state === 'block') p.state = 'idle';
       if (!antes && g.particles) g.particles.dust(p.x, p.y, 8, 14, 120);
       if (!antes && g.audio && g.audio.ctx) g.audio.noise(0.25, 0.12, 'bandpass', 900, 400, 1);
+      if (!antes) respingo(p.x, p.y, 1.2);
+    }
+    // quem anda ou nada na água deixa ondulações; a correnteza do rio empurra
+    for (let i = ondas.length - 1; i >= 0; i--) { ondas[i].t += dt; if (ondas[i].t > 2.6) ondas.splice(i, 1); }
+    if (pr > 0.05) {
+      const anda = Math.hypot(p.vx || 0, p.vy || 0) > 20;
+      p._ondaT = (p._ondaT || 0) - dt;
+      if (p._ondaT <= 0) { p._ondaT = anda ? 0.35 : 1.4; onda(p.x, p.y, p.nadando ? (anda ? 0.7 : 0.35) : 0.4); }
+      if (p._caiu && !p.air) respingo(p.x, p.y, 1.4);
+      const f = fluxo(p.x, p.y);
+      if (f && g.room && g.room.canStand) {
+        const k = (p.nadando ? 70 : 30) * pr, nx = p.x + f[0] * k * dt, ny = p.y + f[1] * k * dt;
+        if (g.room.canStand(nx, ny, p.radius || 14)) { p.x = nx; p.y = ny; }
+      }
+    }
+    p._caiu = !!p.air;
+    for (const e of g.enemies) if (e.alive && (e._ondaT = (e._ondaT || 0) - dt) <= 0) { e._ondaT = 0.5; if (Math.hypot(e.vx || 0, e.vy || 0) > 20 && profundidade(e.x, e.y) > 0.05) onda(e.x, e.y, 0.4); }
+    // cachoeiras: névoa e gotas na base, a ondulação constante
+    for (const C of cachoeiras) {
+      C.t = (C.t || 0) - dt;
+      if (C.t > 0) continue;
+      C.t = 0.12;
+      if (g.particles) { const a = Math.random() * Math.PI * 2, v = 20 + Math.random() * 60; g.particles.emit(P.SPARK, C.x + Math.cos(a) * C.r * 0.3, C.y + Math.sin(a) * C.r * 0.3, 6, Math.cos(a) * v, Math.sin(a) * v, 80 + Math.random() * 120, 0.6, 1.3, '220,240,255', 480, 0); }
+      if (typeof Fogo !== 'undefined' && Fogo.baforada && Math.random() < 0.5) Fogo.baforada(C.x + (Math.random() - 0.5) * C.r * 0.6, C.y + (Math.random() - 0.5) * C.r * 0.6, 8, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, 18 + Math.random() * 16, C.r * 0.3, 2.2 + Math.random(), [225, 235, 245], 0.22);
+      if (Math.random() < 0.25) onda(C.x, C.y, 0.8);
     }
     // inimigos não entram no fundo (param na margem)
     for (const e of g.enemies) {
@@ -180,6 +237,21 @@ const Agua = (() => {
         for (let q = 0; q <= 6; q++) { const xx = x - L + q * L / 3, yy = y + Math.sin(q * 1.2 + t * 2 + i) * 2.2; if (q) ctx.lineTo(isoX(xx, yy), isoY(xx, yy)); else ctx.moveTo(isoX(xx, yy), isoY(xx, yy)); }
         ctx.stroke();
       }
+      // ondulações (quem nada, entra ou cai) e os pingos da chuva
+      for (const O of ondas) {
+        const u = O.t / 2.6, rr = O.t * 55;
+        if (u >= 1 || rr < 2) continue;
+        ctx.strokeStyle = `rgba(230,246,252,${(0.55 * (1 - u) * Math.min(1, O.k)).toFixed(3)})`; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(isoX(O.x, O.y), isoY(O.x, O.y), rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      const chv = typeof Clima !== 'undefined' && Clima.chuva ? Clima.chuva() : 0;
+      if (chv > 0.05) for (let i = 0; i < Math.round(40 * chv); i++) {
+        const fase = (t * 1.6 + i * 0.137) % 1, sem = Math.floor(t * 1.6 + i * 0.137) * 31 + i * 7;
+        const u = (Math.sin(sem * 12.9898) * 43758.5453) % 1, v = (Math.sin(sem * 78.233) * 12543.1) % 1;
+        const x = bx + u * ext, y = by + v * ext * 0.9, rr = 2 + fase * 9;
+        ctx.strokeStyle = `rgba(220,238,248,${(0.5 * (1 - fase)).toFixed(3)})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(isoX(x, y), isoY(x, y), rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+      }
       if (luz > 0.25) for (let i = 0; i < 40; i++) {   // brilhos do sol (piscam)
         const u = ((i * 0.7548 + t * 0.012) % 1) * 2 - 1, v = ((i * 0.5698) % 1) * 2 - 1, a = Math.max(0, Math.sin(t * 3.1 + i * 2.3)) ** 6;
         if (a < 0.05) continue;
@@ -234,7 +306,8 @@ const Agua = (() => {
   }
   function malha(c) {
     const d = [];
-    const vert = (x, y, dist) => { const k = corProf(dist); d.push(x, y, 0.8, 0, 0, 1, k[0], k[1], k[2], Math.max(0, 1 - dist / 30)); };
+    let fx = 0, fy = 0;   // correnteza (rios): vai na normal do vértice (o shader da água lê aNor.xy)
+    const vert = (x, y, dist) => { const k = corProf(dist); d.push(x, y, 0.8, fx, fy, 1, k[0], k[1], k[2], Math.max(0, 1 - dist / 30)); };
     if (c.lago) {
       const S = 72, A = [0, 6, 16, 30, 46, 70, 110, 170, 260, 1e9];
       const ring = (enc) => { const L = []; for (let i = 0; i < S; i++) { const a = i / S * Math.PI * 2, b = borda(c, a), rx = c.rx * b - enc, ry = c.ry * b - enc * c.ry / c.rx; L.push(rx > 2 && ry > 2 ? [c.x + Math.cos(a) * rx, c.y + Math.sin(a) * ry, enc] : null); } return L; };
@@ -259,6 +332,7 @@ const Agua = (() => {
         let i = 0; while (i < c.pts.length - 2 && c.ac[i + 1] < ss) i++;
         const [ax, ay] = c.pts[i], [bx, by] = c.pts[i + 1], L = c.ac[i + 1] - c.ac[i] || 1, u = Math.min(1, (ss - c.ac[i]) / L);
         const x = ax + (bx - ax) * u, y = ay + (by - ay) * u, nx = -(by - ay) / L, ny = (bx - ax) / L, w = largura(c, ss) / 2;
+        fx = (bx - ax) / L * (c.forca || 0.6); fy = (by - ay) / L * (c.forca || 0.6);
         const lin = U.map((q) => [x + nx * w * q, y + ny * w * q, Math.max(0, (1 - Math.abs(q)) * w)]);
         if (prev) for (let q = 0; q + 1 < U.length; q++) { const a = prev[q], b = prev[q + 1], c1 = lin[q], c2 = lin[q + 1]; vert(a[0], a[1], a[2]); vert(b[0], b[1], b[2]); vert(c2[0], c2[1], c2[2]); vert(a[0], a[1], a[2]); vert(c2[0], c2[1], c2[2]); vert(c1[0], c1[1], c1[2]); }
         prev = lin;
@@ -286,5 +360,15 @@ const Agua = (() => {
     const L = montar({ id: zid }, R);
     return (x, y) => dentroDe(L, x, y);
   }
-  return { AGUA_ZONAS, RASO, aoCarregar, formas, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };
+  // 3ª pessoa: as ondulações recentes para o shader da água ([x, y, instante, força])
+  function ondas3P() { return ondas.slice(-4).map((O) => [O.x, O.y, O.t0, O.k]); }
+  // estado da água para o shader: agitação (tempestade, vento) e a chuva
+  function estado3P() {
+    let ag = 0, ch = 0;
+    if (typeof Clima !== 'undefined' && typeof game !== 'undefined' && game.world) { try { ch = Clima.chuva(); ag = Math.min(1.5, Clima.vento() * 0.45 + (Clima.tipo() === 'tempestade' ? 0.6 : 0)); } catch (e) { /* sem clima */ } }
+    return [ag, 0, ch, 0];
+  }
+  // cachoeira (estrutura 'cachoeira', js/mundo/estruturas.js): névoa, gotas e ondulação na base
+  function cachoeira(x, y, r) { cachoeiras.push({ x, y, r: r || 60, t: 0 }); }
+  return { AGUA_ZONAS, RASO, aoCarregar, formas, onda, respingo, fluxo, ondas3P, estado3P, cachoeira, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };
 })();

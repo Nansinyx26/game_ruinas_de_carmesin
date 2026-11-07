@@ -164,6 +164,8 @@ const Estruturas = (() => {
       carregar(id);
     }
     atual = { room: R, lug };
+    if (typeof Fogo !== 'undefined') Fogo.estruturas(lug);   // braseiros acesos, fogo e fumaça dos fornos e forjas (js/fogo.js)
+    if (typeof Agua !== 'undefined' && Agua.cachoeira) for (const q of lug) if (q.id === 'cachoeira') Agua.cachoeira(q.x, q.y, IDX[q.id].r * q.esc);
     colocar();
     return lug.length;
   }
@@ -213,7 +215,11 @@ const Estruturas = (() => {
       const m = game.model3('cen_' + L.id);
       if (!m) continue;
       let o = L.o3;
-      if (!o) { o = L.o3 = { m: M3.make(), fixo: true, flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0 }; M3.trs(o.m, [L.x, L.y, 0], [0, 0, L.giro], [L.esc, L.esc, L.esc]); }
+      if (!o) {
+        o = L.o3 = { m: M3.make(), fixo: true, flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0,
+          vento: IDX[L.id] && IDX[L.id].tipo === 'arvore' ? 0.6 : IDX[L.id] && IDX[L.id].tipo === 'planta' ? 1 : /^item_ambiente_md_[567]$/.test(L.id) ? 1.8 : 0 };   // árvores, plantas e estandartes ao vento
+        M3.trs(o.m, [L.x, L.y, 0], [0, 0, L.giro], [L.esc, L.esc, L.esc]);
+      }
       const it = R3D.queue(m, null, null, o);
       it.ent = null;
       Q.push(it);

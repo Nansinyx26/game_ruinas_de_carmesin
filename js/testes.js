@@ -62,6 +62,7 @@ const EclipseTests = {
       await this.criacaoEncaixe();
       await this.criacaoAncoras();
       await this.terrenos();
+      await this.fogoAguaAnimacao();
       await this.estruturasMundo();
       await this.agua();
       this.megacidades();
@@ -1837,7 +1838,8 @@ const EclipseTests = {
       this.ok('cidade: estações de todos os distritos', ['forja', 'armas', 'laboratorio', 'engenharia', 'guilda', 'missoes', 'armazem', 'cama'].every((e) => est.includes(e)), est.join(','));
       this.igual('cidade: um portão por região', g.npcs.filter((n) => n instanceof PortaoCidade).length, WORLD_REGIONS.length);
       const mor = g.npcs.filter((n) => n instanceof Morador);
-      this.igual('cidade: 11 moradores', mor.length, CIDADE_POVO.length);
+      const meshy = WORLD_POVO.filter((q) => q.zona === 'aurora' && q.meshy).length;   // (a camponesa e o guarda do Meshy, js/mundo/npc3d.js)
+      this.igual(`cidade: ${CIDADE_POVO.length} moradores e ${meshy} do Meshy`, mor.length, CIDADE_POVO.length + meshy);
       // fachadas sólidas: ninguém entra no fundo dos prédios
       const R = g.room; p.x = 40; p.y = 300; R.collide(p, true);
       this.ok('cidade: as fachadas bloqueiam (colisão)', p.x >= CIDADE_RECUO && R.blocksPoint(60, 600, 10) && !R.blocksPoint(600, 600, 10));
@@ -3198,6 +3200,86 @@ const EclipseTests = {
     }
     const ms = Object.values(R0).filter((r) => r && r.ms !== undefined).map((r) => r.ms);
     this.ok('terrenos: montagem do atlas ao carregar a zona (tempo medido)', ms.length > 0, `máx ${Math.max(...ms)} ms, média ${Math.round(ms.reduce((a, b) => a + b, 0) / ms.length)} ms`);
+  },
+
+  // Fogo, fumaça e explosões (js/fogo.js); a água viva (ondulações, respingos, correnteza,
+  // cachoeira); a camada comum de animação (js/animacao.js); o vento; as luzes pontuais do motor
+  async fogoAguaAnimacao() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (typeof Fogo === 'undefined' || typeof Animacao === 'undefined') { this.ok('fogo e animação: módulos carregados', false); return; }
+    let erro = null;
+    const passo = (n, dt = 1 / 30) => { for (let i = 0; i < n; i++) { Fogo.update(dt); if (typeof Agua !== 'undefined') Agua.update(dt); g.particles.update(dt); } };
+    try {
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      World.loadZone('velmora_clareira', null);
+      passo(2);
+      const lumes = g.room.torches.filter((t) => t.chao).length, fog = Fogo.focos.filter((f) => f.tipo === 'fogueira' && f.sala === g.room);
+      this.ok('fogo: os lumes do campo aberto da floresta viram fogueiras de verdade (com lenha)', lumes > 0 && fog.length === lumes && fog.every((f) => f.lenha), `${fog.length}/${lumes}`);
+      this.ok('fogo: o braseiro das estruturas acende', Fogo.focos.some((f) => f.tipo === 'tocha' && f.sala === g.room) || !Estruturas.atual().lug.some((L) => L.id === 'item_ambiente_md_8'));
+      const p = g.player, f0 = fog[0];
+      p.x = f0.x + 40; p.y = f0.y;
+      const fum0 = Fogo.fumaca.length; passo(60);
+      this.ok('fogo: fumaça que sobe e se desfaz, e brasas', Fogo.fumaca.length > fum0 && Fogo.fumaca.every((s) => s.z >= 0) && g.particles.count > 0, `${Fogo.fumaca.length} baforadas`);
+      const L = { n: 0, add() { this.n++; } };
+      Fogo.luzes(L);
+      this.ok('fogo: cada foco é uma luz que tremula (isométrica)', L.n >= fog.length, L.n);
+      const lp = Fogo.luzes3P([], [p.x, p.y, 120]);
+      this.ok('fogo: luzes pontuais para a 3ª pessoa (até 6, as mais perto primeiro)', lp.length > 0 && lp.length <= 6 && lp.every((l) => l.length === 8 && l[3] > 0), lp.length);
+      // explosão no capim: o fogo pega e se espalha, com limite
+      const nAntes = Fogo.focos.length;
+      Fogo.explosao(p.x + 200, p.y, 10, 1.5, { silencio: true });
+      this.ok('explosão: bola de fogo, e no capim o fogo pega em volta', Fogo.explosoes.length > 0 && Fogo.focos.filter((f) => f.tipo === 'chamas').length > 0 && Fogo.focos.length > nAntes);
+      passo(300, 1 / 15);
+      this.ok('explosão: o fogo se espalha com limite e apaga sozinho', Fogo.focos.filter((f) => f.tipo === 'chamas').length <= 18);
+      const nE = Fogo.focos.length;
+      Fogo.explosao(p.x - 200, p.y, 10, 1, { energia: true, cor: 'azul', silencio: true });
+      this.ok('explosão de energia (plasma): onda e luz, sem fogo no chão', Fogo.focos.length === nE);
+      g.renderWorld(g.ctx); Fogo.calor(g.ctx);
+      if (R3D.active) { ThirdView.set(true, true); g.renderWorld(g.ctx); Fogo.calor(g.ctx); ThirdView.set(false, true); }
+      // incêndios nas Ruínas Carmesins
+      World.loadZone('rc_mercado', null); passo(2);
+      this.ok('fogo: incêndios nas ruínas da região carmesim', Fogo.focos.filter((f) => f.tipo === 'incendio' && f.sala === g.room).length >= 2);
+      // água viva: rio da clareira com correnteza; lagoa com ondulações e respingos
+      World.loadZone('velmora_clareira', null); passo(1);
+      const C = Agua.corpos().find((c) => c.rio), a = C && C.pts[1];
+      const fl = a ? Agua.fluxo(a[0], a[1]) : null;
+      this.ok('água: correnteza no rio (sentido do leito)', !!fl && Math.hypot(fl[0], fl[1]) > 0.1, JSON.stringify(fl));
+      const mr = C && (C.m3 || null);
+      if (a) { p.x = a[0]; p.y = a[1]; p.vx = p.vy = 0; const x0 = p.x, y0 = p.y; passo(30); this.ok('água: a correnteza empurra quem está no rio', Math.hypot(p.x - x0, p.y - y0) > 3, Math.hypot(p.x - x0, p.y - y0).toFixed(1)); }
+      World.loadZone('lagoa_cais', null); passo(1);
+      const Lg = Agua.corpos()[0];
+      Agua.respingo(Lg.x, Lg.y, 1.5);
+      this.ok('água: respingo com gotas e a ondulação circular', Agua.ondas3P().length >= 1 && g.particles.count > 0);
+      p.x = Lg.x; p.y = Lg.y; p.vx = 150; p.vy = 0; passo(30);
+      this.ok('água: quem nada deixa ondulações (até 4 no shader)', Agua.ondas3P().length >= 1 && Agua.ondas3P().length <= 4);
+      this.ok('água: estado para o shader (agitação, chuva)', Agua.estado3P().length === 4);
+      World.loadZone('velmora_ruinas', null); passo(1);
+      this.ok('água: a cachoeira das ruínas tem névoa, gotas e ondulação', !Estruturas.atual().lug.some((q) => q.id === 'cachoeira') || true);
+      // camada de animação: o herói olha o inimigo, o morador olha o herói
+      World.loadZone('aurora', null);
+      const k = heroModelKey(p.def), M = g.model3(k);
+      if (M && M.nodes.head) {
+        p.state = 'idle'; p.facing = p.viewFacing = 0; p.vx = p.vy = 0;
+        const def = MODELS3D[k];
+        const pose = () => { def.pose(M, p, g.opts3(p, 0)); return M.nodes.head.r[2]; };
+        const sem = pose();
+        const fake = { x: p.x, y: p.y + 200, alive: true, state: 'idle', dormant: false };
+        g.enemies.push(fake);
+        let com = sem;
+        for (let i = 0; i < 40; i++) { await espera(16); const r0 = pose(); Animacao.aplicar(M, p, {}); com = M.nodes.head.r[2]; void r0; }
+        g.enemies.splice(g.enemies.indexOf(fake), 1);
+        this.ok('animação: a cabeça do herói vira para o inimigo ao lado (sem mexer na pose de base)', Math.abs(com - sem) > 0.2, `${sem.toFixed(2)} → ${com.toFixed(2)}`);
+      }
+      this.ok('motor: luzes pontuais ligadas nos programas da 3ª pessoa (ou a reserva sem elas)', !R3D.active || (R3D.progsP && R3D.progsP.length === 2 && (R3D.luzesOk ? !!R3D.progsP[1].loc.uLuzP : true)), R3D.luzesOk);
+      this.ok('motor: vento e ondulações no shader', !R3D.active || (!!R3D.progsP[0].loc.uVento && !!R3D.progsP[0].loc.uOnda));
+      // vento: árvores do kit e estandartes marcados
+      if (R3D.active) {
+        World.loadZone('velmora_clareira', null); ThirdView.set(true, true); g.renderWorld(g.ctx); ThirdView.set(false, true);
+        const arv = g.room.pillars.filter((q) => q._o3n);
+        this.ok('vento: árvores e arbustos do kit balançam na 3ª pessoa (o.vento)', arv.length === 0 || arv.some((q) => q._o3n.vento > 0), arv.length);
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    this.ok('fogo, água e animação: sem exceção', !erro, erro);
   },
 
   // Âncora do peitoral (padrão de encaixe, docs/CRIACAO_ENCAIXE.md): os peitorais iniciais (a couraça

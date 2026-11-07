@@ -359,7 +359,14 @@ void main() {
   float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
   float rim = max(dot(n, uRimDir), 0.0);
   float up = n.z * 0.5 + 0.5;
-  vec3 lit = col * (uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2)) + uRimCol * (rim * 0.55 + fres * 0.35);
+  vec3 light = uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2);
+#ifdef LUZES
+  vec3 spP; light += pontuais(n, V, 40.0, spP);   // o fogo e as explosões iluminam o corpo e o cenário
+#endif
+  vec3 lit = col * light + uRimCol * (rim * 0.55 + fres * 0.35);
+#ifdef LUZES
+  lit += spP * (0.12 + wetSp * 0.6);
+#endif
   if (wetSp > 0.0) lit += uKeyCol * pow(max(dot(n, normalize(uKeyDir + V)), 0.0), 40.0) * 0.5 * wetSp * key;
   lit += col * e * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
@@ -394,12 +401,31 @@ uniform sampler2D uEmiT; uniform float uEmiOn; uniform sampler2D uDet; uniform v
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
 uniform vec4 uGlow; uniform vec4 uTint; uniform vec4 uWet;
-uniform vec3 uView; uniform float uPersp; uniform vec4 uFog;
+uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform float uMolhado;
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
   return clamp((length(uView - vPos) - uFog.w) / (uFog.w * 2.5), 0.0, 0.96);
 }
+#ifdef LUZES
+// luzes pontuais da 3ª pessoa (fogo, explosões): posição e raio; cor e força
+uniform vec4 uLuzP[4]; uniform vec4 uLuzC[4];
+vec3 pontuais(vec3 n, vec3 V, float shin, out vec3 spec) {
+  vec3 s = vec3(0.0); spec = vec3(0.0);
+  if (uPersp < 0.5) return s;
+  for (int i = 0; i < 4; i++) {
+    vec4 P = uLuzP[i];
+    if (P.w <= 0.0) continue;
+    vec3 d = P.xyz - vPos; float L = length(d);
+    float at = clamp(1.0 - L / P.w, 0.0, 1.0); at *= at;
+    if (at <= 0.0) continue;
+    vec3 l = d / max(L, 0.001), c = uLuzC[i].rgb * uLuzC[i].a * at;
+    s += c * (max(dot(n, l), 0.0) * 0.85 + 0.15);
+    spec += c * pow(max(dot(n, normalize(l + V)), 0.0), shin);
+  }
+  return s;
+}
+#endif
 void main() {
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
@@ -514,7 +540,14 @@ void main() {
   float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
   float rim = max(dot(n, uRimDir), 0.0);
   float up = n.z * 0.5 + 0.5;
+  if (uDetP.x > 0.0 && uMolhado > 0.0) {
+    // chão na chuva: escurece e fica liso (reflete mais o ambiente e as luzes)
+    col *= 1.0 - 0.28 * uMolhado; rough = mix(rough, 0.1, uMolhado * 0.75); specK = max(specK, uMolhado);
+  }
   vec3 light = uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2);
+#ifdef LUZES
+  vec3 spP; light += pontuais(n, V, mix(96.0, 6.0, rough), spP);   // fogo e explosões: luz no corpo, no chão e nas paredes
+#endif
   // pintado: a arte já tem luz; peças de detalhe (material > 0): luz da cena com contraluz discreta;
   // cores do modelo procedural (material 0, a espada): o contraluz forte de sempre
   vec3 lit = painted ? (uPbr > 0.5 ? col * (0.1 + 1.0 * light) * (1.0 - 0.4 * metal) + uRimCol * (rim * 0.08 + fres * 0.05)
@@ -530,6 +563,10 @@ void main() {
     if (mat > 3.5 && mat < 4.5) sc = vec3(0.07, 0.09, 0.14);         // cabelo: reflexo azulado
     lit += (uKeyCol * sc * sp + uRimCol * metal * fres * 0.25) * specK;
   }
+#ifdef LUZES
+  // o brilho do fogo no metal, no vidro e no chão molhado
+  lit += spP * mix(vec3(0.06), col * 1.6 + 0.12, metal) * (specK + 0.3) * 2.0;
+#endif
   if (uDetP.x > 0.0) {
     // chão: reflexo controlado do ambiente (o céu ou o teto da caverna) no que é liso — vidro,
     // metal polido, poças e gelo —, mais forte de lado (Fresnel)
@@ -561,16 +598,17 @@ const R3D = {
         if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
         return s;
       };
-      const link = (fs, vs = R3D_VS) => {
+      const link = (fs, vs = R3D_VS, defs = '') => {
         const p = gl.createProgram();
         // relevo do mapa de material: precisa das derivadas de tela (WebGL 1: extensão)
-        if (fs === R3D_FS_TEX) fs = (gl.getExtension('OES_standard_derivatives') ? '#extension GL_OES_standard_derivatives : enable\n#define BUMP 1\n' : '') + fs;
+        if (fs === R3D_FS_TEX) fs = (gl.getExtension('OES_standard_derivatives') ? '#extension GL_OES_standard_derivatives : enable\n#define BUMP 1\n' : '') + defs + fs;
+        else fs = defs + fs;
         gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
         gl.linkProgram(p);
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP', 'uAgua2', 'uOnda', 'uVento', 'uLuzP', 'uLuzC', 'uMolhado']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -579,7 +617,13 @@ const R3D = {
       // Programa com textura: se falhar, os modelos texturizados não são desenhados (o resto segue igual)
       try { this.progs.push(link(R3D_FS_TEX)); } catch (e) { console.warn('Textura 3D indisponível:', e); }
       // os mesmos materiais com a câmera em perspectiva (terceira pessoa)
-      try { this.progsP = [link(R3D_FS, R3D_VS_P)]; this.progsP.push(link(R3D_FS_TEX, R3D_VS_P)); } catch (e) { console.warn('Perspectiva 3D indisponível:', e); }
+      // luzes pontuais (fogo, explosões): se o aparelho não ligar o programa com elas (poucos
+      // registros de uniform), a perspectiva segue sem elas
+      try { this.progsP = [link(R3D_FS, R3D_VS_P, '#define LUZES 1\n')]; this.progsP.push(link(R3D_FS_TEX, R3D_VS_P, '#define LUZES 1\n')); this.luzesOk = true; }
+      catch (e0) {
+        console.warn('Luzes pontuais indisponíveis:', e0); this.luzesOk = false;
+        try { this.progsP = [link(R3D_FS, R3D_VS_P)]; this.progsP.push(link(R3D_FS_TEX, R3D_VS_P)); } catch (e) { console.warn('Perspectiva 3D indisponível:', e); }
+      }
       this.buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
       gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW);
@@ -725,6 +769,7 @@ const R3D = {
       m.reset();
       // Um erro numa pose nunca deve derrubar o quadro: o modelo fica na pose de repouso
       if (it.pose) { try { it.pose(m, it.arg, o); } catch (err) { if (!m.err) { m.err = true; console.error(err); } } }
+      if (it.arg && it.pose && typeof Animacao !== 'undefined') Animacao.aplicar(m, it.arg, o);   // olhar, fala e peso (js/animacao.js)
       if (it.arg && it.pose) this.misturar(m, it.arg);   // transição suave entre as poses de estados diferentes
       // o.m: matriz da raiz pronta (3×4), usada pelo inspetor 3D para as vistas ortográficas
       let root = this._m;
@@ -909,6 +954,9 @@ const R3D = {
     if (L.uVar) { const vc = o.vart; if (vc) gl.uniform4f(L.uVar, vc[0], vc[1], vc[2], vc[3]); else gl.uniform4f(L.uVar, 0, 0, 0, 0); }
     // clima no corpo: molhado, neve assentada e geada (js/mundo/clima.js, Clima.roupa)
     if (L.uWet) { const w = o.clima; if (w) gl.uniform4f(L.uWet, w[0], w[1], w[2], 0); else gl.uniform4f(L.uWet, 0, 0, 0, 0); }
+    // vento (js/fogo.js: Fogo.vento): árvores, plantas e bandeiras balançam (o.vento = quanto)
+    if (L.uVento) { const v = this.vento; gl.uniform4f(L.uVento, o.vento || 0, (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 1000, v[2] * (0.4 + v[0]), v[3] * (0.4 + v[0])); }
+    if (L.uMolhado) gl.uniform1f(L.uMolhado, tex && tex.detP ? this.molhado : 0);
     // água (js/mundo/agua.js): material com ondas, reflexo e espuma; o tempo anda sozinho
     if (L.uAgua) { const c = o.agua && o.aguaC; gl.uniform4f(L.uAgua, o.agua ? 1 : 0, o.agua ? (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 62.832 : 0, c ? c[0] : 0, c ? c[1] : 0); }
   },
@@ -918,6 +966,16 @@ const R3D = {
   // eye: [x, y, z], key/rim: direções da luz }. Desenha a cor em [0, w]×[0, h] na resolução pedida
   // (o canvas cresce até o limite) e a emissão logo abaixo, em meia resolução (é brilho somado,
   // não precisa de mais): [0, ew]×[ey, ey + eh]. Devolve { w, h, ey, ew, eh } ou null
+  // Estado do quadro na 3ª pessoa: até 4 luzes pontuais [x, y, z, raio, r, g, b, força], até 4
+  // ondulações na água [x, y, instante, força], água (agitação, —, chuva, —), chão molhado e vento
+  luzP: new Float32Array(16), luzC: new Float32Array(16), ondas: new Float32Array(16), agua2: [0, 0, 0, 0], molhado: 0, vento: [0, 0, 1, 0],
+  quadro3P(luzes, ondas, agua2, molhado, vento) {
+    this.luzP.fill(0); this.luzC.fill(0); this.ondas.fill(0);
+    (luzes || []).slice(0, 4).forEach((l, i) => { this.luzP.set([l[0], l[1], l[2], l[3]], i * 4); this.luzC.set([l[4], l[5], l[6], l[7]], i * 4); });
+    (ondas || []).slice(0, 4).forEach((o, i) => this.ondas.set(o, i * 4));
+    this.agua2 = agua2 || [0, 0, 0, 0]; this.molhado = molhado || 0;
+    if (vento) this.vento = vento;
+  },
   renderScene(view, W, H) {
     const n = this.used;
     this.used = 0;
@@ -951,6 +1009,10 @@ const R3D = {
       const fg = view.fog || [0, 0, 0, 400];
       gl.uniform4f(L.uFog, fg[0], fg[1], fg[2], fg[3]);
       gl.uniform1f(L.uPass, pass);
+      // luzes pontuais do quadro (fogo, explosões: js/fogo.js) e o estado da água e da chuva
+      if (L.uLuzP) { gl.uniform4fv(L.uLuzP, this.luzP); gl.uniform4fv(L.uLuzC, this.luzC); }
+      if (L.uOnda) gl.uniform4fv(L.uOnda, this.ondas);
+      if (L.uAgua2) gl.uniform4f(L.uAgua2, this.agua2[0], this.agua2[1], this.agua2[2], this.agua2[3]);
       if (L.uTex) gl.uniform1i(L.uTex, 0);
       if (L.uMat) gl.uniform1i(L.uMat, 1);
       if (L.uNrm) gl.uniform1i(L.uNrm, 2);
