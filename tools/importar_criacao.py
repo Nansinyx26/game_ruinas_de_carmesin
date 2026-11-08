@@ -1264,7 +1264,7 @@ def processar_blender(p, refs):
         Nb = im.normais_vertices(Vs, Fs)[inv]
         Np = N + (Nl - Nb)
         Np /= np.linalg.norm(Np, axis=1, keepdims=True) + 1e-9
-        W = transferir_pesos(P, ref)
+        W = pesos_da_peca(P, ref, vaga)
         nomes = ref['nomes']
         if vaga == 'capa':
             W, nomes = pesos_capa(W, P, ref)
@@ -1309,10 +1309,113 @@ def caixa_regiao(ref, vaga, lado=None):
 
 
 def separar_par(V, F):
-    """Botas e luvas vêm em par lado a lado: separa pelos componentes do lado +Y e −Y."""
+    """Botas e luvas vêm em par lado a lado: separa pelos pedaços contínuos do lado +Y e −Y.
+
+    Cada pedaço (triângulos ligados por vértices) vai inteiro para o lado do seu centro. Separar
+    triângulo a triângulo pela mediana punha no outro lado as pontas de uma peça que passavam do
+    meio (os polegares das luvas, o bico das botas): os vértices em comum levavam as duas
+    transformações e ficavam triângulos esticados de uma mão à outra (a barra escura na cintura)."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    n = len(V)
+    A = coo_matrix((np.ones(F.size), (F.ravel(), np.roll(F, 1, axis=1).ravel())), shape=(n, n))
+    _, lab = connected_components(A, directed=False)
     cy = np.median(V[:, 1])
-    lado_t = np.sign(V[F].mean(1)[:, 1] - cy)
+    soma = np.bincount(lab, weights=V[:, 1], minlength=lab.max() + 1)
+    cont = np.maximum(np.bincount(lab, minlength=lab.max() + 1), 1)
+    lado_c = np.where(soma / cont >= cy, 1, -1)
+    lado_t = lado_c[lab[F[:, 0]]]
     return [(s, F[lado_t == s]) for s in (1, -1)]
+
+
+# regiões do corpo de onde cada peça de membro tira os pesos: a luva só segue o braço e a mão do
+# mesmo lado, a bota só a perna e o pé do mesmo lado e a calça só o tronco e as pernas. Pelo vértice
+# mais próximo do corpo, a luva em A-pose (as mãos junto das coxas) pegava peso da coxa e a calça,
+# da mão: ao andar ou golpear, parte da peça seguia o outro membro e saía do corpo.
+REGIAO_PESOS = {'luvas': ('maos', 'bracos'), 'botas': ('pes', 'pernas'), 'calcas': ('tronco', 'pernas', 'pes')}
+
+
+def pesos_da_peca(P, ref, vaga):
+    """Pesos da peça pelo corpo de referência; luvas, botas e calças só pelos membros delas."""
+    regs = REGIAO_PESOS.get(vaga)
+    if not regs:
+        return transferir_pesos(P, ref)
+    Vb, reg = ref['V'], ref['reg']
+    no_membro = np.isin(reg, regs)
+    if vaga == 'calcas':
+        grupos = [(np.ones(len(P), bool), no_membro)]
+    else:
+        cy = ref['medida']['cy']
+        lado_p = np.where(P[:, 1] >= cy, 1, -1)
+        lado_b = np.where(Vb[:, 1] >= cy, 1, -1)
+        grupos = [(lado_p == s, no_membro & (lado_b == s)) for s in (1, -1)]
+    W = np.zeros((len(P), ref['nb']))
+    for sel_p, sel_b in grupos:
+        if not sel_p.any() or sel_b.sum() < 8:
+            continue
+        sub = dict(ref, kd=cKDTree(Vb[sel_b]), ordem=ref['ordem'][sel_b], w=ref['w'][sel_b])
+        W[sel_p] = transferir_pesos(P[sel_p], sub)
+    return W
+
+
+def conformar_membro(P, ref, vaga, lado, folga=1.08, margem=0.2, passo=0.4, janela=1.2):
+    """A luva e a bota se adaptam ao membro do corpo, fatia por fatia ao longo da altura.
+
+    Escaladas por inteiro (a luva pelo comprimento da mão, a bota pelo da sola), as peças do Meshy
+    ficavam uns 50% mais grossas que a mão e a perna: a luva parecia um copo solto no punho e o cano
+    da bota, um tubo em volta da canela. Em cada fatia, a largura (Y) e a profundidade (X) da peça
+    encolhem até no máximo `folga` vezes a do corpo mais `margem` de cada lado (nunca crescem: o
+    empurrão para fora cuida do que ficar por dentro), e o centro da fatia vai para perto do centro
+    do membro. As escalas são suavizadas ao longo da altura para a forma da peça não ondular. No pé,
+    o comprimento (X) fica como está: a sola já foi medida pelo pé e o bico da bota tem a forma dela."""
+    Vb, reg, m = ref['V'], ref['reg'], ref['medida']
+    cy = m['cy']
+    regs = ('maos', 'bracos') if vaga == 'luvas' else ('pes', 'pernas')
+    B = Vb[np.isin(reg, regs) & (np.where(Vb[:, 1] >= cy, 1, -1) == lado)]
+    z = P[:, 2]
+    zs = np.arange(z.min(), z.max() + passo, passo)
+    n = len(zs)
+    esc = np.ones((n, 2))
+    cen_p = np.zeros((n, 2))
+    cen_b = np.zeros((n, 2))
+    tem = np.zeros(n, bool)
+    for k, zk in enumerate(zs):
+        g = P[np.abs(z - zk) < janela / 2]
+        b = B[np.abs(B[:, 2] - zk) < janela / 2]
+        if len(g) < 6 or len(b) < 6:
+            continue
+        tem[k] = True
+        for e in (0, 1):
+            g0, g1 = np.percentile(g[:, e], [2, 98])
+            b0, b1 = b[:, e].min(), b[:, e].max()
+            lg = max(g1 - g0, 1e-6)
+            esc[k, e] = min(1.0, ((b1 - b0) * folga + 2 * margem) / lg)
+            cen_p[k, e] = (g0 + g1) / 2
+            cen_b[k, e] = (b0 + b1) / 2
+    if not tem.any():
+        return P
+    # fatias sem corpo ou sem peça herdam a vizinha; depois, média móvel ao longo da altura
+    ix = np.where(tem)[0]
+    for arr in (esc, cen_p, cen_b):
+        for e in (0, 1):
+            arr[:, e] = np.interp(np.arange(n), ix, arr[ix, e])
+    nucleo = np.ones(5) / 5
+    def suave(a):
+        return np.stack([np.convolve(np.pad(a[:, e], 2, mode='edge'), nucleo, mode='valid') for e in (0, 1)], 1)
+    esc, cen_p, cen_b = suave(esc), suave(cen_p), suave(cen_b)
+    if vaga == 'botas':
+        # o pé (abaixo do tornozelo) mantém o comprimento e o alinhamento do calcanhar; o cano, não
+        pe = zs < m['tornozelo'] + 0.5
+        esc[pe, 0] = 1.0
+        cen_b[pe, 0] = cen_p[pe, 0]
+    Q_ = P.copy()
+    for e in (0, 1):
+        s_v = np.interp(z, zs, esc[:, e])
+        cp = np.interp(z, zs, cen_p[:, e])
+        cb = np.interp(z, zs, cen_b[:, e])
+        centro = cp + (cb - cp) * 0.7
+        Q_[:, e] = centro + (P[:, e] - cp) * s_v
+    return Q_
 
 
 def girar_z(P, ang, c):
@@ -1387,6 +1490,8 @@ def processar_armadura(p, refs):
                     sc = (amx[0] - amn[0]) / max(np.ptp(Pi[Pi[:, 2] < Pi[:, 2].min() + 0.2 * np.ptp(Pi[:, 2])][:, 0]), 1e-6) * 1.04
                     Pi = (Pi - np.array([Pi[:, 0].min(), Pi[:, 1].mean(), Pi[:, 2].min()])) * sc
                     Pi += np.array([amn[0] - 0.1, (amn[1] + amx[1]) / 2, ref['V'][:, 2].min() - 0.05])
+                if not p.get('sem_conformar'):
+                    Pi = conformar_membro(Pi, ref, vaga, lado)
                 P[idx] = Pi
         elif vaga in ('ombroE', 'ombroD'):
             P = ajuste_ombreira(pares, ref)[lado](Vr)
@@ -1469,7 +1574,7 @@ def processar_armadura(p, refs):
             so = ref['reg'] == 'tronco'
             W = transferir_pesos(P, dict(ref, kd=cKDTree(ref['V'][so]), ordem=ref['ordem'][so], w=ref['w'][so]))
         else:
-            W = transferir_pesos(P, ref)
+            W = pesos_da_peca(P, ref, vaga)
         nomes = ref['nomes']
         if vaga == 'capa':
             W, nomes = pesos_capa(W, P, ref)

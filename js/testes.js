@@ -62,6 +62,7 @@ const EclipseTests = {
       await this.criacaoEncaixe();
       await this.criacaoAncoras();
       await this.barbasEncaixe();
+      await this.membrosTela();
       await this.terrenos();
       await this.fogoAguaAnimacao();
       await this.estruturasMundo();
@@ -3399,6 +3400,117 @@ const EclipseTests = {
       }
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('âncoras do peitoral sem exceção', !erro, erro);
+  },
+
+  // Luvas, botas e calças presas ao próprio membro (tools/importar_criacao.py: pesos só do braço,
+  // da perna ou do tronco e pernas, e cada peça do par separada por pedaço contínuo) e a tela de
+  // criação: cartões iguais com o estado de cada peça, rolagem do painel em tela baixa e o corpo
+  // inteiro enquadrado pela caixa do modelo
+  async membrosTela() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    let erro = null;
+    if (typeof Criacao3D !== 'undefined' && Criacao3D.CAT.length) {
+      try {
+        const MEMBRO = { luvas: /^(arm|hand)[RL]/, botas: /^(thigh|shin|foot)[RL]$/ };
+        const ids = CRIA_CATALOGO.filter((c) => ['luvas', 'botas', 'calcas'].includes(c.vaga) && c.convertido).map((c) => c.id);
+        for (const id of ids) Criacao3D.carregar(id);
+        for (let i = 0; i < 600 && ids.some((id) => !(window.CRIA3D && window.CRIA3D[id])); i++) await espera(50);
+        const fora = [];
+        for (const id of ids) {
+          const D = window.CRIA3D[id];
+          if (!D) { fora.push(`${id}: não carregou`); continue; }
+          for (const corpo in D.porCorpo) for (const sk of D.porCorpo[corpo]) for (const o of sk.ossos) {
+            const ruim = D.vaga === 'calcas' ? /^(arm|hand)/.test(o) : !MEMBRO[D.vaga].test(o);
+            if (ruim) fora.push(`${id}/${corpo}: ${o}`);
+          }
+        }
+        this.ok(`membros: as ${ids.length} luvas, botas e calças só pegam peso do próprio membro (a luva não segue a coxa, a calça não segue a mão)`, ids.length >= 60 && !fora.length, fora.slice(0, 4).join(' · '));
+        if (R3D.active) {
+          for (const corpoG of [0, 1]) {
+            const def = Perfis.registrar({ id: `p_teste_membros_${corpoG}`, nome: 'Membros', classe: 'guerreiro', aparencia: Object.assign(persAparenciaPadrao('guerreiro'), { estilo: 0, corpoG }) });
+            for (let i = 0; i < 400 && Criacao3D.preparar(def) !== true; i++) await espera(50);
+            MODELS3D[def.model].model = null;
+            const M = g.model3(def.model), prev = {};
+            for (const id of ['ini_luvas', 'ini_botas', 'ini_calca']) { const it = Arsenal.gerarCat(id, 0); prev[it.slot] = it; }
+            const v = new Player(0, 0, def); v.vitrine = true; v.pecasPrevia = prev; v.facing = v.viewFacing = 0;
+            for (let i = 0; i < 600 && !Object.keys(prev).every((s) => M.cria.ids[s] === prev[s].cat); i++) { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); await espera(30); }
+            // nenhum triângulo esticado de uma mão à outra (ou de um pé ao outro) na pose de repouso
+            let aresta = 0;
+            for (const vg of ['luvas', 'botas']) for (const sk of M.cria.peles[vg] || []) {
+              const p = sk.pos, I = sk.idx;
+              for (let t = 0; t < I.length; t += 3) for (let j = 0; j < 3; j++) {
+                const a = I[t + j] * 3, b = I[t + (j + 1) % 3] * 3;
+                aresta = Math.max(aresta, Math.hypot(p[a] - p[b], p[a + 1] - p[b + 1], p[a + 2] - p[b + 2]));
+              }
+            }
+            this.ok(`membros corpo ${corpoG + 1}: luvas e botas sem triângulo esticado entre os dois lados (maior aresta ${aresta.toFixed(1)})`, aresta > 0 && aresta < 6, aresta.toFixed(2));   // (a barra de uma mão à outra tinha arestas de umas 20 unidades)
+            // correndo e golpeando: cada vértice da luva fica junto da mão do seu lado, o da bota junto do pé
+            let pior = { luvas: 0, botas: 0 };
+            const N = M.nodes, ladoDe = (bn) => (bn === N.handR || bn === N.armRf || bn === N.armRu || bn === N.footR || bn === N.shinR || bn === N.thighR ? 'R' : 'L');
+            for (const [st, tt] of [['run', 0.2], ['run', 0.5], ['attack', 0.3], ['idle', 0.4]]) {
+              v.state = st; v.animTime = tt * 3; v.stateTime = tt; v.moveSpeed = v.vx = st === 'run' ? v.baseSpeed : 0;
+              if (st === 'attack') { const T = CHARACTER_COMBOS[def.base] || COMBO_TABLE, id = T && T.L, d = ATTACKS[id]; v.attack = d ? { id, def: d, t: tt, dir: 0, serial: 1 } : null; } else v.attack = null;
+              MODELS3D[def.model].pose(M, v, g.opts3(v, 0));
+              (function anda(nd, Pm) { M3.mul(nd.w, Pm, M3.trs(nd.l, nd.p, nd.r, nd.s)); for (const k of nd.kids) anda(k, nd.w); })(M.root, M3.make());
+              for (const [vg, osso] of [['luvas', 'hand'], ['botas', 'foot']]) for (const sk of M.cria.peles[vg] || []) {
+                R3D.skin(sk, 0, !!M.dqs);
+                const P = sk.P;
+                for (let i = 0; i < P.length / 3; i++) {
+                  const w = N[osso + ladoDe(sk.bones[sk.bi[i * 4]])].w;
+                  pior[vg] = Math.max(pior[vg], Math.hypot(P[i * 3] - w[3], P[i * 3 + 1] - w[7], P[i * 3 + 2] - w[11]));
+                }
+              }
+            }
+            this.ok(`membros corpo ${corpoG + 1}: correndo e golpeando, a luva fica na mão e a bota no pé (luva até ${pior.luvas.toFixed(1)} do punho, bota até ${pior.botas.toFixed(1)} do tornozelo)`, pior.luvas > 0 && pior.luvas < 13 && pior.botas > 0 && pior.botas < 18, JSON.stringify(pior));
+            delete MODELS3D[def.model].model;
+          }
+        }
+      } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+      this.ok('membros: sem exceção', !erro, erro);
+    }
+    // ------------------------------------------------ a tela de criação
+    const W0 = VIEW_W, H0 = VIEW_H;
+    erro = null;
+    try {
+      CriacaoTela.abrir('criar');
+      const U = CriacaoTela.ui;
+      CriacaoTela.acao('aba', 'equipamento');
+      const cartoes = () => U.rects.filter((r) => r.id === 'peca');
+      VIEW_W = 1366; VIEW_H = 768;
+      CriacaoTela.draw(g.ctx, 0.1);
+      let C = cartoes();
+      this.ok('tela 1366×768: os 7 cartões do conjunto inicial, todos do mesmo tamanho, e o painel sem rolagem', C.length === 7 && C.every((r) => r.w === C[0].w && r.h === C[0].h) && U.rolEsqMax === 0, `${C.length} ${U.rolEsqMax}`);
+      const outro = CriacaoTela.peitoralDe(U.classe, U.peitoral) === 'ini_peitoral' ? 'ini_armadura' : 'ini_peitoral';
+      CriacaoTela.acao('peca', outro);
+      this.ok('tela: o cartão do peitoral da mochila passa a ser o vestido', CriacaoTela.peitoralDe(U.classe, U.peitoral) === outro);
+      VIEW_W = 1225; VIEW_H = 566;   // 844 × 390 deitado
+      CriacaoTela.draw(g.ctx, 0.2);
+      CriacaoTela.draw(g.ctx, 0.2);
+      const R = CriacaoTela.rEsq, dentro = U.rects.filter((r) => r.x >= R.x && r.x < R.x + R.w && r.y >= R.y - 1);
+      this.ok('tela baixa: o painel da esquerda rola e nada clicável sai da parte visível', U.rolEsqMax > 0 && dentro.every((r) => r.y + r.h <= R.y + R.h + 0.5), `rolagem ${U.rolEsqMax}`);
+      U.rolEsq = 1e9; CriacaoTela.draw(g.ctx, 0.3);
+      C = cartoes();
+      this.ok('tela baixa: rolado até o fim, os cartões aparecem inteiros', U.rolEsq === U.rolEsqMax && C.length === 7 && C.every((r) => r.h === C[0].h), `${C.length}`);
+      // enquadramento: o corpo inteiro (caixa do modelo) cabe na prévia, larga ou estreita
+      let fora = null;
+      for (const [pw, ph] of [[580, 630], [300, 470], [900, 420]]) {
+        const P = { x: 0, y: 0, w: pw, h: ph }, bb = { z0: 0, z1: 72, r: 22 };
+        CriacaoTela._bb = bb; CriacaoTela._bbDef = 'x'; CriacaoTela._cam = null;
+        let N = null;
+        for (let i = 0; i < 80; i++) N = CriacaoTela.niveisZoom(P, 1, 'x');
+        const view = CriacaoTela.camera(P, 0.6, 0.18, N[0].d, N[0].z), Mv = view.mvp;
+        for (const [px, py, pz] of [[0, 0, bb.z1], [0, 0, 0], [bb.r, 0, bb.z1 / 2], [-bb.r, 0, bb.z1 / 2], [0, bb.r, bb.z1 / 2], [0, -bb.r, bb.z1 / 2], [bb.r * 0.7, bb.r * 0.7, bb.z1]]) {
+          const cx = Mv[0] * px + Mv[4] * py + Mv[8] * pz + Mv[12], cy = Mv[1] * px + Mv[5] * py + Mv[9] * pz + Mv[13], cw = Mv[3] * px + Mv[7] * py + Mv[11] * pz + Mv[15];
+          const nx = cx / cw, ny = cy / cw, topo = 1 - 2 * (CriacaoTela._topoBarra || 44) / ph;
+          if (Math.abs(nx) > 1 || ny > topo || ny < -1) fora = `${pw}×${ph}: ponto ${px},${py},${pz} em ${nx.toFixed(2)},${ny.toFixed(2)}`;
+        }
+      }
+      CriacaoTela._bb = null; CriacaoTela._cam = null;
+      this.ok('tela: o corpo inteiro (alto, pés e braços abertos) cabe na prévia larga, estreita e baixa, abaixo dos botões do alto', !fora, fora);
+      CriacaoTela.fechar();
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    VIEW_W = W0; VIEW_H = H0;
+    this.ok('tela de criação (cartões, rolagem, enquadramento): sem exceção', !erro, erro);
   },
 
   async criacaoGLB() {

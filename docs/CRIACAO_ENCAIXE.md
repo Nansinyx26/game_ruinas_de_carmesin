@@ -29,15 +29,35 @@ Toda peça encaixa pelo **corpo de referência** (`corpo_m`/`corpo_f`), medido n
 |---|---|---|---|
 | Chest / UpperChest / Spine | peitoral | cobertura do tronco (e ombros, se a peça tem ombreiras) | topo entre a axila e o pescoço; o peito coberto; mais peça no peito que na barriga |
 | Shoulders | ombroE, ombroD | cobertura do alto do braço, aberta em A | sem atravessar a pele; simétricas |
-| Arms / Hands | luvas | mão e punho | alinhada nos dedos |
-| Hips / Legs | calças (ou saia) | região do quadril ao tornozelo | sem atravessar |
-| Feet | botas | comprimento do pé, sola no chão | calcanhar alinhado |
+| Arms / Hands | luvas | mão e punho; depois, fatia a fatia, na grossura da mão | alinhada nos dedos; pesos só do braço e da mão do mesmo lado |
+| Hips / Legs | calças (ou saia) | região do quadril ao tornozelo | sem atravessar; pesos só do tronco e das pernas |
+| Feet | botas | comprimento do pé, sola no chão; o cano, fatia a fatia, na grossura da perna | calcanhar alinhado; pesos só da perna e do pé do mesmo lado |
 | Head | capacete, capuz, cabelo, barba | cobertura do crânio | sem tapar os olhos nem flutuar |
 
 **Validação automática:**
 - **Na conversão:** `ancora_peitoral` grava `docs/topologia/ancoras_peitoral.json` (topo, base, axila, ombro, pescoço e quadril de cada peitoral nos dois corpos). A peça que sair da regra **reprova com erro**, para que o problema não volte em peças novas.
 - **No jogo:** `Criacao3D.ancoras(m)` mede, por vaga, quanto da peça está na faixa do peito e na da barriga, e o desvio entre a pele e a peça em cada pose. `Criacao3D.encaixe(m)` mede a pele que fura a peça.
 - **Testes** (`js/testes.js`): `criacaoAncoras` passa os dois peitorais iniciais e um de nível 30 pelos dois corpos, em repouso, correndo, golpeando e no ar. A couraça antiga reprovava (8% no peito, 67% na barriga); as corrigidas passam, com desvio 0. `criacaoEncaixe` confere que nenhum ponto da pele fura a armadura.
+
+## Luvas e botas saindo do corpo (correção)
+
+**Sintoma:** em movimento, as luvas e as botas se soltavam das mãos e dos pés. Na prévia, as luvas pareciam copos ocos em volta do punho, havia uma barra escura de uma mão à outra na altura da cintura, e o cano das botas parecia um tubo largo em volta da canela.
+
+**Causas** (todas na conversão, em `tools/importar_criacao.py`):
+- **Pesos do membro errado.** Cada vértice da peça herdava os pesos do vértice do corpo mais próximo. Em A-pose, as mãos ficam junto das coxas, e as luvas pegavam peso da coxa (às vezes do tronco). As calças pegavam peso da mão. Ao andar ou golpear, parte da luva seguia a perna.
+- **Par separado pela mediana.** As luvas e as botas vêm em par lado a lado no GLB. Elas eram separadas triângulo a triângulo pela mediana, e a ponta de uma peça que passava do meio (o polegar, o bico) ia para o outro lado. Os vértices em comum levavam as duas transformações e viravam triângulos esticados de uma mão à outra: a barra escura.
+- **Escala só pelo comprimento.** Medidas pelo comprimento da mão (ou da sola), as peças do Meshy ficavam uns 50% mais grossas que a mão e a perna.
+
+**Correção:**
+- `pesos_da_peca`: as luvas só pegam peso do braço e da mão do mesmo lado, as botas só da perna e do pé do mesmo lado, e as calças só do tronco e das pernas. Vale para as peças do Meshy e para as do Blender.
+- `separar_par`: cada pedaço contínuo vai inteiro para o lado do seu centro.
+- `conformar_membro`: em cada fatia ao longo da altura, a largura e a profundidade da peça encolhem até no máximo 1,08 vez a do membro mais 0,2 de cada lado. As escalas são suavizadas para a forma não ondular. As peças nunca crescem, e no pé o comprimento e o bico da bota ficam como estão. Resultado: a luva ficou com 1,2 vez a mão (antes, 1,5), e o cano da bota ficou mais rente à perna.
+- As 63 luvas, botas e calças foram reconvertidas. O arquivo das que não mudaram saiu idêntico.
+
+**Validação** (`membrosTela`, em `js/testes.js`):
+- As 63 peças, nos dois corpos, só têm ossos do próprio membro.
+- Nas luvas e botas iniciais, nenhuma aresta passa de 6 (a barra tinha arestas de umas 20 unidades).
+- Correndo, golpeando e parado, cada vértice da luva fica perto do punho do seu lado e cada vértice da bota perto do tornozelo do seu lado.
 
 ## *Pipeline* de um asset novo do Meshy
 

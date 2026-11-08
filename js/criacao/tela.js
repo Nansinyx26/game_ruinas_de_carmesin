@@ -120,10 +120,29 @@ const CriacaoTela = {
     cv.addEventListener('mousedown', (e) => { if (game.state !== 'criacao' || !this.ui) return; const q = logico(e); if (naPrevia(q)) this.ui.arrasto = { x: q.x, y0: q.y }; });
     window.addEventListener('mousemove', (e) => { if (game.state !== 'criacao' || !this.ui || !this.ui.arrasto) return; const q = logico(e); this.ui.yaw -= (q.x - this.ui.arrasto.x) * 0.012; this.ui.arrasto.x = q.x; });
     window.addEventListener('mouseup', () => { if (this.ui) this.ui.arrasto = null; });
-    cv.addEventListener('wheel', (e) => { if (game.state !== 'criacao' || !this.ui) return; e.preventDefault(); this.ui.zoomAlvo = clamp(this.ui.zoomAlvo + (e.deltaY < 0 ? 0.25 : -0.25), 0, 2); }, { passive: false });
-    cv.addEventListener('touchstart', (e) => { if (game.state !== 'criacao' || !this.ui || !e.touches[0]) return; const q = logico(e.touches[0]); if (naPrevia(q)) this.ui.arrasto = { x: q.x }; }, { passive: true });
-    cv.addEventListener('touchmove', (e) => { if (game.state !== 'criacao' || !this.ui || !this.ui.arrasto || !e.touches[0]) return; const q = logico(e.touches[0]); this.ui.yaw -= (q.x - this.ui.arrasto.x) * 0.012; this.ui.arrasto.x = q.x; }, { passive: true });
-    cv.addEventListener('touchend', () => { if (this.ui) this.ui.arrasto = null; }, { passive: true });
+    // a roda sobre o painel da esquerda rola o conteúdo dele (não aproxima o personagem); no resto, aproxima
+    const naEsq = (q) => { const R = this.rEsq; return R && this.ui.modo !== 'lista' && q.x >= R.x && q.x <= R.x + R.w && q.y >= R.y && q.y <= R.y + R.h; };
+    cv.addEventListener('wheel', (e) => {
+      if (game.state !== 'criacao' || !this.ui) return;
+      e.preventDefault();
+      const U = this.ui, q = logico(e);
+      if (naEsq(q)) { U.rolEsq = clamp((U.rolEsq || 0) + e.deltaY * (e.deltaMode === 1 ? 16 : 0.7), 0, U.rolEsqMax || 0); return; }
+      U.zoomAlvo = clamp(U.zoomAlvo + (e.deltaY < 0 ? 0.25 : -0.25), 0, 2);
+    }, { passive: false });
+    // dedo: na prévia gira o personagem; no painel da esquerda, arrasta a rolagem
+    cv.addEventListener('touchstart', (e) => {
+      if (game.state !== 'criacao' || !this.ui || !e.touches[0]) return;
+      const q = logico(e.touches[0]);
+      if (naPrevia(q)) this.ui.arrasto = { x: q.x };
+      else if (naEsq(q)) this.ui.rolArr = { y: q.y, r: this.ui.rolEsq || 0 };
+    }, { passive: true });
+    cv.addEventListener('touchmove', (e) => {
+      if (game.state !== 'criacao' || !this.ui || !e.touches[0]) return;
+      const U = this.ui, q = logico(e.touches[0]);
+      if (U.arrasto) { U.yaw -= (q.x - U.arrasto.x) * 0.012; U.arrasto.x = q.x; }
+      else if (U.rolArr) U.rolEsq = clamp(U.rolArr.r - (q.y - U.rolArr.y), 0, U.rolEsqMax || 0);
+    }, { passive: true });
+    cv.addEventListener('touchend', () => { if (this.ui) { this.ui.arrasto = null; this.ui.rolArr = null; } }, { passive: true });
     // teclas próprias da tela: + / − (zoom) e P (pose)
     window.addEventListener('keydown', (e) => {
       if (game.state !== 'criacao' || !this.ui || this.ui.digitando) return;
@@ -227,7 +246,14 @@ const CriacaoTela = {
   },
   acao(id, v) {
     const U = this.ui;
-    if (id === 'aba') { U.aba = v; U.sel = v === 'aparencia' && this.realista() ? 1 : 0; game.audio.play('uiMove'); return; }   // Realista: começa no corpo (a linha 0 é o estilo)
+    if (id === 'aba') { U.aba = v; U.sel = v === 'aparencia' && this.realista() ? 1 : 0; U.rolEsq = 0; game.audio.play('uiMove'); return; }   // Realista: começa no corpo (a linha 0 é o estilo)
+    // cartão do conjunto inicial: o peitoral da mochila passa a ser o vestido; o capuz mostra ou esconde
+    if (id === 'peca') {
+      const L = this.linhas();
+      if (v === 'ini_peitoral' || v === 'ini_armadura') { if (this.peitoralDe(U.classe, U.peitoral) !== v) { U.peitoral = v; U.mostrarEquip = true; game.audio.play('uiSelect'); } U.sel = L.indexOf('peitoral'); }
+      else if (ARMADURAS_GLB[v] && ARMADURAS_GLB[v].equipmentSlot === 'capacete') { U.ocultarCapacete = !U.ocultarCapacete; U.sel = L.indexOf('capacete'); game.audio.play('uiMove'); }
+      return;
+    }
     if (id === 'linha') { this.mudar(v, 1); return; }
     // grade de miniaturas (estilo Realista): escolhe a opção direto; categoria; estilo
     if (id === 'opcao') { U.A[v.k] = v.i; U.sel = Math.max(0, this.linhas().indexOf(v.k)); U.sujo = true; game.audio.play('uiMove'); return; }
@@ -290,8 +316,10 @@ const CriacaoTela = {
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = `bold 22px ${FONT_TITLE}`; ctx.letterSpacing = '6px'; ctx.fillStyle = '#f0e6ff';
     ctx.fillText(U.modo === 'lista' ? 'PERSONAGENS' : U.modo === 'editar' ? 'EDITAR PERSONAGEM' : 'CRIAR PERSONAGEM', mL, 32);
-    ctx.letterSpacing = '0px'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,190,230,0.75)';
-    ctx.fillText(U.modo === 'lista' ? 'Escolha com quem explorar o mundo aberto · cada personagem tem o próprio mundo salvo' : 'Nome, aparência e classe · arraste o personagem para girar · roda ou +/− para aproximar · P troca a pose', mL + (U.modo === 'lista' ? 250 : 340), 33);
+    ctx.letterSpacing = '0px';
+    const sx = mL + (U.modo === 'lista' ? 250 : 340), sub = U.modo === 'lista' ? 'Escolha com quem explorar o mundo aberto · cada personagem tem o próprio mundo salvo' : 'Nome, aparência e classe · arraste o personagem para girar · roda ou +/− para aproximar · P troca a pose';
+    const subT = this.caber(ctx, sub, VIEW_W - sx - 24, '', 12, 10);
+    ctx.fillStyle = 'rgba(200,190,230,0.75)'; ctx.fillText(subT, sx, 33);
     ctx.restore();
     if (U.modo === 'lista') this.drawLista(ctx, mL, top, wL, wR, t);
     else { this.drawEsquerda(ctx, mL, top, wL, t); this.drawDireita(ctx, VIEW_W - wR - 24, top, wR, t); }
@@ -322,18 +350,45 @@ const CriacaoTela = {
     let fs = h < 26 ? 11 : 12;
     ctx.letterSpacing = '1.5px'; ctx.font = `bold ${fs}px ${FONT_TITLE}`;
     while (fs > 8 && ctx.measureText(txt).width > w - 12) ctx.font = `bold ${--fs}px ${FONT_TITLE}`;   // texto longo: letra menor, sem passar da borda
+    if (ctx.measureText(txt).width > w - 8) ctx.letterSpacing = '0px';   // (e, se ainda faltar, sem o espaço entre as letras)
     ctx.fillText(txt, x + w / 2, y + h / 2 + 0.5); ctx.letterSpacing = '0px';
     if (!desab) this.ui.rects.push({ id, v, x, y, w, h });
   },
+  // Painel da esquerda: abas fixas no alto e o conteúdo da aba com rolagem própria quando não
+  // cabe (telas baixas, celular deitado): roda do mouse ou arrastar com o dedo sobre o painel
   drawEsquerda(ctx, x, y, w, t) {
     const U = this.ui, h = VIEW_H - y - 24, C = PERS_CLASSES[U.classe], rgb = hexToRgb(C.cor);
     this.painel(ctx, x, y, w, h, rgb);
     const abas = [['classe', 'CLASSE'], ['aparencia', 'APARÊNCIA'], ['equipamento', 'EQUIPAMENTO']], bw = (w - 24) / 3;
     abas.forEach(([id, nm], i) => this.botao(ctx, 'aba', id, x + 12 + i * bw, y + 12, bw - 4, 28, nm, U.aba === id, rgb));
-    const y0 = y + 52;
+    const vis = this.rEsq = { x, y: y + 46, w, h: h - 50 };
+    U.rolEsq = clamp(U.rolEsq || 0, 0, U.rolEsqMax || 0);
+    const rol = U.rolEsq, n0 = U.rects.length;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x + 1, vis.y, w - 2, vis.h); ctx.clip();
+    const fim = this.conteudoEsquerda(ctx, x, y - rol, w, h, rgb, C);
+    ctx.restore();
+    U.rolEsqMax = Math.max(0, Math.ceil(fim + rol - (vis.y + vis.h) + 12));
+    // áreas de clique só na parte visível (o que rolou para fora do painel não responde)
+    for (let i = U.rects.length - 1; i >= n0; i--) {
+      const r = U.rects[i], a = Math.max(r.y, vis.y), b = Math.min(r.y + r.h, vis.y + vis.h);
+      if (b <= a) U.rects.splice(i, 1); else { r.y = a; r.h = b - a; }
+    }
+    if (U.rolEsqMax > 0) {
+      // barra de rolagem e esmaecido nas bordas onde há mais conteúdo
+      const tr = vis.h - 12, th = Math.max(28, tr * vis.h / (vis.h + U.rolEsqMax)), ty = vis.y + 6 + (tr - th) * (rol / U.rolEsqMax);
+      ctx.fillStyle = 'rgba(120,110,160,0.18)'; ctx.fillRect(x + w - 7, vis.y + 6, 3, tr);
+      ctx.fillStyle = rgba(rgb, 0.75); ctx.fillRect(x + w - 7, ty, 3, th);
+      if (rol > 1) { const g = ctx.createLinearGradient(0, vis.y, 0, vis.y + 18); g.addColorStop(0, 'rgba(10,8,18,0.95)'); g.addColorStop(1, 'rgba(10,8,18,0)'); ctx.fillStyle = g; ctx.fillRect(x + 1, vis.y, w - 10, 18); }
+      if (rol < U.rolEsqMax - 1) { const g = ctx.createLinearGradient(0, vis.y + vis.h - 22, 0, vis.y + vis.h); g.addColorStop(0, 'rgba(10,8,18,0)'); g.addColorStop(1, 'rgba(10,8,18,0.95)'); ctx.fillStyle = g; ctx.fillRect(x + 1, vis.y + vis.h - 22, w - 10, 22); }
+    }
+  },
+  // Conteúdo da aba (y já com a rolagem descontada); devolve onde ele termina
+  conteudoEsquerda(ctx, x, y, w, h, rgb, C) {
+    const U = this.ui, y0 = y + 52;
     ctx.textBaseline = 'middle';
     if (U.aba === 'classe') {
-      const L = this.linhas(), ch = Math.min(70, (h - 200) / 5);
+      const L = this.linhas(), ch = Math.max(46, Math.min(70, (h - 200) / 5));
       L.forEach((k, i) => {
         const K = PERS_CLASSES[k], yy = y0 + i * (ch + 6), on = U.classe === k, c = hexToRgb(K.cor);
         ctx.fillStyle = on ? rgba(c, 0.2) : U.sel === i ? 'rgba(50,42,80,0.6)' : 'rgba(20,16,32,0.8)'; ctx.fillRect(x + 12, yy, w - 24, ch);
@@ -345,15 +400,17 @@ const CriacaoTela = {
         U.rects.push({ id: 'linha', v: i, x: x + 12, y: yy, w: w - 24, h: ch });
       });
       // descrição da classe escolhida
-      const yy = y0 + L.length * (ch + 6) + 6;
+      let yy = y0 + L.length * (ch + 6) + 14;
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(215,205,240,0.9)'; ctx.textAlign = 'left';
-      wrapText(ctx, C.desc, w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + 8 + i * 16));
-      if (U.modo === 'editar') { ctx.fillStyle = 'rgba(255,200,150,0.85)'; ctx.fillText('A classe é fixa depois de criada.', x + 16, y + h - 18); }
-      return;
+      const ls = wrapText(ctx, C.desc, w - 34);
+      ls.forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+      yy += ls.length * 16;
+      if (U.modo === 'editar') { ctx.fillStyle = 'rgba(255,200,150,0.85)'; ctx.fillText('A classe é fixa depois de criada.', x + 16, yy + 8); yy += 22; }
+      return yy;
     }
-    if (U.aba === 'aparencia' && this.realista()) { this.drawGrades(ctx, x, y0, w, h - (y0 - y), rgb); return; }
+    if (U.aba === 'aparencia' && this.realista()) return this.drawGrades(ctx, x, y0, w, h - (y0 - y), rgb);
     if (U.aba === 'aparencia') {
-      const L = this.linhas(), rh = Math.min(36, (h - 64) / L.length);
+      const L = this.linhas(), rh = Math.max(28, Math.min(36, (h - 64) / L.length));
       L.forEach((k, i) => {
         const yy = y0 + i * rh, on = U.sel === i, ops = k === 'roupa' ? C.roupas : PERS_APAR[k].ops, v = U.A[k];
         if (on) { ctx.fillStyle = 'rgba(70,56,120,0.45)'; ctx.fillRect(x + 8, yy, w - 16, rh - 3); }
@@ -364,46 +421,114 @@ const CriacaoTela = {
         this.seta(ctx, x + w - 16 - (rh - 9), yy + 3, rh - 9, 1, i);
         const cores = PERS_APAR[k].cores, cx = vx + (rh - 9) + 6;
         if (cores) { ctx.fillStyle = cores[v]; ctx.fillRect(cx, yy + rh / 2 - 6, 12, 12); ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeRect(cx + 0.5, yy + rh / 2 - 5.5, 11, 11); }
-        ctx.font = `bold 12px ${FONT_UI}`; ctx.fillStyle = '#efe8ff'; ctx.textAlign = 'center';
-        ctx.fillText(ops[v] || '', vx + vw / 2 + (cores ? 8 : 0), yy + rh / 2);
+        this.texto(ctx, ops[v] || '', vx + vw / 2 + (cores ? 8 : 0), yy + rh / 2, vw - 2 * (rh - 9) - (cores ? 28 : 12), 'bold', 12, '#efe8ff');
         U.rects.push({ id: 'linha', v: i, x: vx + (rh - 9) + 2, y: yy, w: vw - 2 * (rh - 9) - 4, h: rh - 3 });
       });
-      this.botao(ctx, 'aleatorio', 0, x + 12, y + h - 40, w - 24, 28, 'APARÊNCIA ALEATÓRIA', false, rgb);
-      return;
+      const by = Math.max(y + h - 40, y0 + L.length * rh + 8);
+      this.botao(ctx, 'aleatorio', 0, x + 12, by, w - 24, 28, 'APARÊNCIA ALEATÓRIA', false, rgb);
+      return by + 32;
     }
-    // equipamento
-    const def = this.previa(), W = this.armasDe(def), arma = U.arma || W[0], rh = 36;
+    return this.drawEquipamento(ctx, x, y0, w, rgb);
+  },
+  // Texto que cabe numa largura: a letra diminui até o mínimo e, só se nem assim couber, termina em
+  // reticências (nunca passa da borda do painel nem por cima das setas)
+  caber(ctx, s, larg, peso, tam, min = 9, fonte = FONT_UI) {
+    let fs = tam;
+    ctx.font = `${peso} ${fs}px ${fonte}`;
+    while (fs > min && ctx.measureText(s).width > larg) ctx.font = `${peso} ${--fs}px ${fonte}`;
+    if (ctx.measureText(s).width <= larg) return s;
+    while (s.length > 2 && ctx.measureText(s + '…').width > larg) s = s.slice(0, -1);
+    return s.trimEnd() + '…';
+  },
+  // Texto centrado numa largura (veja caber)
+  texto(ctx, s, cx, cy, larg, peso, tam, cor) {
+    const t = this.caber(ctx, s, larg, peso, tam);
+    ctx.fillStyle = cor; ctx.textAlign = 'center'; ctx.fillText(t, cx, cy);
+  },
+  // Imagem inteira dentro da caixa, sem distorcer (contain), centrada
+  imagemContida(ctx, im, x, y, w, h) {
+    const iw = im.naturalWidth || im.width || 1, ih = im.naturalHeight || im.height || 1, k = Math.min(w / iw, h / ih);
+    ctx.drawImage(im, x + (w - iw * k) / 2, y + (h - ih * k) / 2, iw * k, ih * k);
+  },
+  // Aba EQUIPAMENTO: arma e opções, armas da classe e o conjunto do Iniciado em cartões
+  drawEquipamento(ctx, x, y0, w, rgb) {
+    const U = this.ui, def = this.previa(), W = this.armasDe(def), arma = U.arma || W[0], rh = 36;
     const pe = this.peitoralDe(U.classe, U.peitoral);
     const rows = [['Arma principal', WEAPON_DEFS[arma] ? WEAPON_DEFS[arma].name : '—'], ['Peitoral inicial', pe === 'ini_armadura' ? 'COURAÇA' : 'GIBÃO'], ['Mostrar peças na prévia', U.mostrarEquip ? 'SIM' : 'NÃO'], ['Esconder o capuz', U.ocultarCapacete ? 'SIM' : 'NÃO']];
     rows.forEach(([nm, val], i) => {
-      const yy = y0 + i * rh, on = U.sel === i;
+      const yy = y0 + i * rh, on = U.sel === i, s = rh - 11, xv = x + Math.max(w * 0.48, Math.min(150, w - 150));
       if (on) { ctx.fillStyle = 'rgba(70,56,120,0.45)'; ctx.fillRect(x + 8, yy, w - 16, rh - 3); }
-      ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = on ? '#fff' : 'rgba(200,190,230,0.85)'; ctx.fillText(nm, x + 16, yy + rh / 2);
-      this.seta(ctx, x + w * 0.5, yy + 4, rh - 11, -1, i); this.seta(ctx, x + w - 16 - (rh - 11), yy + 4, rh - 11, 1, i);
-      ctx.font = `bold 12px ${FONT_UI}`; ctx.fillStyle = '#efe8ff'; ctx.textAlign = 'center'; ctx.fillText(val, x + w * 0.75 - 4, yy + rh / 2);
-      U.rects.push({ id: 'linha', v: i, x: x + w * 0.5 + rh, y: yy, w: w * 0.5 - 2 * rh, h: rh - 3 });
+      const nmT = this.caber(ctx, nm, xv - x - 22, '', 12);
+      ctx.textAlign = 'left'; ctx.fillStyle = on ? '#fff' : 'rgba(200,190,230,0.85)'; ctx.fillText(nmT, x + 16, yy + rh / 2);
+      this.seta(ctx, xv, yy + 4, s, -1, i); this.seta(ctx, x + w - 16 - s, yy + 4, s, 1, i);
+      const lv = x + w - 16 - s - (xv + s) - 8;
+      this.texto(ctx, val, (xv + s + x + w - 16 - s) / 2, yy + rh / 2, lv, 'bold', 12, '#efe8ff');
+      U.rects.push({ id: 'linha', v: i, x: xv + s, y: yy, w: lv + 8, h: rh - 3 });
     });
     let yy = y0 + rows.length * rh + 14;
     ctx.textAlign = 'left'; ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(rgb, 1);
     ctx.fillText('ARMAS DA CLASSE', x + 16, yy); ctx.letterSpacing = '0px'; yy += 20;
-    ctx.font = `12px ${FONT_UI}`;
-    for (const w0 of def.weapons) { const D = WEAPON_DEFS[w0]; if (!D) continue; ctx.fillStyle = w0 === arma ? '#ffffff' : 'rgba(200,190,230,0.8)'; ctx.fillText(`${D.gadget ? 'Equipamento' : w0 === arma ? 'Principal' : 'Secundária'} · ${D.name}`, x + 16, yy); yy += 18; }
+    for (const w0 of def.weapons) {
+      const D = WEAPON_DEFS[w0];
+      if (!D) continue;
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = w0 === arma ? '#ffffff' : 'rgba(200,190,230,0.8)';
+      for (const ln of wrapText(ctx, `${D.gadget ? 'Equipamento' : w0 === arma ? 'Principal' : 'Secundária'} · ${D.name}`, w - 34)) { ctx.fillText(ln, x + 16, yy); yy += 18; }
+    }
     yy += 8;
-    ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(rgb, 1);
-    ctx.fillText('CONJUNTO DO INICIADO · NÍVEL 1', x + 16, yy); ctx.letterSpacing = '0px'; yy += 12;
-    // as sete peças (miniaturas): as vestidas acesas, o outro peitoral apagado
-    const ids = ARM_INICIAL.filter((id) => ARMADURAS_GLB[id]), cs = Math.min(64, (w - 32 - 6 * 3) / 4);
+    ctx.letterSpacing = '2px'; ctx.fillStyle = rgba(rgb, 1);
+    ctx.fillText(this.caber(ctx, 'CONJUNTO DO INICIADO · NÍVEL 1', w - 34, 'bold', 12, 9, FONT_TITLE), x + 16, yy); ctx.letterSpacing = '0px'; yy += 14;
+    yy = this.cartoesIniciado(ctx, x + 14, yy, w - 28, pe, rgb);
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)'; ctx.textAlign = 'left';
+    const ls = wrapText(ctx, 'Raridade Comum. As sete peças vão para a mochila (uma vez só) e seis já começam vestidas: toque no outro peitoral para trocar. O conjunto de nível 30 da classe se conquista no mundo; na aba EQUIPAMENTO do mundo, cada peça é trocada à parte.', w - 34);
+    ls.forEach((ln, i) => ctx.fillText(ln, x + 16, yy + 6 + i * 16));
+    return yy + 6 + ls.length * 16;
+  },
+  // Os cartões do conjunto inicial: mesmo tamanho, imagem inteira, e o estado de cada peça —
+  // VESTIDA (borda acesa da classe), NA MOCHILA (o outro peitoral: claro, clique para vestir),
+  // OCULTA (capuz escondido) e BLOQUEADA (escurecida, com cadeado, só se o nível ou a classe
+  // realmente impedirem)
+  cartoesIniciado(ctx, x, y, w, pe, rgb) {
+    const U = this.ui, ids = ARM_INICIAL.filter((id) => ARMADURAS_GLB[id]), gap = 8;
+    const cols = w >= 230 ? 4 : 3, cs = Math.floor((w - gap * (cols - 1)) / cols), lh = 16, chh = cs + lh;
+    const m = game.input.mouse, NOME = { capacete: 'Capuz', luvas: 'Luvas', calcas: 'Calça', botas: 'Botas', capa: 'Capa' };
     ids.forEach((id, i) => {
-      const cx = x + 16 + (i % 4) * (cs + 6), cy = yy + Math.floor(i / 4) * (cs + 6), D = ARMADURAS_GLB[id], veste = !((id === 'ini_peitoral' || id === 'ini_armadura') && id !== pe);
-      ctx.fillStyle = veste ? 'rgba(34,28,52,0.95)' : 'rgba(16,14,24,0.8)'; ctx.fillRect(cx, cy, cs, cs);
-      ctx.strokeStyle = veste ? rgba(ARS_RARIDADES[0].rgb, 0.7) : 'rgba(120,110,150,0.3)'; ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, cs - 1);
+      const D = ARMADURAS_GLB[id], cx = x + (i % cols) * (cs + gap), cy = y + Math.floor(i / cols) * (chh + gap);
+      const peit = id === 'ini_peitoral' || id === 'ini_armadura', veste = !peit || id === pe;
+      const bloq = (D.requiredLevel || 1) > 1 || (D.allowedClasses && !D.allowedClasses.includes(U.classe));
+      const oculto = D.equipmentSlot === 'capacete' && U.ocultarCapacete;
+      const hov = m.x >= cx && m.x <= cx + cs && m.y >= cy && m.y <= cy + chh;
+      const estado = bloq ? 'BLOQUEADA' : !veste ? 'NA MOCHILA' : oculto ? 'OCULTA' : 'VESTIDA';
+      // fundo e moldura
+      const g = ctx.createLinearGradient(0, cy, 0, cy + chh);
+      g.addColorStop(0, veste && !bloq ? rgba(rgb, 0.2) : 'rgba(40,34,60,0.95)'); g.addColorStop(1, 'rgba(12,10,20,0.96)');
+      ctx.fillStyle = g; ctx.fillRect(cx, cy, cs, chh);
+      if (veste && !bloq) { ctx.save(); ctx.shadowColor = rgba(rgb, 0.85); ctx.shadowBlur = hov ? 14 : 9; ctx.strokeStyle = rgba(rgb, 0.95); ctx.lineWidth = 2; ctx.strokeRect(cx + 1, cy + 1, cs - 2, chh - 2); ctx.restore(); }
+      else { ctx.strokeStyle = hov && !bloq ? 'rgba(210,195,255,0.85)' : 'rgba(150,135,200,0.4)'; ctx.lineWidth = hov ? 1.5 : 1; ctx.strokeRect(cx + 0.5, cy + 0.5, cs - 1, chh - 1); }
+      // a peça inteira, sem esticar
       const im = this.mini(id);
-      if (im) { ctx.globalAlpha = veste ? 1 : 0.35; ctx.drawImage(im, cx + 3, cy + 3, cs - 6, cs - 6); ctx.globalAlpha = 1; }
+      ctx.save();
+      if (bloq) ctx.filter = 'grayscale(0.8) brightness(0.45)';
+      if (im) this.imagemContida(ctx, im, cx + 4, cy + 4, cs - 8, cs - 10);
       else this.icone(ctx, D.equipmentSlot, cx + cs / 2, cy + cs / 2, cs * 0.5);
+      ctx.restore();
+      if (bloq) {   // cadeado
+        const lx = cx + cs / 2, ly = cy + cs / 2 - 2;
+        ctx.strokeStyle = '#e8e0ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(lx, ly - 4, 5, Math.PI, 0); ctx.stroke();
+        ctx.fillStyle = '#e8e0ff'; ctx.fillRect(lx - 7, ly - 4, 14, 10);
+      }
+      // nome e estado
+      ctx.fillStyle = 'rgba(6,5,10,0.72)'; ctx.fillRect(cx + 1, cy + cs - 4, cs - 2, lh + 3);
+      const nome = peit ? (id === 'ini_armadura' ? 'Couraça' : 'Gibão') : NOME[D.equipmentSlot] || D.name;
+      this.texto(ctx, nome, cx + cs / 2, cy + cs + 4, cs - 6, 'bold', 11, '#f2ecff');
+      ctx.font = `bold 8px ${FONT_UI}`; ctx.letterSpacing = '0.5px';
+      let rot = estado, tw = ctx.measureText(rot).width + 6;
+      if (tw > cs - 6) { rot = { VESTIDA: '✓', 'NA MOCHILA': '+', OCULTA: '–', BLOQUEADA: '' }[estado]; ctx.font = `bold 10px ${FONT_UI}`; tw = 14; }
+      ctx.fillStyle = estado === 'VESTIDA' ? rgba(rgb, 0.9) : estado === 'BLOQUEADA' ? 'rgba(90,80,110,0.9)' : 'rgba(40,34,62,0.92)';
+      ctx.fillRect(cx + cs - tw - 3, cy + 3, tw, 12);
+      ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.fillText(rot, cx + cs - tw / 2 - 3, cy + 9.5); ctx.letterSpacing = '0px';
+      if (!bloq) U.rects.push({ id: 'peca', v: id, x: cx, y: cy, w: cs, h: chh });
     });
-    yy += Math.ceil(ids.length / 4) * (cs + 6) + 10;
-    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';
-    wrapText(ctx, 'Raridade Comum. As sete peças vão para a mochila (uma vez só) e seis já começam vestidas; o conjunto de nível 30 da classe se conquista no mundo. Na aba EQUIPAMENTO do mundo, cada peça é trocada à parte.', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+    return y + Math.ceil(ids.length / cols) * (chh + gap) + 4;
   },
   icone(ctx, slot, cx, cy, s) { if (typeof Arsenal !== 'undefined' && Arsenal.iconeVaga) Arsenal.iconeVaga(ctx, slot, cx, cy, s, 'rgba(200,190,230,0.7)'); },
   // Estilo Realista: estilo, categorias e a grade de miniaturas das opções da categoria
@@ -412,9 +537,10 @@ const CriacaoTela = {
     const bw = (w - 28) / 2;
     this.botao(ctx, 'estilo', 0, x + 12, y0, bw, 26, 'REALISTA', A.estilo !== 1, rgb);
     this.botao(ctx, 'estilo', 1, x + 16 + bw, y0, bw, 26, 'ESTILIZADO', A.estilo === 1, rgb);
-    const cw = (w - 24) / CRIA_CATS.length;
-    CRIA_CATS.forEach((c, i) => this.botao(ctx, 'cat', c.id, x + 12 + i * cw, y0 + 34, cw - 4, 26, c.nome, c === catAt, rgb));
-    let yy = y0 + 72;
+    // categorias: uma linha; no painel estreito (tablet em pé), duas, para os nomes não virarem miúdos
+    const nC = CRIA_CATS.length, linhasC = (w - 24) / nC < 46 ? 2 : 1, porL = Math.ceil(nC / linhasC), cw = (w - 24) / porL;
+    CRIA_CATS.forEach((c, i) => this.botao(ctx, 'cat', c.id, x + 12 + (i % porL) * cw, y0 + 34 + Math.floor(i / porL) * 30, cw - 4, 26, c.nome, c === catAt, rgb));
+    let yy = y0 + 72 + (linhasC - 1) * 30;
     const fim = y0 + h - 56;
     for (const k of catAt.campos) {
       const on = campo === k;
@@ -427,7 +553,8 @@ const CriacaoTela = {
       if (CRIA_MINI[k]) {
         // grade de miniaturas
         const ids = CRIA_MINI[k](), cols = k === 'corpoG' ? 2 : k === 'rostoG' ? 4 : 3, rows = Math.ceil(n / cols);
-        const cs = Math.min((w - 24 - (cols - 1) * 6) / cols, (fim - yy - (catAt.campos.length - 1) * 66) / rows - 6);   // (espaço para os outros campos da categoria)
+        // (espaço para os outros campos da categoria; em tela baixa, um mínimo legível e o painel rola)
+        const cs = Math.max(48, Math.min((w - 24 - (cols - 1) * 6) / cols, (fim - yy - (catAt.campos.length - 1) * 66) / rows - 6));
         for (let i = 0; i < n; i++) {
           const cx = x + 12 + (i % cols) * (cs + 6), cy = yy + Math.floor(i / cols) * (cs + 6), sel = A[k] === i;
           const m = game.input.mouse, hov = m.x >= cx && m.x <= cx + cs && m.y >= cy && m.y <= cy + cs;
@@ -473,9 +600,15 @@ const CriacaoTela = {
         yy += PERS_APAR[k].curtos ? 34 : 40;
       }
     }
+    let fimTxt = yy;
+    const escrever = (txt, y1, cor) => {
+      ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = cor;
+      const ls = wrapText(ctx, txt, w - 34);
+      ls.forEach((ln, i) => ctx.fillText(ln, x + 16, y1 + i * 16));
+      fimTxt = Math.max(fimTxt, y1 + ls.length * 16);
+    };
     if (catAt.id === 'barba' && A.bigodeG > 0 && typeof Criacao3D !== 'undefined' && !Criacao3D.pecasDe({ aparencia: A }).bigode) {
-      ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,190,150,0.85)';
-      wrapText(ctx, 'O bigode separado combina com as barbas em mechas ou sem barba (as cinco primeiras barbas já vêm com o bigode delas).', w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+      escrever('O bigode separado combina com as barbas em mechas ou sem barba (as cinco primeiras barbas já vêm com o bigode delas).', yy, 'rgba(255,190,150,0.85)');
     }
     if (catAt.id === 'barba' || catAt.id === 'fios') {
       // o encaixe da barba no rosto escolhido (js/criacao/barba_encaixe.js): aprovado ou não
@@ -485,19 +618,16 @@ const CriacaoTela = {
       if (!tem) txt = catAt.id === 'fios' ? 'Escolha uma barba ou um bigode: comprimento, volume, densidade, tonalidade e grisalho valem para os dois.' : null;
       else if (E && E.ok) { txt = `Encaixe no rosto: aprovado${E.tentativas > 1 ? ' (refeito com margem maior)' : ''} — acompanha mandíbula, queixo e bochechas, sem atravessar a pele, sem vãos, olhos e nariz livres.`; cor = 'rgba(150,230,170,0.85)'; }
       else if (E) { txt = `Encaixe no rosto: com ressalvas neste rosto (atravessa ${(E.pen * 100).toFixed(1)}%, vãos ${(E.vao * 100).toFixed(0)}%, olhos ${E.olhos}, nariz ${E.nariz}).`; cor = 'rgba(255,190,150,0.9)'; }
-      if (txt) {
-        ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = cor;
-        const y2 = catAt.id === 'barba' && A.bigodeG > 0 && !Criacao3D.pecasDe({ aparencia: A }).bigode ? yy + 36 : yy;
-        wrapText(ctx, txt, w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, y2 + i * 16));
-      }
+      if (txt) escrever(txt, fimTxt > yy ? fimTxt + 6 : yy, cor);
     }
     if (catAt.id === 'cores') {
-      ctx.textAlign = 'left'; ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(180,170,210,0.75)';
       const ro = typeof Criacao3D !== 'undefined' && Criacao3D.POR_ID[`rosto_${(A.rostoG | 0) + 1}`], semIris = ro && ro.sem_iris;
-      wrapText(ctx, 'A cor da pele vale para o corpo e o rosto; a do cabelo, para o cabelo (e a barba, se ela não tiver cor própria); a dos olhos pinta a íris (a pupila e o brilho ficam). Sombras, poros e reflexos da textura continuam.' +
-        (semIris ? ' Neste rosto a cor dos olhos não muda: a íris não é achada na textura dele.' : ''), w - 30).forEach((ln, i) => ctx.fillText(ln, x + 16, yy + i * 16));
+      escrever('A cor da pele vale para o corpo e o rosto; a do cabelo, para o cabelo (e a barba, se ela não tiver cor própria); a dos olhos pinta a íris (a pupila e o brilho ficam). Sombras, poros e reflexos da textura continuam.' +
+        (semIris ? ' Neste rosto a cor dos olhos não muda: a íris não é achada na textura dele.' : ''), yy, 'rgba(180,170,210,0.75)');
     }
-    this.botao(ctx, 'aleatorio', 0, x + 12, y0 + h - 40, w - 24, 28, 'APARÊNCIA ALEATÓRIA', false, rgb);
+    const by = Math.max(y0 + h - 40, fimTxt + 8);
+    this.botao(ctx, 'aleatorio', 0, x + 12, by, w - 24, 28, 'APARÊNCIA ALEATÓRIA', false, rgb);
+    return by + 32;
   },
   seta(ctx, x, y, s, d, i) {
     const m = game.input.mouse, hov = m.x >= x && m.x <= x + s && m.y >= y && m.y <= y + s;
@@ -517,15 +647,16 @@ const CriacaoTela = {
     const nb = this.rNome = { x: x + 14, y: y + 32, w: w - 28 - 40, h: 32 };
     ctx.fillStyle = U.digitando ? 'rgba(40,30,70,0.95)' : 'rgba(18,14,30,0.95)'; ctx.fillRect(nb.x, nb.y, nb.w, nb.h);
     ctx.strokeStyle = U.digitando ? rgba(rgb, 1) : 'rgba(170,150,230,0.5)'; ctx.strokeRect(nb.x + 0.5, nb.y + 0.5, nb.w - 1, nb.h - 1);
-    ctx.font = `bold 16px ${FONT_UI}`; ctx.fillStyle = U.nome ? '#ffffff' : 'rgba(170,160,200,0.6)';
     const txt = U.nome || 'Clique e digite o nome', cur = U.digitando && Math.sin(t * 8) > 0 ? '|' : '';
-    ctx.fillText(txt + cur, nb.x + 10, nb.y + nb.h / 2);
+    const txtT = this.caber(ctx, txt, nb.w - 22, 'bold', 16, 11);
+    ctx.fillStyle = U.nome ? '#ffffff' : 'rgba(170,160,200,0.6)'; ctx.textAlign = 'left';
+    ctx.fillText(txtT + cur, nb.x + 10, nb.y + nb.h / 2);
     U.rects.push({ id: 'nome', x: nb.x, y: nb.y, w: nb.w, h: nb.h });
     this.botao(ctx, 'aleatorio', 0, x + w - 50, y + 32, 36, 32, '⟳', false, rgb);
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     const vn = U.nome ? Perfis.validarNome(U.nome, U.editId) : null;
-    ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = vn && !vn.ok ? '#ff9aa6' : 'rgba(170,160,200,0.7)';
-    ctx.fillText(vn && !vn.ok ? vn.erro : '2 a 16 letras, números, espaço, hífen ou apóstrofo', x + 14, y + 76);
+    const dica = this.caber(ctx, vn && !vn.ok ? vn.erro : '2 a 16 letras, números, espaço, hífen ou apóstrofo', w - 28, '', 11, 9);
+    ctx.fillStyle = vn && !vn.ok ? '#ff9aa6' : 'rgba(170,160,200,0.7)'; ctx.fillText(dica, x + 14, y + 76);
     // classe: atributos (barras) e números de verdade
     let yy = y + 100;
     ctx.font = `bold 16px ${FONT_TITLE}`; ctx.letterSpacing = '3px'; ctx.fillStyle = '#ffffff'; ctx.fillText(C.nome.toUpperCase(), x + 14, yy); ctx.letterSpacing = '0px';
@@ -600,11 +731,16 @@ const CriacaoTela = {
     const U = this.ui, y = P.y + P.h + 12, bw = Math.min(96, P.w / CRIA_POSES.length);
     let x = P.x;
     CRIA_POSES.forEach((nm, i) => { this.botao(ctx, 'pose', i, x, y, bw - 4, 26, nm.toUpperCase(), U.pose === i); x += bw; });
-    x = P.x + P.w / 2 - (3 * 96) / 2;   // zoom: no alto da prévia
-    CRIA_ZOOM.forEach((Z, i) => { this.botao(ctx, 'zoom', i, x, P.y + 8, 92, 26, Z.nome.toUpperCase(), Math.round(U.zoomAlvo) === i); x += 96; });
+    // zoom no alto da prévia, entre VOLTAR e os botões de girar; sem espaço (prévia estreita, tablet
+    // em pé), os três descem para uma segunda linha em vez de passar por cima dos outros
+    const vw = U.modo !== 'lista' ? 90 : 0, livre = P.w - vw - 70 - 16, zw = Math.min(92, livre / 3 - 4), duas = zw < 64;
+    const zw2 = duas ? Math.min(92, (P.w - 8) / 3 - 4) : zw, zy = duas ? P.y + 40 : P.y + 8;
+    x = duas ? P.x + P.w / 2 - (3 * (zw2 + 4)) / 2 : P.x + vw + 8 + (livre - 3 * (zw2 + 4)) / 2;
+    CRIA_ZOOM.forEach((Z, i) => { this.botao(ctx, 'zoom', i, x, zy, zw2, 26, Z.nome.toUpperCase(), Math.round(U.zoomAlvo) === i); x += zw2 + 4; });
     this.botao(ctx, 'girar', 0.5, P.x + P.w - 70, P.y + 8, 30, 26, '⟲');
     this.botao(ctx, 'girar', -0.5, P.x + P.w - 36, P.y + 8, 30, 26, '⟳');
     if (U.modo !== 'lista') this.botao(ctx, 'voltar', 0, P.x, P.y + 8, 90, 26, '‹ VOLTAR');
+    this._topoBarra = duas ? 76 : 44;   // (o enquadramento do corpo inteiro deixa esse espaço livre no alto)
   },
   drawConfirma(ctx) {
     const U = this.ui, w = 460, h = 130, x = VIEW_W / 2 - w / 2, y = VIEW_H / 2 - h / 2;
@@ -650,7 +786,8 @@ const CriacaoTela = {
     k.pecasPrevia = this.pecasPrevia(def);
     // câmera em órbita (perspectiva): zoom entre corpo inteiro, busto e rosto
     const z0 = Math.floor(U.zoom), z1 = Math.min(2, z0 + 1), f = U.zoom - z0, alt = PersonagemModelo.ALTURA[def.aparencia.altura] || 1;
-    const dist = (CRIA_ZOOM[z0].d + (CRIA_ZOOM[z1].d - CRIA_ZOOM[z0].d) * f) * alt, tz = (CRIA_ZOOM[z0].z + (CRIA_ZOOM[z1].z - CRIA_ZOOM[z0].z) * f) * alt;
+    const N = this.niveisZoom(P, alt, def);
+    const dist = N[z0].d + (N[z1].d - N[z0].d) * f, tz = N[z0].z + (N[z1].z - N[z0].z) * f;
     const view = this.camera(P, U.yaw, 0.1 + 0.08 * (1 - U.zoom / 2), dist, tz);
     // luz: principal quente girando devagar e contraluz na cor da classe
     const L = R3D.light, salva = { amb: L.amb, key: L.key, rim: L.rim };
@@ -673,6 +810,7 @@ const CriacaoTela = {
     let res = null;
     try { res = R3D.renderScene(view, W, H); } catch (e) { console.error(e); }
     L.amb = salva.amb; L.key = salva.key; L.rim = salva.rim;
+    if (it && it.vn && (t - (this._bbT || -9) > 0.35 || this._bbDef !== def)) this.medirCaixa(it, def, t);
     if (res) {
       ctx.drawImage(R3D.canvas, 0, 0, res.w, res.h, P.x, P.y, P.w, P.h);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -693,6 +831,40 @@ const CriacaoTela = {
     ctx.restore();
   },
   norm(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; },
+  // Caixa do personagem já posado (os vértices que o motor acabou de montar: corpo, peças, arma e
+  // capa na pose atual): o alto, o pé e o maior afastamento do eixo vertical. Medida a cada 0,35 s
+  medirCaixa(it, def, t) {
+    const D = R3D.data, a = it.v0 * 10, b = Math.min(D.length, (it.v0 + it.vn) * 10);
+    let zMin = 1e9, zMax = -1e9, r2 = 0;
+    for (let k = a; k < b; k += 10) {
+      const X = D[k], Y = D[k + 1], Z = D[k + 2], q = X * X + Y * Y;
+      if (Z < zMin) zMin = Z; if (Z > zMax) zMax = Z; if (q > r2) r2 = q;
+    }
+    if (zMax > zMin) { this._bb = { z0: Math.min(0, zMin), z1: zMax, r: Math.sqrt(r2) }; this._bbT = t; this._bbDef = def; }
+  },
+  // Distância e altura do alvo da câmera em cada nível de zoom. Corpo inteiro: pela caixa real do
+  // modelo (cabe na altura e na largura da prévia, com folga para os botões do alto, em qualquer
+  // proporção de tela); busto e rosto: perto do rosto, afastando quando a prévia é estreita
+  // (celular em pé) para os ombros não saírem pelos lados
+  niveisZoom(P, alt, def) {
+    const tg = Math.tan(0.31), asp = Math.max(0.3, P.w / P.h), B = this._bbDef === def ? this._bb : null;
+    let d0 = CRIA_ZOOM[0].d * alt, zc = CRIA_ZOOM[0].z * alt;
+    if (B) {
+      const topo = (this._topoBarra || 44) / P.h, base = 10 / P.h;   // (fração da prévia: os botões de zoom no alto e uma folga embaixo)
+      const hh = (B.z1 - B.z0) / 2 * 1.04 + 1.5, r = Math.max(B.r, 8);
+      const dv = hh / (tg * (1 - topo - base)) + r * 0.55, dh = (r * 1.05 + 1.5) / (tg * asp) + r * 0.55;
+      d0 = Math.max(dv, dh);
+      zc = (B.z0 + B.z1) / 2 + (topo - base) * d0 * tg;   // o alvo sobe: o corpo desce para longe dos botões
+    }
+    // suave: a caixa muda com a pose (golpe, corrida); a câmera acompanha sem tremer
+    const S = this._cam || (this._cam = { d: d0, z: zc });
+    S.d += (d0 - S.d) * 0.12; S.z += (zc - S.z) * 0.12;
+    return [
+      { d: S.d, z: S.z },
+      { d: Math.max(CRIA_ZOOM[1].d, 15 / (tg * asp) + 6) * alt, z: CRIA_ZOOM[1].z * alt },
+      { d: Math.max(CRIA_ZOOM[2].d, 8 / (tg * asp) + 4) * alt, z: CRIA_ZOOM[2].z * alt },
+    ];
+  },
   // Matriz da câmera (mesma montagem da 3ª pessoa, js/terceira.js): órbita em volta do personagem
   camera(P, yaw, pitch, d, tz) {
     const V = this._V || (this._V = new Float32Array(16)), Pm = this._Pm || (this._Pm = new Float32Array(16)), M = this._M || (this._M = new Float32Array(16));

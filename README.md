@@ -142,9 +142,11 @@ Kael Veyron é o personagem inicial; Lyra Kaede, Drakos, Sera Vyne e Orion são 
 - **Lista de personagens**: os personagens da conta, com classe e nível salvo. Dá para jogar (isométrica ou 3ª pessoa), editar a aparência, excluir (com confirmação; o mundo dele vai junto), criar um novo ou voltar ao mundo original do Kael.
 - **Tela de criação**: o personagem aparece no centro em **3D de verdade**, desenhado pelo próprio motor do jogo em perspectiva, sobre um altar de runas, com luz, sombra e brasas no ar.
   - **Girar**: arraste com o mouse ou o dedo, ou use Z / C e os botões.
-  - **Aproximar**: roda do mouse, + / − ou os botões (corpo inteiro, busto, rosto).
+  - **Aproximar**: roda do mouse sobre a prévia, + / − ou os botões (corpo inteiro, busto, rosto). O **corpo inteiro** é enquadrado pela caixa real do modelo posado (altura, arma, capa, pose): cabe inteiro em qualquer proporção de tela, abaixo dos botões do alto.
   - **Poses**: parado, guarda, vitória, correndo e o golpe da arma da classe.
   - **Painéis**: CLASSE, APARÊNCIA e EQUIPAMENTO (Q/E trocam de aba). À direita ficam o **nome**, os números reais da classe, as habilidades e a câmera inicial (isométrica ou 3ª pessoa).
+  - **Equipamento**: as sete peças do conjunto inicial em cartões do mesmo tamanho, com a imagem inteira e o estado de cada uma: VESTIDA (borda acesa), NA MOCHILA (o outro peitoral; um toque o veste), OCULTA (capuz escondido) e BLOQUEADA (só quando o nível ou a classe impedem).
+  - **Telas pequenas** (celular, tablet em pé): o painel da esquerda rola com a roda ou com o dedo, os textos diminuem até caber (sem passar da borda) e o zoom desce para uma segunda linha quando a prévia é estreita.
   - **ALEATÓRIO** sorteia a aparência. Tudo muda na hora no modelo.
 - **Nome**: de 2 a 16 caracteres (letras com acento, números, espaço, hífen ou apóstrofo), sem repetir outro personagem da conta. Recusado, aparece o motivo.
 - **Aparência — estilo Realista** (o padrão; `js/criacao/montagem.js`): o personagem é montado com as **peças GLB** de `assets/Criar_Personagem/`, em grades de miniaturas (as PNG da pasta) por categoria:
@@ -218,7 +220,7 @@ python3 tools/importar_criacao.py --minis           # só miniaturas e catálogo
 - **Corpos** (masculino e feminino, 1,5 milhão de triângulos e textura 4K cada): reduzidos a 18 mil triângulos e ligados ao esqueleto pelas silhuetas (o mesmo processo dos heróis); a cabeça careca sai e o corpo é dividido em regiões (tronco, braços, mãos, pernas, pés) para esconder o que fica dentro de botas, luvas e calças.
 - **Rostos**: crânio do busto encaixado no crânio do corpo (escala e posição pela distância entre as superfícies), pescoço levado à forma do pescoço do corpo.
 - **Cabelos, barbas e capuzes**: escala e posição que melhor cobrem a cabeça sem entrar nela nem tapar os olhos.
-- **Armaduras**: botas e luvas em par (separadas e postas em cada pé e mão), peitoral pelo **encaixe anatômico** (escala pela cobertura do tronco, topo entre o ombro e o pescoço, centro no peito; validado na conversão, ver `docs/CRIACAO_ENCAIXE.md`), calças na caixa da região, capa presa na base do pescoço e pendurada nas abas do casaco do Kael (balança), amuleto no peito.
+- **Armaduras**: botas e luvas em par (separadas por pedaço contínuo e postas em cada pé e mão, ajustadas fatia a fatia à grossura da mão e da perna, com pesos só do próprio membro; calças só do tronco e das pernas: ver `docs/CRIACAO_ENCAIXE.md`), peitoral pelo **encaixe anatômico** (escala pela cobertura do tronco, topo entre o ombro e o pescoço, centro no peito; validado na conversão, ver `docs/CRIACAO_ENCAIXE.md`), calças na caixa da região, capa presa na base do pescoço e pendurada nas abas do casaco do Kael (balança), amuleto no peito.
 
 ## Mundo aberto
 
