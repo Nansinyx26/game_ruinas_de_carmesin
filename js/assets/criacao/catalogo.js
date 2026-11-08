@@ -23,6 +23,26 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "corpo_am",
+  "tipo": "corpo",
+  "nome": "Atlético",
+  "arq": "assets/Criar_Personagem/Corpos_Atleticos/Atletico_Masculino_A.glb",
+  "mini": "assets/Criar_Personagem/Corpos_Atleticos/Atletico_Masculino.png",
+  "js": "js/assets/criacao/corpo_am.js",
+  "convertido": true,
+  "extra": true
+ },
+ {
+  "id": "corpo_af",
+  "tipo": "corpo",
+  "nome": "Atlética",
+  "arq": "assets/Criar_Personagem/Corpos_Atleticos/Atletica_Feminina_A.glb",
+  "mini": "assets/Criar_Personagem/Corpos_Atleticos/Atletica_Feminina.png",
+  "js": "js/assets/criacao/corpo_af.js",
+  "convertido": true,
+  "extra": true
+ },
+ {
   "id": "npc_ferreiro",
   "tipo": "npc",
   "nome": "Ferreiro",
@@ -89,7 +109,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Rosto/Rosto_1.glb",
   "mini": "assets/Criar_Personagem/Rosto/rosto_1.png",
   "js": "js/assets/criacao/rosto_1.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_1.js"
  },
  {
   "id": "rosto_2",
@@ -98,7 +119,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Rosto/rosto_2.glb",
   "mini": "assets/Criar_Personagem/Rosto/rosto_2.png",
   "js": "js/assets/criacao/rosto_2.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_2.js"
  },
  {
   "id": "rosto_3",
@@ -108,7 +130,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Rosto/rosto_3.png",
   "js": "js/assets/criacao/rosto_3.js",
   "sem_iris": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_3.js"
  },
  {
   "id": "rosto_4",
@@ -117,7 +140,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Rosto/rosto_4.glb",
   "mini": "assets/Criar_Personagem/Rosto/rosto_4.png",
   "js": "js/assets/criacao/rosto_4.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_4.js"
  },
  {
   "id": "rosto_5",
@@ -126,7 +150,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Rosto/rosto_5.glb",
   "mini": "assets/Criar_Personagem/Rosto/rosto_5.png",
   "js": "js/assets/criacao/rosto_5.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_5.js"
  },
  {
   "id": "rosto_6",
@@ -135,7 +160,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Rosto/rosto_6.glb",
   "mini": "assets/Criar_Personagem/Rosto/rosto_6.png",
   "js": "js/assets/criacao/rosto_6.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_6.js"
  },
  {
   "id": "rosto_7",
@@ -145,7 +171,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Rosto/rosto_7.png",
   "js": "js/assets/criacao/rosto_7.js",
   "sem_iris": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_7.js"
  },
  {
   "id": "rosto_8",
@@ -155,7 +182,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Rosto/rosto_8.png",
   "js": "js/assets/criacao/rosto_8.js",
   "sem_iris": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/rosto_8.js"
  },
  {
   "id": "cabelo_1",
@@ -164,7 +192,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/../_retopo/meshy/cabelo_1_alinhado.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_1.png",
   "js": "js/assets/criacao/cabelo_1.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_1.js"
  },
  {
   "id": "cabelo_2",
@@ -173,7 +202,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/Cabelo_2.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_2.png",
   "js": "js/assets/criacao/cabelo_2.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_2.js"
  },
  {
   "id": "cabelo_3",
@@ -182,7 +212,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/Cabelo_3.glb",
   "mini": "assets/Criar_Personagem/Cabelo/Cabelo_3.png",
   "js": "js/assets/criacao/cabelo_3.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_3.js"
  },
  {
   "id": "cabelo_4",
@@ -191,7 +222,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/Cabelo_4.glb",
   "mini": "assets/Criar_Personagem/Cabelo/Cabelo_4.png",
   "js": "js/assets/criacao/cabelo_4.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_4.js"
  },
  {
   "id": "cabelo_5",
@@ -200,7 +232,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/Cabelo_5.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_5.png",
   "js": "js/assets/criacao/cabelo_5.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_5.js"
  },
  {
   "id": "cabelo_6",
@@ -209,7 +242,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/Cabelo_6.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_6.png",
   "js": "js/assets/criacao/cabelo_6.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_6.js"
  },
  {
   "id": "cabelo_7",
@@ -218,7 +252,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/cabelo_7.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_7.png",
   "js": "js/assets/criacao/cabelo_7.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_7.js"
  },
  {
   "id": "cabelo_8",
@@ -227,7 +262,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo/Cabelo_8.glb",
   "mini": "assets/Criar_Personagem/Cabelo/cabelo_8.png",
   "js": "js/assets/criacao/cabelo_8.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_8.js"
  },
  {
   "id": "cabelo_curto",
@@ -237,7 +273,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/curto.png",
   "js": "js/assets/criacao/cabelo_curto.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_curto.js"
  },
  {
   "id": "cabelo_medio",
@@ -247,7 +284,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/medio.png",
   "js": "js/assets/criacao/cabelo_medio.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_medio.js"
  },
  {
   "id": "cabelo_longo",
@@ -257,7 +295,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/longo.png",
   "js": "js/assets/criacao/cabelo_longo.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_longo.js"
  },
  {
   "id": "cabelo_espetado",
@@ -267,7 +306,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/espetado.png",
   "js": "js/assets/criacao/cabelo_espetado.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_espetado.js"
  },
  {
   "id": "cabelo_ondulado",
@@ -277,7 +317,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/ondulado.png",
   "js": "js/assets/criacao/cabelo_ondulado.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_ondulado.js"
  },
  {
   "id": "cabelo_coque",
@@ -287,7 +328,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/coque.png",
   "js": "js/assets/criacao/cabelo_coque.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_coque.js"
  },
  {
   "id": "cabelo_rabo",
@@ -297,7 +339,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/rabo.png",
   "js": "js/assets/criacao/cabelo_rabo.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_rabo.js"
  },
  {
   "id": "cabelo_trancas",
@@ -307,7 +350,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/trancas.png",
   "js": "js/assets/criacao/cabelo_trancas.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_trancas.js"
  },
  {
   "id": "cabelo_franja",
@@ -317,7 +361,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/franja.png",
   "js": "js/assets/criacao/cabelo_franja.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_franja.js"
  },
  {
   "id": "cabelo_repicado",
@@ -327,7 +372,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/repicado.png",
   "js": "js/assets/criacao/cabelo_repicado.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_repicado.js"
  },
  {
   "id": "cabelo_raspado",
@@ -337,7 +383,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/raspado.png",
   "js": "js/assets/criacao/cabelo_raspado.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_raspado.js"
  },
  {
   "id": "cabelo_militar",
@@ -347,7 +394,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/militar.png",
   "js": "js/assets/criacao/cabelo_militar.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_militar.js"
  },
  {
   "id": "cabelo_topete",
@@ -357,7 +405,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/topete.png",
   "js": "js/assets/criacao/cabelo_topete.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_topete.js"
  },
  {
   "id": "cabelo_undercut",
@@ -367,7 +416,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/undercut.png",
   "js": "js/assets/criacao/cabelo_undercut.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_undercut.js"
  },
  {
   "id": "cabelo_moicano",
@@ -377,7 +427,8 @@ const CRIA_CATALOGO = [
   "mini": "assets/Criar_Personagem/Cabelo_Fisica/moicano.png",
   "js": "js/assets/criacao/cabelo_moicano.js",
   "fisica": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_moicano.js"
  },
  {
   "id": "cabelo_meshy_longo",
@@ -386,7 +437,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_longo.glb",
   "mini": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_longo.png",
   "js": "js/assets/criacao/cabelo_meshy_longo.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_meshy_longo.js"
  },
  {
   "id": "cabelo_meshy_cyber",
@@ -395,7 +447,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_cyber.glb",
   "mini": "assets/Criar_Personagem/Cabelo_Meshy/cabelo_meshy_cyber.png",
   "js": "js/assets/criacao/cabelo_meshy_cyber.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/cabelo_meshy_cyber.js"
  },
  {
   "id": "barba_cacheada",
@@ -404,7 +457,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas/Barba_Cacheada.glb",
   "mini": "assets/Criar_Personagem/Barbas/Barba_Cacheada.png",
   "js": "js/assets/criacao/barba_cacheada.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_cacheada.js"
  },
  {
   "id": "barba_curta",
@@ -413,7 +467,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas/Barba_Curta.glb",
   "mini": "assets/Criar_Personagem/Barbas/Barba_Curta.png",
   "js": "js/assets/criacao/barba_curta.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_curta.js"
  },
  {
   "id": "barba_longa",
@@ -422,7 +477,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas/Barba_Longa.glb",
   "mini": "assets/Criar_Personagem/Barbas/Barba_Longa.png",
   "js": "js/assets/criacao/barba_longa.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_longa.js"
  },
  {
   "id": "barba_media",
@@ -431,7 +487,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas/Barba_Média.glb",
   "mini": "assets/Criar_Personagem/Barbas/Barba_Média.png",
   "js": "js/assets/criacao/barba_media.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_media.js"
  },
  {
   "id": "barba_viking",
@@ -440,7 +497,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas/Barba_Viking.glb",
   "mini": "assets/Criar_Personagem/Barbas/Barba_Viking.png",
   "js": "js/assets/criacao/barba_viking.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_viking.js"
  },
  {
   "id": "barba_b_por_fazer",
@@ -449,7 +507,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/por_fazer.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/por_fazer.png",
   "js": "js/assets/criacao/barba_b_por_fazer.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_por_fazer.js"
  },
  {
   "id": "barba_b_curta",
@@ -458,7 +517,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/curta.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/curta.png",
   "js": "js/assets/criacao/barba_b_curta.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_curta.js"
  },
  {
   "id": "barba_b_media",
@@ -467,7 +527,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/media.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/media.png",
   "js": "js/assets/criacao/barba_b_media.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_media.js"
  },
  {
   "id": "barba_b_cheia",
@@ -476,7 +537,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/cheia.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/cheia.png",
   "js": "js/assets/criacao/barba_b_cheia.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_cheia.js"
  },
  {
   "id": "barba_b_longa",
@@ -485,7 +547,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/longa.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/longa.png",
   "js": "js/assets/criacao/barba_b_longa.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_longa.js"
  },
  {
   "id": "barba_b_cavanhaque",
@@ -494,7 +557,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/cavanhaque.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/cavanhaque.png",
   "js": "js/assets/criacao/barba_b_cavanhaque.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_cavanhaque.js"
  },
  {
   "id": "barba_b_queixo",
@@ -503,7 +567,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/queixo.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/queixo.png",
   "js": "js/assets/criacao/barba_b_queixo.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_queixo.js"
  },
  {
   "id": "barba_b_bigode",
@@ -512,7 +577,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/bigode.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/bigode.png",
   "js": "js/assets/criacao/barba_b_bigode.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_bigode.js"
  },
  {
   "id": "barba_b_guidao",
@@ -521,7 +587,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/guidao.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/guidao.png",
   "js": "js/assets/criacao/barba_b_guidao.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_guidao.js"
  },
  {
   "id": "barba_b_fino",
@@ -530,7 +597,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/fino.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/fino.png",
   "js": "js/assets/criacao/barba_b_fino.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_fino.js"
  },
  {
   "id": "barba_b_ferradura",
@@ -539,7 +607,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/ferradura.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/ferradura.png",
   "js": "js/assets/criacao/barba_b_ferradura.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_ferradura.js"
  },
  {
   "id": "barba_b_cheia_sem",
@@ -548,7 +617,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/cheia_sem.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/cheia_sem.png",
   "js": "js/assets/criacao/barba_b_cheia_sem.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_cheia_sem.js"
  },
  {
   "id": "barba_b_cavanhaque_sem",
@@ -557,7 +627,8 @@ const CRIA_CATALOGO = [
   "arq": "assets/Criar_Personagem/Barbas_Blender/cavanhaque_sem.glb",
   "mini": "assets/Criar_Personagem/Barbas_Blender/cavanhaque_sem.png",
   "js": "js/assets/criacao/barba_b_cavanhaque_sem.js",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/barba_b_cavanhaque_sem.js"
  },
  {
   "id": "av_lobo_peitoral",
@@ -575,7 +646,8 @@ const CRIA_CATALOGO = [
    "patrulheiro"
   ],
   "conjunto": "avulsas",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/av_lobo_peitoral.js"
  },
  {
   "id": "av_corvo_peitoral",
@@ -593,7 +665,8 @@ const CRIA_CATALOGO = [
    "mago"
   ],
   "conjunto": "avulsas",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/av_corvo_peitoral.js"
  },
  {
   "id": "av_bronze_peitoral",
@@ -610,7 +683,8 @@ const CRIA_CATALOGO = [
    "guardiao"
   ],
   "conjunto": "avulsas",
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/av_bronze_peitoral.js"
  },
  {
   "id": "ini_capuz",
@@ -621,7 +695,8 @@ const CRIA_CATALOGO = [
   "js": "js/assets/criacao/ini_capuz.js",
   "vaga": "capacete",
   "nivel": 1,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_capuz.js"
  },
  {
   "id": "ini_peitoral",
@@ -632,7 +707,8 @@ const CRIA_CATALOGO = [
   "js": "js/assets/criacao/ini_peitoral.js",
   "vaga": "peitoral",
   "nivel": 1,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_peitoral.js"
  },
  {
   "id": "ini_armadura",
@@ -644,7 +720,8 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "nivel": 1,
   "ombros": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_armadura.js"
  },
  {
   "id": "ini_luvas",
@@ -658,7 +735,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_luvas.js"
  },
  {
   "id": "ini_calca",
@@ -672,7 +750,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_calca.js"
  },
  {
   "id": "ini_botas",
@@ -686,7 +765,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_botas.js"
  },
  {
   "id": "ini_capa",
@@ -697,7 +777,8 @@ const CRIA_CATALOGO = [
   "js": "js/assets/criacao/ini_capa.js",
   "vaga": "capa",
   "nivel": 1,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/ini_capa.js"
  },
  {
   "id": "n30_assassino_peitoral",
@@ -709,7 +790,8 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "classe": "assassino",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_peitoral.js"
  },
  {
   "id": "n30_assassino_capa",
@@ -721,7 +803,8 @@ const CRIA_CATALOGO = [
   "vaga": "capa",
   "classe": "assassino",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_capa.js"
  },
  {
   "id": "n30_assassino_luvas",
@@ -736,7 +819,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_luvas.js"
  },
  {
   "id": "n30_assassino_capacete",
@@ -748,7 +832,8 @@ const CRIA_CATALOGO = [
   "vaga": "capacete",
   "classe": "assassino",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_capacete.js"
  },
  {
   "id": "n30_assassino_calcas",
@@ -763,7 +848,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_calcas.js"
  },
  {
   "id": "n30_assassino_botas",
@@ -778,7 +864,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_botas.js"
  },
  {
   "id": "n30_assassino_acessorio",
@@ -790,7 +877,8 @@ const CRIA_CATALOGO = [
   "vaga": "acessorio",
   "classe": "assassino",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_assassino_acessorio.js"
  },
  {
   "id": "n30_guerreiro_peitoral",
@@ -802,7 +890,8 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "classe": "guerreiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_peitoral.js"
  },
  {
   "id": "n30_guerreiro_capa",
@@ -814,7 +903,8 @@ const CRIA_CATALOGO = [
   "vaga": "capa",
   "classe": "guerreiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_capa.js"
  },
  {
   "id": "n30_guerreiro_luvas",
@@ -829,7 +919,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_luvas.js"
  },
  {
   "id": "n30_guerreiro_capacete",
@@ -841,7 +932,8 @@ const CRIA_CATALOGO = [
   "vaga": "capacete",
   "classe": "guerreiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_capacete.js"
  },
  {
   "id": "n30_guerreiro_calcas",
@@ -856,7 +948,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_calcas.js"
  },
  {
   "id": "n30_guerreiro_botas",
@@ -871,7 +964,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_botas.js"
  },
  {
   "id": "n30_guerreiro_acessorio",
@@ -883,7 +977,8 @@ const CRIA_CATALOGO = [
   "vaga": "acessorio",
   "classe": "guerreiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guerreiro_acessorio.js"
  },
  {
   "id": "n30_mago_peitoral",
@@ -895,7 +990,8 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "classe": "mago",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_peitoral.js"
  },
  {
   "id": "n30_mago_capa",
@@ -907,7 +1003,8 @@ const CRIA_CATALOGO = [
   "vaga": "capa",
   "classe": "mago",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_capa.js"
  },
  {
   "id": "n30_mago_luvas",
@@ -922,7 +1019,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_luvas.js"
  },
  {
   "id": "n30_mago_capacete",
@@ -934,7 +1032,8 @@ const CRIA_CATALOGO = [
   "vaga": "capacete",
   "classe": "mago",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_capacete.js"
  },
  {
   "id": "n30_mago_calcas",
@@ -949,7 +1048,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_calcas.js"
  },
  {
   "id": "n30_mago_botas",
@@ -964,7 +1064,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_botas.js"
  },
  {
   "id": "n30_mago_acessorio",
@@ -976,7 +1077,8 @@ const CRIA_CATALOGO = [
   "vaga": "acessorio",
   "classe": "mago",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_mago_acessorio.js"
  },
  {
   "id": "n30_patrulheiro_peitoral",
@@ -988,7 +1090,8 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "classe": "patrulheiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_peitoral.js"
  },
  {
   "id": "n30_patrulheiro_capa",
@@ -1000,7 +1103,8 @@ const CRIA_CATALOGO = [
   "vaga": "capa",
   "classe": "patrulheiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_capa.js"
  },
  {
   "id": "n30_patrulheiro_luvas",
@@ -1015,7 +1119,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_luvas.js"
  },
  {
   "id": "n30_patrulheiro_capacete",
@@ -1027,7 +1132,8 @@ const CRIA_CATALOGO = [
   "vaga": "capacete",
   "classe": "patrulheiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_capacete.js"
  },
  {
   "id": "n30_patrulheiro_calcas",
@@ -1042,7 +1148,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_calcas.js"
  },
  {
   "id": "n30_patrulheiro_botas",
@@ -1057,7 +1164,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_botas.js"
  },
  {
   "id": "n30_patrulheiro_acessorio",
@@ -1069,7 +1177,8 @@ const CRIA_CATALOGO = [
   "vaga": "acessorio",
   "classe": "patrulheiro",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_patrulheiro_acessorio.js"
  },
  {
   "id": "n30_guardiao_peitoral",
@@ -1081,7 +1190,8 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "classe": "guardiao",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_peitoral.js"
  },
  {
   "id": "n30_guardiao_capa",
@@ -1093,7 +1203,8 @@ const CRIA_CATALOGO = [
   "vaga": "capa",
   "classe": "guardiao",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_capa.js"
  },
  {
   "id": "n30_guardiao_luvas",
@@ -1108,7 +1219,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_luvas.js"
  },
  {
   "id": "n30_guardiao_capacete",
@@ -1120,7 +1232,8 @@ const CRIA_CATALOGO = [
   "vaga": "capacete",
   "classe": "guardiao",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_capacete.js"
  },
  {
   "id": "n30_guardiao_calcas",
@@ -1135,7 +1248,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_calcas.js"
  },
  {
   "id": "n30_guardiao_botas",
@@ -1150,7 +1264,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_botas.js"
  },
  {
   "id": "n30_guardiao_acessorio",
@@ -1162,7 +1277,8 @@ const CRIA_CATALOGO = [
   "vaga": "acessorio",
   "classe": "guardiao",
   "nivel": 30,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n30_guardiao_acessorio.js"
  },
  {
   "id": "n50_assassino_peitoral",
@@ -1177,7 +1293,8 @@ const CRIA_CATALOGO = [
   "ombros": true,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_peitoral.js"
  },
  {
   "id": "n50_assassino_ombroE",
@@ -1190,7 +1307,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_ombroE.js"
  },
  {
   "id": "n50_assassino_ombroD",
@@ -1203,7 +1321,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_ombroD.js"
  },
  {
   "id": "n50_assassino_capa",
@@ -1217,7 +1336,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_capa.js"
  },
  {
   "id": "n50_assassino_capacete",
@@ -1231,7 +1351,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_capacete.js"
  },
  {
   "id": "n50_assassino_luvas",
@@ -1248,7 +1369,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_luvas.js"
  },
  {
   "id": "n50_assassino_calcas",
@@ -1264,7 +1386,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_calcas.js"
  },
  {
   "id": "n50_assassino_botas",
@@ -1281,7 +1404,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_botas.js"
  },
  {
   "id": "n50_assassino_acessorio",
@@ -1294,7 +1418,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_assassino_acessorio.js"
  },
  {
   "id": "n75_assassino_peitoral",
@@ -1308,7 +1433,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_peitoral.js"
  },
  {
   "id": "n75_assassino_ombroE",
@@ -1322,7 +1448,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_ombroE.js"
  },
  {
   "id": "n75_assassino_ombroD",
@@ -1336,7 +1463,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_ombroD.js"
  },
  {
   "id": "n75_assassino_capa",
@@ -1349,7 +1477,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_capa.js"
  },
  {
   "id": "n75_assassino_capacete",
@@ -1363,7 +1492,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_capacete.js"
  },
  {
   "id": "n75_assassino_luvas",
@@ -1380,7 +1510,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_luvas.js"
  },
  {
   "id": "n75_assassino_calcas",
@@ -1397,7 +1528,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_calcas.js"
  },
  {
   "id": "n75_assassino_botas",
@@ -1414,7 +1546,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_botas.js"
  },
  {
   "id": "n75_assassino_acessorio",
@@ -1428,7 +1561,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_assassino_acessorio.js"
  },
  {
   "id": "n100_assassino_peitoral",
@@ -1441,7 +1575,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_peitoral.js"
  },
  {
   "id": "n100_assassino_ombroE",
@@ -1454,7 +1589,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_ombroE.js"
  },
  {
   "id": "n100_assassino_ombroD",
@@ -1467,7 +1603,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_ombroD.js"
  },
  {
   "id": "n100_assassino_capa",
@@ -1480,7 +1617,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_capa.js"
  },
  {
   "id": "n100_assassino_capacete",
@@ -1493,7 +1631,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_capacete.js"
  },
  {
   "id": "n100_assassino_luvas",
@@ -1509,7 +1648,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_luvas.js"
  },
  {
   "id": "n100_assassino_calcas",
@@ -1525,7 +1665,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_calcas.js"
  },
  {
   "id": "n100_assassino_botas",
@@ -1541,7 +1682,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_botas.js"
  },
  {
   "id": "n100_assassino_acessorio",
@@ -1554,7 +1696,8 @@ const CRIA_CATALOGO = [
   "classe": "assassino",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_assassino_acessorio.js"
  },
  {
   "id": "n50_guerreiro_peitoral",
@@ -1569,7 +1712,8 @@ const CRIA_CATALOGO = [
   "ombros": true,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_peitoral.js"
  },
  {
   "id": "n50_guerreiro_ombroE",
@@ -1582,7 +1726,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_ombroE.js"
  },
  {
   "id": "n50_guerreiro_ombroD",
@@ -1595,7 +1740,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_ombroD.js"
  },
  {
   "id": "n50_guerreiro_capa",
@@ -1609,7 +1755,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_capa.js"
  },
  {
   "id": "n50_guerreiro_capacete",
@@ -1623,7 +1770,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_capacete.js"
  },
  {
   "id": "n50_guerreiro_luvas",
@@ -1639,7 +1787,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_luvas.js"
  },
  {
   "id": "n50_guerreiro_calcas",
@@ -1656,7 +1805,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_calcas.js"
  },
  {
   "id": "n50_guerreiro_botas",
@@ -1673,7 +1823,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_botas.js"
  },
  {
   "id": "n50_guerreiro_acessorio",
@@ -1686,7 +1837,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guerreiro_acessorio.js"
  },
  {
   "id": "n75_guerreiro_peitoral",
@@ -1701,7 +1853,8 @@ const CRIA_CATALOGO = [
   "ombros": true,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_peitoral.js"
  },
  {
   "id": "n75_guerreiro_ombroE",
@@ -1714,7 +1867,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_ombroE.js"
  },
  {
   "id": "n75_guerreiro_ombroD",
@@ -1727,7 +1881,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_ombroD.js"
  },
  {
   "id": "n75_guerreiro_capa",
@@ -1741,7 +1896,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_capa.js"
  },
  {
   "id": "n75_guerreiro_capacete",
@@ -1755,7 +1911,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_capacete.js"
  },
  {
   "id": "n75_guerreiro_luvas",
@@ -1771,7 +1928,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_luvas.js"
  },
  {
   "id": "n75_guerreiro_calcas",
@@ -1788,7 +1946,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_calcas.js"
  },
  {
   "id": "n75_guerreiro_botas",
@@ -1805,7 +1964,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_botas.js"
  },
  {
   "id": "n75_guerreiro_acessorio",
@@ -1818,7 +1978,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guerreiro_acessorio.js"
  },
  {
   "id": "n100_guerreiro_peitoral",
@@ -1830,8 +1991,11 @@ const CRIA_CATALOGO = [
   "vaga": "peitoral",
   "classe": "guerreiro",
   "nivel": 100,
-  "blender": true,
-  "convertido": true
+  "ombros": true,
+  "blender": false,
+  "real": true,
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_peitoral.js"
  },
  {
   "id": "n100_guerreiro_ombroE",
@@ -1844,7 +2008,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_ombroE.js"
  },
  {
   "id": "n100_guerreiro_ombroD",
@@ -1857,7 +2022,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_ombroD.js"
  },
  {
   "id": "n100_guerreiro_capa",
@@ -1870,7 +2036,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_capa.js"
  },
  {
   "id": "n100_guerreiro_capacete",
@@ -1883,7 +2050,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_capacete.js"
  },
  {
   "id": "n100_guerreiro_luvas",
@@ -1899,7 +2067,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_luvas.js"
  },
  {
   "id": "n100_guerreiro_calcas",
@@ -1915,7 +2084,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_calcas.js"
  },
  {
   "id": "n100_guerreiro_botas",
@@ -1931,7 +2101,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_botas.js"
  },
  {
   "id": "n100_guerreiro_acessorio",
@@ -1944,7 +2115,8 @@ const CRIA_CATALOGO = [
   "classe": "guerreiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guerreiro_acessorio.js"
  },
  {
   "id": "n50_mago_peitoral",
@@ -1958,7 +2130,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_peitoral.js"
  },
  {
   "id": "n50_mago_ombroE",
@@ -1972,7 +2145,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_ombroE.js"
  },
  {
   "id": "n50_mago_ombroD",
@@ -1986,7 +2160,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_ombroD.js"
  },
  {
   "id": "n50_mago_capa",
@@ -2000,7 +2175,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_capa.js"
  },
  {
   "id": "n50_mago_capacete",
@@ -2014,7 +2190,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_capacete.js"
  },
  {
   "id": "n50_mago_luvas",
@@ -2031,7 +2208,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_luvas.js"
  },
  {
   "id": "n50_mago_calcas",
@@ -2048,7 +2226,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_calcas.js"
  },
  {
   "id": "n50_mago_botas",
@@ -2065,7 +2244,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_botas.js"
  },
  {
   "id": "n50_mago_acessorio",
@@ -2078,7 +2258,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_mago_acessorio.js"
  },
  {
   "id": "n75_mago_peitoral",
@@ -2093,7 +2274,8 @@ const CRIA_CATALOGO = [
   "ombros": true,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_peitoral.js"
  },
  {
   "id": "n75_mago_ombroE",
@@ -2106,7 +2288,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_ombroE.js"
  },
  {
   "id": "n75_mago_ombroD",
@@ -2119,7 +2302,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_ombroD.js"
  },
  {
   "id": "n75_mago_capa",
@@ -2133,7 +2317,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_capa.js"
  },
  {
   "id": "n75_mago_capacete",
@@ -2147,7 +2332,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_capacete.js"
  },
  {
   "id": "n75_mago_luvas",
@@ -2163,7 +2349,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_luvas.js"
  },
  {
   "id": "n75_mago_calcas",
@@ -2180,7 +2367,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_calcas.js"
  },
  {
   "id": "n75_mago_botas",
@@ -2197,7 +2385,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_botas.js"
  },
  {
   "id": "n75_mago_acessorio",
@@ -2211,7 +2400,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_mago_acessorio.js"
  },
  {
   "id": "n100_mago_peitoral",
@@ -2224,7 +2414,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_peitoral.js"
  },
  {
   "id": "n100_mago_ombroE",
@@ -2237,7 +2428,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_ombroE.js"
  },
  {
   "id": "n100_mago_ombroD",
@@ -2250,7 +2442,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_ombroD.js"
  },
  {
   "id": "n100_mago_capa",
@@ -2263,7 +2456,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_capa.js"
  },
  {
   "id": "n100_mago_capacete",
@@ -2276,7 +2470,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_capacete.js"
  },
  {
   "id": "n100_mago_luvas",
@@ -2292,7 +2487,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_luvas.js"
  },
  {
   "id": "n100_mago_calcas",
@@ -2308,7 +2504,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_calcas.js"
  },
  {
   "id": "n100_mago_botas",
@@ -2324,7 +2521,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_botas.js"
  },
  {
   "id": "n100_mago_acessorio",
@@ -2337,7 +2535,8 @@ const CRIA_CATALOGO = [
   "classe": "mago",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_mago_acessorio.js"
  },
  {
   "id": "n50_patrulheiro_peitoral",
@@ -2351,7 +2550,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_peitoral.js"
  },
  {
   "id": "n50_patrulheiro_ombroE",
@@ -2365,7 +2565,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_ombroE.js"
  },
  {
   "id": "n50_patrulheiro_ombroD",
@@ -2379,7 +2580,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_ombroD.js"
  },
  {
   "id": "n50_patrulheiro_capa",
@@ -2393,7 +2595,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_capa.js"
  },
  {
   "id": "n50_patrulheiro_capacete",
@@ -2407,7 +2610,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_capacete.js"
  },
  {
   "id": "n50_patrulheiro_luvas",
@@ -2424,7 +2628,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_luvas.js"
  },
  {
   "id": "n50_patrulheiro_calcas",
@@ -2441,7 +2646,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_calcas.js"
  },
  {
   "id": "n50_patrulheiro_botas",
@@ -2458,7 +2664,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_botas.js"
  },
  {
   "id": "n50_patrulheiro_acessorio",
@@ -2471,7 +2678,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_patrulheiro_acessorio.js"
  },
  {
   "id": "n75_patrulheiro_peitoral",
@@ -2486,7 +2694,8 @@ const CRIA_CATALOGO = [
   "ombros": true,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_peitoral.js"
  },
  {
   "id": "n75_patrulheiro_ombroE",
@@ -2499,7 +2708,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_ombroE.js"
  },
  {
   "id": "n75_patrulheiro_ombroD",
@@ -2512,7 +2722,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_ombroD.js"
  },
  {
   "id": "n75_patrulheiro_capa",
@@ -2526,7 +2737,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_capa.js"
  },
  {
   "id": "n75_patrulheiro_capacete",
@@ -2540,7 +2752,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_capacete.js"
  },
  {
   "id": "n75_patrulheiro_luvas",
@@ -2556,7 +2769,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_luvas.js"
  },
  {
   "id": "n75_patrulheiro_calcas",
@@ -2573,7 +2787,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_calcas.js"
  },
  {
   "id": "n75_patrulheiro_botas",
@@ -2590,7 +2805,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_botas.js"
  },
  {
   "id": "n75_patrulheiro_acessorio",
@@ -2603,7 +2819,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_patrulheiro_acessorio.js"
  },
  {
   "id": "n100_patrulheiro_peitoral",
@@ -2616,7 +2833,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_peitoral.js"
  },
  {
   "id": "n100_patrulheiro_ombroE",
@@ -2629,7 +2847,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_ombroE.js"
  },
  {
   "id": "n100_patrulheiro_ombroD",
@@ -2642,7 +2861,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_ombroD.js"
  },
  {
   "id": "n100_patrulheiro_capa",
@@ -2655,7 +2875,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_capa.js"
  },
  {
   "id": "n100_patrulheiro_capacete",
@@ -2668,7 +2889,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_capacete.js"
  },
  {
   "id": "n100_patrulheiro_luvas",
@@ -2684,7 +2906,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_luvas.js"
  },
  {
   "id": "n100_patrulheiro_calcas",
@@ -2700,7 +2923,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_calcas.js"
  },
  {
   "id": "n100_patrulheiro_botas",
@@ -2716,7 +2940,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_botas.js"
  },
  {
   "id": "n100_patrulheiro_acessorio",
@@ -2729,7 +2954,8 @@ const CRIA_CATALOGO = [
   "classe": "patrulheiro",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_patrulheiro_acessorio.js"
  },
  {
   "id": "n50_guardiao_peitoral",
@@ -2744,7 +2970,8 @@ const CRIA_CATALOGO = [
   "ombros": true,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_peitoral.js"
  },
  {
   "id": "n50_guardiao_ombroE",
@@ -2757,7 +2984,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_ombroE.js"
  },
  {
   "id": "n50_guardiao_ombroD",
@@ -2770,7 +2998,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_ombroD.js"
  },
  {
   "id": "n50_guardiao_capa",
@@ -2784,7 +3013,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_capa.js"
  },
  {
   "id": "n50_guardiao_capacete",
@@ -2798,7 +3028,8 @@ const CRIA_CATALOGO = [
   "nivel": 50,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_capacete.js"
  },
  {
   "id": "n50_guardiao_luvas",
@@ -2815,7 +3046,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_luvas.js"
  },
  {
   "id": "n50_guardiao_calcas",
@@ -2832,7 +3064,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_calcas.js"
  },
  {
   "id": "n50_guardiao_botas",
@@ -2849,7 +3082,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_botas.js"
  },
  {
   "id": "n50_guardiao_acessorio",
@@ -2862,7 +3096,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 50,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n50_guardiao_acessorio.js"
  },
  {
   "id": "n75_guardiao_peitoral",
@@ -2876,7 +3111,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_peitoral.js"
  },
  {
   "id": "n75_guardiao_ombroE",
@@ -2890,7 +3126,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_ombroE.js"
  },
  {
   "id": "n75_guardiao_ombroD",
@@ -2904,7 +3141,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_ombroD.js"
  },
  {
   "id": "n75_guardiao_capa",
@@ -2918,7 +3156,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_capa.js"
  },
  {
   "id": "n75_guardiao_capacete",
@@ -2932,7 +3171,8 @@ const CRIA_CATALOGO = [
   "nivel": 75,
   "blender": false,
   "real": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_capacete.js"
  },
  {
   "id": "n75_guardiao_luvas",
@@ -2949,7 +3189,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_luvas.js"
  },
  {
   "id": "n75_guardiao_calcas",
@@ -2966,7 +3207,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_calcas.js"
  },
  {
   "id": "n75_guardiao_botas",
@@ -2983,7 +3225,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_botas.js"
  },
  {
   "id": "n75_guardiao_acessorio",
@@ -2996,7 +3239,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 75,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n75_guardiao_acessorio.js"
  },
  {
   "id": "n100_guardiao_peitoral",
@@ -3009,7 +3253,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_peitoral.js"
  },
  {
   "id": "n100_guardiao_ombroE",
@@ -3022,7 +3267,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_ombroE.js"
  },
  {
   "id": "n100_guardiao_ombroD",
@@ -3035,7 +3281,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_ombroD.js"
  },
  {
   "id": "n100_guardiao_capa",
@@ -3048,7 +3295,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_capa.js"
  },
  {
   "id": "n100_guardiao_capacete",
@@ -3061,7 +3309,8 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_capacete.js"
  },
  {
   "id": "n100_guardiao_luvas",
@@ -3077,7 +3326,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "maos"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_luvas.js"
  },
  {
   "id": "n100_guardiao_calcas",
@@ -3093,7 +3343,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pernas"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_calcas.js"
  },
  {
   "id": "n100_guardiao_botas",
@@ -3109,7 +3360,8 @@ const CRIA_CATALOGO = [
   "esconde": [
    "pes"
   ],
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_botas.js"
  },
  {
   "id": "n100_guardiao_acessorio",
@@ -3122,6 +3374,7 @@ const CRIA_CATALOGO = [
   "classe": "guardiao",
   "nivel": 100,
   "blender": true,
-  "convertido": true
+  "convertido": true,
+  "atl": "js/assets/criacao/atl/n100_guardiao_acessorio.js"
  }
 ];

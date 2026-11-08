@@ -80,7 +80,19 @@ def sem_draco(caminho):
 CORPOS = [
     dict(id='corpo_m', nome='Masculino', arq='Corpo_Masculino/Corpo_Masculino.glb', mini='Corpo_Masculino/Corpor_Mascuilino.png', altura=61.0),
     dict(id='corpo_f', nome='Feminino', arq='Corpo_Feminino/Corpo_Feminino.glb', mini='Corpo_Feminino/Corpo_Feminino.png', altura=57.5),
+    # corpos atléticos enviados, já em A (tools/blender/corpo_pose_a.py desce os braços do T por um rig
+    # no Blender e tira o rabo de cavalo da atlética). São corpos EXTRA:
+    # as peças encaixadas neles vão para js/assets/criacao/atl/<peça>.js, carregado só por quem escolhe
+    # um corpo atlético (os arquivos de sempre não crescem). base: o corpo de forma parecida (as peças
+    # do Blender, modeladas nos dois corpos de sempre, partem da forma dele)
+    dict(id='corpo_am', nome='Atlético', arq='Corpos_Atleticos/Atletico_Masculino_A.glb', mini='Corpos_Atleticos/Atletico_Masculino.png', altura=61.0, extra=True, base='corpo_m'),
+    dict(id='corpo_af', nome='Atlética', arq='Corpos_Atleticos/Atletica_Feminina_A.glb', mini='Corpos_Atleticos/Atletica_Feminina.png', altura=57.5, extra=True, base='corpo_f'),
 ]
+CORPOS_EXTRA = [c['id'] for c in CORPOS if c.get('extra')]
+CORPO_BASE = {c['id']: c.get('base', c['id']) for c in CORPOS}
+EXTRA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'js', 'assets', 'criacao', 'atl')
+SO_EXTRA = False   # --so-extra: só os arquivos dos corpos extra (os de sempre ficam como estão)
+DADOS_POR_CORPO = ('porCorpo', 'ajuste', 'inv', 'cadeias', 'colisores')
 PECAS = []
 for i, (a, m) in enumerate([('Rosto_1.glb', 'rosto_1.png'), ('rosto_2.glb', 'rosto_2.png'), ('rosto_3.glb', 'rosto_3.png'), ('rosto_4.glb', 'rosto_4.png'),
                             ('rosto_5.glb', 'rosto_5.png'), ('rosto_6.glb', 'rosto_6.png'), ('rosto_7.glb', 'rosto_7.png'), ('rosto_8.glb', 'rosto_8.png')]):
@@ -365,7 +377,37 @@ def pele_js(V, N, Uo, Fo, W, nomes):
     return skins
 
 
+def gravar_extra(id_, dados):
+    """Tira de 'dados' o que é dos corpos extra (porCorpo, ajuste, inv, cadeias, colisores) e grava em
+    js/assets/criacao/atl/<id>.js; devolve o caminho (ou None se a peça não tem nada deles)."""
+    if dados.get('tipo') == 'corpo':
+        return None
+    x = {}
+    for k in DADOS_POR_CORPO:
+        d = dados.get(k)
+        if isinstance(d, dict):
+            for cid in CORPOS_EXTRA:
+                if cid in d:
+                    x.setdefault(k, {})[cid] = d.pop(cid)
+    if not x:
+        return None
+    os.makedirs(EXTRA, exist_ok=True)
+    kj = json.dumps(id_)
+    destino = os.path.join(EXTRA, id_ + '.js')
+    with open(destino, 'w', encoding='utf-8') as f:
+        f.write(f"""'use strict';
+// ECLIPSE ZERO · peça '{id_}' nos corpos atléticos (tools/importar_criacao.py): carregado só por quem usa um deles
+// Não edite à mão: rode o conversor de novo.
+""")
+        f.write(f'(window.CRIA3D_EXTRA = window.CRIA3D_EXTRA || {{}})[{kj}] = ' + json.dumps(x, separators=(',', ':')) + ';\n')
+        f.write(f"if (typeof Criacao3D !== 'undefined') Criacao3D.carregadoExtra({kj});\n")
+    return destino
+
+
 def gravar(id_, dados, mapas):
+    extra = gravar_extra(id_, dados)
+    if SO_EXTRA and dados.get('tipo') != 'corpo':
+        return extra or os.path.join(DEST, id_ + '.js')
     os.makedirs(DEST, exist_ok=True)
     k = json.dumps(id_)
     destino = os.path.join(DEST, id_ + '.js')
@@ -429,6 +471,39 @@ def abaixar_bracos(V, N, H, alvo=48.0):
     return V2, N2
 
 
+def marcos_cabeca_extra(V, m, topo):
+    """Corpos extra (atléticos do Meshy): cabelo esculpido na cabeça e pescoço curto (o trapézio sobe
+    até perto do queixo). O ponto mais à frente da cabeça pode ser a franja e o ponto mais estreito
+    cai no rosto; aqui os marcos saem do perfil (a frente da cabeça a cada meia unidade, perto do
+    meio): o queixo é onde a frente cai de uma vez (mais de 1,4 numa fatia), o nariz é o ponto mais
+    à frente logo acima dele (até 45% da altura do queixo ao topo), o pescoço fica meia unidade
+    acima do queixo e o corte da cabeça logo abaixo do queixo (o rosto do corpo, com a barba, sai
+    inteiro; o trapézio fica)."""
+    Z = V[:, 2]
+    zs = np.arange(topo - 0.3 * (topo - m['ombroZ']), m['ombroZ'], -0.5)
+    frente = []
+    for z in zs:
+        q = V[(np.abs(Z - z) < 0.25) & (np.abs(V[:, 1] - m['cy']) < 1.0)]
+        frente.append(q[:, 0].max() if len(q) else np.nan)
+    frente = np.array(frente)
+    queda = frente[:-1] - frente[1:]
+    i = next((k for k in range(len(queda)) if queda[k] > 1.4), None)
+    if i is None:
+        print('  marcos da cabeça: sem queda no perfil, fica a medida de sempre', flush=True)
+        return {}
+    queixo = float((zs[i] + zs[i + 1]) / 2)
+    banda = (zs > queixo) & (zs < queixo + 0.45 * (topo - queixo))
+    nariz = float(zs[banda][np.nanargmax(frente[banda])])
+    zp = queixo + 0.5
+    fat = V[np.abs(Z - zp) < 0.3]
+    cab = V[Z > zp + 0.45 * (topo - zp)]
+    novo = dict(nariz=nariz, pescoco=zp, corte=queixo - 0.35, cx=float(np.median(fat[:, 0])), cy=float(np.median(fat[:, 1])),
+                largPescoco=float(np.ptp(fat[:, 1])), profPescoco=float(np.ptp(fat[:, 0])),
+                largCabeca=float(np.ptp(cab[:, 1])), profCabeca=float(np.ptp(cab[:, 0])))
+    print('  marcos da cabeça (perfil): queixo %.2f, nariz %.2f, corte %.2f' % (queixo, nariz, novo['corte']), flush=True)
+    return novo
+
+
 def processar_corpo(c):
     t0 = time.time()
     arq = sem_draco(os.path.join(RAIZ, c['arq'])) if c.get('inteiro') else os.path.join(ORIG, c['arq'])
@@ -466,6 +541,8 @@ def processar_corpo(c):
     zn = float(cabp[np.argmax(cabp[:, 0]), 2])
     medida['nariz'] = zn
     medida['corte'] = zn - 0.55 * (topo - zn)
+    if c.get('extra'):
+        medida.update(marcos_cabeca_extra(V, medida, topo))
     # pesos por vértice soldado (a referência das outras peças)
     ordem, w = r['ordem'], r['w']
     # regiões: osso dominante → tronco, braços, mãos, pernas, pés; a cabeça sem rosto sai
@@ -717,8 +794,9 @@ def processar_rosto(p, refs):
         W[acima] = 0
         W[acima, ih] = 1
         Po = P[R['vmap']]
-        # o pescoço que entrou fundo no tronco sai (fica escondido no corpo)
-        Fo = R['Fo'][~np.all(Po[R['Fo']][:, :, 2] < m['corte'] - 1.2, axis=1)]
+        # o pescoço que entrou fundo no tronco sai (fica escondido no corpo); nos corpos extra o
+        # trapézio sobe até logo abaixo do corte, e o pescoço do rosto não desce sobre ele
+        Fo = R['Fo'][~np.all(Po[R['Fo']][:, :, 2] < m['corte'] - (0.35 if cid in CORPOS_EXTRA else 1.2), axis=1)]
         porCorpo[cid] = pele_js(Po, Np[R['vmap']], R['Uo'], Fo, W[R['vmap']], ref['nomes'])
         info[cid] = dict(escala=round(float(s), 4))
         if 'iris' not in info:
@@ -736,7 +814,8 @@ def processar_rosto(p, refs):
 # ============================================================ cabelo, barba, capuz: ajuste por cobertura
 def cabeca_de_referencia(ref):
     """Um rosto encaixado no corpo (o 1): superfície da cabeça para os ajustes (pontos e normais)."""
-    cache = os.path.join(CACHE, 'cabeca2_' + str(round(ref['medida']['topo'], 3)) + '.npz')
+    m_ = ref['medida']
+    cache = os.path.join(CACHE, 'cabeca3_' + '_'.join(str(round(m_[k], 3)) for k in ('topo', 'nariz', 'pescoco', 'largCabeca', 'profCabeca')) + '.npz')
     if os.path.exists(cache):
         d = np.load(cache)
         return d['V'], d['N']
@@ -1104,6 +1183,159 @@ def blender_para_jogo(P):
     return np.stack([-P[:, 1], -P[:, 0], P[:, 2]], 1) * ESCALA_BLENDER
 
 
+def cabeca_para_extra(ref_b, ref_e):
+    """Leva pontos da cabeça do corpo-base à do corpo extra (peças do Blender, feitas nos corpos de
+    sempre): a cabeça de referência de cada um (o Rosto 1 encaixado), do nariz para cima, dá o centro
+    e o tamanho; translação e escala uniforme (as direções não mudam)."""
+    def caixa(ref):
+        HV, _ = cabeca_de_referencia(ref)
+        A = HV[HV[:, 2] > ref['medida']['nariz']]
+        return (A.min(0) + A.max(0)) / 2, np.ptp(A, 0)
+    cb, tb = caixa(ref_b)
+    ce, te = caixa(ref_e)
+    k = float(np.mean(te / np.maximum(tb, 1e-6)))
+    return lambda P: (np.asarray(P, float) - cb) * k + ce
+
+
+_MEMBROS = {'armRu': ('armRu',), 'armRf': ('armRf', 'handR'), 'thighR': ('thighR',), 'shinR': ('shinR',), 'footR': ('footR',),
+            'armLu': ('armLu',), 'armLf': ('armLf', 'handL'), 'thighL': ('thighL',), 'shinL': ('shinL',), 'footL': ('footL',)}
+
+
+def _quadro_osso(h, t):
+    """Referencial do osso (colunas: frente, lado, eixo) igual nos dois corpos: o eixo vai da cabeça à
+    ponta do osso; a frente é a do corpo (+X) tirada a componente do eixo (o giro guardado no rig não
+    entra, ele muda de um corpo para o outro)."""
+    d = (t - h) / max(np.linalg.norm(t - h), 1e-9)
+    a = np.array([1.0, 0, 0]) if abs(d[0]) < 0.9 else np.array([0, 0, 1.0])
+    x = a - a.dot(d) * d
+    x /= np.linalg.norm(x)
+    return np.stack([x, np.cross(d, x), d], 1)
+
+
+def _fatias_tronco(ref):
+    """Centro, largura e profundidade do tronco por altura (de 0,5 em 0,5)."""
+    V, reg = ref['V'], ref['reg']
+    T = V[reg == 'tronco']
+    zs = np.arange(T[:, 2].min(), T[:, 2].max() + 0.5, 0.5)
+    c, lx, ly = [], [], []
+    for z in zs:
+        q = T[np.abs(T[:, 2] - z) < 0.5]
+        if len(q) < 10:
+            c.append([np.nan, np.nan]); lx.append(np.nan); ly.append(np.nan)
+            continue
+        c.append([(q[:, 0].min() + q[:, 0].max()) / 2, (q[:, 1].min() + q[:, 1].max()) / 2])
+        lx.append(np.ptp(q[:, 0])); ly.append(np.ptp(q[:, 1]))
+    c, lx, ly = np.array(c), np.array(lx), np.array(ly)
+    ok = ~np.isnan(lx)
+    f = lambda a: np.interp(zs, zs[ok], a[ok])
+    return zs, np.stack([f(c[:, 0]), f(c[:, 1])], 1), f(lx), f(ly)
+
+
+def corpo_para_extra(P, W, nomes, ref_b, ref_e):
+    """Leva uma peça do Blender (feita no lugar dela no corpo-base) ao corpo extra, que tem outras
+    proporções (os atléticos: ombro mais alto, braço mais longo e mais aberto). O que o tronco move
+    sobe e alarga pelas medidas de altura (quadril, axila, ombro, pescoço) e pela largura e profundidade
+    do tronco em cada altura; o que um membro move vai no eixo do osso de um corpo para o do outro
+    (referencial sem o giro do rig), o comprimento ajustado longe das juntas (perto delas a peça fica
+    rígida). Mistura pelos pesos. É o mapa grosso: deslocamento_pele leva a pele de um corpo à do outro."""
+    mb, me_ = ref_b['medida'], ref_e['medida']
+    marcos = ('tornozelo', 'quadrilZ', 'axila', 'ombroZ', 'pescoco', 'topo')
+    zb = np.array([0.0] + [mb[k] for k in marcos])
+    ze = np.array([0.0] + [me_[k] for k in marcos])
+    zb, ze = np.maximum.accumulate(zb), np.maximum.accumulate(ze)
+    # tronco
+    zsb, cb, lxb, lyb = _fatias_tronco(ref_b)
+    zse, ce, lxe, lye = _fatias_tronco(ref_e)
+    z2 = np.interp(P[:, 2], zb, ze)
+    ib = np.clip(np.round((P[:, 2] - zsb[0]) / 0.5).astype(int), 0, len(zsb) - 1)
+    ie = np.clip(np.round((z2 - zse[0]) / 0.5).astype(int), 0, len(zse) - 1)
+    kx = np.clip(lxe[ie] / np.maximum(lxb[ib], 1e-6), 0.75, 1.6)
+    ky = np.clip(lye[ie] / np.maximum(lyb[ib], 1e-6), 0.75, 1.6)
+    T = np.stack([ce[ie, 0] + (P[:, 0] - cb[ib, 0]) * kx, ce[ie, 1] + (P[:, 1] - cb[ib, 1]) * ky, z2], 1)
+    # membros
+    ix = {n: i for i, n in enumerate(nomes)}
+    out = np.zeros_like(P)
+    soma = np.zeros(len(P))
+    for nm, grupo in _MEMBROS.items():
+        if nm not in ref_b['bones'] or nm not in ref_e['bones']:
+            continue
+        w = sum(W[:, ix[g]] for g in grupo if g in ix)
+        sel = w > 1e-6
+        if not np.any(sel):
+            continue
+        hb, tb = map(np.asarray, ref_b['bones'][nm])
+        he, te = map(np.asarray, ref_e['bones'][nm])
+        Rb, Re = _quadro_osso(hb, tb), _quadro_osso(he, te)
+        Lb, Le = np.linalg.norm(tb - hb), np.linalg.norm(te - he)
+        kr = 1.0   # (a grossura vem da pele: deslocamento_pele)
+        q = (P[sel] - hb) @ Rb
+        f = np.clip((q[:, 2] / max(Lb, 1e-6) - 0.3) / 0.4, 0, 1)
+        f = f * f * (3 - 2 * f)
+        q2 = np.stack([q[:, 0] * kr, q[:, 1] * kr, q[:, 2] + (Le - Lb) * f], 1)
+        out[sel] += w[sel, None] * (he + q2 @ Re.T)
+        soma[sel] += w[sel]
+    soma = np.clip(soma, 0, 1)
+    return out + T * (1 - soma)[:, None]
+
+
+_DESLOC = {}
+
+
+def deslocamento_pele(ref_b, ref_e):
+    """Campo de deslocamento da pele do corpo-base para a do corpo extra: cada vértice do corpo-base
+    vai pelo mapa grosso (corpo_para_extra, com os pesos do próprio corpo) e assenta na pele do extra
+    (o ponto mais perto, projetado no plano dela); o campo é alisado na vizinhança."""
+    chave = (round(ref_b['medida']['topo'], 3), round(ref_e['medida']['topo'], 3), round(ref_e['medida']['ombroZ'], 3))
+    if chave in _DESLOC:
+        return _DESLOC[chave]
+    Vb = ref_b['V']
+    nomes = list(ref_b['nomes'])
+    W = np.zeros((len(Vb), len(nomes)))
+    for q in range(4):
+        np.add.at(W, (np.arange(len(Vb)), ref_b['ordem'][:, q]), ref_b['w'][:, q])
+    R = corpo_para_extra(Vb, W, nomes, ref_b, ref_e)
+    kd = cKDTree(ref_e['V'])
+    _, j = kd.query(R)
+    Ne = ref_e['N'][j]
+    E = R - np.einsum('ij,ij->i', R - ref_e['V'][j], Ne)[:, None] * Ne
+    D = E - Vb
+    kb = cKDTree(Vb)
+    viz = kb.query_ball_point(Vb, 1.2)
+    for _ in range(2):
+        D = np.array([D[v].mean(0) for v in viz])
+    _DESLOC[chave] = (kb, D)
+    return kb, D
+
+
+def pele_para_extra(P, ref_b, ref_e):
+    """Leva uma peça do corpo-base ao extra com a pele que fica embaixo dela: cada ponto anda o
+    deslocamento médio dos vértices do corpo-base mais perto (a folga entre a peça e a pele fica)."""
+    kb, D = deslocamento_pele(ref_b, ref_e)
+    d, j = kb.query(P, k=8)
+    w = 1 / (d + 0.3) ** 2
+    w /= w.sum(1, keepdims=True)
+    return P + np.einsum('ik,ikj->ij', w, D[j])
+
+
+def inflar_fora(P, ref, folga=0.15, raio=1.5):
+    """Peça levada a um corpo mais grosso: o que entrou na pele sai junto com a vizinhança (o
+    quanto falta para a folga, pelo máximo e depois pela média num raio), na normal da pele: as
+    placas finas não amassam como no empurrão ponto a ponto."""
+    kd = cKDTree(ref['V'])
+    _, j = kd.query(P)
+    Nn = ref['N'][j]
+    a = np.maximum(0, folga - np.einsum('ij,ij->i', P - ref['V'][j], Nn))
+    if not np.any(a > 0):
+        return P
+    kp = cKDTree(P)
+    viz = kp.query_ball_point(P, raio)
+    a = np.array([a[v].max() for v in viz])
+    a = np.array([a[v].mean() for v in viz])
+    n = np.array([Nn[v].mean(0) for v in viz])
+    n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-9
+    return P + a[:, None] * n
+
+
 def processar_barba_blender(p, refs):
     """Barba e bigode do Blender (tools/blender/barbas.py): feitos na pele medida da cabeça do corpo
     masculino, vão direto para o espaço da cabeça (sem o ajuste por cobertura, que esticava o bigode
@@ -1124,8 +1356,14 @@ def processar_barba_blender(p, refs):
     for cid, ref in refs.items():
         m = ref['medida']
         hh = m['topo'] - m['pescoco']
-        Gc = blender_para_jogo(G[cid]['p'])
-        Nc = blender_para_jogo(G[cid]['n']) / ESCALA_BLENDER
+        base = CORPO_BASE.get(cid, cid)
+        Gc = blender_para_jogo(G[base]['p'])
+        Nc = blender_para_jogo(G[base]['n']) / ESCALA_BLENDER
+        if cid not in G:   # corpo extra: a grade do corpo-base, levada à cabeça dele
+            Gc = cabeca_para_extra(refs[base], ref)(Gc)
+        else:
+            Gc = blender_para_jogo(G[cid]['p'])
+            Nc = blender_para_jogo(G[cid]['n']) / ESCALA_BLENDER
         P = Vs.copy()
         d, j = kd_m.query(P, k=8)
         w = 1 / (d + 0.05) ** 2
@@ -1150,6 +1388,17 @@ def processar_barba_blender(p, refs):
     dados = dict(v=2, tipo='barba', q=Q, porCorpo=porCorpo, ajuste=info, origem=p['arq'], pbr=1, fios=1)
     destino = gravar(p['id'], dados, mapas_js(dict(cor=mapas['cor'], mr=mapas.get('mr'), nrm=mapas.get('nrm')), p['tex']))
     print(f"{p['id']}: {len(F)} triângulos (malha do Blender) → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
+
+
+def _girar(a, b):
+    """Rotação (Rodrigues) que leva a direção de a à de b."""
+    a = a / max(np.linalg.norm(a), 1e-9)
+    b = b / max(np.linalg.norm(b), 1e-9)
+    v, c = np.cross(a, b), float(a.dot(b))
+    if c < -0.999:
+        return -np.eye(3)
+    K = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3) + K + K @ K / (1 + c)
 
 
 def processar_cabelo_fisica(p, refs):
@@ -1187,27 +1436,22 @@ def processar_cabelo_fisica(p, refs):
         Rhi = np.linalg.inv(Rh)
         HV, HN = cabeca_de_referencia(ref)
         hh = m['topo'] - m['pescoco']
-        P = (Vs if cid == 'corpo_m' else Vfs).copy()
-        P = empurrar_para_fora(P, dict(V=HV, N=HN, kd=cKDTree(HV)), 0.01 * hh)
-        Np = im.normais_vertices(P, Fs)[inv]
-        nomes = list(ref['nomes']) + ossos[1:]
-        W = np.zeros((len(V), len(nomes)))
-        W[:, ref['nomes'].index('head')] = Wc[:, 0]
-        W[:, len(ref['nomes']):] = Wc[:, 1:]
-        porCorpo[cid] = pele_js(P[inv], Np, UV, F, W, nomes)
-        # cadeias: nós novos presos à cabeça (posição de cada junta no espaço do osso pai)
-        cads, invc = [], {}
-        for c in info['cadeias']:
-            J = blender_para_jogo(c['juntas'][cid])
-            loc = [(np.linalg.inv(Wh) @ np.r_[J[0], 1])[:3]] + [Rhi @ (J[j] - J[j - 1]) for j in range(1, len(J))]
-            for j, nm in enumerate(c['ossos']):
-                Wj = np.eye(4)
-                Wj[:3, :3], Wj[:3, 3] = Rh, J[j]
-                invc[nm] = [round(float(x), 6) for x in np.linalg.inv(Wj)[:3, :].ravel()]
-            cads.append(dict(ossos=c['ossos'], p=[[round(float(x), 4) for x in v] for v in loc[:-1]], ponta=[round(float(x), 4) for x in loc[-1]]))
-        cadeias[cid], invs[cid] = cads, invc
+        base = CORPO_BASE.get(cid, cid)
+        P = (Vs if base == 'corpo_m' else Vfs).copy()
+        leva = cabeca_para_extra(refs[base], ref) if base != cid else (lambda X: np.asarray(X, float))
+        P = leva(P)
+        if base != cid:
+            # corpo extra: o pescoço da cabeça de referência abre sobre o trapézio (que sobe até
+            # perto do queixo); as mechas que descem por ali seriam jogadas para os lados: só a cabeça
+            # empurra
+            cab_ = HV[:, 2] > m['corte'] + 0.3
+            P = empurrar_para_fora(P, dict(V=HV[cab_], N=HN[cab_], kd=cKDTree(HV[cab_])), 0.01 * hh)
+        else:
+            P = empurrar_para_fora(P, dict(V=HV, N=HN, kd=cKDTree(HV)), 0.01 * hh)
         # colisores: centro no espaço do osso (pela inversa do corpo) e raio
+        mundo = []
         def esfera(osso, c, r):
+            mundo.append((osso, np.asarray(c, float), float(r)))
             return dict(osso=osso, c=[round(float(x), 3) for x in (m34(B['inv'][osso]) @ np.r_[c, 1])[:3]], r=round(float(r), 3))
         cab = HV[HV[:, 2] > m['pescoco']]
         cc = (cab.min(0) + cab.max(0)) / 2
@@ -1217,13 +1461,77 @@ def processar_cabelo_fisica(p, refs):
         prof = np.ptp(alto[:, 0])
         lista = [esfera('head', cc, rc), esfera('head', [cc[0], cc[1], cc[2] + 0.35 * rc], rc * 0.92),
                  esfera('torso', [m['cx'], m['cy'], m['pescoco'] - 0.4], 0.5 * m['largPescoco'] * 1.15),
-                 esfera('torso', [alto[:, 0].min() + 0.5 * prof, m['cy'], m['axila'] + 0.5], 0.52 * prof),
+                 esfera('torso', [alto[:, 0].min() + 0.5 * prof, m['cy'], m['axila'] + 0.5 if base == cid else min(m['axila'] + 0.5, m['corte'] - 0.3 - 0.52 * prof)], 0.52 * prof),
                  esfera('torso', [alto[:, 0].min() + 0.5 * prof, m['cy'], m['axila'] - 4.5], 0.5 * prof)]
+        def pele_em_cima(x, y, r=1.0):
+            """Altura da pele logo acima de (x, y), abaixo do pescoço (o alto do ombro)."""
+            q = V0[(np.hypot(V0[:, 0] - x, V0[:, 1] - y) < r) & (V0[:, 2] < m['pescoco'])]
+            return float(q[:, 2].max()) if len(q) else None
         for lado, nm in ((1, 'armRu'), (-1, 'armLu')):
             Jb = np.asarray(ref['bones'][nm][0])
-            lista.append(esfera('torso', [alto[:, 0].min() + 0.5 * prof, Jb[1] * 0.55, m['axila'] + 0.8], 0.45 * prof))
-            lista.append(esfera(nm, Jb + np.array([0, 0, 0.3]), 0.36 * prof))
+            ct = np.array([alto[:, 0].min() + 0.5 * prof, Jb[1] * 0.55, m['axila'] + 0.8])
+            ca = Jb + np.array([0, 0, 0.3])
+            if base != cid:
+                # corpo extra: trapézio alto e junta do ombro perto do queixo; as esferas do ombro
+                # não passam da pele (senão o cabelo pousa nelas acima do ombro e abre para os lados)
+                for c_, r_ in ((ct, 0.45 * prof), (ca, 0.36 * prof)):
+                    t_ = pele_em_cima(c_[0], c_[1])
+                    if t_ is not None:
+                        c_[2] = min(c_[2], t_ + 0.15 - r_)
+            lista.append(esfera('torso', ct, 0.45 * prof))
+            lista.append(esfera(nm, ca, 0.36 * prof))
         colis[cid] = lista
+        # juntas das cadeias; no corpo extra (pescoço curto, ombros altos) as mechas do corpo-base
+        # ficariam dentro dos ombros e a física as jogaria para os lados: elas assentam por fora das
+        # esferas do tronco e dos braços e a malha dobra junto (cada osso da cadeia gira no seu nó)
+        Js = {}
+        for c in info['cadeias']:
+            Js[id(c)] = blender_para_jogo(c['juntas'][cid]) if cid in c['juntas'] else leva(blender_para_jogo(c['juntas'][base]))
+        if base != cid:
+            Ws = np.zeros((len(Vs), len(ossos)))
+            Ws[inv] = Wc
+            esf = [(c_, r_ + 0.15) for o_, c_, r_ in mundo if o_ != 'head']
+            P2 = P * Ws[:, :1]
+            for c in info['cadeias']:
+                J = Js[id(c)]
+                J2 = [J[0]]
+                for j in range(1, len(J)):
+                    seg = np.linalg.norm(J[j] - J[j - 1])
+                    q = J2[-1] + (J[j] - J[j - 1])
+                    for _ in range(4):
+                        for c_, r_ in esf:
+                            d = q - c_
+                            n = np.linalg.norm(d)
+                            if n < r_:
+                                q = c_ + d / max(n, 1e-9) * r_
+                        q = J2[-1] + (q - J2[-1]) / max(np.linalg.norm(q - J2[-1]), 1e-9) * seg
+                    J2.append(q)
+                J2 = np.array(J2)
+                for j, nm in enumerate(c['ossos']):
+                    w = Ws[:, ossos.index(nm)]
+                    a, b = J[j + 1] - J[j], J2[j + 1] - J2[j]
+                    Rj = _girar(a, b)
+                    P2 += w[:, None] * (J2[j] + (P - J[j]) @ Rj.T)
+                Js[id(c)] = J2
+            soma = Ws.sum(1)
+            P = np.where(soma[:, None] > 1e-6, P2 / np.maximum(soma, 1e-6)[:, None], P)
+        Np = im.normais_vertices(P, Fs)[inv]
+        nomes = list(ref['nomes']) + ossos[1:]
+        W = np.zeros((len(V), len(nomes)))
+        W[:, ref['nomes'].index('head')] = Wc[:, 0]
+        W[:, len(ref['nomes']):] = Wc[:, 1:]
+        porCorpo[cid] = pele_js(P[inv], Np, UV, F, W, nomes)
+        # cadeias: nós novos presos à cabeça (posição de cada junta no espaço do osso pai)
+        cads, invc = [], {}
+        for c in info['cadeias']:
+            J = Js[id(c)]
+            loc = [(np.linalg.inv(Wh) @ np.r_[J[0], 1])[:3]] + [Rhi @ (J[j] - J[j - 1]) for j in range(1, len(J))]
+            for j, nm in enumerate(c['ossos']):
+                Wj = np.eye(4)
+                Wj[:3, :3], Wj[:3, 3] = Rh, J[j]
+                invc[nm] = [round(float(x), 6) for x in np.linalg.inv(Wj)[:3, :].ravel()]
+            cads.append(dict(ossos=c['ossos'], p=[[round(float(x), 4) for x in v] for v in loc[:-1]], ponta=[round(float(x), 4) for x in loc[-1]]))
+        cadeias[cid], invs[cid] = cads, invc
     dados = dict(v=2, tipo='cabelo', fisica=info.get('fisica'), q=Q, porCorpo=porCorpo, inv=invs, cadeias=cadeias, colisores=colis, origem=p['arq'], pbr=1)
     destino = gravar(p['id'], dados, mapas_js(dict(cor=mapas['cor'], mr=mapas.get('mr'), nrm=mapas.get('nrm')), p['tex']))
     print(f"{p['id']}: {len(F)} triângulos, {len(info['cadeias'])} cadeias (Blender, física) → {os.path.getsize(destino) // 1024} KB ({time.time() - t0:.0f}s)", flush=True)
@@ -1252,7 +1560,13 @@ def processar_blender(p, refs):
     porCorpo = {}
     for cid, ref in refs.items():
         m = ref['medida']
-        P = (Vs if cid == 'corpo_m' else Vfs).copy()
+        base = CORPO_BASE.get(cid, cid)
+        P = (Vs if base == 'corpo_m' else Vfs).copy()
+        if base != cid:   # corpo extra: a peça sai do lugar dela no corpo-base
+            if vaga == 'capacete':
+                P = cabeca_para_extra(refs[base], ref)(P)
+            else:
+                P = inflar_fora(pele_para_extra(P, refs[base], ref), ref)
         corpo = dict(V=ref['V'], N=ref['N'], kd=ref['kd'])
         if vaga == 'capacete':
             HV, HN = cabeca_de_referencia(ref)
@@ -1457,11 +1771,19 @@ def processar_armadura(p, refs):
         c0 = (R['Vr'].min(0) + R['Vr'].max(0)) / 2
         R['Vr'] = girar_z(R['Vr'], a, c0)
     capacete_m = None
+    feitos = {}
     for cid, ref in refs.items():
         m = ref['medida']
         Vr = R['Vr'].copy()
         P = np.zeros_like(Vr)
-        if vaga in ('botas', 'luvas'):
+        base = CORPO_BASE.get(cid, cid)
+        if vaga == 'peitoral' and base != cid and base in feitos:
+            # corpo extra (atlético): os braços ficam mais abertos e as mangas, postas pela cobertura
+            # do tronco, caíam entre o braço e o tronco (esticavam até a mão ao mexer); o peitoral parte
+            # do encaixe no corpo-base e anda com a pele de um corpo para o outro
+            P = inflar_fora(pele_para_extra(feitos[base], refs[base], ref), ref, folga=0.3)
+            ancora_peitoral(p['id'], cid, P, ref)
+        elif vaga in ('botas', 'luvas'):
             for s, Fs in separar_par(Vr, R['Fr']):
                 idx = np.unique(Fs)
                 Pi = Vr[idx]
@@ -1568,6 +1890,7 @@ def processar_armadura(p, refs):
             corpo = dict(V=np.concatenate([ref['V'][ref['V'][:, 2] < m['pescoco']], HV]), N=np.concatenate([ref['N'][ref['V'][:, 2] < m['pescoco']], HN]))
             corpo['kd'] = cKDTree(corpo['V'])
         P = empurrar_para_fora(P, corpo, margem)
+        feitos[cid] = P
         Np = im.normais_vertices(P, R['Fr'])
         if vaga == 'acessorio' and p.get('costas'):
             # só o tronco: as pontas das asas passam dos ombros e não podem pegar o peso dos braços
@@ -1592,6 +1915,8 @@ def gravar_catalogo():
     for c in CORPOS:
         itens.append(dict(id=c['id'], tipo='corpo', nome=c['nome'], arq='assets/Criar_Personagem/' + c['arq'], mini='assets/Criar_Personagem/' + c['mini'], js='js/assets/criacao/' + c['id'] + '.js',
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
+        if c.get('extra'):
+            itens[-1]['extra'] = True
     for c in NPCS:
         itens.append(dict(id=c['id'], tipo='npc', nome=c['nome'], estilo=c['estilo'], arq=c['arq'].replace(os.sep, '/'), mini=c['mini'].replace(os.sep, '/'), js='js/assets/criacao/' + c['id'] + '.js',
                           convertido=os.path.exists(os.path.join(DEST, c['id'] + '.js'))))
@@ -1603,6 +1928,8 @@ def gravar_catalogo():
         if 'esconde' in p or p.get('vaga') in ESCONDE:
             it['esconde'] = p.get('esconde', ESCONDE.get(p.get('vaga'), []))
         it['convertido'] = os.path.exists(os.path.join(DEST, p['id'] + '.js'))
+        if os.path.exists(os.path.join(EXTRA, p['id'] + '.js')):
+            it['atl'] = 'js/assets/criacao/atl/' + p['id'] + '.js'   # a peça nos corpos atléticos
         itens.append(it)
     destino = os.path.join(DEST, 'catalogo.js')
     with open(destino, 'w', encoding='utf-8') as f:
@@ -1680,8 +2007,11 @@ def main():
     ap.add_argument('--sem-corpos', action='store_true', help='usa os corpos já convertidos (.cache_criacao)')
     ap.add_argument('--listar', action='store_true')
     ap.add_argument('--minis', action='store_true', help='só as miniaturas e o catálogo')
+    ap.add_argument('--so-extra', action='store_true', help='só os arquivos das peças nos corpos extra (atléticos)')
     ap.add_argument('-j', type=int, default=2, help='processos em paralelo (cada peça usa uns 4 GB de memória)')
     a = ap.parse_args()
+    global SO_EXTRA
+    SO_EXTRA = a.so_extra
     if a.listar:
         for c in CORPOS + PECAS:
             ok = os.path.exists(os.path.join(ORIG, c['arq']))

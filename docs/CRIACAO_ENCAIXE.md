@@ -59,6 +59,56 @@ Toda peça encaixa pelo **corpo de referência** (`corpo_m`/`corpo_f`), medido n
 - Nas luvas e botas iniciais, nenhuma aresta passa de 6 (a barra tinha arestas de umas 20 unidades).
 - Correndo, golpeando e parado, cada vértice da luva fica perto do punho do seu lado e cada vértice da bota perto do tornozelo do seu lado.
 
+## Corpos atléticos (opção nova de corpo)
+
+Os dois corpos atléticos enviados vieram do Meshy em T. A primeira versão descia os braços girando a
+malha no ombro (`abaixar_bracos` do conversor): o deltoide e a axila entortavam, com calombo e dobra
+("os bonecos do corpo novo ficaram tortos"). Agora o T vira A **no Blender, por um rig de verdade**
+(`tools/blender/corpo_pose_a.py`):
+
+1. **Esqueleto simples** nas juntas medidas na malha: tronco, pernas e, de cada lado, braço, antebraço e
+   mão (ombro a 1,33 vez a meia largura das costelas; cotovelo e punho pelo comprimento do braço).
+2. **Pesos automáticos** (calor dos ossos) numa **cópia fechada** da malha: as costuras da UV são
+   soldadas, os furos tapados e a cópia é remalhada por voxels (na malha do Meshy, aberta, o calor dos
+   ossos falha). Os pesos voltam para a malha de verdade pela face mais próxima; quem ficar sem peso vai
+   para o osso mais próximo.
+3. Os **braços descem pelos ossos** até 48° abaixo da horizontal (a pose A que o rig do jogo
+   reconhece), a pose é aplicada e o GLB sai em A (`*_A.glb`), com as texturas em 2048.
+
+A atlética vem do modelo **com textura** da conta do Meshy (`Atletica_Feminina_Meshy.glb`), que trazia
+um rabo de cavalo longo e um coque:
+
+- **Rabo de cavalo e coque por raios**: de cada vértice atrás de um plano (um pouco atrás do meio do
+  tronco), perto da linha do meio, sai um raio para a frente (e outro inclinado para o meio; no alto da
+  cabeça, para o centro dela). Se o raio **entra** num sólido ainda atrás do plano (a pele das costas, do
+  pescoço ou da cabeça), o vértice é de algo pendurado ali. A pele das costas não é marcada (o raio dela
+  sai pela frente do tronco). Os vértices repetidos nas costuras da UV contam como ligados (sem isso o
+  rabo virava centenas de pedacinhos e o filtro de tamanho o deixava). Saíram 155 mil vértices, sem furo
+  nas costas.
+- **Tinta do cabelo na pele**: o Meshy pintou o castanho do cabelo na nuca e no alto das costas; os texels
+  escuros e quentes dessa região voltam ao tom de pele (o top, preto azulado, fica).
+- **Metal**: alguns texels de pele vinham marcados como metal (até 0,46) e refletiam branco no jogo; o
+  canal de metal vai a zero nos dois corpos.
+
+No conversor (`tools/importar_criacao.py`), os atléticos são **corpos extra**:
+
+- **Cabeça pelo perfil** (`marcos_cabeca_extra`): com cabelo esculpido e pescoço curto, o ponto mais à
+  frente da cabeça pode ser a franja (o atlético) e o mais estreito cai no rosto. O queixo é onde a frente
+  do perfil cai de uma vez; o nariz, o ponto mais à frente logo acima dele; o corte da cabeça fica logo
+  abaixo do queixo. Assim o rosto esculpido do corpo (com a barba do atlético) sai inteiro, e o rosto
+  escolhido encaixa no lugar dele. O pescoço do rosto não desce sobre o trapézio (que nesses corpos sobe
+  até perto do queixo).
+- **Arquivos à parte**: o encaixe de cada peça nos atléticos vai para `js/assets/criacao/atl/<peça>.js`,
+  carregado só por quem escolhe um deles (`--so-extra` refaz só esses arquivos; os de sempre não mudam).
+- **Peças do Blender** (feitas sobre os dois corpos de sempre): vão para o atlético pelo **deslocamento da
+  pele** de um corpo para o outro (cada vértice do corpo-base vai por um mapa grosso — marcos de altura e
+  largura do tronco, eixo de cada osso dos membros — e assenta na pele do extra; a peça anda o
+  deslocamento médio da pele embaixo dela, e o que entrar na pele sai em bloco, sem amassar as placas).
+  As da cabeça (capacete, barbas e cabelos do Blender) vão pela cabeça de referência (centro e tamanho).
+- **Cabelo com física**: as mechas assentam por fora das esferas dos ombros, as esferas não passam da
+  pele (o trapézio alto deixava o cabelo pousado acima do ombro, aberto para os lados) e o empurrão para
+  fora da cabeça só usa a cabeça (o pescoço largo da referência jogava as mechas para os lados).
+
 ## *Pipeline* de um asset novo do Meshy
 
 1. **Gerar:** `tools/meshy/gerar_estruturas.py` (imagem para 3D) ou `tools/meshy/gerar_npcs.py` (texto para 3D, personagens em A-pose). Antes de gastar mostram a estimativa do CLI e o saldo, e só gastam com `--confirmar`. A chave nunca entra no código.

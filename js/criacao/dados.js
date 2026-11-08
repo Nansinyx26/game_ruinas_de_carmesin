@@ -93,7 +93,7 @@ const PERS_CORES = [['Ônix', '#1c1b20'], ['Aço', '#4a5260'], ['Floresta', '#2c
 // Estilo Realista: as peças GLB da criação (js/criacao/montagem.js; nomes do catálogo); Estilizado:
 // o modelo paramétrico, com os campos de forma, rosto, cabelo, barba, marcas e roupa abaixo
 const PERS_GLB = {
-  corpoG: ['Masculino', 'Feminino'],
+  corpoG: ['Masculino', 'Feminino', 'Atlético', 'Atlética'],   // (os atléticos: js/assets/criacao/corpo_am e corpo_af)
   rostoG: ['Rosto 1', 'Rosto 2', 'Rosto 3', 'Rosto 4', 'Rosto 5', 'Rosto 6', 'Rosto 7', 'Rosto 8'],
   // 1 a 8: os do Meshy (só a ponta do comprido balança); 9 a 23: feitos no Blender, em mechas com
   // física (js/criacao/cabelo_fisica.js); 24 e 25: gerados no Meshy por texto (tools/meshy/gerar_cabelos.py)

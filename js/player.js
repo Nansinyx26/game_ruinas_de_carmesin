@@ -1187,6 +1187,7 @@ class Player extends Entity {
       if (ws.chain) S.chain += ws.chain * 0.15;
     }
     if (this.def.classe && typeof PersClasse !== 'undefined') PersClasse.aplicar(this.def.classe, S);   // classe do personagem criado (js/criacao/dados.js)
+    if (typeof Atributos !== 'undefined') Atributos.aplicar(pr, S);   // Força, Vitalidade, Resistência, Agilidade, Inteligência e Sorte (js/atributos.js)
     if (game.world && typeof WorldInv !== 'undefined') WorldInv.apply(S);   // relíquias equipadas (só no mundo aberto)
     HeroPassives.apply(this, S, pr);   // efeitos das passivas das árvores (js/heroes/passivas.js)
     S.armor = Math.min(0.75, S.armor);

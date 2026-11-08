@@ -63,6 +63,10 @@ const EclipseTests = {
       await this.criacaoAncoras();
       await this.barbasEncaixe();
       await this.membrosTela();
+      await this.corposAtleticos();
+      await this.atributosRPG();
+      await this.inimigosRPG();
+      await this.inventarioRPG();
       await this.terrenos();
       await this.fogoAguaAnimacao();
       await this.estruturasMundo();
@@ -1709,7 +1713,7 @@ const EclipseTests = {
       this.igual('arsenal: 9 vagas (capacete, peitoral, 2 ombreiras, luvas, calças, botas, capa, acessório)', ARS_ORDEM.length, 9);
       const rara = A.gerar('peitoral', 'placas', 2, 20), ecl = A.gerar('botas', 'eclipse', 0, 30);
       this.ok('arsenal: peça rara tem um bônus secundário', Object.keys(rara.st).filter((k) => ['dano', 'critico', 'energia', 'recarga'].includes(k)).length === 1, JSON.stringify(rara.st));
-      this.igual('arsenal: conjunto Eclipse nasce Lendário (a maior das quatro raridades)', ecl.r, ARS_LENDARIA);
+      this.igual('arsenal: conjunto Eclipse nasce Lendário (abaixo só do Mítico)', ecl.r, ARS_LENDARIA);
       g.activeProgress().level = 30;
       A.S.vest[A.heroi()] = {};
       A.refazer();
@@ -2848,7 +2852,7 @@ const EclipseTests = {
 
   // ---------------------------------------------------------------- peças GLB da criação e armaduras
   // Personagem com as peças GLB (js/criacao/montagem.js) e as armaduras do catálogo central
-  // (js/mundo/armaduras.js): catálogo e caminhos, quatro raridades, conjunto inicial (uma vez só,
+  // (js/mundo/armaduras.js): catálogo e caminhos, seis raridades, conjunto inicial (uma vez só,
   // salvo), requisitos de nível e classe, bônus de conjunto, filtros, modelo montado, atlas,
   // tintura, troca de peças no corpo e migração dos salvamentos antigos
   // Criação: trocar cabelo, barba e rosto nunca deixa a prévia sem o personagem. A cada quadro, o
@@ -3402,6 +3406,192 @@ const EclipseTests = {
     this.ok('âncoras do peitoral sem exceção', !erro, erro);
   },
 
+  // Inventário do RPG: seis raridades (até a Mítica), ordenação, filtro por raridade, capacidade e
+  // comparação com a peça vestida
+  async inventarioRPG() {
+    const g = game, estado0 = g.state;   // (a mochila fecha em 'playing': o estado volta no fim)
+    let erro = null;
+    try {
+      if (!g.world) World.start();
+      await new Promise((r) => setTimeout(r, 200));
+      const rel = WorldInv.gerar(20, 'carmesin', 5, 0);
+      this.ok('inventário: relíquia Mítica tem o atributo principal e mais três', rel.r === 5 && Object.keys(rel.st).length === 4 && WorldInv.rar(rel).id === 'mitico', JSON.stringify(rel.st));
+      const pc = Arsenal.gerar('botas', 'couro', ARS_MITICA, 12);
+      this.ok('inventário: peça Mítica existe e rende mais que a Lendária', pc.r === ARS_MITICA && Arsenal.rar(pc).name === 'Mítico' && ARS_RARIDADES[ARS_MITICA].k > ARS_RARIDADES[ARS_LENDARIA].k);
+      const ids0 = Arsenal.S.itens.length, rel0 = WorldInv.S.itens.length;
+      for (const [s, r] of [['luvas', 1], ['capa', 4], ['capacete', 2]]) Arsenal.guardar(Arsenal.gerar(s, 'couro', r, 8), true);
+      WorldInv.S.itens.push(Object.assign(WorldInv.gerar(8, 'carmesin', 3, 0), { id: WorldInv.S.seq++ }));
+      WorldInv.abrir('itens');
+      const F = Fabrica.ui, o0 = F.ordem, f0 = F.filtroR;
+      F.cat = 0; F.busca = ''; F.ordem = Fabrica.ORDENS.findIndex((q) => q[0] === 'raridade'); F.filtroR = -1;
+      const L = Fabrica.entradas('itens').filter((e) => e.r >= 0);
+      this.ok('inventário: ordenado por raridade (da Mítica para a Comum)', L.length >= 4 && L.every((e, i) => !i || L[i - 1].r >= e.r), L.map((e) => e.r).join());
+      F.filtroR = 4;
+      const Lf = Fabrica.entradas('itens');
+      this.ok('inventário: filtro por raridade mostra só a escolhida', Lf.length >= 1 && Lf.every((e) => e.r === 4), Lf.map((e) => e.r).join());
+      F.filtroR = -1; F.ordem = Fabrica.ORDENS.findIndex((q) => q[0] === 'nivel');
+      const Ln = Fabrica.entradas('itens');
+      this.ok('inventário: ordenado por nível', Ln.every((e, i) => !i || (Ln[i - 1].lv || 0) >= (e.lv || 0)));
+      const peca = Fabrica.entradas('itens').find((e) => / · Peça| · Capa|Peça ·/.test(e.sub));
+      this.ok('inventário: a peça mostra a comparação com a vestida (ou a vaga vazia)', peca && peca.det.linhas.some((l) => /Comparada à vestida|Vaga vazia|Vestida agora/.test(l)));
+      g.state = 'worldinv';
+      WorldInv.draw(g.ctx, 0.1);
+      const R = WorldInv.ui.rects;
+      this.ok('inventário: botões de ordem e de raridade no cabeçalho', R.some((r) => r.fordem) && R.some((r) => r.ffiltro));
+      Fabrica.clique('itens', R.find((r) => r.ffiltro));
+      this.igual('inventário: o botão de raridade passa para a próxima (Comum)', F.filtroR, 0);
+      F.ordem = o0; F.filtroR = f0;
+      Arsenal.S.itens.length = ids0; WorldInv.S.itens.length = rel0;
+      // loja: o painel de detalhes fica fixo à direita, com o botão COMPRAR; comprar desconta as células
+      const cel0 = g.stats.soulsBank;
+      g.stats.soulsBank = 5000;
+      WorldInv.abrir('loja', true, 'mercador'); WorldInv.ui.sel = 0;
+      WorldInv.draw(g.ctx, 0.1);
+      const bt = WorldInv.ui.rects.find((r) => r.btn === 'main');
+      this.ok('loja: painel de detalhes fixo à direita, com o botão COMPRAR', bt && bt.x > VIEW_W * 0.5 && bt.y > VIEW_H * 0.5, bt && `${bt.x},${bt.y}`);
+      const q0 = WorldInv.lista()[0];
+      if (q0 && q0.it) {
+        const preco = Oficios.precoCom(WorldInv.valor(q0.it), World.zone.region);
+        WorldInv.agir(q0);
+        this.ok('loja: comprar desconta o preço e guarda a relíquia', g.stats.soulsBank === 5000 - preco && WorldInv.S.itens.length === rel0 + 1, `${g.stats.soulsBank} ${preco}`);
+        WorldInv.S.itens.length = rel0;
+      }
+      g.stats.soulsBank = cel0;
+      WorldInv.fechar();
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    g.state = estado0;
+    this.ok('inventário (raridades, ordem, filtro): sem exceção', !erro, erro);
+  },
+
+  // Inimigos do mundo: nível mostrado sobre a barra, LÍDER do bando (miniboss) com mais vida,
+  // experiência e relíquia rara garantida
+  async inimigosRPG() {
+    const g = game, estado0 = g.state;   // (a mochila fecha em 'playing': o estado volta no fim)
+    let erro = null;
+    try {
+      if (!g.world) World.start();
+      await new Promise((r) => setTimeout(r, 200));
+      const z = World.zone, p = g.player;
+      const a = World.criarNaZona('rastejador', p.x + 120, p.y), b = World.criarNaZona('rastejador', p.x + 160, p.y);
+      this.ok('inimigos: o nível mostrado é o da zona (±1)', Math.abs(a.nivelMundo - z.lv) <= 1 && a.nivelMundo >= 1, `${a.nivelMundo} / ${z.lv}`);
+      const hp0 = b.maxHp, n0 = b.nivelMundo;
+      b.makeLider();
+      this.ok('inimigos: o líder do bando é elite, com 4× a vida, maior e um nível acima', b.lider && b.elite && b.maxHp >= hp0 * 4 && b.escala > 1 && b.nivelMundo === n0 + 1, `${b.maxHp}/${hp0}`);
+      a.level = b.level;
+      this.ok('inimigos: o líder dá 5× a experiência de um comum do mesmo tipo', Math.abs(g.xpFor(b) / g.xpFor(a) - 5) < 1e-6, (g.xpFor(b) / g.xpFor(a)).toFixed(2));
+      const S = WorldInv.S, antes = S.itens.length;
+      if (antes < WorldInv.MAX) {
+        b.x = p.x; b.y = p.y;
+        WorldInv.onKill(b);
+        const novos = S.itens.slice(antes);
+        this.ok('inimigos: o líder sempre deixa uma relíquia rara ou melhor', novos.some((it) => it.r >= 2), novos.map((it) => it.r).join());
+        S.itens.length = antes;
+      }
+      // a barra com o nível desenha no mundo (perto do herói) sem erro
+      a.spawnT = 0; a.setState('idle'); b.setState('idle');
+      a.drawHpBar(g.ctx); b.drawHpBar(g.ctx);
+      this.ok('inimigos: barra com o nível e o nome do líder desenhadas', true);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    g.state = estado0;
+    this.ok('inimigos (nível, líder): sem exceção', !erro, erro);
+  },
+
+  // Atributos do RPG (js/atributos.js): pontos por nível, efeito real no herói, limiar, salvamento,
+  // tela com soma pendente, redistribuir e os botões BOLSA e MAPA do HUD
+  async atributosRPG() {
+    const g = game, estado0 = g.state;   // (a mochila fecha em 'playing': o estado volta no fim)
+    let erro = null;
+    try {
+      if (!g.world) World.start();
+      await new Promise((r) => setTimeout(r, 300));
+      const p = g.player, pr = g.activeProgress(), salvo = { level: pr.level, atrib: Object.assign({}, pr.atrib), cel: g.stats.soulsBank };
+      pr.level = 12; pr.atrib = {}; p.recalc(true);
+      this.igual('atributos: 3 pontos por nível acima do 1 (nível 12 = 33 livres)', Atributos.livres(pr), 33);
+      const S = p.stats, d0 = S.dmgMult, h0 = p.maxHp, a0 = S.armor, v0 = S.speedMult, w0 = S.power, e0 = p.maxEnergy, c0 = S.crit;
+      for (const [id, n] of [['forca', 10], ['vitalidade', 10], ['resistencia', 5], ['agilidade', 4], ['inteligencia', 2], ['sorte', 2]]) Atributos.distribuir(pr, id, n);
+      p.recalc(false);
+      const perto = (a, b) => Math.abs(a - b) < 1e-6;
+      this.ok('atributos: Força +12% de dano e Vitalidade +70 de vida com 10 pontos cada', perto(S.dmgMult - d0, 0.12) && p.maxHp - h0 === 70, `${(S.dmgMult - d0).toFixed(3)} ${p.maxHp - h0}`);
+      this.ok('atributos: Resistência dá defesa, Agilidade velocidade, Inteligência poder e energia', perto(S.armor - a0, 0.0175) && perto(S.speedMult - v0, 0.012) && perto(S.power - w0, 0.03) && p.maxEnergy - e0 === 4,
+        `${(S.armor - a0).toFixed(4)} ${(S.speedMult - v0).toFixed(4)} ${(S.power - w0).toFixed(3)} ${p.maxEnergy - e0}`);
+      this.ok('atributos: Sorte dá crítico e sorte no saque', S.crit > c0 && S.sorte === 2 && Atributos.sorteSaque() > 0 && Atributos.chanceSaque(0.05) > 0.05);
+      this.ok('atributos: sem pontos livres, nada mais entra', Atributos.livres(pr) === 0 && Atributos.distribuir(pr, 'forca', 5) === 0);
+      this.ok('atributos: acima de 40 pontos, cada ponto rende a metade', Atributos.ef(40) === 40 && Atributos.ef(60) === 50);
+      // salvamento: os pontos voltam; acima do total do nível, são devolvidos
+      const j = JSON.parse(JSON.stringify(pr.toJSON())), q = new pr.constructor(pr.charId);
+      q.load(j);
+      this.ok('atributos: o salvamento guarda os pontos de cada atributo', JSON.stringify(q.atrib) === JSON.stringify(pr.atrib), JSON.stringify(q.atrib));
+      j.level = 3; q.load(j);
+      this.ok('atributos: pontos acima do total do nível são devolvidos ao carregar', !Object.keys(q.atrib).length);
+      // tela: soma pendente só grava ao confirmar
+      pr.atrib = {}; p.recalc(false);
+      WorldInv.abrir('atributos');
+      Atributos.mudar('sorte', 1); Atributos.mudar('sorte', 1); Atributos.mudar('forca', 1); Atributos.mudar('forca', -1);
+      this.ok('tela de atributos: os pontos pendentes não valem antes de confirmar', Atributos.valor(pr, 'sorte') === 0 && Atributos.pendentes() === 2);
+      WorldInv.draw(g.ctx, 0.1);
+      this.igual('tela de atributos: botões − e + dos 6 atributos', WorldInv.ui.rects.filter((r) => r.atrib).length, 12);
+      Atributos.confirmar();
+      this.ok('tela de atributos: confirmar grava e recalcula o herói', Atributos.valor(pr, 'sorte') === 2 && S.sorte === 2 && Atributos.pendentes() === 0);
+      g.stats.soulsBank = 1000;
+      this.ok('atributos: redistribuir devolve tudo (nível 12: 180 células)', Atributos.redistribuir(pr) && g.stats.soulsBank === 820 && Atributos.gastos(pr) === 0 && Atributos.livres(pr) === 33, g.stats.soulsBank);
+      WorldInv.fechar();
+      // HUD: BOLSA e MAPA ao lado do AURORA; a bolsa abre nos atributos quando há pontos livres
+      g.state = 'playing';
+      g.hud.draw(g.ctx);
+      this.igual('HUD: botões BOLSA e MAPA', WorldInv.botoesHud.map((b) => b.id).join(), 'bolsa,mapa');
+      const b = WorldInv.botoesHud[0];
+      this.ok('HUD: o botão BOLSA abre a mochila na aba ATRIBUTOS (há pontos livres)', b && WorldInv.cliqueHud({ x: b.cx, y: b.cy, clicked: true }) && g.state === 'worldinv' && WorldInv.ui.tab === 'atributos');
+      WorldInv.fechar();
+      const toque = TouchControls.buttons().map((t) => t.key);
+      this.ok('toque: BOLSA (B) e MAPA (M) viram botões', toque.includes('KeyB') && toque.includes('KeyM'));
+      pr.level = salvo.level; pr.atrib = salvo.atrib; g.stats.soulsBank = salvo.cel; p.recalc(true);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    g.state = estado0;
+    this.ok('atributos: sem exceção', !erro, erro);
+  },
+
+  // Corpos atléticos (opção nova de corpo): em A pelo rig do Blender (não tortos), cabeça medida pelo
+  // perfil (o rosto do corpo sai inteiro), as peças com o encaixe deles num arquivo à parte (atl/)
+  async corposAtleticos() {
+    const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    const corpos = CRIA_CATALOGO.filter((c) => c.tipo === 'corpo'), extra = corpos.filter((c) => c.extra);
+    this.ok('atléticos: dois corpos extra no catálogo (Atlético e Atlética), com miniatura, e na lista de corpos da criação',
+      extra.length === 2 && extra.every((c) => c.convertido && c.mini) && PERS_GLB.corpoG.length === 4 && Criacao3D.CORPOS.length === 4,
+      extra.map((c) => c.id + ':' + c.nome).join(' '));
+    const pecas = CRIA_CATALOGO.filter((c) => c.tipo !== 'corpo' && c.tipo !== 'npc' && c.convertido);
+    const sem = pecas.filter((c) => !c.atl);
+    this.ok(`atléticos: as peças da criação (${pecas.length}) têm o encaixe nos corpos atléticos (arquivo atl/ carregado só por quem usa um deles)`, pecas.length > 200 && sem.length <= 2, sem.slice(0, 4).map((c) => c.id).join(' '));
+    const estado0 = g.state;
+    try {
+      for (const [corpoG, cid, classe] of [[2, 'corpo_am', 'guerreiro'], [3, 'corpo_af', 'mago']]) {
+        const def = Perfis.registrar({ id: `p_teste_atl_${corpoG}`, nome: 'Atleta', classe, aparencia: Object.assign(persAparenciaPadrao(classe), { estilo: 0, corpoG, rostoG: corpoG === 2 ? 0 : 4, cabeloG: 11, barbaG: 0, bigodeG: 0 }) });
+        for (let i = 0; i < 600 && Criacao3D.preparar(def) !== true; i++) await espera(50);
+        const B = window.CRIA3D[cid], C = window.CRIA3D.cabelo_longo, R = window.CRIA3D.rosto_1;
+        this.ok(`atléticos ${cid}: corpo, rosto e cabelo com física prontos (o encaixe no corpo atlético veio do arquivo atl/)`,
+          !!B && !!R && !!C && !!(R.porCorpo && R.porCorpo[cid]) && !!(C.cadeias && C.cadeias[cid] && C.cadeias[cid].length) && !!(C.colisores && C.colisores[cid]), cid);
+        const m = B.medida;
+        // a cabeça medida pelo perfil: o nariz acima do corte e abaixo do topo, o corte logo abaixo do
+        // queixo (o rosto esculpido do corpo, com a barba no Atlético, sai inteiro)
+        this.ok(`atléticos ${cid}: cabeça medida (corte ${m.corte.toFixed(1)} < pescoço ${m.pescoco.toFixed(1)} < nariz ${m.nariz.toFixed(1)} < topo ${m.topo.toFixed(1)}; nenhuma parte do corpo acima do corte)`,
+          m.corte < m.pescoco && m.pescoco < m.nariz && m.nariz < m.topo - 3 && m.nariz - m.corte < 4.5);
+        MODELS3D[def.model].model = null;
+        const M = g.model3(def.model), v = new Player(0, 0, def);
+        v.vitrine = true; v.facing = v.viewFacing = 0; v.state = 'idle'; v.animTime = 0.3;
+        for (let i = 0; i < 20; i++) { MODELS3D[def.model].pose(M, v, g.opts3(v, 0)); await espera(10); }
+        const pc = M.cria.peles.corpo || [];
+        let topo = -1e9;
+        for (const sk of pc) for (let i = 2; i < sk.pos.length; i += 3) topo = Math.max(topo, sk.pos[i]);
+        this.ok(`atléticos ${cid}: a pele do corpo termina no corte da cabeça (alto ${topo.toFixed(1)}, corte ${m.corte.toFixed(1)})`, pc.length > 0 && topo < m.corte + 1.2, topo.toFixed(2));
+        // pose A (braços descidos pelo rig, não em T): na malha de repouso, as mãos bem abaixo do ombro
+        let maoZ = -1e9;
+        for (const sk of pc) if (sk.regiao === 'maos') for (let i = 2; i < sk.pos.length; i += 3) maoZ = Math.max(maoZ, sk.pos[i]);
+        this.ok(`atléticos ${cid}: braços em A (o alto das mãos ${(m.ombroZ - maoZ).toFixed(1)} abaixo do ombro; em T ficaria na altura dele)`, maoZ > -1e9 && m.ombroZ - maoZ > 12, `${m.ombroZ.toFixed(1)} → ${maoZ.toFixed(1)}`);
+      }
+    } finally {
+      g.state = estado0;
+    }
+  },
+
   // Luvas, botas e calças presas ao próprio membro (tools/importar_criacao.py: pesos só do braço,
   // da perna ou do tronco e pernas, e cada peça do par separada por pedaço contínuo) e a tela de
   // criação: cartões iguais com o estado de cada peça, rolagem do painel em tela baixa e o corpo
@@ -3518,7 +3708,7 @@ const EclipseTests = {
     const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
-    this.igual('catálogo: 2 corpos, 8 rostos, 25 cabelos (8 enviados do Meshy, 15 em mechas do Blender, 5 deles masculinos, e 2 gerados no Meshy por texto), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '2,8,25,18');
+    this.igual('catálogo: 4 corpos (os 2 de sempre e os 2 atléticos), 8 rostos, 25 cabelos (8 enviados do Meshy, 15 em mechas do Blender, 5 deles masculinos, e 2 gerados no Meshy por texto), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '4,8,25,18');
     this.ok('opções da criação: 26 de cabelo, 17 de barba (com as combinações de barba e bigode), cor da barba (a do cabelo ou própria) e 12 cores de olhos',
       PERS_GLB.cabeloG.length === 26 && PERS_CABELOS_GLB.length === 26 && PERS_GLB.barbaG.length === 17 && Criacao3D.BARBAS.length === 16 &&
       Criacao3D.BARBAS.every((id) => Criacao3D.POR_ID[id] && Criacao3D.POR_ID[id].tipo === 'barba') && PERS_APAR.corBarba.ops.length === PERS_CABELOS.length + 1 && PERS_OLHOS.length === 12,
@@ -3628,11 +3818,12 @@ const EclipseTests = {
       return C.every(([x, y, l]) => x + l <= 2048 && y + l <= 2048) && C.every((a, i) => C.every((b, j) => i === j || a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[2] <= b[1] || b[1] + b[2] <= a[1]));
     })());
     // ------------------------------------------------ raridades
-    this.igual('raridades: exatamente quatro (Comum, Incomum, Raro, Lendário)', ARS_RARIDADES.map((r) => `${r.name}/${r.cor}`).join(','), 'Comum/branco,Incomum/verde,Raro/azul,Lendário/dourado');
+    this.igual('raridades: seis (Comum, Incomum, Raro, Épico, Lendário, Mítico)', ARS_RARIDADES.map((r) => `${r.name}/${r.cor}`).join(','), 'Comum/branco,Incomum/verde,Raro/azul,Épico/roxo,Lendário/dourado,Mítico/vermelho');
+    this.igual('raridades: as relíquias têm os mesmos seis graus (até a Mítica)', WORLD_RARIDADES.map((r) => r.id).join(), 'comum,incomum,raro,epico,lendario,mitico');
     const lend1 = Arsenal.gerarCat('ini_botas', 3), comum30 = Arsenal.gerarCat('n30_mago_botas', 0);
     this.ok('raridade independe do nível (nível 1 Lendária, nível 30 Comum)', lend1.r === 3 && lend1.lv === 1 && comum30.r === 0 && comum30.lv === 30);
     this.ok('raridade: um atributo sorteado por grau acima de Comum', [0, 1, 2, 3].every((r) => Object.keys(Arsenal.gerarCat('n30_guerreiro_peitoral', r).bonus).length === r));
-    this.ok('raridade: nada além do grau 3 (pedido maior vira Lendário)', Arsenal.gerarCat('ini_capa', 9).r === 3 && Arsenal.gerar('botas', 'couro', 5, 10).r === 3);
+    this.ok('raridade: nada além do Mítico (pedido maior vira Mítico; o 5 é o Mítico)', Arsenal.gerarCat('ini_capa', 9).r === ARS_MITICA && Arsenal.gerar('botas', 'couro', 5, 10).r === ARS_MITICA && Arsenal.gerar('botas', 'couro', ARS_LENDARIA, 10).r === ARS_LENDARIA);
     // ------------------------------------------------ personagem criado no estilo Realista: mundo, inventário inicial
     const K = PERFIS_CHAVE, ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
     const grava = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
@@ -3791,7 +3982,7 @@ const EclipseTests = {
       W.itens.push(Object.assign(A.gerar('botas', 'couro', 0, 5), { id: 9001, r: 3 }), Object.assign(A.gerar('luvas', 'couro', 0, 5), { id: 9002, r: 5 }));
       delete W.rv;
       const S2 = Arsenal.S;
-      this.ok('migração: raridades antigas viram as quatro', S2.itens.find((q) => q.id === 9001).r === 2 && S2.itens.find((q) => q.id === 9002).r === 3 && S2.itens.every((q) => q.r >= 0 && q.r <= 3));
+      this.ok('migração: raridades antigas viram as de agora (Épica antiga → Raro, Lendária → Lendário)', S2.itens.find((q) => q.id === 9001).r === 2 && S2.itens.find((q) => q.id === 9002).r === ARS_LENDARIA && S2.itens.every((q) => q.r >= 0 && q.r <= ARS_MITICA) && World.state.arsenal.rv === 6);
       // aparência salva antes das peças GLB
       const Am = Perfis.validarAparencia({ corpo: 3, rosto: 2, cabelo: 3, barba: 4, pele: 5 }, 'mago');
       this.ok('migração: aparência antiga vira o estilo Realista mais parecido', Am.estilo === 0 && Am.corpoG === 1 && Am.rostoG === 6 && Am.cabeloG === 8 && Am.barbaG === 3 && Am.pele === 5, JSON.stringify(Am));

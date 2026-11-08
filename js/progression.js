@@ -90,6 +90,7 @@ const BASE_STATS = {
   thrustMult: 1, spinHits: 3, spinMult: 1, counter: 0, guardBreak: 0, eliteMult: 1,
   critHeal: 0, dodgeEnergy: 0, perfectBonus: 0, dashCharges: 1, voidBig: 0, showBars: 0,
   kbResist: 0,   // fração do empurrão recebido que o herói segura (Exoesqueleto)
+  sorte: 0, ganhoCelulas: 0,   // atributo Sorte (js/atributos.js): saque mais raro e frequente, células a mais
 };
 
 // ---------------------------------------------------------------------------
@@ -194,6 +195,7 @@ class Progress {
   reset() {
     this.level = 1; this.xp = 0; this.sp = 2;
     this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0; this.maestria = 0; this.mxp = 0;
+    this.atrib = {};   // pontos de atributo distribuídos (js/atributos.js)
   }
   lv(id) { return this.skills[id] || 0; }
   get xpNext() { return PROG.xpToNext(this.level); }
@@ -234,12 +236,13 @@ class Progress {
   // Redistribuição (respec): devolve todos os pontos gastos na árvore e limpa os atalhos
   spent() { let n = 0; for (const id in this.skills) n += this.skills[id] * skillPts(SKILLS[id]); return n; }
   respec() { const n = this.spent(); this.skills = {}; this.slots = [null, null, null, null]; this.sp += n; this.respecs++; return n; }
-  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs, maestria: this.maestria || 0, mxp: this.mxp || 0 }; }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs, maestria: this.maestria || 0, mxp: this.mxp || 0, atrib: this.atrib || {} }; }
   load(o) {
     this.reset();
     if (!o) return;
     this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0); this.respecs = Math.max(0, o.respecs | 0);
     this.maestria = clamp(o.maestria | 0, 0, PROG.maestriaMax); this.mxp = Math.max(0, o.mxp | 0);   // depois do nível 100
+    this.atrib = typeof Atributos !== 'undefined' ? Atributos.limpar(o.atrib, this.level) : {};
     for (const id in o.skills || {}) if (SKILLS[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, SKILLS[id].max);
     if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (SKILL_ACTIVE(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
   }
@@ -260,6 +263,7 @@ class CharacterProgress {
   reset() {
     this.level = 1; this.xp = 0; this.sp = 0;
     this.skills = {}; this.slots = [null, null, null, null]; this.respecs = 0; this.maestria = 0; this.mxp = 0;
+    this.atrib = {};   // pontos de atributo distribuídos (js/atributos.js)
   }
   lv(id) { return this.skills[id] || 0; }
   get xpNext() { return PROG.xpToNext(this.level); }
@@ -299,17 +303,18 @@ class CharacterProgress {
     this.slots[k] = id;
     return true;
   }
-  get empty() { return this.level === 1 && !this.xp && !this.sp && !Object.keys(this.skills).length; }
+  get empty() { return this.level === 1 && !this.xp && !this.sp && !Object.keys(this.skills).length && !Object.keys(this.atrib || {}).length; }
   // Redistribuição (respec): devolve todos os pontos gastos na árvore e limpa os atalhos
   spent() { const D = this.defs; let n = 0; for (const id in this.skills) n += this.skills[id] * skillPts(D[id]); return n; }
   respec() { const n = this.spent(); this.skills = {}; this.slots = [null, null, null, null]; this.sp += n; this.respecs++; return n; }
-  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs, maestria: this.maestria || 0, mxp: this.mxp || 0 }; }
+  toJSON() { return { level: this.level, xp: this.xp, sp: this.sp, skills: this.skills, slots: this.slots, respecs: this.respecs, maestria: this.maestria || 0, mxp: this.mxp || 0, atrib: this.atrib || {} }; }
   load(o) {
     this.reset();
     if (!o || typeof o !== 'object') return;
     const D = this.defs;
     this.level = clamp(o.level | 0, 1, PROG.maxLevel); this.xp = Math.max(0, o.xp | 0); this.sp = Math.max(0, o.sp | 0); this.respecs = Math.max(0, o.respecs | 0);
     this.maestria = clamp(o.maestria | 0, 0, PROG.maestriaMax); this.mxp = Math.max(0, o.mxp | 0);   // depois do nível 100
+    this.atrib = typeof Atributos !== 'undefined' ? Atributos.limpar(o.atrib, this.level) : {};
     for (const id in o.skills || {}) if (D[id]) this.skills[id] = clamp(o.skills[id] | 0, 0, D[id].max);
     if (Array.isArray(o.slots)) this.slots = [0, 1, 2, 3].map((k) => (this.isActiveSkill(o.slots[k]) && this.lv(o.slots[k]) ? o.slots[k] : null));
   }

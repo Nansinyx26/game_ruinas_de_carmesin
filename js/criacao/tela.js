@@ -33,7 +33,7 @@ const CRIA_CATS = [
 const CRIA_LINHAS_GLB = ['estilo'].concat(...CRIA_CATS.map((c) => c.campos));
 // Miniaturas (ids do catálogo da criação) de cada opção; null = 'sem'
 const CRIA_MINI = {
-  corpoG: () => ['corpo_m', 'corpo_f'],
+  corpoG: () => ['corpo_m', 'corpo_f', 'corpo_am', 'corpo_af'],
   rostoG: () => [1, 2, 3, 4, 5, 6, 7, 8].map((i) => `rosto_${i}`),
   cabeloG: () => PERS_CABELOS_GLB.slice(),
   barbaG: () => [null].concat(typeof Criacao3D !== 'undefined' ? Criacao3D.BARBAS : []),

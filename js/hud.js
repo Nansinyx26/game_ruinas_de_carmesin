@@ -184,7 +184,7 @@ class HUD {
     this.drawCells(ctx, L);
     this.drawAbilities(ctx, p, L);
     this.drawWeapon(ctx, p, L);
-    if (game.world) Cidade.desenharBotao(ctx, L);   // botão AURORA (teletransporte), acima da arma
+    if (game.world) { Cidade.desenharBotao(ctx, L); WorldInv.desenharBotoesHud(ctx, L); }   // botões AURORA (teletransporte), BOLSA e MAPA, acima da arma
     this.drawBuffs(ctx, L);
     this.drawBossBar(ctx, L);
     this.drawCombo(ctx, L);

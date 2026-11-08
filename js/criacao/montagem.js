@@ -20,7 +20,8 @@ const Criacao3D = (function () {
   const CAT = typeof CRIA_CATALOGO !== 'undefined' ? CRIA_CATALOGO : [];
   const POR_ID = {};
   for (const c of CAT) POR_ID[c.id] = c;
-  const CORPOS = ['corpo_m', 'corpo_f'];
+  // os dois corpos de sempre e os atléticos (corpos EXTRA: as peças neles vêm de js/assets/criacao/atl/)
+  const CORPOS = ['corpo_m', 'corpo_f', 'corpo_am', 'corpo_af'];
   const BARBAS = ['barba_cacheada', 'barba_curta', 'barba_longa', 'barba_media', 'barba_viking',
     'barba_b_por_fazer', 'barba_b_curta', 'barba_b_media', 'barba_b_cheia', 'barba_b_longa', 'barba_b_cavanhaque', 'barba_b_queixo', 'barba_b_bigode', 'barba_b_guidao',
     'barba_b_cheia_sem', 'barba_b_cavanhaque_sem'];
@@ -43,9 +44,31 @@ const Criacao3D = (function () {
   const TINTA = { corpo: 'pele', rosto: 'pele', cabelo: 'cabelo', barba: 'barba', bigode: 'barba' };
 
   // ------------------------------------------------------------ carregamento sob demanda
-  const espera = {}, falhou = {}, pedido = {};
+  const espera = {}, falhou = {}, pedido = {}, pedidoX = {};
   const dados = (id) => (typeof window !== 'undefined' && window.CRIA3D && window.CRIA3D[id]) || null;
-  function tem(id) { return id === 'minis' ? typeof CRIA_MINIS !== 'undefined' : !!dados(id); }
+  // Corpos atléticos (extra): depois que um deles é escolhido, cada peça carrega também o arquivo
+  // com o encaixe nesses corpos (catálogo: atl) e só fica pronta com ele mesclado
+  let EXTRA_ON = false;
+  const extra = (id) => (typeof window !== 'undefined' && window.CRIA3D_EXTRA && window.CRIA3D_EXTRA[id]) || null;
+  function precisaExtra(id) { const c = POR_ID[id]; return EXTRA_ON && !!(c && c.atl); }
+  function mesclar(id) {
+    const D = dados(id), X = extra(id);
+    if (!D) return false;
+    if (D._extra) return true;
+    if (!X) return false;
+    for (const k in X) D[k] = Object.assign(D[k] || {}, X[k]);
+    return (D._extra = true);
+  }
+  function pedirExtra(id) {
+    if (pedidoX[id] || typeof document === 'undefined') return;
+    pedidoX[id] = true;
+    const s = document.createElement('script');
+    s.src = POR_ID[id].atl; s.async = true;
+    s.onerror = () => { console.warn(`Criação: não foi possível carregar ${s.src}`); POR_ID[id].atl = null; fim(id, true); };   // (sem o arquivo: a peça só não aparece nos corpos atléticos)
+    document.head.appendChild(s);
+  }
+  function carregadoExtra(id) { if (mesclar(id)) fim(id, true); }
+  function tem(id) { if (id === 'minis') return typeof CRIA_MINIS !== 'undefined'; const D = dados(id); return !!D && (!precisaExtra(id) || !!D._extra); }
   // A peça existe convertida (o catálogo diz) e o arquivo não falhou ao carregar
   function disponivel(id) { const c = POR_ID[id]; return !!(c && c.convertido) && !falhou[id]; }
   function fim(id, ok) {
@@ -56,6 +79,12 @@ const Criacao3D = (function () {
   // Carrega a peça (cb(ok) quando terminar); devolve true se já estava carregada
   function carregar(id, cb) {
     if (tem(id)) { if (cb) cb(true); return true; }
+    if (dados(id) && precisaExtra(id)) {   // a peça já veio; falta o encaixe nos corpos atléticos
+      if (mesclar(id)) { if (cb) cb(true); return true; }
+      if (cb) (espera[id] || (espera[id] = [])).push(cb);
+      pedirExtra(id);
+      return false;
+    }
     if (falhou[id] || (id !== 'minis' && !disponivel(id)) || typeof document === 'undefined') { if (cb) cb(false); return false; }
     if (cb) (espera[id] || (espera[id] = [])).push(cb);
     if (!pedido[id]) {
@@ -69,7 +98,10 @@ const Criacao3D = (function () {
     return false;
   }
   // Chamado pelo próprio arquivo da peça no fim
-  function carregado(id) { fim(id, true); }
+  function carregado(id) {
+    if (precisaExtra(id) && !mesclar(id)) { pedirExtra(id); return; }   // (espera também o arquivo dos corpos atléticos)
+    fim(id, true);
+  }
 
   // ------------------------------------------------------------ peças da aparência
   // Corpo, rosto, cabelo e barba escolhidos (ids do catálogo)
@@ -79,12 +111,20 @@ const Criacao3D = (function () {
     const b = A.barbaG > 0 ? BARBAS[Math.min(BARBAS.length, A.barbaG) - 1] : null;
     return !b || b.startsWith('barba_b_') ? BIGODES[Math.min(BIGODES.length, A.bigodeG) - 1] : null;
   }
+  // Corpo da opção (0 masculino, 1 feminino, 2 atlético, 3 atlética); um corpo extra liga o
+  // carregamento do encaixe das peças nos corpos atléticos; sem ele convertido, o corpo de base
+  function corpoDe(g) {
+    const c = CORPOS[Math.max(0, Math.min(CORPOS.length - 1, g | 0))];
+    if (!POR_ID[c] || !POR_ID[c].convertido) return c === 'corpo_af' ? 'corpo_f' : 'corpo_m';
+    if (POR_ID[c].extra) EXTRA_ON = true;
+    return c;
+  }
   function pecasDe(def) {
     const A = def.aparencia || {};
     // NPC gerado no Meshy (tipo 'npc' no catálogo): corpo inteiro com roupa, rosto e cabelo próprios
     if (A.npc) return { corpo: A.npc, rosto: null, cabelo: null, barba: null, bigode: null };
     const P = {
-      corpo: CORPOS[A.corpoG === 1 ? 1 : 0],
+      corpo: corpoDe(A.corpoG),
       rosto: `rosto_${Math.max(0, Math.min(7, A.rostoG | 0)) + 1}`,
       cabelo: (typeof PERS_CABELOS_GLB !== 'undefined' ? PERS_CABELOS_GLB[A.cabeloG | 0] : A.cabeloG > 0 ? `cabelo_${Math.min(8, A.cabeloG)}` : null) || null,
       barba: A.barbaG > 0 ? BARBAS[Math.min(BARBAS.length, A.barbaG) - 1] : null,
@@ -810,5 +850,5 @@ const Criacao3D = (function () {
     return MINI[id].complete && MINI[id].naturalWidth ? MINI[id] : null;
   }
 
-  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, FORMA, deformarRosto, carregar, carregado, tem, disponivel, pecasDe, usa, pronto, preparar, encaixe, ancoras, OPC, recuarCorpo, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
+  return { CAT, POR_ID, CEL, VAGAS, BARBAS, BIGODES, CORPOS, FORMA, deformarRosto, carregar, carregado, carregadoExtra, tem, disponivel, pecasDe, usa, pronto, preparar, encaixe, ancoras, OPC, recuarCorpo, build, pose, pintado, armadura, mini, tingirPele, tingirCabelo };
 })();

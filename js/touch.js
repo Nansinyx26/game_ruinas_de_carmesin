@@ -62,8 +62,7 @@ const TouchControls = {
     }
     B.push({ id: 'pause', key: 'Escape', x: 44, y: 178, r: 24, icon: null, label: 'II' });
     B.push({ id: 'tree', key: 'Tab', x: 44, y: 236, r: 24, icon: null, label: 'TAB' });
-    if (game.world) B.push({ id: 'map', key: 'KeyM', x: 44, y: 294, r: 24, icon: null, label: 'MAPA' });
-    B.push({ id: 'cam', key: 'KeyV', x: 44, y: game.world ? 352 : 294, r: 24, icon: null, label: typeof ThirdView !== 'undefined' && ThirdView.on ? 'ISO' : '3D' });   // câmera
+    B.push({ id: 'cam', key: 'KeyV', x: 44, y: 294, r: 24, icon: null, label: typeof ThirdView !== 'undefined' && ThirdView.on ? 'ISO' : '3D' });   // câmera
     const A = game.hud && game.hud.L && game.hud.L.ab;
     if (A && A.d) {
       for (let k = 0; k < 4; k++) B.push({ id: 'ab' + k, key: 'Digit' + (k + 1), x: A.x0 + k * A.gap, y: A.y, r: A.d * 1.25, hud: true });
@@ -71,6 +70,8 @@ const TouchControls = {
     }
     const T = game.world && typeof Cidade !== 'undefined' && Cidade.botao;   // teletransporte (desenhado pelo HUD)
     if (T) B.push({ id: 'aurora', key: 'KeyT', x: T.cx, y: T.cy, r: T.r, hud: true });
+    // BOLSA e MAPA (desenhados pelo HUD ao lado do AURORA)
+    if (game.world && typeof WorldInv !== 'undefined') for (const b of WorldInv.botoesHud) B.push({ id: b.id, key: b.id === 'bolsa' ? 'KeyB' : 'KeyM', x: b.cx, y: b.cy, r: b.r, hud: true });
     return B;
   },
   hit(x, y) {

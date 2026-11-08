@@ -228,6 +228,18 @@ class Enemy extends Entity {
     this.stunMult *= 0.6; this.mass *= 1.4;
     return this;
   }
+  // LÍDER do bando (o miniboss dos acampamentos do mundo): um elite maior, mais forte e mais
+  // resistente, com o nome e a barra roxa; dá mais experiência e sempre deixa uma relíquia rara
+  makeLider() {
+    if (!this.elite) this.makeElite();
+    this.lider = true;
+    this.maxHp = this.hp = Math.round(this.maxHp * 1.6);
+    this.dmg *= 1.15; this.stunMult *= 0.7; this.mass *= 1.3;
+    this.radius = Math.round(this.radius * 1.08);
+    this.escala = (this.escala || 1) * 1.15;
+    if (this.nivelMundo) this.nivelMundo += 1;
+    return this;
+  }
 
   die(h) {
     if (this.state === 'dying') return;
@@ -292,20 +304,37 @@ class Enemy extends Entity {
   // Barra de vida pequena sobre a cabeça (desenhada após a iluminação)
   drawHpBar(ctx) {
     if (this.marcaT > 0 && typeof Encontros !== 'undefined') Encontros.desenharMarca(ctx, this);   // "!" e "?" dos acampamentos
+    if (this.state === 'dying' || this.state === 'spawn') return;
+    // no mundo, a barra e o nível aparecem para quem está perto do herói (some aos poucos com a distância)
+    const p = game.player, nv = this.nivelMundo, d = p ? Math.hypot(this.x - p.x, this.y - p.y) : 1e9;
+    const perto = !!(game.world && nv && d < 620);
     const always = this.elite || game.player.stats.showBars;
-    if ((this.hpBar <= 0 && !always) || this.state === 'dying' || this.state === 'spawn') return;
-    const w = this.radius > 20 || this.elite ? 52 : 32;
-    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z - this.height * (this.elite ? 1.18 : 1) - 14;
-    const a = always ? 1 : Math.min(1, this.hpBar * 2);
+    if (this.hpBar <= 0 && !always && !perto) return;
+    const chefe = this.worldBoss || this.chefeNome, lider = this.lider && !chefe;
+    const w = chefe ? 76 : lider ? 64 : this.radius > 20 || this.elite ? 52 : 38;
+    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - this.z - this.height * (this.escala || 1) * (this.elite ? 1.18 : 1) - 14;
+    const a = always || this.hpBar > 0 ? 1 : clamp((620 - d) / 160, 0, 1);
     ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 6);
-    ctx.fillStyle = this.elite ? '#ffb43a' : '#ff2e55';
+    ctx.fillStyle = chefe ? '#ff3b4f' : lider ? '#c77dff' : this.elite ? '#ffb43a' : '#ff2e55';
     ctx.fillRect(sx - w / 2, sy, w * clamp(this.hp / this.maxHp, 0, 1), 4);
-    if (this.elite || this.varNome) {
+    if (nv && game.world) {
+      // nível: cinza (muito abaixo), verde, branco (parecido), amarelo, laranja e vermelho (muito acima)
+      const dif = nv - game.activeProgress().level;
+      const cor = dif <= -6 ? '150,150,165' : dif <= -2 ? '140,225,150' : dif <= 1 ? '235,235,245' : dif <= 3 ? '255,210,90' : dif <= 7 ? '255,140,80' : '255,70,80';
+      const txt = dif >= 8 ? `☠ ${nv}` : `${nv}`;
+      ctx.font = `bold 10px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const bw = Math.max(18, ctx.measureText(txt).width + 8), bx = sx - w / 2 - bw - 3;
+      ctx.fillStyle = 'rgba(8,10,18,0.85)'; ctx.fillRect(bx, sy - 4, bw, 12);
+      ctx.strokeStyle = `rgba(${cor},0.9)`; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, sy - 3.5, bw - 1, 11);
+      ctx.fillStyle = `rgb(${cor})`; ctx.fillText(txt, bx + bw / 2, sy + 2);
+    }
+    if (this.elite || this.varNome || lider) {
       ctx.font = `bold 10px ${FONT_TITLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillStyle = this.elite ? '#ffd47a' : rgba(this.T.glow, 0.95);
-      ctx.fillText(this.chefeNome || (this.elite ? (this.varNome ? `ELITE · ${this.varNome.toUpperCase()}` : 'ELITE') : this.varNome.toUpperCase()), sx, sy - 3);   // chefes regionais e das campanhas: o nome
+      ctx.fillStyle = lider ? '#e2b8ff' : this.elite ? '#ffd47a' : rgba(this.T.glow, 0.95);
+      const nome = (this.varNome || this.T.name || '').toUpperCase();
+      ctx.fillText(this.chefeNome || (lider ? `LÍDER · ${nome}` : this.elite ? (this.varNome ? `ELITE · ${nome}` : 'ELITE') : nome), sx, sy - 3);   // chefes regionais e das campanhas: o nome
     }
     ctx.globalAlpha = 1;
   }

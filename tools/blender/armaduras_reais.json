@@ -17,6 +17,9 @@
    "botas": "exemplo_glb/armor_boots_2.glb",
    "capacete": "exemplo_glb/Demon_Helm.glb",
    "capa": "exemplo_glb/Crimson_Robe.glb"
+  },
+  "100": {
+   "peitoral": "Peitoral_de_Placas_nivel100.glb"
   }
  },
  "assassino": {

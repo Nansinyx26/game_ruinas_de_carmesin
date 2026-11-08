@@ -362,6 +362,7 @@ class Game {
       if (inp.pressed.journal && !this.fadeCb && p.state !== 'dead') { WorldInv.abrir('diario', false); return; }   // diário de missões
       if (inp.pressed.capsule && p.state !== 'dead') WorldInv.usarCapsula();
       if (Cidade.clique(inp.mouse)) inp.mouse.clicked = false;   // botão AURORA do HUD
+      if (p.state !== 'dead' && !this.fadeCb && WorldInv.cliqueHud(inp.mouse)) { inp.mouse.clicked = false; return; }   // botões BOLSA e MAPA do HUD
       this.canalizando = !this.fadeCb && Cidade.update(dt, inp);   // teletransporte (T): o herói se concentra parado
       this.world.update(dt);
       Clima.update(dt);   // chão, corpo, moradores e som do clima (js/mundo/clima.js)
@@ -570,6 +571,8 @@ class Game {
   }
 
   collectSoul(v, x, y) {
+    const sc = this.player && this.player.stats && this.player.stats.ganhoCelulas;   // atributo Sorte
+    if (sc) v = Math.round(v * (1 + sc));
     this.stats.soulsBank += v;
     this.stats.soulsTotal += v;
     this.stats.score += v * 5;
@@ -879,7 +882,7 @@ class Game {
     if (e.isBoss) return XP_ENEMY.chefe;
     // mundo: +20% à noite; nas zonas acima do nível 40 (faixas até o 100) a experiência cresce com o nível da zona
     const zk = this.world && World.zone ? 1 + Math.max(0, World.zone.lv - 40) * 0.09 : 1;
-    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.elite ? 3 : 1) * (this.world ? WorldTime.xpMult() : 1) * zk;
+    return (XP_ENEMY[e.type] || 15) * (1 + 0.2 * (e.level || 0)) * (e.lider ? 5 : e.elite ? 3 : 1) * (this.world ? WorldTime.xpMult() : 1) * zk;
   }
 
   // Progresso do personagem em campo (o do Kael é this.progress, no formato de sempre)
@@ -920,6 +923,7 @@ class Game {
     this.hud.ghostHp = p.hp;
     const fresh = Object.values(skillsOf(RosterManager.active)).filter((s) => s.lvl > from && s.lvl <= to).map((s) => s.name);
     this.hud.levelUp(to, sp, fresh);
+    if (typeof Atributos !== 'undefined') this.hud.toast(`+${ATRIB_POR_NIVEL * (to - from)} PONTOS DE ATRIBUTO · ${Atributos.livres(pr)} livres${this.world ? ' (B: mochila → ATRIBUTOS)' : ''}`, '255,224,138');
     const P_ = this.particles;
     P_.ring(p.x, p.y, 150, '170,140,255', 0.6, 10);
     P_.ring(p.x, p.y, 90, '230,220,255', 0.4, 6);

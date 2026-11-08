@@ -24,15 +24,19 @@
 // A aba EQUIPAMENTO da mochila (WorldInv) mostra o herói em 3D com as peças, as vagas, as
 // peças da vaga escolhida (a escolhida aparece no modelo antes de confirmar) e a comparação.
 // ---------------------------------------------------------------------------
+// Seis raridades, as mesmas das relíquias (js/mundo/inventario.js): Comum, Incomum, Raro, Épico,
+// Lendário e Mítico (a mais rara: chefes, líderes e a Sorte alta)
 const ARS_RARIDADES = [
   { id: 'comum', name: 'Comum', cor: 'branco', rgb: '232,234,240', k: 1, preco: 1 },
   { id: 'incomum', name: 'Incomum', cor: 'verde', rgb: '90,220,120', k: 1.5, preco: 2 },
   { id: 'raro', name: 'Raro', cor: 'azul', rgb: '80,160,255', k: 2.2, preco: 4.5 },
+  { id: 'epico', name: 'Épico', cor: 'roxo', rgb: '190,110,255', k: 2.8, preco: 8 },
   { id: 'lendario', name: 'Lendário', cor: 'dourado', rgb: '255,196,60', k: 3.4, preco: 14 },
+  { id: 'mitico', name: 'Mítico', cor: 'vermelho', rgb: '255,70,90', k: 4.4, preco: 30 },
 ];
-const ARS_LENDARIA = ARS_RARIDADES.length - 1;
-// A rolagem das relíquias (cinco graus, js/mundo/inventario.js) nas quatro da armadura: a Épica conta como Rara
-const arsRaridade = (r) => [0, 1, 2, 2, 3][clamp(r | 0, 0, 4)];
+const ARS_LENDARIA = 4, ARS_MITICA = 5;
+// A rolagem das relíquias (os mesmos seis graus) vale direto para a armadura
+const arsRaridade = (r) => clamp(r | 0, 0, ARS_MITICA);
 // Vagas: peso relativo de defesa, vida e carga
 const ARS_VAGAS = {
   capacete: { nome: 'Capacete', def: 0.012, vida: 5, peso: 1, area: 0.12 },
@@ -103,11 +107,16 @@ const Arsenal = {
     }
     const A = W.arsenal;
     A.itens = A.itens || []; A.vest = A.vest || {}; A.ocultar = A.ocultar || {}; A.armas = A.armas || {};
-    // salvamentos de antes das quatro raridades (seis graus: Épica → Raro, Lendária e Eclipse → Lendário)
+    // salvamentos antigos: os seis graus de antes (Épica → Raro, Lendária e Eclipse → Lendário) viraram
+    // quatro (rv 4); as quatro viram as seis de agora (rv 6: o Lendário passa ao índice 4)
+    const todos = (m) => { A.itens.forEach(m); if (A.armazem) A.armazem.itens.forEach(m); if (A.loja) A.loja.itens.forEach(m); };
     if (!A.rv) {
-      const m = (it) => { if (it && it.r !== undefined) it.r = [0, 1, 2, 2, 3, 3][clamp(it.r | 0, 0, 5)]; };
-      A.itens.forEach(m); if (A.armazem) A.armazem.itens.forEach(m); if (A.loja) A.loja.itens.forEach(m);
+      todos((it) => { if (it && it.r !== undefined) it.r = [0, 1, 2, 2, 3, 3][clamp(it.r | 0, 0, 5)]; });
       A.rv = 4;
+    }
+    if (A.rv === 4) {
+      todos((it) => { if (it && it.r !== undefined) it.r = [0, 1, 2, 4][clamp(it.r | 0, 0, 3)]; });
+      A.rv = 6;
     }
     A.receitas = A.receitas || []; A.armazem = A.armazem || { itens: [], mat: {} };
     return A;
@@ -137,7 +146,7 @@ const Arsenal = {
   // ---------------------------------------------------------------- geração
   gerar(slot, fam, r = 0, lv = 1) {
     const F = ARS_FAMILIAS[fam], V = ARS_VAGAS[slot];
-    r = clamp(Math.max(r | 0, F.rmin || 0), 0, ARS_LENDARIA);
+    r = clamp(Math.max(r | 0, F.rmin || 0), 0, ARS_MITICA);
     const R = ARS_RARIDADES[r], tk = 0.7 + 0.3 * F.tier, rk = 1 + (R.k - 1) * 0.35, nk = 1 + lv * 0.01;
     const st = {};
     if (V.def) st.defesa = V.def * tk * rk * nk;
@@ -146,7 +155,7 @@ const Arsenal = {
     if (mob) st.veloc = mob;
     if (slot === 'acessorio') { const A = ARS_ACESSORIOS[F.acc]; if (A && A.st) for (const k in A.st) st[k] = (st[k] || 0) + A.st[k] * rk; }
     // bônus secundários: um na rara, dois na épica em diante
-    const extras = ['dano', 'critico', 'energia', 'recarga'], n = r >= 3 ? 2 : r >= 2 ? 1 : 0;
+    const extras = ['dano', 'critico', 'energia', 'recarga'], n = r >= ARS_MITICA ? 3 : r >= 3 ? 2 : r >= 2 ? 1 : 0;
     for (let i = 0; i < n; i++) { const k = extras[(slot.length * 3 + i * 2 + F.tier) % extras.length]; st[k] = (st[k] || 0) + WORLD_ATRIB[k].base * R.k * 0.5 * nk; }
     const res = {};
     for (const k in F.res) res[k] = F.res[k] * (ARS_VAGAS[slot].area * 3 + (slot === 'acessorio' ? 0.4 : 0)) * rk;
@@ -172,6 +181,7 @@ const Arsenal = {
     }
     S.itens.push(it);
     if (!quieto) g.hud.toast(`PEÇA ${this.rar(it).name.toUpperCase()} · ${this.nome(it)} (B → EQUIPAMENTO)`, this.rar(it).rgb);
+    if (!quieto && it.r >= ARS_MITICA && g.player) WorldInv.efeitoMitico(g.player.x, g.player.y, 'PEÇA MÍTICA', this.nome(it));
     return it;
   },
   // Saque: chefe regional sempre (épica ou melhor), elite 8%, baús 25%
@@ -180,7 +190,8 @@ const Arsenal = {
     if (!z) return;
     const fam = this.famDaZona(z), slot = pick(ARS_ORDEM);
     if (e.worldBoss) this.guardar(this.gerar(slot, fam, this.rolar(3, 0.4), z.lv + 2));
-    else if (e.elite && Math.random() < 0.08) this.guardar(this.gerar(slot, fam, this.rolar(1, 0.3), z.lv));
+    else if (e.lider && Math.random() < Atributos.chanceSaque(0.3)) this.guardar(this.gerar(slot, fam, this.rolar(2, 0.35 + Atributos.sorteSaque()), z.lv + 1));
+    else if (e.elite && Math.random() < Atributos.chanceSaque(0.08)) this.guardar(this.gerar(slot, fam, this.rolar(1, 0.3 + Atributos.sorteSaque()), z.lv));
     this.onKillClasse(e, z);   // peças de nível 30 da classe (js/mundo/armaduras.js)
   },
   onChest(d) {
@@ -325,7 +336,7 @@ const Arsenal = {
   },
   filtrar(tipo) {
     const U = this.ui;
-    if (tipo === 'r') U.filtroR = U.filtroR >= ARS_LENDARIA ? -1 : U.filtroR + 1; else U.usaveis = !U.usaveis;
+    if (tipo === 'r') U.filtroR = U.filtroR >= ARS_MITICA ? -1 : U.filtroR + 1; else U.usaveis = !U.usaveis;
     U.sel = 0; game.audio.play('uiMove');
   },
   // Texto dos atributos ({ dano: 0.03, vida: 10 } → '+3,0% Dano · +10 Vida')

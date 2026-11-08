@@ -369,7 +369,7 @@ const Cidade = {
     ctx.beginPath(); ctx.ellipse(x, y + 4 + Math.sin(t * 6) * 0.4, 2.2, 3.4, 0, 0, TAU); ctx.fill();
     ctx.font = `bold 8px ${FONT_TITLE}`; ctx.letterSpacing = '1px'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255,214,150,0.95)'; ctx.fillText('AURORA', x, y + r + 9);
-    ctx.fillStyle = 'rgba(200,214,235,0.75)'; ctx.fillText(game.input.lastDevice === 'pad' ? '' : '[T]', x - r - 12, y);
+    if (game.input.lastDevice !== 'pad' && !(typeof TouchControls !== 'undefined' && TouchControls.on)) { ctx.fillStyle = 'rgba(200,214,235,0.75)'; ctx.fillText('[T]', x, y - r - 8); }   // (em cima, como BOLSA e MAPA ao lado)
     ctx.letterSpacing = '0px';
     ctx.restore();
   },

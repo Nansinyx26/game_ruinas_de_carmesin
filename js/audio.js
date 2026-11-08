@@ -787,6 +787,25 @@ class AudioSys {
         case 'upgrade':
           this.arp([523, 659, 784, 1046], 0.06, 0.25, 0.06);
           break;
+        case 'compra':   // moedas na mão do vendedor: tilintar curto e o brilho
+          this.arp([1568, 2093, 1760, 2637], 0.035, 0.18, 0.045, 'sine');
+          this.noise(0.12, 0.05, 'highpass', 4000, 9000, 1.5);
+          break;
+        case 'atributo':   // pontos de atributo confirmados
+          this.arp([440, 554, 659, 880], 0.05, 0.3, 0.05);
+          this.osc('sine', 220, 440, 0.35, 0.04);
+          break;
+        case 'mitico':   // item mítico: estrondo grave, coro que sobe e o brilho
+          this.osc('sine', 70, 40, 1.2, 0.22);
+          this.noise(0.9, 0.1, 'lowpass', 300, 80, 1);
+          this.arp([294, 370, 440, 587, 740, 880, 1175], 0.08, 0.9, 0.06, 'sawtooth');
+          this.noise(1.2, 0.05, 'bandpass', 2000, 8000, 2, 0.3);
+          break;
+        case 'lider':   // o líder do bando cai: impacto pesado e um acorde de vitória curto
+          this.noise(0.5, 0.25, 'lowpass', 600, 60, 1);
+          this.osc('sine', 110, 35, 0.6, 0.25);
+          this.arp([330, 415, 494, 659], 0.07, 0.45, 0.06);
+          break;
         case 'skill':   // habilidade desbloqueada na árvore
           this.arp([784, 988, 1175, 1568], 0.05, 0.35, 0.06);
           this.osc('sine', 196, 392, 0.4, 0.06);

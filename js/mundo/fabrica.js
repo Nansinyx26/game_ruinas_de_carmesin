@@ -39,7 +39,9 @@ const FAB_FERRAMENTAS = [
 ];
 
 const Fabrica = {
-  ui: { cat: 0, busca: '', digitando: false },
+  ui: { cat: 0, busca: '', digitando: false, ordem: 0, filtroR: -1 },
+  // ordenação e filtro de raridade do INVENTÁRIO (botões do cabeçalho, teclas O e F)
+  ORDENS: [['padrao', 'PADRÃO'], ['raridade', 'RARIDADE'], ['nivel', 'NÍVEL'], ['nome', 'NOME'], ['qtd', 'QUANTIDADE']],
   _rec: null,
   // ---------------------------------------------------------------- receitas
   receitas() {
@@ -254,8 +256,16 @@ const Fabrica = {
       if (c === 'mat') for (const k in WORLD_MATERIAIS) { const a = Oficios.mat(k), b = Arsenal.S.armazem.mat[k] || 0; if (a || b) out.push(this.entArmazemMat(k, a, b)); }
       else { for (const it of Arsenal.S.itens) out.push(this.entArmazemPeca(it, false)); for (const it of Arsenal.S.armazem.itens) out.push(this.entArmazemPeca(it, true)); }
     } else this.entradasInv(c, out);
-    const b = this.ui.busca.trim().toLowerCase();
-    return tab === 'itens' && b ? out.filter((e) => (`${e.nome} ${e.sub || ''}`).toLowerCase().includes(b)) : out;
+    if (tab !== 'itens') return out;
+    const b = this.ui.busca.trim().toLowerCase(), fr = this.ui.filtroR, ord = this.ORDENS[this.ui.ordem % this.ORDENS.length][0];
+    let L = b ? out.filter((e) => (`${e.nome} ${e.sub || ''}`).toLowerCase().includes(b)) : out;
+    if (fr >= 0) L = L.filter((e) => e.r === fr);
+    const qtd = (e) => parseInt(String(e.dir || '').replace(/\D/g, ''), 10) || 1;
+    if (ord === 'raridade') L = L.slice().sort((a, c) => (c.r ?? -1) - (a.r ?? -1) || (c.lv || 0) - (a.lv || 0));
+    else if (ord === 'nivel') L = L.slice().sort((a, c) => (c.lv || 0) - (a.lv || 0) || (c.r ?? -1) - (a.r ?? -1));
+    else if (ord === 'nome') L = L.slice().sort((a, c) => a.nome.replace(/^\W+\s*/, '').localeCompare(c.nome.replace(/^\W+\s*/, ''), 'pt'));
+    else if (ord === 'qtd') L = L.slice().sort((a, c) => qtd(c) - qtd(a));
+    return L;
   },
   entReceita(R) {
     const err = this.pode(R), F = R.out.peca ? ARS_FAMILIAS[R.out.peca[1]] : null;
@@ -311,21 +321,22 @@ const Fabrica = {
     const tudo = c === 'tudo', P = this.pedidosMissao(), h = Arsenal.heroi();
     if (tudo || c === 'armas') for (const w of this.armas()) {
       const D = WEAPON_DEFS[w], eq = RosterManager.equippedWeapon(h) === w, n = this.nivelArma(w);
-      out.push({ nome: `${D.name}${n ? ` +${n}` : ''}`, sub: `Arma · ${eq ? 'equipada' : 'na mochila'}`, rgb: '255,200,120', dir: eq ? 'E' : '',
+      out.push({ nome: `${D.name}${n ? ` +${n}` : ''}`, sub: `Arma · ${eq ? 'equipada' : 'na mochila'}`, rgb: '255,200,120', dir: eq ? 'E' : '', r: -1, lv: n,
         det: { titulo: D.name, rgb: '255,200,120', linhas: [`${charFirstName(h)} · aprimoramento +${n} (+${n * 6}% de dano) na bancada de armas da Aurora`] },
         acoes: eq ? [] : [['eq', 'EQUIPAR']], fazer: () => { if (!RosterManager.equipWeapon(h, w)) return 'Não deu para equipar.'; game.player.wpnAnim = { k: 'draw', t: 0, dur: 0.5 }; return `Equipou ${D.name}`; } });
     }
     if (tudo || c === 'pecas' || c === 'acessorios') for (const it of Arsenal.S.itens) {
       if ((c === 'acessorios') !== (it.slot === 'acessorio') && !tudo) continue;
       const R = Arsenal.rar(it), vest = Arsenal.vestido(it.id);
-      out.push({ nome: Arsenal.nome(it), sub: `${it.slot === 'acessorio' ? 'Acessório' : 'Peça'} · ${R.name} · ${ARS_VAGAS[it.slot].nome}${vest ? ' · vestida' : ''}`, rgb: R.rgb, dir: vest ? 'E' : '',
-        det: { titulo: Arsenal.nome(it), rgb: R.rgb, linhas: [`${ARS_TECIDOS[Arsenal.fam(it).tec].nome} · nível ${it.lv} · requer nível ${Arsenal.req(it)}`, Object.keys(it.st).map((k) => Arsenal.fmtSt(k, it.st[k] * Arsenal.mult(it))).join(' · ')] },
+      const cmp = !vest && Arsenal.vestidos(h)[it.slot] ? `Comparada à vestida: ${Arsenal.resumo(it)}` : vest ? 'Vestida agora' : 'Vaga vazia: tudo é ganho';
+      out.push({ nome: Arsenal.nome(it), sub: `${it.slot === 'acessorio' ? 'Acessório' : 'Peça'} · ${R.name} · ${ARS_VAGAS[it.slot].nome}${vest ? ' · vestida' : ''}`, rgb: R.rgb, dir: vest ? 'E' : '', r: it.r, lv: it.lv,
+        det: { titulo: Arsenal.nome(it), rgb: R.rgb, linhas: [`${R.name} · ${ARS_TECIDOS[Arsenal.fam(it).tec].nome} · nível ${it.lv} · requer nível ${Arsenal.req(it)}`, Object.keys(it.st).map((k) => Arsenal.fmtSt(k, it.st[k] * Arsenal.mult(it))).join(' · '), cmp] },
         acoes: [['vest', vest ? 'TIRAR' : 'VESTIR'], ['desc', WorldInv.vende() ? 'VENDER' : 'DESMONTAR']],
         fazer: (ac) => { if (ac === 'desc') return Arsenal.vender(it.id); if (vest) { Arsenal.tirar(it.slot); return `Tirou ${Arsenal.nome(it)}`; } return Arsenal.equipar(it.id) || `Vestiu ${Arsenal.nome(it)}`; } });
     }
     if (tudo || c === 'acessorios') for (const it of WorldInv.S.itens) {
       const R = WorldInv.rar(it), on = WorldInv.S.equip.includes(it.id);
-      out.push({ nome: WorldInv.nome(it), sub: `Relíquia · ${R.name}${on ? ' · equipada' : ''}`, rgb: R.rgb, dir: on ? 'E' : '',
+      out.push({ nome: WorldInv.nome(it), sub: `Relíquia · ${R.name}${on ? ' · equipada' : ''}`, rgb: R.rgb, dir: on ? 'E' : '', r: it.r, lv: it.lv,
         det: { titulo: WorldInv.nome(it), rgb: R.rgb, linhas: [Object.keys(it.st).map((k) => WorldInv.fmt(k, it.st[k] * WorldInv.mult(it))).join(' · ')] },
         acoes: [['eq', on ? 'TIRAR' : 'EQUIPAR']], fazer: () => { if (on) { WorldInv.desequipar(WorldInv.S.equip.indexOf(it.id)); return 'Relíquia guardada'; } return WorldInv.equipar(it.id) ? `Equipou ${WorldInv.nome(it)}` : 'Não deu para equipar.'; } });
     }
@@ -333,7 +344,7 @@ const Fabrica = {
       const n = Oficios.mat(k), D = WORLD_MATERIAIS[k], pede = P[k] || 0;
       if (!n || (c === 'missao' && !pede)) continue;
       const usa = this.receitas().filter((R) => Oficios.resolver(R.mat)[k]).slice(0, 4).map((R) => R.nome);
-      out.push({ nome: `${D.icon} ${D.nome}`, sub: `${pede ? `Item de missão (${pede} para entregar) · ` : 'Material · '}${WORLD_RARIDADES[WORLD_MAT_RARIDADE[k] || 0].name}`, rgb: D.rgb, dir: `×${n}`,
+      out.push({ nome: `${D.icon} ${D.nome}`, sub: `${pede ? `Item de missão (${pede} para entregar) · ` : 'Material · '}${WORLD_RARIDADES[WORLD_MAT_RARIDADE[k] || 0].name} · empilha`, rgb: D.rgb, dir: `×${n}`, r: WORLD_MAT_RARIDADE[k] || 0, lv: 0,
         det: { titulo: D.nome, rgb: D.rgb, linhas: [`${D.desc} Onde achar: ${WORLD_MAT_FONTE[k] || '—'}.`, `Usado em: ${usa.length ? usa.join(', ') : 'vendas'}${usa.length >= 4 ? '…' : ''}`] },
         acoes: [['desc1', WorldInv.vende() ? 'VENDER 1' : 'DESCARTAR 1']],
         fazer: () => {
@@ -345,7 +356,7 @@ const Fabrica = {
     if (tudo || c === 'consumiveis') for (const k in WORLD_CONSUMIVEIS) {
       const n = Oficios.cons(k), D = WORLD_CONSUMIVEIS[k];
       if (!n) continue;
-      out.push({ nome: D.nome, sub: `Consumível · ${D.desc}`, rgb: D.rgb, dir: `×${n}`, det: { titulo: D.nome, rgb: D.rgb, linhas: [D.desc] }, acoes: [['usar', 'USAR']], fazer: () => (Oficios.usar(k) ? `Usou ${D.nome}` : '') });
+      out.push({ nome: D.nome, sub: `Consumível · ${D.desc}`, rgb: D.rgb, dir: `×${n}`, r: 0, lv: 0, det: { titulo: D.nome, rgb: D.rgb, linhas: [D.desc] }, acoes: [['usar', 'USAR']], fazer: () => (Oficios.usar(k) ? `Usou ${D.nome}` : '') });
     }
     if ((tudo || c === 'consumiveis') && WorldInv.S.capsulas) out.push({ nome: 'Cápsula de reparo', sub: 'Consumível · cura 40% da vida (tecla 5)', rgb: '90,255,160', dir: `×${WorldInv.S.capsulas}`, det: { titulo: 'CÁPSULA DE REPARO', rgb: '90,255,160', linhas: ['Cura 40% da vida.'] }, acoes: [['usar', 'USAR']], fazer: () => (WorldInv.usarCapsula() ? 'Usou uma cápsula' : '') });
     if (c === 'receitas') for (const est in FAB_ESTACOES) for (const R of this.daEstacao(est)) {
@@ -383,6 +394,8 @@ const Fabrica = {
     const U = this.ui, WU = WorldInv.ui;
     if (r.fcat !== undefined) { U.cat = r.fcat; WU.sel = 0; game.audio.play('uiMove'); return true; }
     if (r.busca) { U.digitando = true; game.audio.play('uiMove'); return true; }
+    if (r.fordem) { U.ordem = (U.ordem + 1) % this.ORDENS.length; WU.sel = 0; game.audio.play('uiMove'); return true; }
+    if (r.ffiltro) { U.filtroR = U.filtroR >= ARS_MITICA ? -1 : U.filtroR + 1; WU.sel = 0; game.audio.play('uiMove'); return true; }
     if (r.fac) { this.executar(this.entradas(tab)[WU.sel], r.fac); return true; }
     if (r.fidx !== undefined) { if (WU.sel === r.fidx) { const e = this.entradas(tab)[r.fidx]; if (e && e.acoes && e.acoes.length) this.executar(e, e.acoes[0][0]); } else { WU.sel = r.fidx; game.audio.play('uiMove'); } return true; }
     return false;
@@ -394,7 +407,12 @@ const Fabrica = {
     window.addEventListener('keydown', (ev) => {
       const U = this.ui;
       if (game.state !== 'worldinv' || WorldInv.ui.tab !== 'itens') return;
-      if (!U.digitando) { if (ev.key === '/') { U.digitando = true; ev.preventDefault(); } return; }
+      if (!U.digitando) {
+        if (ev.key === '/') { U.digitando = true; ev.preventDefault(); }
+        else if (ev.key === 'o' || ev.key === 'O') { U.ordem = (U.ordem + 1) % this.ORDENS.length; WorldInv.ui.sel = 0; }
+        else if (ev.key === 'f' || ev.key === 'F') { U.filtroR = U.filtroR >= ARS_MITICA ? -1 : U.filtroR + 1; WorldInv.ui.sel = 0; }
+        return;
+      }
       if (ev.key === 'Enter' || ev.key === 'Escape') { U.digitando = false; ev.preventDefault(); ev.stopPropagation(); return; }
       if (ev.key === 'Backspace') U.busca = U.busca.slice(0, -1);
       else if (ev.key.length === 1 && U.busca.length < 24) U.busca += ev.key;
@@ -422,8 +440,22 @@ const Fabrica = {
       ctx.fillText(est ? `${est.nome.toUpperCase()} · CRIAÇÃO NÍVEL ${Oficios.nivel('criacao')}${WU.servico === 'engenharia' ? ` · FERRAMENTA ${Arsenal.S.ferramenta || 0}` : ''}` : 'ARMAZÉM PESSOAL · REFÚGIO DA AURORA', x0 + w, Ly.top - 12);
       ctx.letterSpacing = '0px'; ctx.textAlign = 'left';
     } else {
+      // ordem e filtro de raridade, à esquerda da busca
+      const fr = U.filtroR >= 0 ? ARS_RARIDADES[U.filtroR] : null, bw = 200, bx = x0 + w - bw;
+      const bts = [['fordem', `ORDEM: ${this.ORDENS[U.ordem % this.ORDENS.length][1]}`, '150,190,255'], ['ffiltro', `RARIDADE: ${fr ? fr.name.toUpperCase() : 'TODAS'}`, fr ? fr.rgb : '150,190,255']];
+      let fx = bx - 8;
+      ctx.font = `bold 10px ${FONT_TITLE}`;
+      for (const [id, rot, rgb] of bts.reverse()) {
+        const fw = ctx.measureText(rot).width + 18;
+        fx -= fw;
+        if (fx < cx + 8) break;   // (telas estreitas: o que não cabe fica só nas teclas O e F)
+        ctx.fillStyle = `rgba(${rgb},0.16)`; ctx.fillRect(fx, Ly.top - 24, fw, 22);
+        ctx.strokeStyle = `rgba(${rgb},0.8)`; ctx.strokeRect(fx + 0.5, Ly.top - 23.5, fw - 1, 21);
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.fillText(rot, fx + 9, Ly.top - 13);
+        WU.rects.push({ [id]: true, x: fx, y: Ly.top - 24, w: fw, h: 22 });
+        fx -= 6;
+      }
       // caixa de busca
-      const bw = 220, bx = x0 + w - bw;
       ctx.fillStyle = U.digitando ? 'rgba(30,60,110,0.9)' : 'rgba(14,22,38,0.9)'; ctx.fillRect(bx, Ly.top - 24, bw, 22);
       ctx.strokeStyle = U.digitando ? '#ffffff' : 'rgba(120,160,220,0.5)'; ctx.strokeRect(bx + 0.5, Ly.top - 23.5, bw - 1, 21);
       ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = U.busca ? '#ffffff' : 'rgba(160,180,210,0.6)';
@@ -447,6 +479,11 @@ const Fabrica = {
     });
     if (!L.length) { ctx.textAlign = 'left'; ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.75)'; ctx.fillText(tab === 'itens' ? (U.busca ? 'Nada com esse nome.' : 'Nada nesta categoria.') : 'Nada aqui por enquanto.', x0, Ly.top + 20); }
     if (L.length > pag) { ctx.textAlign = 'right'; ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,180,210,0.7)'; ctx.fillText(`${ini + 1}–${Math.min(L.length, ini + pag)} de ${L.length}`, x0 + w, Ly.det - 6); }
+    if (tab === 'itens') {   // capacidade da mochila (materiais e consumíveis empilham sem limite)
+      const np = Arsenal.S.itens.length, nr = WorldInv.S.itens.length, cheio = np >= ARS_MAX || nr >= WorldInv.MAX;
+      ctx.textAlign = 'left'; ctx.font = `bold 11px ${FONT_UI}`; ctx.fillStyle = cheio ? '#ffb0a0' : 'rgba(170,195,230,0.8)';
+      ctx.fillText(`Mochila: peças ${np}/${ARS_MAX} · relíquias ${nr}/${WorldInv.MAX} · materiais e consumíveis empilham${cheio ? ' · CHEIA: o excesso vai ao armazém ou é vendido' : ''}`, x0, Ly.det - 6);
+    }
     // detalhe
     const e = L[WU.sel], y = Ly.det;
     ctx.fillStyle = 'rgba(8,14,28,0.92)'; ctx.fillRect(36, y, w, 132);
@@ -481,7 +518,7 @@ const Fabrica = {
     }
   },
   dica(tab) {
-    if (tab === 'itens') return this.ui.digitando ? 'Digite para buscar · Enter/Esc: terminar' : '←/→: categoria · /: buscar · Enter: ação principal · Delete: segunda ação · Q/E: abas · Esc: fechar';
+    if (tab === 'itens') return this.ui.digitando ? 'Digite para buscar · Enter/Esc: terminar' : '←/→: categoria · /: buscar · O: ordem · F: raridade · Enter: ação principal · Delete: segunda ação · Q/E: abas · Esc: fechar';
     if (tab === 'armazem') return '←/→: materiais / peças · Enter: guardar ou retirar · botões: tudo · Q/E: abas · Esc: fechar';
     return '←/→: fabricar / aprimorar · Enter: fabricar · requisitos em verde estão ok · Q/E: abas · Esc: fechar';
   },

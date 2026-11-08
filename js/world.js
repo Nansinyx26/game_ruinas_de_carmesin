@@ -385,7 +385,10 @@ const World = {
         camp.enemies.push(e); g.enemies.push(e);
       }
       // a partir do nível 6, às vezes o primeiro do acampamento é uma unidade de elite
-      if (!c.boss && z.lv >= 6 && camp.enemies.length && Math.random() < Math.min(0.5, 0.1 + z.lv * 0.012)) camp.enemies[0].makeElite();
+      if (!c.boss && z.lv >= 6 && camp.enemies.length && Math.random() < Math.min(0.5, 0.1 + z.lv * 0.012)) { camp.enemies[0].makeElite(); camp.enemies[0].nivelMundo += 2; }
+      // bandos de 3 ou mais, a partir do nível 4: às vezes um LÍDER (o miniboss do acampamento) no lugar do último
+      const ul = camp.enemies[camp.enemies.length - 1];
+      if (!c.boss && z.lv >= 4 && camp.enemies.length >= 3 && ul && !ul.elite && Math.random() < Math.min(0.3, 0.08 + z.lv * 0.006)) ul.makeLider();
       // Campo aberto: o primeiro acampamento anda em patrulha entre três pontos da zona
       if (z.aberto && !c.boss && !this.camps.some((q) => q.patrulha)) {
         const [fx, fy] = c.at, pts = [pt, spot([clamp(fx + 0.28, 0.12, 0.88), fy]), spot([clamp(fx + 0.14, 0.12, 0.88), clamp(fy + 0.3, 0.12, 0.88)])];
@@ -396,6 +399,7 @@ const World = {
         const B = worldRegion(z.region).boss;
         const b = camp.enemies.find((e) => e.type === B.type && !e.variante) || camp.enemies.find((e) => e.type === B.type) || camp.enemies[0];
         b.makeElite(); b.maxHp = b.hp = Math.round(b.maxHp * B.hp); b.worldBoss = true; b.worldRegion = z.region; b.name = b.chefeNome = B.name;
+        b.nivelMundo = z.lv + 3;
       }
       this.camps.push(camp);
     }
@@ -453,6 +457,7 @@ const World = {
   criarNaZona(tipo, x, y) {
     const z = this.zone, e = criarInimigo(tipo, x, y, Math.min(14, game.waves.roomIndex + Math.floor(z.lv / 3)));
     if (z.lv > 20) { e.maxHp = e.hp = Math.round(e.hp * (1 + (z.lv - 20) * 0.05)); e.dmg *= 1 + (z.lv - 20) * 0.025; }
+    e.nivelMundo = clamp(z.lv + Math.floor(Math.random() * 3) - 1, 1, PROG.maxLevel);   // o nível mostrado sobre a barra (a zona, ±1)
     return e;
   },
   // Vai para outra zona (passagem: 'dir'; portal: dir null)
@@ -543,6 +548,13 @@ const World = {
     return false;
   },
   onKill(e) {
+    if (e.lider && !e.worldBoss) {   // o líder do bando cai: anel roxo, clarão, brasas e o aviso
+      const P_ = game.particles;
+      P_.ring(e.x, e.y, 140, '199,125,255', 0.7, 8); P_.flash(e.x, e.y, 40, 160, '220,170,255', 0.3); P_.embers(e.x, e.y, 0, 40, '199,125,255', 40, 300);
+      game.camera.shake(0.35); game.slowMo(0.35, 0.4);
+      game.hud.toast(`LÍDER DERROTADO · ${(e.varNome || e.T.name || '').toUpperCase()}`, '199,125,255');
+      game.audio.play('lider');
+    }
     WorldInv.onKill(e);       // saque de relíquias (js/mundo/inventario.js)
     WorldQuests.onKill(e);    // missões de abate (js/mundo/missoes.js)
     Oficios.aoAbater(e);      // materiais (sucata, núcleo, essência)
