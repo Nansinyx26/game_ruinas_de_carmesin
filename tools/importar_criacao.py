@@ -109,6 +109,9 @@ for i, (a, m) in enumerate([('cabelo_1.glb', 'cabelo_1.png'), ('Cabelo_2.glb', '
 # o Cabelo 1 (1,4 milhão de triângulos) lê o remesh do Meshy (lote de teste, docs/topologia/LOTE_MESHY.md:
 # 11.529 triângulos, desvio de 95% 0,31%), já devolvido à escala da fonte; a fonte continua em Cabelo/cabelo_1.glb
 next(_p for _p in PECAS if _p['id'] == 'cabelo_1')['arq'] = '../_retopo/meshy/cabelo_1_alinhado.glb'
+# o Rosto 3 lê o remesh do Meshy (lote de teste, docs/topologia/LOTE_MESHY.md: 9.654 triângulos, desvio de
+# 95% 0,13%), já devolvido à escala da fonte; a fonte continua em Rosto/rosto_3.glb
+next(_p for _p in PECAS if _p['id'] == 'rosto_3')['arq'] = '../_retopo/meshy/rosto_3_alinhado.glb'
 # Cabelos com física feitos no Blender (tools/blender/cabelos.py): malha em mechas, cadeias de ossos
 # para a física do jogo (js/criacao/cabelo_fisica.js) e a mesma malha nos dois corpos (shape key)
 CORTES_FISICA = ['curto', 'medio', 'longo', 'espetado', 'ondulado', 'coque', 'rabo', 'trancas', 'franja', 'repicado',

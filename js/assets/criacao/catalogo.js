@@ -126,7 +126,7 @@ const CRIA_CATALOGO = [
   "id": "rosto_3",
   "tipo": "rosto",
   "nome": "Rosto 3",
-  "arq": "assets/Criar_Personagem/Rosto/rosto_3.glb",
+  "arq": "assets/Criar_Personagem/../_retopo/meshy/rosto_3_alinhado.glb",
   "mini": "assets/Criar_Personagem/Rosto/rosto_3.png",
   "js": "js/assets/criacao/rosto_3.js",
   "sem_iris": true,
