@@ -282,7 +282,7 @@ const Bairro = {
       if (portas.some((q) => dist(q.x, q.y, x, y) < W.r * esc + 50)) continue;   // nunca na frente de uma porta ou passagem
       const o = new Cenario.Objeto(id, x, y, giro, esc);
       g.npcs.push(o); this.objetos.push(o);
-      for (const c of this.colisores(W, x, y, giro, esc)) R.pillars.push(Object.assign(c, { h: W.h * esc, cenario: true, sprite: null }));
+      for (const c of this.colisores(W, x, y, giro, esc)) R.pillars.push(Object.assign(c, { h: W.h * esc, cenario: true, cenId: id, sprite: null }));
     }
     return this.objetos.length;
   },

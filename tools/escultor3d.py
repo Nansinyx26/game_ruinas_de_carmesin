@@ -17,7 +17,10 @@ import subprocess
 import cv2
 import fast_simplification
 import numpy as np
-import xatlas
+try:
+    import xatlas
+except ImportError:
+    xatlas = None
 from PIL import Image
 from scipy import ndimage
 from skimage import measure

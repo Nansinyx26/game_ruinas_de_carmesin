@@ -115,11 +115,20 @@ const Cenario = (function () {
     }
     canTalk() { return false; }
     update(dt) { this.t += dt; }
+    estaEmUso() {
+      if (this.cenId === 'alaude_bardo') {
+        const cosme = typeof Rotina !== 'undefined' && Rotina.agora && Rotina.agora('aur_cosme');
+        return !!(cosme && cosme.tipo === 'cantar');
+      }
+      return false;
+    }
     drawShadow(ctx) {
+      if (this.estaEmUso()) return;
       const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(sx, sy, this.radius * 1.2, this.radius * 0.6, 0, 0, TAU); ctx.fill();
     }
     draw(ctx) {
+      if (this.estaEmUso()) return;
       const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
       const W = typeof PROPS3D !== 'undefined' && PROPS3D[this.cenId];
       if (W && W.img) {
@@ -136,13 +145,17 @@ const Cenario = (function () {
       if (this.lightRgb) { ctx.fillStyle = rgba(this.lightRgb, 0.8); ctx.fillRect(sx - 2, sy - this.height * 0.9, 4, this.height * 0.7); }
     }
     drawEmissive(ctx) {
+      if (this.estaEmUso()) return;
       if (!game.use3D || !this.spr || !this.spr.ok) return;
       R3D.blitEmissive(ctx, this.spr, isoX(this.x, this.y), isoY(this.x, this.y), 1);
       if (this.lightRgb) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; GlowCache.draw(ctx, this.lightRgb, isoX(this.x, this.y), isoY(this.x, this.y) - this.height * 0.6, this.radius * 1.6, 0.18 + 0.05 * Math.sin(this.t * 2)); ctx.restore(); }
     }
     headPoint() { return { x: isoX(this.x, this.y), y: isoY(this.x, this.y) - this.height }; }
     // 3ª pessoa (ThirdView.queueProp): o mesmo modelo, com o giro do objeto
-    modelo3D() { return game.model3(this.key); }
+    modelo3D() {
+      if (this.estaEmUso()) return null;
+      return game.model3(this.key);
+    }
   }
 
   // Põe os objetos da zona que carregou (longe das passagens, do portal e dos moradores) e o
