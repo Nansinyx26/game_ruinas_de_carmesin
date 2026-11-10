@@ -84,12 +84,15 @@ const Cenario = (function () {
   // js/assets/arquitetura3d.js, pelo js/mundo/bairro.js)
   function registrarModelos() {
     if (typeof PROPS3D === 'undefined') return;
+    if (!PROPS3D.alaude_bardo) {
+      PROPS3D.alaude_bardo = { n: 120, q: 10, w: 14.0, d: 8.0, h: 26.0, r: 8.0, glow: '255,190,90', src: 'assets/npcs/meshy/alaude_bardo.glb', img: 'assets/npcs/meshy/alaude_bardo.png' };
+    }
     for (const id in PROPS3D) {
       if (MODELS3D['cen_' + id]) continue;
       MODELS3D['cen_' + id] = {
         build() {
           const W = PROPS3D[id], nd = new N3('cen_' + id);
-          nd.geo = geo(id);
+          nd.geo = W.a ? geo(id) : (GEO[id] || (GEO[id] = new Float32Array(30)));
           const m = new Model3(nd);
           if (W.uv) m.tex = TEX[id] || (TEX[id] = { src: W.tc, mat: W.tm, nrm: W.tn, pbr: true, bump: 0, emiB: true, glow: null });
           return m;
@@ -118,6 +121,15 @@ const Cenario = (function () {
     }
     draw(ctx) {
       const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
+      const W = typeof PROPS3D !== 'undefined' && PROPS3D[this.cenId];
+      if (W && W.img) {
+        if (!this._propImg) { this._propImg = new Image(); this._propImg.src = encodeURI(W.img); }
+        if (this._propImg.complete && this._propImg.naturalWidth > 0) {
+          const w = this.radius * 3.4, h = (w / this._propImg.naturalWidth) * this._propImg.naturalHeight;
+          ctx.drawImage(this._propImg, sx - w / 2, sy - h + 4, w, h);
+          return;
+        }
+      }
       if (game.use3D && this.spr && this.spr.ok) { R3D.blit(ctx, this.spr, sx, sy); return; }
       // sem o motor 3D: um bloco com a cor do brilho
       ctx.fillStyle = 'rgba(40,40,56,0.95)'; ctx.fillRect(sx - this.radius * 0.7, sy - this.height, this.radius * 1.4, this.height);

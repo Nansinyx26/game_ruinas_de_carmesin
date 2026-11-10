@@ -160,6 +160,22 @@ const Dialogo = {
   desenharRetrato(ctx, n, px, py, pw, ph, t) {
     if (!n) return;
     const cx = px + pw / 2;
+    const fotoSrc = (n.P && n.P.retrato) || n.retrato;
+    if (fotoSrc) {
+      if (!n._retratoImg) {
+        n._retratoImg = new Image();
+        n._retratoImg.src = encodeURI(fotoSrc);
+      }
+      if (n._retratoImg.complete && n._retratoImg.naturalWidth > 0) {
+        const im = n._retratoImg;
+        const asp = im.naturalWidth / im.naturalHeight;
+        let dw = pw, dh = pw / asp;
+        if (dh < ph) { dh = ph; dw = ph * asp; }
+        const dx = cx - dw / 2, dy = py;
+        ctx.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight, dx, dy, dw, dh);
+        return;
+      }
+    }
     if (!n.kind && game.use3D && n.spr && n.spr.ok) {
       const hd = n.spr.anchors && n.spr.anchors.head, k = 3.3;   // cabeça e tronco
       ctx.translate(cx, py + ph * 0.3);

@@ -36,5 +36,15 @@
   "estilo": "cyberpunk",
   "prompt": "cyberpunk street vendor middle-aged man, long dark coat with magenta neon piping, flat cap, fingerless gloves, full body, standing in A-pose, stylized realistic game character, no weapon, no logos",
   "corpo": "m"
+ },
+ "npc_bardo": {
+  "nome": "Bardo",
+  "estilo": "medieval",
+  "prompt": "medieval bard with lute, full body, standing in A-pose, stylized realistic game character",
+  "corpo": "m",
+  "arq": "assets/npcs/meshy/Bardo.glb",
+  "mini": "assets/npcs/meshy/Bardo.png",
+  "prop": "assets/npcs/meshy/alaude_bardo.glb",
+  "prop_mini": "assets/npcs/meshy/alaude_bardo.png"
  }
 }

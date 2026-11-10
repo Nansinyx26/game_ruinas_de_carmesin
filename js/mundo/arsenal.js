@@ -93,6 +93,7 @@ const ARS_ACESSORIOS = {
   modulo: { st: { critico: 0.03 }, desc: '+crítico' },
   braseiro: { clima: { calor: 0.45 }, st: { dano: 0.03 }, desc: 'aquece muito no frio' },
   nucleo: { clima: { calor: 0.2, repele: 1 }, st: { dano: 0.04, energia: 10 }, desc: 'aura que repele a água e aquece' },
+  alaude_bardo: { st: { energia: 14, critico: 0.04 }, desc: '+energia e +crítico pelas canções do bardo', icon: 'assets/npcs/meshy/alaude_bardo.png' },
 };
 const ARS_MAX = 30;   // peças na mochila (o resto vai ao armazém da cidade)
 

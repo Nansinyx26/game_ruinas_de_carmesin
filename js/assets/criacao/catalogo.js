@@ -103,6 +103,25 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "npc_bardo",
+  "tipo": "npc",
+  "nome": "Bardo",
+  "estilo": "medieval",
+  "arq": "assets/npcs/meshy/Bardo.glb",
+  "mini": "assets/npcs/meshy/Bardo.png",
+  "convertido": false
+ },
+ {
+  "id": "alaude_bardo",
+  "tipo": "peca",
+  "vaga": "acessorio",
+  "nome": "Alaúde do Bardo",
+  "estilo": "medieval",
+  "arq": "assets/npcs/meshy/alaude_bardo.glb",
+  "mini": "assets/npcs/meshy/alaude_bardo.png",
+  "convertido": false
+ },
+ {
   "id": "rosto_1",
   "tipo": "rosto",
   "nome": "Rosto 1",

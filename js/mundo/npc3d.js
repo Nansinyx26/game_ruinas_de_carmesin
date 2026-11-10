@@ -20,6 +20,8 @@ const NPC3D = {
     roupa: { peitoral: 'ini_peitoral', calcas: 'ini_calca', botas: 'ini_botas' } },
   aur_cosme: { ap: { corpoG: 0, rostoG: 1, cabeloG: 13, barbaG: 11, pele: 1, corCabelo: 3, corBarba: 0, olhos: 2, porte: 0, altura: 3 },
     roupa: { peitoral: 'n30_patrulheiro_peitoral', calcas: 'ini_calca', botas: 'ini_botas', capa: 'ini_capa' } },
+  npc_bardo: { ap: { npc: 'npc_bardo', corpoG: 0, rostoG: 1, cabeloG: 13, barbaG: 11, pele: 1, corCabelo: 3, corBarba: 0, olhos: 2, porte: 0, altura: 3 },
+    roupa: { peitoral: 'n30_patrulheiro_peitoral', calcas: 'ini_calca', botas: 'ini_botas', capa: 'ini_capa' } },
   aur_rosa: { ap: { corpoG: 1, rostoG: 4, cabeloG: 14, barbaG: 0, pele: 1, corCabelo: 2, olhos: 1, porte: 1, altura: 1 },
     roupa: { peitoral: 'ini_peitoral', calcas: 'n30_mago_calcas', botas: 'ini_botas' } },
   aur_helena: { ap: { corpoG: 1, rostoG: 5, cabeloG: 11, barbaG: 0, pele: 2, corCabelo: 4, olhos: 3, porte: 1, altura: 2 },
