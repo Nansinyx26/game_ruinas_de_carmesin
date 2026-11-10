@@ -39,6 +39,7 @@ const Dialogo = {
     if (this.npc) this.npc.talkT = 1.5;
     this.npc = null;
     VozSintetica.parar();
+    if (typeof game !== 'undefined' && game.audio && game.audio.narration) game.audio.narration.stop({ fade: 0.5 });
     if (game.state === 'worlddlg') game.state = 'playing';
     World.save();
   },

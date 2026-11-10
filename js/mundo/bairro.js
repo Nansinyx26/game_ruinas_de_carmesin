@@ -135,7 +135,9 @@ const BAIRRO_POVO = [
   { id: 'aur_cosme', nome: 'COSME', zona: 'aurora_taverna', at: [0.6, 0.2], model: 'civil', variant: 0, facing: 2.0, papel: 'Bardo',
     personalidade: 'Dramático; transforma qualquer conversa em balada.',
     ola: ['Uma moeda para a canção da noite em que o céu escureceu?', 'Ah, um herói! Me conte tudo, eu exagero depois.'],
-    temas: [['Cante alguma coisa.', '"Às três e doze o céu caiu, / e quem dormia não acordou; / mas numa torre a chama ardeu, / e a Aurora ninguém apagou."'],
+    temas: [
+      ['Cante a cantiga da taverna!', '"Enche a caneca até derramar! Que a noite é longa e o inverno vai durar! O porco tá no fogo e a cerveja é de barril! Batam as botas com força no tablado, que hoje a cantoria é no Javali Dourado! Às três e doze o céu caiu, e quem dormia não acordou; mas numa torre a chama ardeu, e a Aurora ninguém apagou! Bebam até o barril secar, cantem até a garganta rasgar! Um brinde aos loucos que ficaram de pé, um brinde ao Javali Dourado!"', 'dublagem/Bardo/brinde_javali_dourado.mp3'],
+      ['Cante mais uma estrofe.', '"O vento uiva forte na velha muralha, mas dentro da taberna ninguém perde a batalha! O guarda tá bebendo, esqueceu da guarnição, o taverneiro ri com a moeda na mão! Peguem mais uma rodada de hidromel! Lá fora o mundo desaba em trovão, aqui dentro a gente bate no balcão! Quem cair no chão o companheiro carrega!"'],
       ['Você sempre foi bardo?', 'Fui programador de elevadores. Acredite: a balada paga melhor.']] },
   { id: 'aur_rosa', nome: 'ROSA', zona: 'aurora_hospedaria', at: [0.134, 0.3], model: 'civil', variant: 2, facing: 0, papel: 'Estalajadeira', servicos: ['descanso'],
     personalidade: 'Prática e gentil; troca os lençóis antes de você pedir.',

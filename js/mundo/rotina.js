@@ -95,8 +95,28 @@ const CONVERSAS = {
     ['aur_nina', 'Ou os dois.'], ['aur_jorge', 'Os dois é o pior tipo.']],
 };
 // O que o bardo canta (balões) e o que quem dorme resmunga
-const CANTIGAS = ['♪ Às três e doze o céu caiu… ♪', '♪ …e quem dormia não acordou… ♪', '♪ …mas numa torre a chama ardeu… ♪', '♪ …e a Aurora ninguém apagou! ♪', '♪ Um brinde ao javali dourado! ♪'];
+const CANTIGAS = [
+  '♪ Enche a caneca até derramar! ♪',
+  '♪ Que a noite é longa e o inverno vai durar! ♪',
+  '♪ O porco tá no fogo e a cerveja é de barril… ♪',
+  '♪ Batam as botas com força no tablado! ♪',
+  '♪ Que hoje a cantoria é no Javali Dourado! ♪',
+  '♪ Às três e doze o céu caiu… ♪',
+  '♪ …e quem dormia não acordou… ♪',
+  '♪ …mas numa torre a chama ardeu… ♪',
+  '♪ …e a Aurora ninguém apagou! ♪',
+  '♪ Bebam até o barril secar! ♪',
+  '♪ Cantem até a garganta rasgar! ♪',
+  '♪ O vento uiva forte na velha muralha… ♪',
+  '♪ …mas na taberna ninguém perde a batalha! ♪',
+  '♪ Lá fora o mundo desaba em trovão… ♪',
+  '♪ …aqui dentro a gente bate no balcão! ♪',
+  '♪ Um brinde aos loucos que ficaram de pé! ♪',
+  '♪ Um brinde ao Javali Dourado! ♪'
+];
 const RESMUNGOS = ['Zzz…', 'Hm… só mais cinco minutos…', 'Zzz… o portão… zzz…', '…volte de manhã…'];
+const BARD_AUDIO_SRC = 'dublagem/Bardo/brinde_javali_dourado.mp3';
+let bardAudio = null;
 
 const Rotina = {
   passo: 0,
@@ -148,6 +168,9 @@ const Rotina = {
   },
   // ------------------------------------------------------------ montagem da zona (World.loadZone)
   aoCarregar(z) {
+    if (bardAudio && (!z || z.id !== 'aurora_taverna')) {
+      try { bardAudio.pause(); bardAudio.currentTime = 0; } catch (e) {}
+    }
     const g = game, R = g.room;
     for (let i = g.npcs.length - 1; i >= 0; i--) {   // quem tem compromisso em outro lugar não está aqui
       const n = g.npcs[i];
@@ -186,7 +209,16 @@ const Rotina = {
   // ------------------------------------------------------------ a cada quadro (World.update)
   update(dt) {
     const z = World.zone, g = game, R = g.room;
-    if (!z || !R || !(z.distrito || z.id === BAIRRO_ID)) return;
+    if (!z || !R || !(z.distrito || z.id === BAIRRO_ID)) {
+      if (bardAudio && !bardAudio.paused) { try { bardAudio.pause(); } catch (e) {} }
+      return;
+    }
+    if (bardAudio && !bardAudio.paused) {
+      const cosmeAgora = this.agora('aur_cosme');
+      if (z.id !== 'aurora_taverna' || !cosmeAgora || cosmeAgora.tipo !== 'cantar') {
+        try { bardAudio.pause(); } catch (e) {}
+      }
+    }
     if ((this.passo -= dt) > 0) return;
     this.passo = 0.5;
     for (let i = g.npcs.length - 1; i >= 0; i--) if (g.npcs[i].sumiu) g.npcs.splice(i, 1);
@@ -231,7 +263,38 @@ const Rotina = {
       return true;
     }
     if (E.tipo === 'cantar') {
-      if (!falando) { n.setState('talk'); n.balao(CANTIGAS[Math.floor(game.realTime / 4.2) % CANTIGAS.length], Math.floor(game.realTime / 4.2)); }
+      const narrando = !!(game.audio && game.audio.narration && game.audio.narration.isPlaying());
+      if (!bardAudio) {
+        bardAudio = new Audio(encodeURI(BARD_AUDIO_SRC));
+        bardAudio.preload = 'auto';
+        bardAudio.loop = true;
+        bardAudio.addEventListener('timeupdate', () => {
+          if (!World.zone || World.zone.id !== 'aurora_taverna' || (game.audio && game.audio.muted)) {
+            try { bardAudio.pause(); bardAudio.currentTime = 0; } catch (e) {}
+          }
+        });
+      }
+      if (narrando) {
+        if (!bardAudio.paused) try { bardAudio.pause(); } catch (e) {}
+      } else if (game.audio && !game.audio.muted) {
+        const d = dist(n.x, n.y, game.player.x, game.player.y);
+        const distGain = clamp(1 - (d / 650) * 0.45, 0.55, 1.0);
+        const master = game.audio.volume / 0.69;
+        const voice = game.audio.voiceVol ?? 1.0;
+        bardAudio.volume = clamp(master * voice * 0.85 * distGain, 0, 1);
+        if (bardAudio.paused) {
+          const p = bardAudio.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+      }
+      const isPlaying = bardAudio && !bardAudio.paused && bardAudio.duration > 0;
+      const verseDur = isPlaying ? (bardAudio.duration / CANTIGAS.length) : 4.2;
+      const idx = isPlaying ? Math.floor((bardAudio.currentTime / bardAudio.duration) * CANTIGAS.length) : Math.floor(game.realTime / 4.2);
+      const k = idx % CANTIGAS.length;
+      if (!falando) {
+        n.setState('talk');
+        n.balao(CANTIGAS[k], k, verseDur);
+      }
       this.olhar(n, L.giro, dt);
       return true;
     }

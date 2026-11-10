@@ -25,4 +25,5 @@ assets/Criar_Personagem/Corpos_Atleticos/*.glb filter=lfs diff=lfs merge=lfs -te
 assets/Criar_Personagem/Corpos_Atleticos/*.stl filter=lfs diff=lfs merge=lfs -text
 assets/cabelos/*.glb filter=lfs diff=lfs merge=lfs -text
 assets/Creatures/Enemies/*.glb filter=lfs diff=lfs merge=lfs -text
+assets/Creatures/DomesticAnimals/**/*.glb filter=lfs diff=lfs merge=lfs -text
 assets/Criar_Personagem/*.glb filter=lfs diff=lfs merge=lfs -text

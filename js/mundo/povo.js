@@ -221,7 +221,7 @@ class Morador extends NPC {
     this.bolha = null;   // balão de fala (conversas entre moradores, o bardo, quem resmunga dormindo)
   }
   // Balão sobre a cabeça (k: a fala da vez; a mesma fala não reinicia o balão)
-  balao(txt, k) { if (this.bolha && this.bolha.k === k) return; this.bolha = { txt, k, t: 3.2 }; }
+  balao(txt, k, dur = 3.2) { if (this.bolha && this.bolha.k === k) return; this.bolha = { txt, k, t: dur }; }
   // Pontos da rotina na sala (frações → posições livres)
   preparar(R) {
     const P = this.P;
@@ -396,7 +396,7 @@ const Povo = {
     // rumores e assuntos
     if (P.rumores && P.rumores.length) o.push({ id: 'rumor', tag: '…', txt: 'Alguma novidade? Ouviu algum rumor?', fn: () => volta(this.rumor(npc)) });
     if (P.id && !P.chave && (!this.S[P.id] || !this.S[P.id].quem)) o.push({ id: 'quem', txt: 'Quem é você?', fn: () => { this.S[P.id].quem = true; volta(`${P.nome}. ${P.papel}. ${P.personalidade}`); } });
-    (P.temas || []).forEach(([perg, resp], k) => o.push({ id: `tema${k}`, txt: perg, fn: () => volta(resp) }));
+    (P.temas || []).forEach(([perg, resp, audio], k) => o.push({ id: `tema${k}`, txt: perg, fn: () => { if (audio && game.audio && game.audio.narration) game.audio.narration.play(audio); volta(resp); } }));
     o.push({ id: 'sair', txt: 'Até logo.', fn: () => Dialogo.fechar() });
     Dialogo.mostrar(texto, o.slice(0, 9));
   },
