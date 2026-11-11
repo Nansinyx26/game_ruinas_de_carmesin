@@ -795,6 +795,17 @@ class AudioSys {
           this.arp([440, 554, 659, 880], 0.05, 0.3, 0.05);
           this.osc('sine', 220, 440, 0.35, 0.04);
           break;
+        case 'bau': {   // baú abrindo: trinco, rangido da tampa e o acorde da raridade (p: 0 comum … 4 lendário)
+          const r = clamp(Math.round(p), 0, 4);
+          this.noise(0.06, 0.25, 'highpass', 2600, 1200, 1);
+          this.osc('sawtooth', 84, 150, 0.5, 0.05, 0.05);
+          this.noise(0.45, 0.07, 'bandpass', 480, 1500, 6, 0.05);
+          this.arp([[523, 659, 784], [523, 659, 784, 1046], [587, 740, 880, 1175], [554, 698, 831, 1108, 1397], [523, 659, 784, 1046, 1318, 1568]][r], 0.08, 0.7 + r * 0.14, 0.05, r >= 3 ? 'triangle' : 'sine');
+          if (r >= 2) this.osc('triangle', 1568 + r * 180, 1568 + r * 180, 1.0, 0.018, 0.35, 0.2);
+          if (r >= 3) { this.osc('sine', 80, 48, 0.9, 0.14, 0.1); this.noise(1.2, 0.05, 'bandpass', 2000, 7000, 2, 0.3); }
+          if (r >= 4) this.arp([1046, 1318, 1568, 2093], 0.09, 1.1, 0.04, 'sine');
+          break;
+        }
         case 'mitico':   // item mítico: estrondo grave, coro que sobe e o brilho
           this.osc('sine', 70, 40, 1.2, 0.22);
           this.noise(0.9, 0.1, 'lowpass', 300, 80, 1);

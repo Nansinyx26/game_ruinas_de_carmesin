@@ -1,5 +1,30 @@
 [
  {
+  "id": "alaude_bardo",
+  "fonte": "assets/npcs/meshy/alaude_bardo.glb",
+  "tipo": "item",
+  "estilo": "medieval",
+  "antes": 52418,
+  "depois": 6000,
+  "lod": 1500,
+  "passadas": 1,
+  "distancia": {
+   "media": 0.00014,
+   "p95": 0.00034
+  },
+  "texturas": 3,
+  "lado": 512,
+  "dims": [
+   0.683,
+   0.353,
+   1.899
+  ],
+  "aprovada": true,
+  "falhas": [],
+  "glb": "assets/models/estruturas/alaude_bardo.glb",
+  "segundos": 2
+ },
+ {
   "id": "apartamento_urbano",
   "fonte": "assets/estruturas_ambiente/Estruturas_Subsolo_tecnologico/Apartamento_urbano.glb",
   "tipo": "estrutura",
@@ -605,6 +630,33 @@
   "base_no_chao": false
  },
  {
+  "id": "bloco_17",
+  "fonte": "assets/extra/Meshy_AI_Block_17_–_Abandone_1110202521_texture.glb",
+  "tipo": "estrutura",
+  "estilo": "ruina",
+  "antes": 6621231,
+  "depois": 34735,
+  "lod": 30526,
+  "passadas": 4,
+  "distancia": {
+   "media": 0.00301,
+   "p95": 0.00966
+  },
+  "texturas": 3,
+  "lado": 1024,
+  "dims": [
+   1.897,
+   1.172,
+   1.853
+  ],
+  "aprovada": false,
+  "falhas": [
+   "34735 triângulos acima do orçamento 16000"
+  ],
+  "glb": "assets/models/estruturas/bloco_17.glb",
+  "segundos": 283
+ },
+ {
   "id": "blue_roof_cottage",
   "fonte": "assets/estruturas_ambiente/Estruturas_Superficie/Blue_Roof_Cottage.glb",
   "tipo": "estrutura",
@@ -803,6 +855,31 @@
   "falhas": [],
   "glb": "assets/models/estruturas/castelo_medieval.glb",
   "segundos": 113
+ },
+ {
+  "id": "coldre_gm",
+  "fonte": "assets/GM/Coldre_Tático.glb",
+  "tipo": "item",
+  "estilo": "cyberpunk",
+  "antes": 31154,
+  "depois": 6000,
+  "lod": 1498,
+  "passadas": 1,
+  "distancia": {
+   "media": 0.00066,
+   "p95": 0.00181
+  },
+  "texturas": 3,
+  "lado": 512,
+  "dims": [
+   0.581,
+   0.682,
+   0.952
+  ],
+  "aprovada": true,
+  "falhas": [],
+  "glb": "assets/models/estruturas/coldre_gm.glb",
+  "segundos": 5
  },
  {
   "id": "drone_carga",
@@ -2230,6 +2307,31 @@
   "segundos": 25
  },
  {
+  "id": "pistola_gm",
+  "fonte": "assets/GM/Pistola_GM.glb",
+  "tipo": "item",
+  "estilo": "cyberpunk",
+  "antes": 31113,
+  "depois": 6000,
+  "lod": 1499,
+  "passadas": 1,
+  "distancia": {
+   "media": 0.00033,
+   "p95": 0.0009
+  },
+  "texturas": 3,
+  "lado": 512,
+  "dims": [
+   0.953,
+   0.155,
+   0.592
+  ],
+  "aprovada": true,
+  "falhas": [],
+  "glb": "assets/models/estruturas/pistola_gm.glb",
+  "segundos": 3
+ },
+ {
   "id": "planta_1",
   "fonte": "assets/Composição_de_Plantas/Composição de Plantas1.glb",
   "tipo": "planta",
@@ -2478,6 +2580,33 @@
   "falhas": [],
   "glb": "assets/models/estruturas/predio_de_guerra.glb",
   "segundos": 61
+ },
+ {
+  "id": "predio_musgo",
+  "fonte": "assets/extra/Meshy_AI_Crumbling_Highrise_1110202848_texture.glb",
+  "tipo": "estrutura",
+  "estilo": "ruina",
+  "antes": 4920607,
+  "depois": 25424,
+  "lod": 22474,
+  "passadas": 3,
+  "distancia": {
+   "media": 0.00274,
+   "p95": 0.00954
+  },
+  "texturas": 4,
+  "lado": 1024,
+  "dims": [
+   0.138,
+   0.08,
+   0.121
+  ],
+  "aprovada": false,
+  "falhas": [
+   "25424 triângulos acima do orçamento 16000"
+  ],
+  "glb": "assets/models/estruturas/predio_musgo.glb",
+  "segundos": 209
  },
  {
   "id": "quadro_de_missoes_medieval",

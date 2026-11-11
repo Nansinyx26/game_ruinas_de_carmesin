@@ -464,6 +464,8 @@ const ThirdView = {
   queueProp(n, place) {
     if (n.kind === 'chest') {
       if (n.data.secret && !n.used && dist(game.player.x, game.player.y, n.x, n.y) > 160) return;
+      // o GLB da raridade, com a tampa articulada (js/mundo/baus.js); sem ele ainda, o baú simples
+      if (n.key && game.model3(n.key)) { n.spr = place(game.queue3(n.key, n, game.opts3(n, 0)), n); return; }
       const o = n._o3p || (n._o3p = {});
       o.yaw = 0.6; o.scale = 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
       place(R3D.queue(this.propModel(n.used ? 'bauAberto' : 'bau'), null, null, o), n);
@@ -551,7 +553,7 @@ const ThirdView = {
       for (const n of g.npcs) {
         const k = n.kind;
         if (k === 'gate' || k === 'portal' || k === 'campanha' || k === 'missao' || k === 'entrada' || k === 'tesouro' || (k === 'evento' && n.sub === 'fragmento')) { n.draw(ctx); n.drawEmissive(ctx); }
-        else if (k === 'quadro' || k === 'evento') n.drawEmissive(ctx);   // brilho e vida da carroça (o modelo vai em 3D)
+        else if (k === 'quadro' || k === 'evento' || (k === 'chest' && n.rar !== undefined)) n.drawEmissive(ctx);   // brilho e vida da carroça (o modelo vai em 3D); aura e nome dos baús
       }
       ctx.restore();
       p.drawAura(ctx, g.realTime);

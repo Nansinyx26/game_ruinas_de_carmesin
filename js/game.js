@@ -238,6 +238,7 @@ class Game {
       case 'worldmap': World.updateMap(dt, inp); break;   // mapa do mundo aberto (js/world.js)
       case 'worldinv': WorldInv.updateUI(dt, inp); break;   // mochila, loja e missões (js/mundo/inventario.js)
       case 'worlddlg': Dialogo.update(dt, inp); break;       // conversa com os moradores (js/mundo/dialogo.js)
+      case 'worldbau': Baus.updateUI(dt, inp); break;        // recompensas do baú aberto (js/mundo/baus.js)
       case 'criacao': CriacaoTela.update(dt, inp); break;    // criação de personagem (js/criacao/tela.js)
       case 'upgrade': this.updateUpgrade(dt); break;
       case 'gameover':
@@ -1261,6 +1262,7 @@ class Game {
       else if (this.state === 'worldmap') World.drawMap(ctx, this.realTime);
       else if (this.state === 'worldinv') WorldInv.draw(ctx, this.realTime);
       else if (this.state === 'worlddlg') { this.hud.draw(ctx); Dialogo.draw(ctx, this.realTime); }
+      else if (this.state === 'worldbau') { this.hud.draw(ctx); Baus.draw(ctx, this.realTime); }
       else if (this.state === 'skills') this.screens.drawSkills(ctx, this.realTime);
       else if (this.state === 'upgrade') this.screens.drawUpgrade(ctx, this.realTime);
       else if (this.state === 'gameover') this.screens.drawEnd(ctx, false, this.realTime);

@@ -155,11 +155,14 @@ class WorldProp extends NPC {
   }
   get used() {
     if (this.kind === 'coleta') return !World.coletaPronta(this.data.key);
+    // baús por raridade (js/mundo/baus.js): vazios até reaparecer (com itens por coletar, ainda abrem)
+    if (this.kind === 'chest' && this.data.bauR) return Baus.falta(this.data.key, this.rar) > 0 && !Baus.pendente(this.data.key, this.rar);
     return this.kind === 'chest' && World.state.baus.includes(this.data.key);
   }
   update(dt) {
     this.t += dt;
     if (this.talkT > 0) this.talkT -= dt;
+    if (this.kind === 'chest' && typeof Baus !== 'undefined') Baus.atualizar(this, dt);   // modelo GLB da raridade, tampa e reaparecimento
     // Passagem: parar sobre a luz por um instante leva para a zona vizinha
     if (this.kind === 'gate') {
       const p = game.player;
@@ -192,6 +195,7 @@ class WorldProp extends NPC {
     ctx.save();
     if (this.kind === 'chest') {
       if (this.data.secret && !this.used) ctx.globalAlpha = clamp(1.4 - dist(game.player.x, game.player.y, this.x, this.y) / 160, 0.06, 1);
+      if (typeof Baus !== 'undefined' && Baus.desenhar(ctx, this)) { ctx.restore(); return; }   // o GLB da raridade (sem ele ainda, o desenho abaixo)
       const open = this.used;
       ctx.fillStyle = '#1b1720'; ctx.strokeStyle = open ? 'rgba(120,110,100,0.6)' : 'rgba(255,190,90,0.85)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(sx - 16, sy - 6); ctx.lineTo(sx, sy + 2); ctx.lineTo(sx + 16, sy - 6); ctx.lineTo(sx + 16, sy - 20); ctx.lineTo(sx, sy - 12); ctx.lineTo(sx - 16, sy - 20); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -226,6 +230,7 @@ class WorldProp extends NPC {
   // Luz e rótulos (depois da escuridão)
   drawEmissive(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y), rgb = this.lightRgb;
+    if (this.kind === 'chest' && typeof Baus !== 'undefined' && Baus.brilho(ctx, this)) return;   // aura, feixe e nome pela raridade
     if (this.kind === 'chest' && (this.used || (this.data.secret && dist(game.player.x, game.player.y, this.x, this.y) > 160))) return;
     if (this.kind === 'coleta' && this.used) return;
     ctx.save();
@@ -446,6 +451,7 @@ const World = {
     Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
     Cenario.aoCarregar(z);      // objetos de cenário modelados no Blender (js/mundo/cenario.js)
     if (typeof Estruturas !== 'undefined') Estruturas.aoCarregar(z);
+    if (typeof Baus !== 'undefined') Baus.aoCarregar(z);   // baús por raridade nos lugares escondidos da zona (js/mundo/baus.js)
     if (typeof Agua !== 'undefined') Agua.depois();   // quem nasceu dentro d'água vai para a margem   // estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js)
     Bairro.aoCarregar(z);       // Bairro da Muralha, interiores e a passagem da praça (js/mundo/bairro.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
@@ -578,6 +584,7 @@ const World = {
   },
   openChest(prop) {
     const d = prop.data, g = game;
+    if (d.bauR) { Baus.abrir(prop); return; }   // baús por raridade: recompensas, janela e reaparecimento (js/mundo/baus.js)
     const sel = (d.boss && !this.bossDone(this.zone.region)) || (d.masmorra && Locais.chefeVivo());
     if (prop.used || sel) {
       if (sel) { g.hud.toast(`Selado por ${d.masmorra ? WORLD_MASMORRAS[d.masmorra].chefe.nome : worldRegion(this.zone.region).boss.name}`, '255,92,122'); g.audio.play('uiDeny'); }
