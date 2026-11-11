@@ -45,6 +45,66 @@
   "arq": "assets/npcs/meshy/Bardo.glb",
   "mini": "assets/npcs/meshy/Bardo.png",
   "prop": "assets/npcs/meshy/alaude_bardo.glb",
-  "prop_mini": "assets/npcs/meshy/alaude_bardo.png"
+  "prop_mini": "assets/npcs/meshy/alaude_bardo.png",
+  "altura": 62.0
+ },
+ "npc_gm": {
+  "nome": "GM — Guardião do Mundo",
+  "estilo": "cyberpunk",
+  "corpo": "m",
+  "arq": "assets/GM/GM_parado.glb",
+  "mini": "assets/GM/GM.png",
+  "altura": 63.0
+ },
+ "zumbi": {
+  "nome": "Zumbi",
+  "estilo": "ruina",
+  "corpo": "m",
+  "arq": "assets/extra/Meshy_AI_Zombie_1110155826_texture.glb",
+  "tris": 7000,
+  "tex": 512
+ },
+ "zumbi_mulher": {
+  "nome": "Zumbi faminta",
+  "estilo": "ruina",
+  "corpo": "f",
+  "arq": "assets/extra/Meshy_AI_Zombie_hungry_Woman_1110153629_texture.glb",
+  "tris": 7000,
+  "tex": 512
+ },
+ "zumbi_errante": {
+  "nome": "Errante ressurgido",
+  "estilo": "ruina",
+  "corpo": "m",
+  "arq": "assets/extra/Meshy_AI_Risen_Wastelander_1110203650_texture.glb",
+  "tris": 7000,
+  "tex": 512
+ },
+ "zumbi_bruto": {
+  "nome": "Zumbi bruto",
+  "estilo": "ruina",
+  "corpo": "m",
+  "arq": "assets/extra/Meshy_AI_Brute_Zombie_1110165208_texture.glb",
+  "altura": 74.0,
+  "tris": 9000,
+  "tex": 512
+ },
+ "zumbi_pesadelo": {
+  "nome": "Pesadelo",
+  "estilo": "ruina",
+  "corpo": "m",
+  "arq": "assets/Creatures/Enemies/Meshy_AI_Zombie_Nightmare_Shad_1109231755_texture.glb",
+  "altura": 66.0,
+  "tris": 7000,
+  "tex": 512
+ },
+ "zumbi_ossos": {
+  "nome": "Sombra de ossos",
+  "estilo": "ruina",
+  "corpo": "m",
+  "arq": "assets/Creatures/Enemies/Meshy_AI_Zombie_Nightmare_Shad_1109231813_texture (1).glb",
+  "altura": 66.0,
+  "tris": 7000,
+  "tex": 512
  }
 }

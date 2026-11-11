@@ -59,8 +59,11 @@ CACHE = os.path.join(RAIZ, '.cache_criacao')
 # NPCs gerados no Meshy (tools/meshy/gerar_npcs.py → assets/npcs/meshy/<id>.glb, em A-pose, com Draco):
 # cada um é um CORPO INTEIRO (roupa, rosto e cabelo próprios) que recebe o esqueleto do jogo pelo
 # mesmo rig automático dos corpos da criação; no catálogo com tipo 'npc' (não aparece na criação)
-NPCS = [dict(id=k, nome=v['nome'], arq=os.path.join('assets', 'npcs', 'meshy', k + '.glb'), mini=os.path.join('assets', 'npcs', 'meshy', k + '.png'), estilo=v['estilo'],
-             altura=61.0 if v.get('corpo', 'm') == 'm' else 57.5, inteiro=True, tipo='npc', abaixar=bool(v.get('abaixar_bracos')))
+# (arq/mini: os enviados prontos, fora da pasta dos gerados — o Bardo, o GM, os zumbis de assets/extra;
+# altura em unidades do jogo; tris/tex: orçamento menor para quem aparece em bando, como os inimigos)
+NPCS = [dict(id=k, nome=v['nome'], arq=v.get('arq') or os.path.join('assets', 'npcs', 'meshy', k + '.glb'), mini=v.get('mini') or os.path.join('assets', 'npcs', 'meshy', k + '.png'), estilo=v['estilo'],
+             altura=v.get('altura') or (61.0 if v.get('corpo', 'm') == 'm' else 57.5), inteiro=True, tipo='npc', abaixar=bool(v.get('abaixar_bracos')),
+             tris=v.get('tris', 18000), tex=v.get('tex', 1024))
         for k, v in json.load(open(os.path.join(RAIZ, 'tools', 'meshy', 'npcs.json'), encoding='utf-8')).items()] if os.path.exists(os.path.join(RAIZ, 'tools', 'meshy', 'npcs.json')) else []
 
 
@@ -510,7 +513,7 @@ def marcos_cabeca_extra(V, m, topo):
 def processar_corpo(c):
     t0 = time.time()
     arq = sem_draco(os.path.join(RAIZ, c['arq'])) if c.get('inteiro') else os.path.join(ORIG, c['arq'])
-    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=18000, tex=1024, pose=abaixar_bracos if c.get('abaixar') else None)
+    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=c.get('tris', 18000), tex=c.get('tex', 1024), pose=abaixar_bracos if c.get('abaixar') else None)
     r = im.rigar(a, c['altura'], False)
     V, F, Fo, Uo, o2r, rot, nomes, ix = r['V'], r['F'], r['Fo'], r['Uo'], r['o2r'], r['rot'], r['nomes'], r['ix']
     k, H, props, inv = r['k'], r['H'], r['props'], dict(r['inv'])

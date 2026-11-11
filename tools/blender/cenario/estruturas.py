@@ -37,12 +37,38 @@ SAIDA = os.path.join(RAIZ, 'assets', 'models', 'estruturas')
 TIPOS = {
     'estrutura': dict(tris=16000, limite=0.012, lado=1024),
     'item': dict(tris=6000, limite=0.015, lado=512),
-    'arvore': dict(tris=9000, limite=0.02, lado=1024),
-    'planta': dict(tris=6000, limite=0.025, lado=512),
+    # (folhagem: as folhas finas não cabem em poucos triângulos e o desvio medido sobe; mais
+    # orçamento e mais tolerância para não virar um arbusto liso)
+    'arvore': dict(tris=12000, limite=0.04, lado=1024),
+    'planta': dict(tris=12000, limite=0.06, lado=512),
 }
 
 
+# Fontes com o nome de exportação do Meshy (assets/extra: a cidade abandonada): pedaço do nome do
+# arquivo → (id no jogo, tipo, estilo). O carimbo de data do nome identifica cada uma.
+APELIDOS = {
+    '1110202628': ('predio_abandonado', 'estrutura', 'ruina'), '1110202521': ('bloco_17', 'estrutura', 'ruina'),
+    '1110202848': ('predio_musgo', 'estrutura', 'ruina'), '1110095313': ('galpao_abandonado', 'estrutura', 'ruina'),
+    '1110202701': ('torre_tomada', 'estrutura', 'ruina'), '1110203224': ('ruinas_retomadas', 'estrutura', 'ruina'),
+    '1110202815': ('predio_de_guerra', 'estrutura', 'ruina'), '1110090007': ('arranha_ceu_caido', 'estrutura', 'ruina'),
+    '1110203006': ('casarao_abandonado', 'estrutura', 'ruina'), '1110203337': ('sobrado_pos_punk', 'estrutura', 'ruina'),
+    'pistola_gm': ('pistola_gm', 'item', 'cyberpunk'), 'metralhadora_gm': ('metralhadora_gm', 'item', 'cyberpunk'), 'coldre_t': ('coldre_gm', 'item', 'cyberpunk'),
+    'alaude_bardo': ('alaude_bardo', 'item', 'medieval'),
+}
+
+
+def _apelido(caminho):
+    b = os.path.basename(caminho).lower()
+    for k, v in APELIDOS.items():
+        if k in b:
+            return v
+    return None
+
+
 def ident(caminho):
+    ap = _apelido(caminho)
+    if ap:
+        return ap[0]
     n = os.path.splitext(os.path.basename(caminho))[0]
     n = unicodedata.normalize('NFKD', n).encode('ascii', 'ignore').decode()
     n = re.sub(r'[^a-zA-Z0-9]+', '_', n).strip('_').lower()
@@ -51,6 +77,9 @@ def ident(caminho):
 
 
 def tipo_de(caminho, nome):
+    ap = _apelido(caminho)
+    if ap:
+        return ap[1]
     s = (caminho + ' ' + nome).lower()
     if 'planta' in s:
         return 'planta'
@@ -62,22 +91,83 @@ def tipo_de(caminho, nome):
 
 
 def estilo_de(caminho):
+    ap = _apelido(caminho)
+    if ap:
+        return ap[2]
     s = caminho.lower()
     return 'cyberpunk' if 'subsolo' in s or 'cbp' in s or 'cyber' in s or 'neon' in s else 'medieval'
 
 
+def _tris(ob):
+    return sum(len(p.vertices) - 2 for p in ob.data.polygons)
+
+
+def _quadrica(ob, alvo):
+    """Redução por quádricas sem preservar a topologia (fast_simplification): a saída das malhas de
+    folhagem do Meshy, cheias de furos e alças (gênero alto), em que o COLLAPSE do Blender empaca
+    muito acima do orçamento. Os triângulos que sobrevivem levam as UV dos seus cantos originais."""
+    import numpy as np
+    import fast_simplification as fs
+    me = ob.data
+    me.calc_loop_triangles()
+    nt = len(me.loop_triangles)
+    P = np.empty(len(me.vertices) * 3, np.float64); me.vertices.foreach_get('co', P); P = P.reshape(-1, 3)
+    T = np.empty(nt * 3, np.int32); me.loop_triangles.foreach_get('vertices', T); T = T.reshape(-1, 3)
+    L = np.empty(nt * 3, np.int32); me.loop_triangles.foreach_get('loops', L); L = L.reshape(-1, 3)
+    MI = np.empty(nt, np.int32); me.loop_triangles.foreach_get('material_index', MI)
+    uv = None
+    if me.uv_layers.active:
+        uv = np.empty(len(me.loops) * 2, np.float32); me.uv_layers.active.data.foreach_get('uv', uv); uv = uv.reshape(-1, 2)[L]
+    # (malhas com muitas bordas soltas não chegam ao alvo com a agressividade padrão: sobe até chegar)
+    for agg in (7.0, 9.0, 10.0):
+        _, Tq, col = fs.simplify(P, T, target_count=int(alvo), agg=agg, return_collapses=True)
+        if len(Tq) <= alvo * 1.08:
+            break
+    P2, _, mapa = fs.replay_simplification(P, T, col)
+    M = np.asarray(mapa)[T]
+    ok = (M[:, 0] != M[:, 1]) & (M[:, 1] != M[:, 2]) & (M[:, 0] != M[:, 2])
+    _, prim = np.unique(np.sort(M[ok], axis=1), axis=0, return_index=True)   # (sem faces repetidas sobre os mesmos vértices)
+    idx = np.flatnonzero(ok)[np.sort(prim)]
+    bm = bmesh.new()
+    vs = [bm.verts.new(tuple(c)) for c in np.asarray(P2)]
+    camada = bm.loops.layers.uv.new('UVMap') if uv is not None else None
+    for i in idx:
+        try:
+            f = bm.faces.new((vs[M[i, 0]], vs[M[i, 1]], vs[M[i, 2]]))
+        except ValueError:
+            continue
+        f.material_index = int(MI[i]); f.smooth = True
+        if camada is not None:
+            for k, lp in enumerate(f.loops):
+                lp[camada].uv = uv[i, k]
+    soltos = [v for v in bm.verts if not v.link_faces]
+    bmesh.ops.delete(bm, geom=soltos, context='VERTS')
+    nova = bpy.data.meshes.new(me.name + '_q')
+    bm.to_mesh(nova); bm.free()
+    for mt in me.materials:
+        nova.materials.append(mt)
+    ob.data = nova
+    return ob
+
+
 def reduzir(fonte, alvo):
     nova = R.copia(fonte, 'Estrutura')
-    tris = sum(len(p.vertices) - 2 for p in nova.data.polygons)
+    tris = _tris(nova)
     passadas = 0
-    while tris > alvo * 1.05 and passadas < 3:
+    while tris > alvo * 1.05 and passadas < 6:
+        antes = tris
         m = nova.modifiers.new('reduz', 'DECIMATE')
         m.decimate_type = 'COLLAPSE'
         m.ratio = max(0.002, min(1.0, alvo / tris * (1.0 if passadas == 0 else 0.97)))
         m.use_collapse_triangulate = True
         U.ativar(nova)
         bpy.ops.object.modifier_apply(modifier=m.name)
-        tris = sum(len(p.vertices) - 2 for p in nova.data.polygons)
+        tris = _tris(nova)
+        passadas += 1
+        if tris > antes * 0.98:   # empacou (o COLLAPSE preserva a topologia): só as quádricas resolvem
+            break
+    if tris > alvo * 1.1:
+        _quadrica(nova, alvo)
         passadas += 1
     for p in nova.data.polygons:
         p.use_smooth = True

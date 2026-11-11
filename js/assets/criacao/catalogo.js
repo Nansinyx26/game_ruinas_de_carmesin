@@ -103,6 +103,86 @@ const CRIA_CATALOGO = [
   "convertido": true
  },
  {
+  "id": "npc_bardo",
+  "tipo": "npc",
+  "nome": "Bardo",
+  "estilo": "medieval",
+  "arq": "assets/npcs/meshy/Bardo.glb",
+  "mini": "assets/npcs/meshy/Bardo.png",
+  "js": "js/assets/criacao/npc_bardo.js",
+  "convertido": true
+ },
+ {
+  "id": "npc_gm",
+  "tipo": "npc",
+  "nome": "GM — Guardião do Mundo",
+  "estilo": "cyberpunk",
+  "arq": "assets/GM/GM_parado.glb",
+  "mini": "assets/GM/GM.png",
+  "js": "js/assets/criacao/npc_gm.js",
+  "convertido": true
+ },
+ {
+  "id": "zumbi",
+  "tipo": "npc",
+  "nome": "Zumbi",
+  "estilo": "ruina",
+  "arq": "assets/extra/Meshy_AI_Zombie_1110155826_texture.glb",
+  "mini": "assets/npcs/meshy/zumbi.png",
+  "js": "js/assets/criacao/zumbi.js",
+  "convertido": true
+ },
+ {
+  "id": "zumbi_mulher",
+  "tipo": "npc",
+  "nome": "Zumbi faminta",
+  "estilo": "ruina",
+  "arq": "assets/extra/Meshy_AI_Zombie_hungry_Woman_1110153629_texture.glb",
+  "mini": "assets/npcs/meshy/zumbi_mulher.png",
+  "js": "js/assets/criacao/zumbi_mulher.js",
+  "convertido": true
+ },
+ {
+  "id": "zumbi_errante",
+  "tipo": "npc",
+  "nome": "Errante ressurgido",
+  "estilo": "ruina",
+  "arq": "assets/extra/Meshy_AI_Risen_Wastelander_1110203650_texture.glb",
+  "mini": "assets/npcs/meshy/zumbi_errante.png",
+  "js": "js/assets/criacao/zumbi_errante.js",
+  "convertido": true
+ },
+ {
+  "id": "zumbi_bruto",
+  "tipo": "npc",
+  "nome": "Zumbi bruto",
+  "estilo": "ruina",
+  "arq": "assets/extra/Meshy_AI_Brute_Zombie_1110165208_texture.glb",
+  "mini": "assets/npcs/meshy/zumbi_bruto.png",
+  "js": "js/assets/criacao/zumbi_bruto.js",
+  "convertido": true
+ },
+ {
+  "id": "zumbi_pesadelo",
+  "tipo": "npc",
+  "nome": "Pesadelo",
+  "estilo": "ruina",
+  "arq": "assets/Creatures/Enemies/Meshy_AI_Zombie_Nightmare_Shad_1109231755_texture.glb",
+  "mini": "assets/npcs/meshy/zumbi_pesadelo.png",
+  "js": "js/assets/criacao/zumbi_pesadelo.js",
+  "convertido": true
+ },
+ {
+  "id": "zumbi_ossos",
+  "tipo": "npc",
+  "nome": "Sombra de ossos",
+  "estilo": "ruina",
+  "arq": "assets/Creatures/Enemies/Meshy_AI_Zombie_Nightmare_Shad_1109231813_texture (1).glb",
+  "mini": "assets/npcs/meshy/zumbi_ossos.png",
+  "js": "js/assets/criacao/zumbi_ossos.js",
+  "convertido": true
+ },
+ {
   "id": "rosto_1",
   "tipo": "rosto",
   "nome": "Rosto 1",

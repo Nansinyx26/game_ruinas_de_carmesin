@@ -19,15 +19,32 @@
 const Estruturas = (() => {
   const IDX = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {};
   const P2 = Math.PI / 2, PI = Math.PI;
-  // [id, x, y (fração da sala), giro (rad), escala]: prédios grandes no fundo da sala (lados de
-  // cima e da esquerda na vista isométrica), um pouco menores que o real (as salas têm ~33 m)
+  // Estruturas de beira: ficam na margem mais perto do lugar pedido (Agua.margemPerto), com o lado
+  // do modelo que vai para a água (agua: ângulo no modelo, 0 = frente +x) virado para ela; recuo:
+  // quanto o centro fica para dentro da terra, em meias medidas do modelo nesse eixo (o moinho põe a
+  // roda na água; o cais fica com metade da passarela sobre ela; palmeiras, salgueiro e moitas de
+  // beira ficam com a copa sobre a água e o tronco na terra)
+  const BEIRA = { moinho: { agua: 0, recuo: 0.62 }, cais: { agua: P2, recuo: 0.05 }, cachoeira: { agua: 0, recuo: 0.35 },
+    palmeira: { agua: 0, recuo: 0.9 }, salgueiro: { agua: 0, recuo: 0.75 }, moita: { agua: 0, recuo: 1.3 } };
+  // [id, x, y (fração da sala), giro (rad), escala, beira?]: prédios grandes no fundo da sala (lados
+  // de cima e da esquerda na vista isométrica), um pouco menores que o real (as salas têm ~33 m)
   const ZONAS = {
     velmora_clareira: [['estrutura_md_5', 0.13, 0.13, 0.4, 0.75], ['estrutura_md_1', 0.86, 0.12, 0, 0.7], ['quadro_de_missoes_medieval', 0.45, 0.16, 0.6, 1],
-      ['item_ambiente_md_3', 0.3, 0.12, 0, 1], ['item_ambiente_md_1', 0.62, 0.12, 0.3, 1], ['item_ambiente_md_8', 0.55, 0.55, 0, 1]],
-    velmora_trilha: [['estrutura_md_9', 0.12, 0.14, 0.5, 0.8], ['fast_travel', 0.6, 0.22, 2.4, 1], ['item_ambiente_md_4', 0.82, 0.5, 1, 1]],
-    velmora_ruinas: [['estrutura_md_16', 0.15, 0.15, 0.3, 0.9], ['estrutura_md_15', 0.82, 0.14, 0, 0.9], ['cachoeira', 0.14, 0.8, 1.2, 0.8], ['item_ambiente_md_9', 0.55, 0.45, 0, 1]],
-    velmora_raizes: [['estrutura_md_14', 0.3, 0.12, 0, 1], ['estrutura_md_14', 0.45, 0.12, 0, 1], ['estrutura_md_12', 0.7, 0.2, 0, 1]],
-    velmora_lago: [['casa_moinho_beira_do_rio', 0.14, 0.14, 0.3, 0.75], ['cais_com_barco', 0.82, 0.18, PI, 0.9], ['estrutura_md_17', 0.5, 0.86, 0, 0.8]],
+      ['item_ambiente_md_3', 0.3, 0.12, 0, 1], ['item_ambiente_md_1', 0.62, 0.12, 0.3, 1], ['item_ambiente_md_8', 0.55, 0.55, 0, 1],
+      ['arvore_1', 0.88, 0.84, 0.7, 1.2], ['estrutura_md_13', 0.36, 0.84, 0.3, 1], ['planta_4', 0.62, 0.3, 0, 1]],
+    // (as árvores do Meshy são as de destaque; a mata em volta é a do kit de natureza, js/mundo/natureza3d.js)
+    velmora_trilha: [['estrutura_md_9', 0.12, 0.14, 0.5, 0.8], ['fast_travel', 0.6, 0.22, 2.4, 1], ['item_ambiente_md_4', 0.82, 0.5, 1, 1],
+      ['arvore_4', 0.86, 0.84, 0, 1.2], ['arvore_1', 0.14, 0.78, 2.1, 1.1], ['planta_3', 0.32, 0.55, 0, 1]],
+    // o arco com braseiros na entrada das Ruínas (os dois braseiros acesos: js/fogo.js COM_FOGO)
+    velmora_ruinas: [['estrutura_md_16', 0.15, 0.15, 0.3, 0.9], ['estrutura_md_15', 0.82, 0.14, 0, 0.9], ['cachoeira', 0.14, 0.72, 1.2, 0.8, BEIRA.cachoeira], ['item_ambiente_md_9', 0.55, 0.45, 0, 1],
+      ['arco_braseiros', 0.56, 0.8, 0.8, 1.1], ['arvore_6', 0.86, 0.86, 0.4, 1.1], ['rochas_grupo', 0.34, 0.86, 0.5, 1]],
+    velmora_raizes: [['estrutura_md_14', 0.3, 0.12, 0, 1], ['estrutura_md_14', 0.45, 0.12, 0, 1], ['estrutura_md_12', 0.7, 0.2, 0, 1],
+      ['arvore_3', 0.15, 0.8, 0.3, 1.2], ['rochas_grupo', 0.82, 0.74, 1.4, 1.1], ['planta_2', 0.56, 0.84, 0, 1]],
+    velmora_coracao: [['arvore_6', 0.14, 0.16, 0, 1.3], ['arvore_3', 0.86, 0.16, 1.2, 1.2], ['rochas_grupo', 0.16, 0.84, 0.7, 1.1]],
+    // moinho d'água na beira do rio que desce da Trilha (a roda, na frente do modelo, dentro d'água)
+    // e o cais no lago (a ponta da passarela, no +y do modelo, sobre a água): BEIRA acima
+    velmora_lago: [['casa_moinho_beira_do_rio', 0.4, 0.14, 0, 0.75, BEIRA.moinho], ['cais_com_barco', 0.86, 0.5, 0, 0.9, BEIRA.cais], ['estrutura_md_17', 0.5, 0.86, 0, 0.8],
+      ['arvore_5', 0.18, 0.6, 0, 1.1, BEIRA.salgueiro], ['planta_5', 0.74, 0.76, 0, 1, BEIRA.moita], ['arvore_4', 0.12, 0.86, 0.8, 1.2]],
     rc_cidadela: [['estrutura_md_2', 0.08, 0.3, 0, 0.8], ['estrutura_md_6', 0.92, 0.32, 0, 0.8], ['fonte_do_guardiao', 0.5, 0.62, 0, 0.8],
       ['item_ambiente_md_7', 0.38, 0.12, 0, 1], ['item_ambiente_md_7', 0.62, 0.12, 0, 1]],
     rc_portao: [['estrutura_md_4', 0.5, 0.86, 0, 0.75], ['estrutura_md_12', 0.4, 0.4, 0, 1], ['estrutura_md_12', 0.6, 0.4, 0, 1]],
@@ -35,24 +52,32 @@ const Estruturas = (() => {
       ['estrutura_md_8', 0.4, 0.8, 1, 1], ['item_ambiente_md_2', 0.62, 0.62, 0.4, 1], ['forno_pedra', 0.86, 0.5, -P2, 1]],
     rc_catedral: [['estrutura_md_3', 0.5, 0.12, 0, 0.7], ['estrutura_md_10', 0.2, 0.75, 0, 1], ['item_ambiente_md_5', 0.35, 0.3, 0, 1], ['item_ambiente_md_6', 0.65, 0.3, 0, 1]],
     rc_quartel: [['castelo_medieval', 0.18, 0.15, 0, 0.6], ['canhao_medieval', 0.55, 0.3, 0.6, 1], ['canhao_medieval', 0.7, 0.3, 0.4, 1], ['blue_roof_cottage', 0.86, 0.82, -2.4, 0.8]],
-    rc_jardins: [['estrutura_md_11', 0.5, 0.5, 0, 0.8], ['escadaria_ruinas', 0.85, 0.15, -0.4, 0.9], ['muro_ruinas_placa', 0.15, 0.3, 0.3, 1]],
+    rc_jardins: [['estrutura_md_11', 0.5, 0.5, 0, 0.8], ['escadaria_ruinas', 0.85, 0.15, -0.4, 0.9], ['muro_ruinas_placa', 0.15, 0.3, 0.3, 1],
+      ['arvore_2', 0.82, 0.78, 0.5, 1.1], ['arvore_6', 0.12, 0.16, 0, 1.1], ['planta_5', 0.36, 0.64, 0, 1, BEIRA.moita], ['planta_1', 0.4, 0.5, 0, 1], ['planta_2', 0.6, 0.5, 0, 1]],
+    // Oásis de Seraph: palmeiras na beira do lago, a figueira larga e as rochas; no Mar de Dunas, rochas e uma árvore seca
+    seraph_oasis: [['arvore_7', 0.5, 0.3, 0, 1, BEIRA.palmeira], ['arvore_7', 0.72, 0.46, 0, 1.1, BEIRA.palmeira], ['arvore_7', 0.28, 0.56, 0, 0.95, BEIRA.palmeira],
+      ['arvore_7', 0.42, 0.7, 0, 1.05, BEIRA.palmeira], ['planta_6', 0.36, 0.4, 0, 1, BEIRA.moita], ['arvore_8', 0.16, 0.22, 0.4, 1], ['rochas_grupo', 0.84, 0.8, 0.3, 1]],
+    seraph_dunas: [['rochas_grupo', 0.28, 0.3, 0, 1.3], ['rochas_grupo', 0.74, 0.7, 1.1, 1.1], ['arvore_6', 0.8, 0.22, 0.5, 1]],
     // Refúgio da Aurora (cidade principal, medieval): a praça do mercado com os assets gerados no
     // Meshy — fileira de bancas, forno e carroças, estandartes, lampiões e a Fonte do Guardião
     aurora: [['fonte_do_guardiao', 0.5, 0.42, 0, 0.75], ['moonlit_medieval_mark', 0.3, 0.3, 0.4, 0.9], ['banca_ceramica', 0.4, 0.26, 0.2, 0.9], ['estrutura_md_7', 0.6, 0.26, -0.2, 0.9],
       ['forno_pedra', 0.72, 0.3, -0.5, 0.9], ['estrutura_md_8', 0.24, 0.62, 1.2, 0.9], ['item_ambiente_md_4', 0.76, 0.62, 2.2, 1], ['item_ambiente_md_3', 0.34, 0.2, 0, 1],
       ['item_ambiente_md_1', 0.66, 0.2, 0.4, 1], ['item_ambiente_md_5', 0.42, 0.55, 0, 1], ['item_ambiente_md_6', 0.58, 0.55, 0, 1], ['estrutura_md_12', 0.36, 0.44, 0, 1],
-      ['estrutura_md_12', 0.64, 0.44, 0, 1], ['estrutura_md_10', 0.84, 0.46, 0, 0.9], ['canhao_medieval', 0.16, 0.42, 0.8, 1]],
+      ['estrutura_md_12', 0.64, 0.44, 0, 1], ['estrutura_md_10', 0.84, 0.46, 0, 0.9], ['canhao_medieval', 0.16, 0.42, 0.8, 1],
+      ['arvore_2', 0.38, 0.85, 0, 1.1], ['arvore_2', 0.9, 0.86, 1.5, 1.1], ['planta_1', 0.42, 0.34, 0, 0.8], ['planta_1', 0.58, 0.34, 1.2, 0.8]],
     aurora_bairro: [['item_ambiente_md_2', 0.62, 0.56, 0.3, 1], ['muro_ruinas_placa', 0.86, 0.9, 2.4, 1]],
     // Metrópole (subterrânea, segura): a rua da Praça Central com os assets do Meshy — lojas, hotel,
-    // ponto de ônibus, máquinas de venda, carro e moto estacionados, totens, painel e o arco neon
+    // ponto de ônibus, máquinas de venda, carro e moto estacionados, totens e painel (o arco neon fica no
+    // Portão de Nexus: aqui a saída de baixo, onde ele ia, é a passagem da zona; o hotel do Mercado
+    // não cabia na sala e fica o da Praça)
     metro_centro: [['edificio_cyberpunk', 0.08, 0.32, P2, 0.6], ['estrutura_cbp_1', 0.92, 0.35, -P2, 0.7], ['loja_armas', 0.22, 0.1, 0, 0.75], ['loja_tecnologia', 0.5, 0.1, 0, 0.75],
       ['hotel_neon', 0.78, 0.1, 0, 0.55], ['ponto_onibus', 0.35, 0.9, PI, 0.9], ['maquina_venda', 0.45, 0.26, 0, 1], ['maquina_venda', 0.58, 0.26, 0, 1], ['carro_neon', 0.66, 0.88, 0.2, 1],
-      ['moto_neon', 0.75, 0.86, 0.4, 1], ['totem_info', 0.3, 0.5, 0.8, 1], ['totem_info', 0.7, 0.5, -0.8, 1], ['painel_anuncio', 0.6, 0.12, 0, 1], ['arco_neon', 0.5, 0.96, 0, 0.8],
+      ['moto_neon', 0.75, 0.86, 0.4, 1], ['totem_info', 0.3, 0.5, 0.8, 1], ['totem_info', 0.7, 0.5, -0.8, 1], ['painel_anuncio', 0.6, 0.12, 0, 1],
       ['item_ambiente_cbp_1', 0.4, 0.6, 0.3, 1], ['drone_carga', 0.2, 0.7, 0.6, 1]],
     metro_porto: [['estrutura_cbp_2', 0.82, 0.14, 0, 0.75], ['item_ambiente_cbp_2', 0.3, 0.5, 0.5, 1], ['item_ambiente_cbp_3', 0.36, 0.56, 1.2, 1]],
     metro_torres: [['estrutura_cbp_7', 0.12, 0.3, 0, 0.6], ['estrutura_cbp_6', 0.86, 0.5, 0, 0.6], ['apartamento_urbano', 0.4, 0.12, 0, 0.6]],
     metro_trilhos: [['monotrilho_futurista', 0.5, 0.15, 0, 0.8], ['viaduto_cyberpunk', 0.5, 0.82, 0, 0.8]],
-    metro_mercado: [['neon_cyberpunk_bar', 0.14, 0.13, 0.3, 0.7], ['hotel_neon', 0.86, 0.13, -0.3, 0.6], ['loja_armas', 0.13, 0.8, P2, 0.75], ['neon_night_cafe', 0.5, 0.12, 0, 0.8],
+    metro_mercado: [['neon_cyberpunk_bar', 0.14, 0.13, 0.3, 0.7], ['loja_armas', 0.13, 0.8, P2, 0.75], ['neon_night_cafe', 0.5, 0.12, 0, 0.8],
       ['maquina_venda', 0.6, 0.5, 0, 1], ['item_ambiente_cbp_4', 0.4, 0.55, 0, 1], ['painel_anuncio', 0.3, 0.3, 0.3, 1], ['totem_info', 0.7, 0.32, -0.3, 1], ['moto_neon', 0.86, 0.6, 2.6, 1]],
     // Cidade de Nexus (subterrânea): o portão de setor na chegada e as ruas com o neon
     nexus_portao: [['portao_setor', 0.5, 0.12, 0, 0.9], ['arco_neon', 0.5, 0.88, 0, 0.8], ['totem_info', 0.3, 0.5, 0.6, 1], ['maquina_venda', 0.7, 0.5, -0.6, 1]],
@@ -140,25 +165,59 @@ const Estruturas = (() => {
   }
 
   // ------------------------------------------------------------ zona
+  // Quem anda ou nasce em lugar sorteado (moradores, animais, companheiros, montarias, pontos de coleta)
+  // não tira uma estrutura do lugar: sai do caminho dela (afastar). Portais, portões, baús, bancas,
+  // estações e objetos do cenário continuam valendo (a estrutura procura outro lugar livre).
+  // (as classes de outros arquivos não ficam em globalThis: cada uma pelo nome, se já existir)
+  const movel = (q) => q.kind === 'coleta' || (typeof Morador !== 'undefined' && q instanceof Morador) || (typeof AnimalCidade !== 'undefined' && q instanceof AnimalCidade) ||
+    (typeof CompanheiroPet !== 'undefined' && q instanceof CompanheiroPet) || (typeof MontariaEnt !== 'undefined' && q instanceof MontariaEnt);
+  function afastar(R, g, x, y, r) {
+    for (const q of g.npcs) {
+      if (q.estrutura || !movel(q)) continue;
+      const d = dist(q.x, q.y, x, y), raio = r + (q.r || 12) + 14;
+      if (d >= raio) continue;
+      const a0 = d > 1 ? Math.atan2(q.y - y, q.x - x) : 0;
+      for (let k = 0; k < 12; k++) {
+        const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 6, nx = x + Math.cos(a) * raio, ny = y + Math.sin(a) * raio;
+        if (R.canStand(nx, ny, q.r || 12)) { q.x = nx; q.y = ny; if (q.homeX !== undefined) { q.homeX = nx; q.homeY = ny; } break; }
+      }
+    }
+  }
   // Lugares e colisores da zona que carregou; pede os modelos
   function aoCarregar(z) {
     atual = null;
     const L = z && ZONAS[z.id];
     if (!L || typeof game === 'undefined' || !game.room) return 0;
     const g = game, R = g.room, lug = [];
-    for (const [id, fx, fy, giro, esc] of L) {
+    for (const [id, fx, fy, giro0, esc0, beira] of L) {
       const I = IDX[id];
       if (!I) continue;
-      const r = I.r * esc;
-      const livre = (x, y) => R.canStand(x, y, Math.min(r, 60)) && !g.npcs.some((q) => dist(q.x, q.y, x, y) < r + 50) &&
-        !lug.some((o) => dist(o.x, o.y, x, y) < r + IDX[o.id].r * o.esc + 10) && !(typeof Agua !== 'undefined' && Agua.profundidade(x, y) > 0);
-      let x = R.w * fx, y = R.h * fy;
-      if (!livre(x, y)) {
+      let esc = esc0, r = I.r * esc;
+      const ocupado = (x, y) => g.npcs.some((q) => !q.estrutura && !movel(q) && dist(q.x, q.y, x, y) < r + 50) || lug.some((o) => dist(o.x, o.y, x, y) < r + IDX[o.id].r * o.esc + 10);
+      const livre = (x, y) => R.canStand(x, y, Math.min(r, 60)) && !ocupado(x, y) && (beira || !(typeof Agua !== 'undefined' && Agua.profundidade(x, y) > 0));
+      let x = R.w * fx, y = R.h * fy, giro = giro0;
+      const M = beira && typeof Agua !== 'undefined' && Agua.margemPerto ? Agua.margemPerto(x, y) : null;
+      if (beira && !M) continue;   // estrutura de beira sem água na zona: não fica jogada no seco
+      if (M) {
+        const meia = (Math.abs(Math.cos(beira.agua)) > 0.5 ? I.w : I.d) * esc / 2;
+        x = M.x + M.nx * meia * beira.recuo; y = M.y + M.ny * meia * beira.recuo;
+        giro = Math.atan2(-M.ny, -M.nx) - beira.agua;
+        if (ocupado(x, y)) continue;   // (na margem não há para onde fugir: em cima de um portal ou de outra estrutura, fica de fora)
+      } else if (!livre(x, y)) {
+        // perto do lugar pedido (anéis até 240); sem lugar, a peça tenta de novo um pouco menor (85%
+        // e 70%) em vez de sumir ou ir parar no meio da sala (os prédios grandes das salas cheias da
+        // Metrópole e do Portão ficavam de fora)
+        const x0 = x, y0 = y;
         let achou = false;
-        for (let d = 40; d <= 240 && !achou; d += 40) for (let k = 0; k < 8 && !achou; k++) { const a = k * Math.PI / 4, nx = x + Math.cos(a) * d, ny = y + Math.sin(a) * d; if (livre(nx, ny)) { x = nx; y = ny; achou = true; } }
-        if (!achou) continue;
+        for (const k of [1, 0.85, 0.7]) {
+          esc = esc0 * k; r = I.r * esc;
+          if (k < 1 && livre(x0, y0)) { achou = true; break; }
+          for (let d = 40; d <= 240 && !achou; d += 40) for (let j = 0, n = d < 160 ? 8 : 12; j < n && !achou; j++) { const a = j * 2 * Math.PI / n, nx = x0 + Math.cos(a) * d, ny = y0 + Math.sin(a) * d; if (livre(nx, ny)) { x = nx; y = ny; achou = true; } }
+          if (achou) break;
+        }
+        if (!achou) { if (typeof console !== 'undefined') console.info(`Estruturas: ${id} sem lugar livre em ${z.id}`); continue; }
       }
-      for (const c of colisores(I, x, y, giro, esc)) R.pillars.push(Object.assign(c, { h: I.h * esc, cenario: true, estrutura: id, sprite: null }));
+      for (const c of colisores(I, x, y, giro, esc)) { R.pillars.push(Object.assign(c, { h: I.h * esc, cenario: true, estrutura: id, sprite: null })); afastar(R, g, c.x, c.y, c.r); }
       for (let i = R.pillars.length - 1; i >= 0; i--) { const q = R.pillars[i]; if (q.enfeite && dist(q.x, q.y, x, y) < r + 24) R.pillars.splice(i, 1); }
       lug.push({ id, x, y, giro, esc, obj: null });
       carregar(id);

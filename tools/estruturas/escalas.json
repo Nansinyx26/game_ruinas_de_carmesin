@@ -335,8 +335,8 @@
   "nome": "Árvore"
  },
  "arvore_5": {
-  "altura": 9,
-  "nome": "Árvore"
+  "altura": 8,
+  "nome": "Salgueiro"
  },
  "arvore_6": {
   "altura": 7,
@@ -344,10 +344,126 @@
  },
  "arvore_7": {
   "altura": 9,
-  "nome": "Árvore"
+  "nome": "Palmeira"
  },
  "arvore_8": {
-  "altura": 9,
-  "nome": "Árvore"
+  "altura": 7,
+  "nome": "Figueira"
+ },
+ "planta_1": {
+  "altura": 1.2,
+  "nome": "Arbusto florido"
+ },
+ "planta_2": {
+  "altura": 1.0,
+  "nome": "Arbusto"
+ },
+ "planta_3": {
+  "altura": 1.3,
+  "nome": "Capim ornamental"
+ },
+ "planta_4": {
+  "altura": 1.4,
+  "nome": "Capim florido"
+ },
+ "planta_5": {
+  "altura": 5,
+  "nome": "Bambuzal"
+ },
+ "planta_6": {
+  "altura": 1.1,
+  "nome": "Agave"
+ },
+ "bau_comum": {
+  "lado": 1.0,
+  "nome": "Baú comum"
+ },
+ "bau_comum_tampa": {
+  "como": "bau_comum",
+  "nome": "Baú comum (tampa)"
+ },
+ "bau_incomum": {
+  "lado": 1.0,
+  "nome": "Baú incomum"
+ },
+ "bau_incomum_tampa": {
+  "como": "bau_incomum",
+  "nome": "Baú incomum (tampa)"
+ },
+ "bau_raro": {
+  "lado": 1.0,
+  "nome": "Baú raro"
+ },
+ "bau_raro_tampa": {
+  "como": "bau_raro",
+  "nome": "Baú raro (tampa)"
+ },
+ "bau_epico": {
+  "lado": 1.0,
+  "nome": "Baú épico"
+ },
+ "bau_epico_tampa": {
+  "como": "bau_epico",
+  "nome": "Baú épico (tampa)"
+ },
+ "bau_lendario": {
+  "lado": 1.0,
+  "nome": "Baú lendário"
+ },
+ "bau_lendario_tampa": {
+  "como": "bau_lendario",
+  "nome": "Baú lendário (tampa)"
+ },
+ "predio_abandonado": {
+  "altura": 13,
+  "nome": "Prédio abandonado"
+ },
+ "bloco_17": {
+  "altura": 15,
+  "nome": "Bloco 17"
+ },
+ "predio_musgo": {
+  "altura": 14,
+  "nome": "Prédio tomado pelo musgo"
+ },
+ "galpao_abandonado": {
+  "altura": 7,
+  "nome": "Galpão abandonado"
+ },
+ "torre_tomada": {
+  "altura": 17,
+  "nome": "Torre tomada pela mata"
+ },
+ "ruinas_retomadas": {
+  "altura": 12,
+  "nome": "Ruínas retomadas"
+ },
+ "predio_de_guerra": {
+  "altura": 13,
+  "nome": "Prédio de guerra"
+ },
+ "arranha_ceu_caido": {
+  "altura": 16,
+  "nome": "Arranha-céu caído"
+ },
+ "casarao_abandonado": {
+  "altura": 8,
+  "nome": "Casarão abandonado"
+ },
+ "sobrado_pos_punk": {
+  "altura": 11,
+  "nome": "Sobrado pós-punk"
+ },
+ "pistola_gm": {
+  "lado": 0.3,
+  "nome": "Pistola do GM"
+ },
+ "coldre_gm": {
+  "lado": 0.3,
+  "nome": "Coldre tático"
+ },
+ "alaude_bardo": {
+  "altura": 0.82,
+  "nome": "Alaúde do bardo"
  }
 }

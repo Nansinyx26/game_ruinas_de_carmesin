@@ -58,7 +58,7 @@ def data_url(img, lado, qualidade=88):
     return 'data:image/webp;base64,' + base64.b64encode(b.tobytes()).decode('ascii')
 
 
-def converter(caminho, lado_max=1024, escala=None, indexado=False):
+def converter(caminho, lado_max=1024, escala=None, indexado=False, chao=True):
     """escala: unidades do jogo por unidade do arquivo (padrão: metros → 34); indexado: vértices
     únicos + índices (as estruturas enviadas, malhas grandes: ~40% menor que um canto por vez)."""
     V, UV, F, mapas = ler_glb(caminho)
@@ -75,8 +75,8 @@ def converter(caminho, lado_max=1024, escala=None, indexado=False):
         raise SystemExit(f'{caminho}: sem normais')
     N = N @ R_JOGO.T
     N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-9
-    z0 = V[:, 2].min()
-    V[:, 2] -= z0                            # base no chão
+    if chao:
+        V[:, 2] -= V[:, 2].min()             # base no chão (as peças móveis, como a tampa do baú, ficam com a origem do arquivo)
     c = F.reshape(-1)
     uv = UV[c]
     cor = amostra(mapas['cor'], uv)[:, ::-1] if mapas.get('cor') is not None else np.full((len(c), 3), 160.0)   # BGR → RGB
@@ -169,11 +169,19 @@ def estruturas(ids):
             print(f"{id_}: fora (reprovada na redução: {'; '.join(r.get('falhas') or [r.get('erro', '')])})")
             indice.pop(id_, None)
             continue
-        E = esc.get(id_) if ('altura' in esc.get(id_, {}) or 'lado' in esc.get(id_, {})) else dict(esc['_tipos'].get(r['tipo'], {'altura': 4}), **esc.get(id_, {}))   # (a medida da peça manda; o padrão do tipo só sem ela)
-        dx, dy, dz = r['dims']                       # Blender: z para cima
-        k = E['altura'] * ESCALA / dz if 'altura' in E else E['lado'] * ESCALA / max(dx, dy)
-        info = converter(os.path.join(RAIZ, r['glb']), 1024 if r['tipo'] in ('estrutura', 'arvore') else 512, escala=k, indexado=True)
+        def fator(i, rr):
+            E = esc.get(i) if any(c in esc.get(i, {}) for c in ('altura', 'lado', 'como')) else dict(esc['_tipos'].get(rr['tipo'], {'altura': 4}), **esc.get(i, {}))   # (a medida da peça manda; o padrão do tipo só sem ela)
+            if 'como' in E:      # a mesma escala de outra peça (a tampa do baú: a do corpo)
+                ref = next(x for x in rel if x['id'] == E['como'])
+                return fator(E['como'], ref)[0], E
+            dx, dy, dz = rr['dims']                  # Blender: z para cima
+            return (E['altura'] * ESCALA / dz if 'altura' in E else E['lado'] * ESCALA / max(dx, dy)), E
+        k, E = fator(id_, r)
+        info = converter(os.path.join(RAIZ, r['glb']), 1024 if r['tipo'] in ('estrutura', 'arvore') else 512, escala=k, indexado=True, chao=r.get('base_no_chao', True))
         info.update(tipo=r['tipo'], estilo=r['estilo'])
+        if r.get('dobradica'):   # a dobradiça da tampa (Blender → jogo: x = −y, y = −x, z = z)
+            d = r['dobradica']
+            info['dob'] = [round(-d[1] * k, 2), round(-d[0] * k, 2), round(d[2] * k, 2)]
         js = os.path.join(saida, f'{id_}.js')
         with open(js, 'w', encoding='utf-8') as f:
             f.write("'use strict';\n// ECLIPSE ZERO · Estrutura enviada '" + id_ + "' (" + r['fonte'].replace('\n', ' ') + ')\n'

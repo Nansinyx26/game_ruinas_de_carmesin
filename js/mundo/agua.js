@@ -20,7 +20,9 @@ const Agua = (() => {
   const RASO = 46;   // largura da faixa rasa da margem (unidades)
   // lago: [cx, cy, rx, ry] · rio: { pts: [[x, y], …], w } (frações da sala; rx, ry e w da menor medida)
   const AGUA_ZONAS = {
-    velmora_lago: [{ lago: [0.52, 0.55, 0.3, 0.22] }],
+    // (o rio da Trilha, logo acima na grade da região, continua pela borda de cima e deságua no lago)
+    velmora_lago: [{ lago: [0.52, 0.55, 0.3, 0.22] }, { rio: [[0.6, 0], [0.585, 0.12], [0.56, 0.24], [0.54, 0.38]], w: 0.09 }],
+    velmora_ruinas: [{ lago: [0.16, 0.84, 0.1, 0.07] }],   // o poço onde cai a água da Ruína da cachoeira
     velmora_clareira: [{ rio: [[0, 0.82], [0.28, 0.76], [0.55, 0.86], [0.8, 0.78], [1, 0.84]], w: 0.1 }],
     velmora_trilha: [{ rio: [[0.62, 0], [0.56, 0.3], [0.66, 0.6], [0.6, 1]], w: 0.09 }],
     lagoa_cais: [{ lago: [0.5, 0.2, 0.4, 0.14] }],
@@ -112,6 +114,29 @@ const Agua = (() => {
     return d <= 0 ? 0 : Math.min(1, d / RASO);
   }
   const funda = (x, y) => profundidade(x, y) >= 1;
+  // A margem mais perto de um ponto: { x, y (na linha d'água), nx, ny (da água para a terra) } ou null
+  // (sem água na zona). Para as estruturas de beira (moinho, cais, palmeiras: js/mundo/estruturas.js).
+  function margemPerto(x, y) {
+    if (!corpos.length || (typeof game !== 'undefined' && game.room !== R0) || !R0) return null;
+    let bx = 0, by = 0, bd = 1e9;
+    for (let gy = 8; gy < R0.h; gy += 16) for (let gx = 8; gx < R0.w; gx += 16) {
+      if (dentro(gx, gy) <= 0) continue;
+      const d = (gx - x) * (gx - x) + (gy - y) * (gy - y);
+      if (d < bd) { bd = d; bx = gx; by = gy; }
+    }
+    if (bd > 9e8) return null;
+    // para fora da água: contra o gradiente da distância; se o ponto pedido está em terra e o
+    // gradiente discorda (pontas de rio, lagos estreitos), vale o rumo do ponto pedido
+    const e = 6;
+    let nx = dentro(bx - e, by) - dentro(bx + e, by), ny = dentro(bx, by - e) - dentro(bx, by + e), l = Math.hypot(nx, ny);
+    const tx = x - bx, ty = y - by, tl = Math.hypot(tx, ty);
+    if (dentro(x, y) <= 0 && tl > 1 && (l < 1e-6 || (nx * tx + ny * ty) / (l * tl) < 0.2)) { nx = tx; ny = ty; l = tl; }
+    if (l < 1e-6) return null;
+    nx /= l; ny /= l;
+    let px = bx, py = by;
+    for (let i = 0; i < 400 && dentro(px, py) > 0; i++) { px += nx * 2; py += ny * 2; }
+    return { x: px, y: py, nx, ny };
+  }
 
   // ------------------------------------------------------------ zona
   function aoCarregar(z) {
@@ -370,5 +395,5 @@ const Agua = (() => {
   }
   // cachoeira (estrutura 'cachoeira', js/mundo/estruturas.js): névoa, gotas e ondulação na base
   function cachoeira(x, y, r) { cachoeiras.push({ x, y, r: r || 60, t: 0 }); }
-  return { AGUA_ZONAS, RASO, aoCarregar, formas, onda, respingo, fluxo, ondas3P, estado3P, cachoeira, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };
+  return { AGUA_ZONAS, RASO, aoCarregar, margemPerto, formas, onda, respingo, fluxo, ondas3P, estado3P, cachoeira, depois, update, profundidade, funda, ritmo, travado, desenhar, desenharNadadores, afundar, fila3P, corpos: () => corpos, margem };
 })();

@@ -229,14 +229,18 @@ const Fogo = (function () {
     if (tema === 'vulcao') for (let i = 0; i < 4; i++) acender(R.w * (0.1 + rnd() * 0.8), R.h * (0.1 + rnd() * 0.8), 'chamas', { fixo: true, k: 0.6 + rnd() * 0.5 });
   }
   // estruturas com fogo (chamado quando as estruturas da zona são postas: js/mundo/estruturas.js)
-  // [tipo, altura da chama (fração da altura da peça), intensidade]; fumaca: chaminé no topo
-  const COM_FOGO = { item_ambiente_md_8: { fogo: ['tocha', 0.86, 1.2] }, forno_pedra: { fumaca: 1 }, hearthside_forge: { fumaca: 1.3 } };
+  // [tipo, altura da chama (fração da altura da peça), intensidade]; fumaca: chaminé no topo;
+  // pontos: onde ficam as chamas no modelo (+x frente, +y lado; medidas da peça em escala 1), no
+  // lugar do centro; o giro e a escala da estrutura levam junto (o arco tem um braseiro em cada pé)
+  const COM_FOGO = { item_ambiente_md_8: { fogo: ['tocha', 0.86, 1.2] }, forno_pedra: { fumaca: 1 }, hearthside_forge: { fumaca: 1.3 },
+    arco_braseiros: { fogo: ['tocha', 0.38, 1.1], pontos: [[47.9, 64.1], [37.5, -83.4]] } };
   function estruturas(lugares) {
     const I = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {};
     for (const L of lugares || []) {
-      const c = COM_FOGO[L.id], h = (I[L.id] && I[L.id].h || 60) * (L.esc || 1);
+      const c = COM_FOGO[L.id], e = L.esc || 1, h = (I[L.id] && I[L.id].h || 60) * e;
       if (!c) continue;
-      if (c.fogo) acender(L.x, L.y, c.fogo[0], { fixo: true, z: h * c.fogo[1], k: c.fogo[2] });
+      const cs = Math.cos(L.giro || 0), sn = Math.sin(L.giro || 0);
+      if (c.fogo) for (const [dx, dy] of c.pontos || [[0, 0]]) acender(L.x + (dx * cs - dy * sn) * e, L.y + (dx * sn + dy * cs) * e, c.fogo[0], { fixo: true, z: h * c.fogo[1], k: c.fogo[2] });
       if (c.fumaca) acender(L.x, L.y, 'chamine', { fixo: true, z: h * 0.95, k: c.fumaca });
     }
   }
