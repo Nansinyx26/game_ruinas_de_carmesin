@@ -157,7 +157,8 @@ const Cantoria = {
     }
     const d = dist(n.x, n.y, game.player.x, game.player.y), perto = clamp(1 - (d / 650) * 0.45, 0.55, 1);
     a.muted = !!(A && A.muted);
-    a.volume = A ? clamp((A.volume / 0.69) * (A.voiceVol === undefined ? 1 : A.voiceVol) * 0.85 * perto, 0, 1) : 0.8;
+    const fala = typeof Vozes !== 'undefined' && Vozes.falando() ? 0.35 : 1;   // um morador falando: a música baixa
+    a.volume = A ? clamp((A.volume / 0.69) * (A.voiceVol === undefined ? 1 : A.voiceVol) * 0.85 * perto * fala, 0, 1) : 0.8;
     if (a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => { this.mudo = !this.tocando && a.currentTime === 0; }); }
     this.tocando = true; this.t = a.currentTime;
   },

@@ -17,7 +17,8 @@
 // - Carros e motos parados, contêineres, árvores mortas e mato tomando as ruas (estruturas que já
 //   existiam), focos de incêndio (js/fogo.js) e os baús escondidos nos prédios (js/mundo/baus.js).
 // O que ainda não tem: interiores dos prédios (os modelos enviados são cascas fechadas, sem
-// salas) e missões próprias da região — entram em uma próxima etapa.
+// salas) entram em uma próxima etapa; as missões da região, as secundárias e a masmorra do hospital
+// estão no fim deste arquivo.
 // ---------------------------------------------------------------------------
 (function () {
   if (typeof WORLD_REGIONS === 'undefined' || typeof ENEMY_VARIANTS === 'undefined') return;
@@ -33,7 +34,7 @@
   const Z = (base, nome, corpo, o) => Object.assign({ base, nome, corpo, tint: [0.3, 0.36, 0.28, 0], glow: '170,230,120', escala: 1, vida: 1, dano: 1, vel: 1, tracos: [], organico: true, sangue: '96,14,18', altura: 62, raio: 15 }, o);
   Object.assign(ENEMY_VARIANTS, {
     zumbi: Z('rastejador', 'Zumbi', 'zumbi', { vida: 1.7, dano: 1, vel: 0.5, tracos: ['matilha'] }),
-    zumbi_corredora: Z('cacador', 'Corredora Faminta', 'zumbi_mulher', { vida: 0.9, dano: 1.1, vel: 0.95, altura: 58, raio: 13 }),
+    zumbi_corredora: Z('cacador', 'Corredora Faminta', 'zumbi_mulher', { vida: 0.9, dano: 1.1, vel: 0.95, altura: 58, raio: 13, tracos: ['matilha'] }),
     zumbi_errante: Z('rastejador', 'Errante Ressurgido', 'zumbi_errante', { vida: 2.1, dano: 1.2, vel: 0.62, tracos: ['veneno'] }),
     zumbi_bruto: Z('legionario', 'Zumbi Bruto', 'zumbi_bruto', { vida: 1.5, dano: 1.3, vel: 0.85, tracos: ['regenera'], altura: 76, raio: 26 }),
     zumbi_surpresa: Z('cacador', 'Sombra de Ossos', 'zumbi_ossos', { vida: 1, dano: 1.2, vel: 0.85, tracos: ['enterra'], altura: 66, glow: '190,200,255' }),
@@ -145,6 +146,63 @@
       }
     });
   }
+
+  // ------------------------------------------------------------ sobreviventes, missões e masmorra
+  // Dois sobreviventes da barricada (corpos dos GLB já convertidos: tools/meshy/npcs.json) dão as
+  // missões secundárias; a batedora da entrada dá as três missões da região
+  if (typeof WORLD_POVO !== 'undefined') {
+    const GENTE = [
+      { id: 'cm_mendes', meshy: 'npc_guarda', nome: 'CABO MENDES', zona: 'cm_barricada', at: [0.3, 0.6], facing: 5.6, papel: 'Vigia da barricada', servicos: [],
+        personalidade: 'Cansado e atento; conta os dias pela munição que sobra.',
+        ola: ['Devagar. Daqui para dentro, barulho é convite.', 'Ainda de pé? Então a barricada também está.'],
+        temas: [['O que aconteceu aqui?', 'Começou no São Lázaro. Um paciente sem pulso pediu água. Em uma semana a cidade inteira andava daquele jeito.'],
+          ['Como eu passo por eles?', 'Os comuns escutam mal e andam devagar. As corredoras, não. E os brutos… não troque golpe com um bruto: saia do caminho.']] },
+      { id: 'cm_tonho', meshy: 'npc_operario', nome: 'TONHÃO', zona: 'cm_barricada', at: [0.7, 0.62], facing: 3.6, papel: 'Mecânico da barricada', servicos: [],
+        personalidade: 'Falador e prático; conserta qualquer coisa com o que acha nos carros parados.',
+        ola: ['Se tem roda, eu faço andar. Se não tem, eu ponho roda.', 'Trouxe peça? Diz que trouxe peça.'],
+        temas: [['Do que a barricada precisa?', 'Engrenagem e circuito. O portão é segurado por um motor de elevador e por reza. O motor eu sei consertar.']] },
+    ];
+    for (const P of GENTE) {
+      if (WORLD_POVO.some((q) => q.id === P.id)) continue;
+      if (typeof NPC3D !== 'undefined') NPC3D[P.id] = { ap: { npc: P.meshy }, roupa: {} };
+      WORLD_POVO.push(Object.assign({ model: 'civil', variant: 0 }, P));
+    }
+    if (typeof Povo !== 'undefined' && Povo.montar) Povo.montar();
+  }
+  if (typeof WORLD_QUESTS !== 'undefined') WORLD_QUESTS.cidademorta = [
+    { id: 'cm1', name: 'Rua por Rua', tipo: 'matar', alvo: 'zumbi', n: 16, rec: { cells: 460, xp: 9500, min: 2 },
+      ini: 'A avenida está cheia deles e a barricada não aguenta outra noite assim. Derrube dezesseis ressurgidos e a gente respira.', fim: 'Dezesseis a menos. Esta noite alguém aqui vai dormir.' },
+    { id: 'cm2', name: 'O Prontuário 0001', tipo: 'terminais', rec: { cells: 560, xp: 12500, min: 2 },
+      ini: 'A portaria do Bloco 17 e o São Lázaro ainda têm terminais ligados. Leia os registros: quero saber como isto começou.', fim: '"Sem pulso e pede água." Então começou com um só. O Paciente Zero ainda está lá, no Marco Zero.' },
+    { id: 'cm3', name: 'Paciente Zero', tipo: 'chefe', rec: { cells: 950, xp: 23000, min: 3 },
+      ini: 'Tudo isto saiu de um corpo só, e ele ainda anda no Marco Zero. Acabe com ele e a cidade para de se levantar.', fim: 'Parou. Os que sobraram andam sem rumo, como se tivessem esquecido o caminho. A cidade é nossa de novo. Devagar, mas é.' },
+  ];
+  if (typeof WORLD_MASMORRAS !== 'undefined' && !WORLD_MASMORRAS.subsolo_lazaro) {
+    WORLD_MASMORRAS.subsolo_lazaro = { nome: 'Subsolo do São Lázaro', reg: 'cidademorta', zona: 'cm_hospital', at: [0.5, 0.86], tema: 'lab', lv: 35,
+      mobs: ['zumbi', 'zumbi_errante', 'zumbi_bruto', 'zumbi_surpresa'], chefe: { tipo: 'zumbi_bruto', nome: 'O CIRURGIÃO', hp: 4.6, escolta: { zumbi: 2 } },
+      desc: 'A ala lacrada por dentro: necrotério, depósito e a sala onde o primeiro paciente foi operado.' };
+    if (typeof WORLD_TESOUROS !== 'undefined') Object.assign(WORLD_TESOUROS, {
+      tes_farmacia: { zona: 'cm_mercado', at: [0.88, 0.5], nome: 'Cofre da farmácia', rec: { cel: 900, mat: { engrenagem: 3 }, rel: { min: 2 } } },
+      tes_bilheteria: { zona: 'cm_galpoes', at: [0.12, 0.5], nome: 'Bilheteria trancada', rec: { cel: 1100, mat: { circuito: 3 }, rel: { min: 3 } } },
+    });
+    if (typeof Locais !== 'undefined' && Locais.montar) Locais.montar();   // os três andares da masmorra nova
+  }
+  if (typeof WORLD_AVENTURAS !== 'undefined' && !WORLD_AVENTURAS.some((q) => q.id === 'cm_s1')) WORLD_AVENTURAS.push(
+    { id: 'cm_s1', reg: 'cidademorta', nome: 'O Motor do Portão', doador: 'cm_tonho', nivel: 26,
+      desc: 'O portão da barricada é movido por um motor de elevador que não aguenta mais um inverno.',
+      ini: 'Seis engrenagens e três circuitos. Com isso o portão fecha sozinho e ninguém mais precisa empurrar no escuro.',
+      passos: [{ t: 'entregar', npc: 'cm_tonho', mat: { engrenagem: 6, circuito: 3 }, fim: true, txt: 'Leve 6 Engrenagens e 3 Circuitos ao Tonhão, na Barricada da Estrada' }],
+      fim: 'Escuta só. Fechou sozinho. Faz anos que eu não ouvia esse barulho bonito.', rec: { xp: 10500, cel: 580, rep: 160, rel: { min: 2 } } },
+    { id: 'cm_s2', reg: 'cidademorta', nome: 'Os que Correm', doador: 'cm_mendes', nivel: 30,
+      desc: 'As corredoras famintas alcançam quem foge. Mendes perdeu dois batedores para elas.',
+      ini: 'Dez corredoras. Elas vêm em linha reta e não cansam: espere chegarem e não dê as costas.',
+      passos: [{ t: 'matar', alvo: 'zumbi_corredora', n: 10, reg: 'cidademorta', txt: 'Derrote 10 corredoras famintas na Cidade Morta' }, { t: 'falar', npc: 'cm_mendes', fim: true, txt: 'Volte ao Cabo Mendes, na Barricada da Estrada' }],
+      fim: 'Dez. Pelos dois que não voltaram. Obrigado.', rec: { xp: 14000, cel: 700, rep: 180, cons: { tonico: 2 } } },
+    { id: 'cm_s3', reg: 'cidademorta', nome: 'A Ala Lacrada', doador: 'cm_mendes', nivel: 34,
+      desc: 'A ala leste do São Lázaro foi lacrada por dentro. O que ficou lá embaixo ainda bate na porta.',
+      ini: 'Desça ao subsolo do hospital e acabe com o que estiver operando lá. Se achar remédio, melhor ainda.',
+      passos: [{ t: 'masmorra', id: 'subsolo_lazaro', txt: 'Vença o Subsolo do São Lázaro, no hospital' }, { t: 'falar', npc: 'cm_mendes', fim: true, txt: 'Volte ao Cabo Mendes, na Barricada da Estrada' }],
+      fim: 'Então era um cirurgião. Operando até hoje. Deus me livre. Toma: você fez por merecer.', rec: { xp: 19000, cel: 850, rep: 200, rel: { min: 3 } } });
 
   // ------------------------------------------------------------ focos de incêndio
   // (chamado por World.loadZone depois das estruturas: três ou quatro fogos nas ruas das zonas de luta)

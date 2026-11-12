@@ -750,8 +750,8 @@ const EclipseTests = {
   // ------------------------------------------------------------ mundo aberto
   mundo() {
     // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
-    this.igual('mundo: 10 regiões', WORLD_REGIONS.length, 10);
-    this.igual('mundo: 72 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 72);
+    this.igual('mundo: 11 regiões (com a Cidade Morta)', WORLD_REGIONS.length, 11);
+    this.igual('mundo: 81 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9 + 9 da Cidade Morta)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 81);
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
@@ -915,7 +915,7 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias', 'gm'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
     this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
@@ -2024,6 +2024,33 @@ const EclipseTests = {
         this.ok('rotina: parar a cantoria volta ao começo', !C.tocando && C.t === 0);
         C.som = fSom; C.audio = som0; C.mudo = mudo0;
       }
+      {
+        // Guardião do Mundo: bênçãos pelo relógio de verdade, uma por tipo, evento de XP e registro
+        const G = Guardiao, agora0 = G.agora, st0 = World.state.gm, ev0 = G._ev, p = g.player;
+        let rel = 1e12; G.agora = () => rel; World.state.gm = null; G._ev = null;
+        this.ok('guardião: oito bênçãos, cada uma com ícone próprio', GM_ORDEM.length === 8 && new Set(GM_ORDEM.map((id) => GM_BUFFS[id].nome)).size === 8 && GM_ORDEM.every((id) => GM_BUFFS[id].rgb && GM_BUFFS[id].desc(2)));
+        this.ok('guardião: durações de 15 min a 24 h', GM_DURACOES[0][0] === 15 && GM_DURACOES[GM_DURACOES.length - 1][0] === 1440);
+        this.ok('guardião: recusa duração inválida', !!G.conceder('ataque', 0, 0) && !!G.conceder('ataque', 0, 5000) && !G.ativo('ataque'));
+        const d0 = p.stats.dmgMult, v0 = p.stats.speedMult;
+        this.ok('guardião: concede e vale nos atributos', G.conceder('ataque', 0, 15) === '' && G.conceder('velocidade', 0, 30) === '' && p.stats.dmgMult > d0 + 0.2 && p.stats.speedMult > v0 + 0.15, `${p.stats.dmgMult} ${p.stats.speedMult}`);
+        this.ok('guardião: experiência 5x multiplica o ganho', G.conceder('xp', 2, 60) === '' && G.xpMult() === 5);
+        this.ok('guardião: evento do mundo e bênção não se somam (vale o maior)', G.abrirEvento(10, 30) === '' && G.xpMult() === 10 && !!G.abrirEvento(4, 30));
+        G.fecharEvento(true);
+        rel += 14 * 60e3; this.ok('guardião: o tempo é o do relógio de verdade (falta 1 min)', Math.round(G.resta('ataque')) === 60);
+        G.conceder('ataque', 0, 15); this.ok('guardião: renovar soma o tempo', Math.round(G.resta('ataque')) === 16 * 60);
+        for (let i = 0; i < 200; i++) G.conceder('ataque', 0, 1440);
+        this.ok('guardião: teto de 24 horas', G.resta('ataque') <= 24 * 3600 + 1);
+        rel += 25 * 3600e3; G._passo = 0; G.update(0.6);
+        this.ok('guardião: acabou o tempo, a bênção sai e os atributos voltam', G.lista().length === 0 && Math.abs(p.stats.dmgMult - d0) < 1e-6 && G.xpMult() === 1);
+        this.ok('guardião: tudo fica no registro', World.state.gm.log.length >= 5);
+        G.agora = agora0; World.state.gm = st0; G._ev = ev0; p.recalc(false);
+        // dublagem: o código da fala é o mesmo da ferramenta e toda fala do manifesto existe no jogo
+        this.ok('vozes: código FNV-1a igual ao da ferramenta', Vozes.codigo('Sem pressa. A pressa mata.') === Vozes.codigo('Sem pressa. A pressa mata.') && Vozes.codigo('abc') === '1a47e90b' && Vozes.codigo('ação') !== Vozes.codigo('acao'));
+        const semDono = Object.keys(VOZES_NPC).filter((id) => { const P = WORLD_POVO.find((q) => q.id === id); return !P || Vozes.falasDe(P).length !== Object.keys(VOZES_NPC[id].falas).length; });
+        this.ok('vozes: toda gravação do manifesto é uma fala de um morador do jogo', semDono.length === 0, semDono.join(' '));
+        const Pv = WORLD_POVO.find((q) => VOZES_NPC[q.id] && Vozes.falasDe(q).length);
+        this.ok('vozes: acha a gravação mesmo com complemento no texto', !Pv || Vozes.achar(Pv, `${Vozes.falasDe(Pv)[0].txt} …E já é noite. Cuidado lá fora.`) === Vozes.falasDe(Pv)[0]);
+      }
       this.ok('rotina: quem senta fica no lugar (não anda)', sentados.every((n) => !n.indo && !n.saindo));
       L = em('aurora_taverna', 3);
       this.ok('rotina: de madrugada a taverna está fechada (o Bento dorme)', !nome(L, 'BENTO'));
@@ -2937,7 +2964,7 @@ const EclipseTests = {
       World.loadZone('velmora_lago', null);
       const R = g.room, C = Agua.corpos(), L = C[0];
       this.ok('motor 3D: os programas de perspectiva (cores e textura) ligam (a água tem precisão igual nos dois shaders)', !R3D.active || (R3D.progsP && R3D.progsP.length === 2 && R3D.progs.length === 2), R3D.progsP && R3D.progsP.length);
-      this.ok('água: o Lago Escuro tem o lago (e as zonas da lista têm rios e lagos)', C.length === 1 && L.lago && Object.keys(Agua.AGUA_ZONAS).length >= 10);
+      this.ok('água: o Lago Escuro tem o lago e o rio que deságua nele (e as zonas da lista têm rios e lagos)', C.length === 2 && L.lago && !!C[1].rio && Object.keys(Agua.AGUA_ZONAS).length >= 10, C.length);
       // margem natural: anda do centro para fora em 12 direções até secar; a margem fica perto da
       // elipse (±15%), mas não é a elipse lisa (o raio relativo varia)
       const margem = (a) => { const c = Math.cos(a), s = Math.sin(a); let d = 0; while (d < 4 * L.rx && Agua.profundidade(L.x + c * d, L.y + s * d) > 0) d += 2; return d; };
@@ -2945,7 +2972,8 @@ const EclipseTests = {
       const rel = [...Array(12)].map((_, i) => margem(i * Math.PI / 6) / elipse(i * Math.PI / 6)), m0 = margem(0);
       const pr = (dx) => Agua.profundidade(L.x + dx, L.y);
       this.ok('água: fundo no meio, raso na margem, seco fora', pr(0) === 1 && pr(m0 - 10) > 0 && pr(m0 - 10) < 1 && pr(m0 + 30) === 0, m0);
-      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', rel.every((r) => r > 0.85 && r < 1.15) && Math.max(...rel) / Math.min(...rel) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
+      const relM = rel.filter((r) => r > 0.85 && r < 1.15);   // (uma das 12 direções é a foz do rio, onde a água continua)
+      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', relM.length >= 11 && Math.max(...relM) / Math.min(...relM) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
       this.ok("água: nenhuma árvore, pedra, morador ou estrutura dentro d'água", !R.pillars.some((q) => !q.cenario && Agua.funda(q.x, q.y)) && !g.npcs.some((n) => Agua.profundidade(n.x, n.y) > 0));
       const p = g.player; p.x = L.x; p.y = L.y; p.air = false; p.state = 'idle'; p.vx = p.vy = 0;
       Agua.update(1 / 60);
@@ -3144,7 +3172,7 @@ const EclipseTests = {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
     if (typeof Estruturas === 'undefined' || typeof ESTRUTURAS_INDICE === 'undefined') { this.ok('estruturas: módulo e índice carregados', false); return; }
     const I = ESTRUTURAS_INDICE, ids = Object.keys(I);
-    this.ok('estruturas: índice com nome, tipo, estilo e medidas no jogo de cada uma', ids.length >= 3 && ids.every((id) => I[id].nome && I[id].tipo && /^(medieval|cyberpunk)$/.test(I[id].estilo) && I[id].h > 0 && I[id].r > 0), ids.length);
+    this.ok('estruturas: índice com nome, tipo, estilo e medidas no jogo de cada uma', ids.length >= 3 && ids.every((id) => I[id].nome && I[id].tipo && /^(medieval|cyberpunk|ruina|bau)$/.test(I[id].estilo) && I[id].h > 0 && I[id].r > 0), ids.length);
     this.ok('estruturas: o índice traz só medidas (as malhas e texturas ficam no arquivo de cada uma, carregado quando a zona pede)', ids.every((id) => !I[id].a && !I[id].tc) && [...document.scripts].every((s) => !/assets\/estruturas\/(?!indice)/.test(s.src) || Estruturas.estado[s.src.split('/').pop().replace('.js', '')]));
     let erro = null;
     try {
@@ -3166,7 +3194,7 @@ const EclipseTests = {
         if (R3D.active) {
           const Q = []; Estruturas.fila3P(g.room, Q, [L0.x + 700, L0.y + 700, 140]);
           const Qd = []; Estruturas.fila3P(g.room, Qd, [L0.x, L0.y, 140]);
-          this.ok('estruturas: 3ª pessoa com as estruturas paradas (matriz e vértices guardados); a que tem a câmera dentro some', Q.length > 0 && Q.every((it) => it.o && it.o.fixo) && Qd.length === Q.length - 1, `${Q.length} ${Qd.length}`);
+          this.ok('estruturas: 3ª pessoa com as estruturas paradas (matriz e vértices guardados); a que tem a câmera dentro some', Q.length > 0 && Q.every((it) => it.o && it.o.fixo) && Qd.length < Q.length && Qd.length >= Q.length - 2, `${Q.length} ${Qd.length}`);   // (some a estrutura com a câmera dentro — e a árvore colada nela, se houver)
           this.ok('estruturas: fora da fila dos moradores na 3ª pessoa (sem refazer vértices a cada quadro)', lug.every((L) => !L.obj || !L.obj.key));
         }
         const p = g.player, x0 = p.x, y0 = p.y;

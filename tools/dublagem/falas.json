@@ -1,0 +1,1346 @@
+{
+ "povo": [
+  {
+   "id": "comerciante",
+   "nome": "COMERCIANTE",
+   "zona": "mercado",
+   "papel": "Mercador",
+   "pers": "Esperto e simpático; fala de tudo como negócio.",
+   "ola": [
+    "Células na mão, sorriso no rosto. O que vai ser hoje?",
+    "Voltou inteiro! Bom para mim: cliente vivo compra de novo."
+   ],
+   "temas": [
+    "Relíquias que o pessoal arranca das ruínas, cápsulas, tônicos e material de oficina. E compro o que você trouxer — até sucata.",
+    "Devagar. Desde o Dia Zero ninguém confia em ninguém. Mas célula é célula: essa ainda vale em qualquer lugar."
+   ],
+   "rumores": [
+    "Um carregador jura que achou uma escada descendo debaixo das Fendas Rubras. Disse que o ar sobe quente lá de baixo.",
+    "Debaixo do letreiro caído dos Portões Partidos tem um cofre de pedágio. Ninguém levou porque ninguém lembra do código. Cofre velho abre no tranco."
+   ]
+  },
+  {
+   "id": "ancia",
+   "nome": "ANCIÃ DESCONECTADA",
+   "zona": "mercado",
+   "papel": "Guardiã das memórias",
+   "pers": "Calma e enigmática; trata o herói como neto.",
+   "ola": [
+    "Senta um pouco, menino. As ruínas esperam.",
+    "Eu sonhei com você de novo. No sonho você também não lembrava."
+   ],
+   "temas": [
+    "Os que o NEXUS não alcança. Arrancamos os implantes no Dia Zero, ou nascemos sem eles. Por isso ainda lembramos: a memória é a única coisa que ele não pode baixar.",
+    "Às 03:12 o céu escureceu e todo mundo conectado parou no meio do passo. Quem acordou já não era gente. Quem não acordou… está nas ruas até hoje.",
+    "Rastejadores e drones são máquinas da limpeza; os legionários eram soldados. Os sacerdotes são piores: eles rezam para o NEXUS, e ele responde."
+   ],
+   "rumores": [
+    "Dizem que o Laboratório Esquecido ainda tem uma voz. Uma gravação que não sabe que o mundo acabou."
+   ]
+  },
+  {
+   "id": "vanda",
+   "nome": "VANDA",
+   "zona": "mercado",
+   "papel": "Ferreira",
+   "pers": "Rabugenta e direta; respeita quem trabalha.",
+   "ola": [
+    "Se veio conversar, conversa martelando. Tenho serviço.",
+    "Relíquia boa é relíquia aprimorada. O resto é enfeite."
+   ],
+   "temas": [
+    "Me traz a relíquia, sucata e células. Cada nível rende dez por cento a mais nos atributos, até o quinto. Do terceiro em diante quero núcleo de elite; no quinto, essência. Sem choro.",
+    "Da Forja Antiga, na Cratera de Obsidiano. Fugi quando a Legião tomou a forja. Um dia eu volto e acendo aquilo de novo."
+   ],
+   "rumores": [
+    "Os forjadores da cratera fazem um selo que vale mais que esta oficina inteira. Só vendem para quem eles respeitam. Ganhe a confiança deles."
+   ]
+  },
+  {
+   "id": "tomas",
+   "nome": "TOMÁS",
+   "zona": "mercado",
+   "papel": "Artesão e engenheiro",
+   "pers": "Curioso e acelerado; sempre com uma peça na mão.",
+   "ola": [
+    "Ah, você! Segura isso aqui… não, deixa. O que manda?",
+    "Se tiver material, eu transformo em coisa útil. Se não tiver, eu falo até você ir buscar."
+   ],
+   "temas": [
+    "Cápsulas de reparo, elixires, tônicos, pedras de retorno… e com núcleo e essência eu forjo uma relíquia de verdade. Quanto mais você cria, mais receitas eu te ensino.",
+    "Sucata você arranca das máquinas que derruba e dos montes de ferro-velho. Erva em Velmora, cristal na Lagoa, gelo em Asterion, fragmento em Seraph, obsidiana na cratera. Núcleo, só de elite."
+   ],
+   "rumores": [
+    "Ouvi um sinal fraco vindo das Galerias de Serviço. Parece um rádio de criança. Alguém devia olhar isso."
+   ]
+  },
+  {
+   "id": "helena",
+   "nome": "HELENA",
+   "zona": "mercado",
+   "papel": "Curandeira",
+   "pers": "Gentil e cansada; cuida de todos sem perguntar nada.",
+   "ola": [
+    "Deixa eu ver esse corte… sente aqui.",
+    "Você de novo. Ainda bem que é você, e ainda bem que está de pé."
+   ],
+   "temas": [
+    "Erva luminosa de Velmora, quando os caçadores trazem. Cristal da lagoa para os elixires. O resto é paciência.",
+    "Menos do que antes. Desde que você começou a limpar as ruas, as pessoas voltaram a sair. Isso cura mais do que eu."
+   ],
+   "rumores": [
+    "A Marta, lá da Praça, não dorme há dois dias. O menino dela sumiu. Se puder, fale com ela."
+   ]
+  },
+  {
+   "id": "rui",
+   "nome": "CAPITÃO RUI",
+   "zona": "mercado",
+   "papel": "Treinador",
+   "pers": "Ex-oficial da Legião; disciplinado e de poucas palavras.",
+   "ola": [
+    "Postura. Respira. Agora fala.",
+    "Quem treina quando está calmo não treme quando a coisa aperta."
+   ],
+   "temas": [
+    "Era. Até perceber que a ordem vinha de uma máquina. Tirei o implante com uma faca de cozinha. Não recomendo.",
+    "Treino todo dia, uma sessão. O desafio da arena é para quando quiser apanhar de propósito. E se a árvore de habilidades estiver torta, eu te ajudo a refazer."
+   ],
+   "rumores": [
+    "Na Praça Carmesim os sacerdotes se juntam ao anoitecer. Não vá sozinho, e não vá cansado."
+   ]
+  },
+  {
+   "id": "marta",
+   "nome": "MARTA",
+   "zona": "praca",
+   "papel": "Moradora da Praça",
+   "pers": "Aflita; não tira os olhos da avenida.",
+   "ola": [
+    "Você viu um menino? Desse tamanho, casaco vermelho…",
+    "Desculpa. Eu falo com todo mundo que passa. Alguém tem que ter visto."
+   ],
+   "temas": [
+    "A Vila da Praça. Uns vinte de nós. A gente planta nas latas e reza para os sacerdotes não descerem a escadaria."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "nina",
+   "nome": "NINA",
+   "zona": "praca",
+   "papel": "Florista",
+   "pers": "Sonhadora; planta flores em latas de munição.",
+   "ola": [
+    "Quer uma flor? Não vale nada, mas é bonita.",
+    "Antes isto era o mercado das flores. Eu estou só começando de novo."
+   ],
+   "temas": [
+    "Porque a praça era vermelha de flor antes de ser vermelha de energia. Alguém precisa lembrar disso."
+   ],
+   "rumores": [
+    "Atrás do altar da Praça tem uma pedra solta. Meu avô escondia as economias ali. Ele não volta para buscar."
+   ]
+  },
+  {
+   "id": "ivo",
+   "nome": "DR. IVO",
+   "zona": "laboratorio",
+   "papel": "Gravação do Projeto ZERO",
+   "pers": "Educado e meticuloso; preso nas 03:12 do Dia Zero.",
+   "ola": [
+    "Bom dia. Ou boa noite? Meu relógio diz 03:12. Ele sempre diz 03:12.",
+    "Identificação, por favor… Ah. Você. O sujeito da ala C. Que alegria."
+   ],
+   "temas": [
+    "Um homem sem conexão, capaz de desligar o que tocasse. Construímos o protótipo. Depois o NEXUS percebeu o que construímos.",
+    "Pergunta interessante. Eu respondo, eu lembro, eu sinto falta de café. Faça você a conta."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "guarda",
+   "nome": "GUARDA-FLORESTA",
+   "zona": "velmora_clareira",
+   "papel": "Guarda da floresta",
+   "pers": "Severa e protetora; conversa com as árvores.",
+   "ola": [
+    "Pise leve. A floresta escuta.",
+    "Você trouxe fogo? Não traga fogo."
+   ],
+   "temas": [
+    "Era a cidade-jardim. As raízes cresceram sobre o concreto em um inverno só, depois do Dia Zero. Agora a cidade é dela.",
+    "Lobos de raiz caçam em bando e envenenam. As sentinelas de esporos se curam se você der tempo. E a guardiã… não acorde a guardiã sem motivo."
+   ],
+   "rumores": [
+    "O Túnel das Raízes tem uma fenda que desce muito. O Ítalo jura que ouviu uma batida lá dentro, como um coração."
+   ]
+  },
+  {
+   "id": "bento",
+   "nome": "BENTO",
+   "zona": "velmora_clareira",
+   "papel": "Caçador e treinador",
+   "pers": "Bem-humorado, conta vantagem, mas é o melhor rastreador da floresta.",
+   "ola": [
+    "Ah, o famoso herói! Eu derrubei um lobo deste tamanho ontem. Deste aqui.",
+    "Silêncio… ouviu? Não? Pois é, eu também não. Bom sinal."
+   ],
+   "temas": [
+    "De longe, se puder. Eles vêm em bando e mordem com veneno. Mate o primeiro rápido e os outros perdem a coragem.",
+    "Um lobo alfa. Cinza, enorme, cicatriz no focinho. Chamamos de Presa-Cinzenta. Ele aparece quando quer."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "maira",
+   "nome": "MAÍRA",
+   "zona": "velmora_lago",
+   "papel": "Curandeira do lago",
+   "pers": "Tranquila, fala devagar; sabe o nome de cada planta.",
+   "ola": [
+    "Bem-vindo ao Vilarejo do Lago Escuro. Respire: aqui o ar ainda é limpo.",
+    "A água está calma hoje. Você também devia estar."
+   ],
+   "temas": [
+    "Quatro famílias e muita teimosia. O lago esconde a gente: os lobos não gostam da água parada.",
+    "Cura, se você colher no ponto certo. Ela brilha mais à noite. Cápsulas, elixires… a Helena, em Carmesin, compra tudo que eu mando."
+   ],
+   "rumores": [
+    "Nas Ruínas Engolidas tem uma cúpula de vidro coberta de musgo. Um observatório. Ninguém achou a porta."
+   ]
+  },
+  {
+   "id": "italo",
+   "nome": "ÍTALO",
+   "zona": "velmora_lago",
+   "papel": "Lenhador e artesão",
+   "pers": "Calado e prático; responde com o mínimo de palavras.",
+   "ola": [
+    "Hm.",
+    "Precisa de alguma coisa feita? Faço."
+   ],
+   "temas": [
+    "Fui programador. Agora corto lenha. Lenha não trava."
+   ],
+   "rumores": [
+    "Embaixo do salgueiro torto, na margem leste do lago, enterraram uma caixa. Eu vi. Não era minha.",
+    "O Túnel das Raízes desce. Ouvi batidas lá embaixo."
+   ]
+  },
+  {
+   "id": "pescadora",
+   "nome": "PESCADORA",
+   "zona": "lagoa_cais",
+   "papel": "Pescadora",
+   "pers": "Supersticiosa e generosa; conta histórias do avô.",
+   "ola": [
+    "Peixe fresco? Não, eu também não tenho. Faz tempo que não tenho.",
+    "Cuidado com a borda. A água brilha bonito, mas puxa."
+   ],
+   "temas": [
+    "Brilha à noite desde o Dia Zero. Os velhos dizem que é a sentinela lá embaixo, chamando quem olha demais.",
+    "Medusas elétricas no ar, carangueijos de casco de aço na margem. As medusas explodem quando caem — derrube de longe."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "ze",
+   "nome": "VELHO ZÉ",
+   "zona": "lagoa_cais",
+   "papel": "Pescador",
+   "pers": "Ranzinza, mas não resiste a uma boa conversa.",
+   "ola": [
+    "Mais um herói. Os peixes continuam sumidos, sabia?",
+    "Senta. Se for para falar, fala sentado. Em pé é para trabalhar."
+   ],
+   "temas": [
+    "Os carangueijos de aço cortaram as redes e espantaram tudo. E o cristal da lagoa… o cristal muda a água. Ou a água muda o cristal. Sei lá."
+   ],
+   "rumores": [
+    "Tem uma gruta debaixo das Ruínas Submersas. Na maré baixa dá para ver a entrada, um arco de pedra com luz azul.",
+    "No Recife de Vidro, um barco afundou com carga do Nexus. A caixa ficou presa no recife. Pesada. Eu sou velho para isso."
+   ]
+  },
+  {
+   "id": "iara",
+   "nome": "IARA",
+   "zona": "lagoa_ilha",
+   "papel": "Curandeira da ilha",
+   "pers": "Mística e direta; vê coisas na água.",
+   "ola": [
+    "A água me contou que você vinha.",
+    "Fique. Os cristais acalmam quem está ferido."
+   ],
+   "temas": [
+    "A Vila dos Pescadores. O que sobrou dela. Os cristais crescem na nossa porta e a gente não sabe se é bênção."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "decio",
+   "nome": "DÉCIO",
+   "zona": "lagoa_ilha",
+   "papel": "Técnico do farol",
+   "pers": "Nervoso e otimista; acredita que dá para religar tudo.",
+   "ola": [
+    "O farol! Se eu chegar ao farol, eu religo o farol. Simples. Quase simples.",
+    "Você é bom de briga? Eu sou bom de fio. Juntos dá."
+   ],
+   "temas": [
+    "Porque os barcos de suprimentos não acham o cais no escuro. Uma luz e a lagoa volta a ter comércio."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "desertor",
+   "nome": "DESERTOR DE NEXUS",
+   "zona": "nexus_portao",
+   "papel": "Ex-técnico da cúpula",
+   "pers": "Culpado e brilhante; fala baixo, olha para os lados.",
+   "ola": [
+    "Fala baixo. As câmeras ainda funcionam em metade dos postes.",
+    "Eu ajudei a construir isso. Agora eu ajudo a derrubar."
+   ],
+   "temas": [
+    "A cidade que pensa. Cada poste, cada porta, cada drone responde ao Arauto, e o Arauto responde ao NEXUS.",
+    "Pelo metrô, se for esperto. As unidades de elite carregam as chaves de acesso."
+   ],
+   "rumores": [
+    "O laboratório corporativo tem um cofre no subsolo. Onde a diretoria guardava os protótipos. Fechado por três portas de segurança."
+   ]
+  },
+  {
+   "id": "kira",
+   "nome": "KIRA",
+   "zona": "nexus_portao",
+   "papel": "Líder da Resistência",
+   "pers": "Firme, carismática; não admite desistência.",
+   "ola": [
+    "A Resistência não tem quartel. Tem gente. Você é gente?",
+    "Mais um dia sem ser encontrada. Isso é vitória."
+   ],
+   "temas": [
+    "Panfletos, sabotagem, contrabando de remédio. Coisa pequena, todo dia. O NEXUS é grande, mas é burro com coisa pequena."
+   ],
+   "rumores": [
+    "Debaixo da escadaria rolante do Mercado Vertical tem um esconderijo nosso esquecido. Pode ficar com o que achar."
+   ]
+  },
+  {
+   "id": "teca",
+   "nome": "TECA",
+   "zona": "nexus_avenida",
+   "papel": "Contato da Resistência",
+   "pers": "Desconfiada e rápida; nunca fica parada no mesmo lugar.",
+   "ola": [
+    "Quem mandou você? …Tá. Fala rápido.",
+    "Não me olha assim. Olha para a avenida e finge que está passeando."
+   ],
+   "temas": [],
+   "rumores": []
+  },
+  {
+   "id": "moura",
+   "nome": "MOURA",
+   "zona": "nexus_metro",
+   "papel": "Contrabandista",
+   "pers": "Ironia em tudo; ganha a vida nos túneis.",
+   "ola": [
+    "Bem-vindo à linha 7. Última parada: lugar nenhum.",
+    "Se for comprar, compre. Se for conversar, cobra igual."
+   ],
+   "temas": [
+    "Quatrocentas pessoas entraram no trem às 03:11. Ninguém desceu. O trem ainda está lá no fundo. Eu não vou."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "otto",
+   "nome": "OTTO",
+   "zona": "nexus_mercado",
+   "papel": "Ferreiro do Mercado Vertical",
+   "pers": "Grandalhão gentil; trata cada relíquia como uma joia.",
+   "ola": [
+    "Bem-vindo ao Mercado Vertical! Seguro como um cofre. Mais ou menos.",
+    "Deixa eu ver o que você carrega… hum, dá para melhorar."
+   ],
+   "temas": [
+    "O Arauto não olha para cá: aqui não tem câmera, só gente gritando preço. É o barulho que protege a gente."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "luz",
+   "nome": "LUZ",
+   "zona": "nexus_mercado",
+   "papel": "Artesã de circuitos",
+   "pers": "Perfeccionista, sarcástica, generosa com quem aprende.",
+   "ola": [
+    "Não toca nos fios. Pronto, tocou. O que você quer?",
+    "Se trouxer núcleo de elite, eu faço mágica. Sem núcleo, faço cápsula."
+   ],
+   "temas": [],
+   "rumores": []
+  },
+  {
+   "id": "bruno",
+   "nome": "BRUNO",
+   "zona": "nexus_mercado",
+   "papel": "Vendedor de rádios",
+   "pers": "Falante e medroso; vende rádios que só pegam uma estação.",
+   "ola": [
+    "Rádio novo! Pega a estação da Resistência e só ela. Recurso de segurança.",
+    "Psiu. Você é da Kira? Diga que sim."
+   ],
+   "temas": [],
+   "rumores": []
+  },
+  {
+   "id": "nomade",
+   "nome": "NÔMADE",
+   "zona": "seraph_oasis",
+   "papel": "Nômade das dunas",
+   "pers": "Sábia e lacônica; mede tudo em dias de caminhada.",
+   "ola": [
+    "O vento disse o seu nome. O vento fala demais.",
+    "Beba água. Depois fale."
+   ],
+   "temas": [
+    "Areia sobre uma cidade que ninguém lembra. O templo é mais velho que o NEXUS. Os sacerdotes vinham rezar aqui antes de terem a quem rezar.",
+    "Escorpiões de sucata embaixo da areia. Tempestades que apagam o caminho. E a sede, que mata mais que os dois."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "salma",
+   "nome": "SALMA",
+   "zona": "seraph_oasis",
+   "papel": "Caravaneira",
+   "pers": "Destemida e prática; já atravessou o deserto vinte vezes.",
+   "ola": [
+    "Sal, água e coragem. A caravana só leva os três.",
+    "Você parece forte. Forte é bom. Forte e rápido é melhor."
+   ],
+   "temas": [
+    "Sal do oásis para Nexus, remédio de Nexus para cá. Sem caravana o oásis morre em um mês."
+   ],
+   "rumores": [
+    "Os escorpiões têm um rei. Mora no Cânion Rubro. O ferrão dele é do tamanho de um homem."
+   ]
+  },
+  {
+   "id": "abel",
+   "nome": "ABEL",
+   "zona": "seraph_oasis",
+   "papel": "Curandeiro do oásis",
+   "pers": "Erudito e paciente; coleciona histórias antigas.",
+   "ola": [
+    "A areia guarda tudo, até as doenças. Sente aqui.",
+    "Já leu alguma coisa hoje? Não? Que pena."
+   ],
+   "temas": [
+    "Uma tumba mais antiga que a do Faraó. As paredes contam como o primeiro código foi escrito. Ninguém que desceu voltou para contar o fim."
+   ],
+   "rumores": [
+    "A tumba esquecida fica na Cidade Engolida, sob uma estátua sem rosto.",
+    "Uma caravana enterrou o pagamento no Mar de Dunas, ao lado de três pedras em fila. Eles morreram na tempestade. O pagamento não."
+   ]
+  },
+  {
+   "id": "alpinista",
+   "nome": "ALPINISTA",
+   "zona": "asterion_acampamento",
+   "papel": "Alpinista",
+   "pers": "Aventureiro e franco; ri do perigo.",
+   "ola": [
+    "Ar fino, cabeça leve. Bem-vindo à encosta!",
+    "Lá em cima a vista vale a subida. Quase."
+   ],
+   "temas": [
+    "Picos, cavernas de gelo e a Fortaleza da Vigília, que guarda o passo. E o pico, onde algo transmite um sinal sem origem.",
+    "Golens de gelo, que deixam o chão escorregadio, lobos da neve e a Legião, que adora frio."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "bram",
+   "nome": "SARGENTO BRAM",
+   "zona": "asterion_acampamento",
+   "papel": "Treinador da Vigília",
+   "pers": "Rígido e justo; acredita em disciplina e sopa quente.",
+   "ola": [
+    "Em forma! …Ou pelo menos de pé.",
+    "A montanha não perdoa. Eu também não."
+   ],
+   "temas": [
+    "Os que guardam o passo desde antes do Dia Zero. A gente não deixa a Legião descer. Nem subir."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "sofia",
+   "nome": "SOFIA",
+   "zona": "asterion_acampamento",
+   "papel": "Irmã de um alpinista",
+   "pers": "Teimosa e esperançosa.",
+   "ola": [
+    "Meu irmão foi para a geleira há três dias. Ele sempre volta. Sempre.",
+    "Você vai subir? Então olha a geleira por mim."
+   ],
+   "temas": [],
+   "rumores": []
+  },
+  {
+   "id": "gunnar",
+   "nome": "GUNNAR",
+   "zona": "asterion_fortaleza",
+   "papel": "Ferreiro da guarnição",
+   "pers": "Barulhento e leal; canta enquanto martela.",
+   "ola": [
+    "HA! Mais um que sobreviveu à subida! Merece uma relíquia afiada.",
+    "O frio deixa o metal honesto. Ou quebra, ou presta."
+   ],
+   "temas": [],
+   "rumores": [
+    "Na Geleira Partida, debaixo do gelo azul, tem uma caixa da Vigília que caiu da carroça. Brilha quando o sol bate."
+   ]
+  },
+  {
+   "id": "neva",
+   "nome": "NEVA",
+   "zona": "asterion_fortaleza",
+   "papel": "Artesã e curandeira",
+   "pers": "Silenciosa e observadora; costura feridas e casacos com a mesma calma.",
+   "ola": [
+    "Feche a porta. O frio entra junto com as visitas.",
+    "Mostre as mãos. Hum. Precisa de luvas e de juízo."
+   ],
+   "temas": [
+    "A Guarnição da Vigília, dentro dos muros da fortaleza. Aqui a Legião não entra. Ainda."
+   ],
+   "rumores": [
+    "As Cavernas de Gelo ecoam demais. Um eco que responde antes de você gritar. Tem algo lá embaixo."
+   ]
+  },
+  {
+   "id": "forjador",
+   "nome": "FORJADOR",
+   "zona": "obsidiano_posto",
+   "papel": "Forjador",
+   "pers": "Orgulhoso e intenso; mede pessoas pelo que constroem.",
+   "ola": [
+    "O calor afasta os fracos. Você ficou.",
+    "A cratera respira. Ouve? Isso é o mundo trabalhando."
+   ],
+   "temas": [
+    "Os que fundiam as armaduras da Legião e se recusaram a continuar. Agora fundimos para quem luta contra ela.",
+    "Elementais de magma, diabretes e a Legião de Ferro. Tudo aqui quer te queimar. Inclusive o chão."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "ignea",
+   "nome": "MESTRA ÍGNEA",
+   "zona": "obsidiano_posto",
+   "papel": "Mestra ferreira",
+   "pers": "Exigente e lendária; só elogia o que merece.",
+   "ola": [
+    "Se veio pedir milagre, traga obsidiana.",
+    "Mostre a relíquia. …Hum. Quem fez isso precisa de umas aulas."
+   ],
+   "temas": [
+    "A chama que acendeu a forja, antes da Legião. Dizem que ainda queima numa câmara sob a Forja Antiga, guardada pelo primeiro forjador — ou pelo que sobrou dele."
+   ],
+   "rumores": [
+    "A câmara do Primeiro Fogo fica sob a Forja Antiga. A entrada tem a marca de um martelo.",
+    "Nas Fendas Ardentes um forjador escondeu as ferramentas antes de morrer. Ferramenta boa não queima."
+   ]
+  },
+  {
+   "id": "cinza",
+   "nome": "CINZA",
+   "zona": "obsidiano_posto",
+   "papel": "Curandeira e alquimista",
+   "pers": "Debochada e sábia; perdeu as sobrancelhas para a alquimia.",
+   "ola": [
+    "Queimadura? Corte? Os dois? Clássico.",
+    "Não cheire isso. Sério, não cheire."
+   ],
+   "temas": [
+    "Erupções, chuva de brasas, incursões da Legião. Todo dia tem um evento novo. Quem ajuda, a gente lembra."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_brasa",
+   "nome": "MESTRA BRASA",
+   "zona": "aurora",
+   "papel": "Ferreira-chefe",
+   "pers": "Direta, orgulhosa do ofício; fala alto por causa da forja.",
+   "ola": [
+    "Chega mais. Metal bom não espera, e eu também não.",
+    "Trouxe minério? Então fala. Se não trouxe, fala mesmo assim."
+   ],
+   "temas": [
+    "Você traz o material, eu dou forma. Cada peça vai num lugar do corpo: capacete, peitoral, ombreiras, luvas, calças, botas, capa. Troque uma de cada vez, combine conjuntos. E se gostar de uma peça, eu aprimoro.",
+    "Ferro dos montes de sucata, couro das feras, tecido dos baús e do mercado. O raro… o raro vem de quem você derruba. Chefes guardam planos que eu não sei fazer sozinha."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_dante",
+   "nome": "DANTE",
+   "zona": "aurora",
+   "papel": "Armeiro",
+   "pers": "Calmo e meticuloso; trata cada arma pelo nome.",
+   "ola": [
+    "Toda lâmina tem um ponto de equilíbrio. Me deixa achar o da sua.",
+    "Voltou. A arma ainda canta?"
+   ],
+   "temas": [
+    "Afino as armas que vocês carregam: cada aprimoramento rende mais dano. E vendo planos e peças que o pessoal da Guilda traz das expedições.",
+    "Desenhos de conjuntos inteiros: Inverno, Deserto, Placas… Com o plano, a Mestra Brasa forja a família toda."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_iris",
+   "nome": "ÍRIS",
+   "zona": "aurora",
+   "papel": "Engenheira",
+   "pers": "Rápida, curiosa, termina as frases dos outros.",
+   "ola": [
+    "Oi! Cuidado com os cabos — não, esses não, esses dão choque.",
+    "Tenho três protótipos queimando. Um deles pode ser o seu."
+   ],
+   "temas": [
+    "Acessórios: módulos, amuletos, núcleos. E relíquias forjadas, se você trouxer núcleo e essência. A bancada de engenharia ali do lado faz ferramentas de coleta e fogueiras portáteis — sim, fogueira portátil, não ri.",
+    "Porque a gente acende uma luz todo amanhecer no alto da torre. Se a luz apaga, todo mundo sabe que alguma coisa entrou."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_otto",
+   "nome": "PROFESSOR OTTO",
+   "zona": "aurora",
+   "papel": "Pesquisador",
+   "pers": "Distraído, apaixonado por qualquer pedra que brilhe.",
+   "ola": [
+    "Ah! Um explorador. Trouxe alguma coisa que ninguém entende?",
+    "Diga que trouxe uma amostra. Por favor."
+   ],
+   "temas": [
+    "Materiais raros. Me dê essência, núcleos e tecnologia antiga e eu reconstruo os planos que o NEXUS apagou. As amostras desconhecidas eu identifico por uma ninharia."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_veridiana",
+   "nome": "VERIDIANA",
+   "zona": "aurora",
+   "papel": "Mestra da Guilda",
+   "pers": "Aventureira aposentada; mede as pessoas pelas cicatrizes.",
+   "ola": [
+    "Mais um que quer ver o mundo? O mundo quer te ver também. Morto, de preferência.",
+    "Contratos novos todo dia. Escolha um que você consiga voltar."
+   ],
+   "temas": [
+    "Juntamos os contratos de todas as regiões abertas: caçadas, coletas. Você escolhe a região aqui e cumpre lá fora. O pagamento vem com reputação."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_caio",
+   "nome": "CAIO",
+   "zona": "aurora",
+   "papel": "Coordenador de missões",
+   "pers": "Organizado ao extremo; tem uma lista para tudo.",
+   "ola": [
+    "Painel atualizado. Quer ver o que precisa de gente?",
+    "Missão cumprida é missão riscada. Adoro riscar."
+   ],
+   "temas": [
+    "No painel aqui e no seu diário (Y). Tudo que está disponível nas regiões aparece lá, com quem dá e onde fica."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_berta",
+   "nome": "BERTA",
+   "zona": "aurora",
+   "papel": "Armazenista",
+   "pers": "Desconfiada, anota cada parafuso.",
+   "ola": [
+    "Guardar ou tirar? Fala logo, tem fila.",
+    "Seu depósito está como você deixou. Eu conferi duas vezes."
+   ],
+   "temas": [
+    "Materiais e peças que não cabem ou que você não quer carregar ficam aqui. Ninguém mexe. Nem eu. Bom, eu conto."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_lia",
+   "nome": "LIA",
+   "zona": "aurora",
+   "papel": "Estalajadeira",
+   "pers": "Maternal e risonha; sabe o nome de todo mundo.",
+   "ola": [
+    "Cama limpa e sopa quente. O resto do mundo pode esperar uma noite.",
+    "Você está com cara de quem dormiu em pedra."
+   ],
+   "temas": [
+    "Uma cama para descansar até de manhã — vida e energia de volta — e um armário para organizar o equipamento e esconder o capacete, se quiser."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_salvio",
+   "nome": "SÁLVIO",
+   "zona": "aurora",
+   "papel": "Mercador",
+   "pers": "Falante; conta vantagem de tudo que vende.",
+   "ola": [
+    "Mercadoria de todas as regiões! Material, cápsula, tônico. Sem fiado.",
+    "Voltou rico? Ótimo, eu também quero voltar rico."
+   ],
+   "temas": [
+    "Material de oficina — ferro, tecido, couro, componentes —, cápsulas, tônicos e relíquias. E compro o que você trouxer."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_mae_ana",
+   "nome": "MÃE ANA",
+   "zona": "aurora",
+   "papel": "Alquimista",
+   "pers": "Sábia e brincalhona; cheira a ervas.",
+   "ola": [
+    "Chá quente para o frio, refresco para o sol. E para a teimosia, nada resolve.",
+    "Machucado de novo? Senta."
+   ],
+   "temas": [
+    "Ervas, cristais e paciência: cápsulas, elixires, tônicos, chá quente e refresco. Quem anda nas montanhas sem chá volta azul. Quem anda no deserto sem refresco não volta."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_teo",
+   "nome": "TEO",
+   "zona": "aurora",
+   "papel": "Morador",
+   "pers": "Menino curioso; quer ser explorador.",
+   "ola": [
+    "Você já foi até a Cratera? É verdade que o chão queima?",
+    "Quando eu crescer vou ter uma capa igual à sua."
+   ],
+   "temas": [
+    "Desde sempre! A Aurora é o único lugar onde os drones não chegam. Minha mãe diz que é porque a cidade fica atrás de um espelho."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "met_vega",
+   "nome": "VEGA",
+   "zona": "metro_centro",
+   "papel": "Ferreira de liga",
+   "pers": "Precisa, impaciente, fala em especificações.",
+   "ola": [
+    "Liga de titânio, solda a frio. Diga o que quer e eu digo quanto custa.",
+    "Se a peça falhar, a culpa é do usuário. Mas a minha não falha."
+   ],
+   "temas": [
+    "Aprimoro relíquias até +5. Na Metrópole, peça sem aprimoramento é peça descartável."
+   ],
+   "rumores": [
+    "Debaixo dos Subníveis tem um cofre da corporação. A porta abre para quem tem a credencial certa — ou um martelo grande."
+   ]
+  },
+  {
+   "id": "met_lia",
+   "nome": "DRA. LIA",
+   "zona": "metro_centro",
+   "papel": "Médica de campo",
+   "pers": "Calma no caos, cansada fora dele.",
+   "ola": [
+    "Sente aqui. Respire. Agora me diz onde dói.",
+    "Remédio é caro na Metrópole. Para você, é só caro."
+   ],
+   "temas": [
+    "Cada esquina tem câmera, cada câmera tem uma sentinela. A gente vive na praça porque aqui o sinal falha."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "met_kai",
+   "nome": "KAI",
+   "zona": "metro_centro",
+   "papel": "Hacker e artesão",
+   "pers": "Rápido, irônico, nunca olha nos olhos — olha para a tela.",
+   "ola": [
+    "Fala rápido, o firewall reinicia em quarenta segundos.",
+    "Trouxe circuito? Então somos amigos."
+   ],
+   "temas": [
+    "Um programa de gestão urbana que ganhou permissão de administrador sobre tudo. Inclusive sobre gente."
+   ],
+   "rumores": [
+    "No Mercado Neon, atrás da banca de peixe sintético, alguém enterrou o próprio cofre antes de fugir."
+   ]
+  },
+  {
+   "id": "met_brutus",
+   "nome": "BRUTUS",
+   "zona": "metro_centro",
+   "papel": "Treinador",
+   "pers": "Ex-segurança da corporação; ri alto, bate mais alto.",
+   "ola": [
+    "Já fui executor. Hoje treino quem derruba executor.",
+    "Postura! Ninguém sobrevive na Metrópole com essa guarda."
+   ],
+   "temas": [
+    "Nunca de frente: a carapaça deles absorve tudo. Rodeie, bata nas costas, saia."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "met_ines",
+   "nome": "INÊS",
+   "zona": "metro_mercado",
+   "papel": "Comerciante do mercado",
+   "pers": "Sabe o preço de tudo e o segredo de todos.",
+   "ola": [
+    "O Mercado Neon nunca fecha. Nem quando devia.",
+    "Cada coisa aqui tem dois preços. Eu te dou o menor."
+   ],
+   "temas": [
+    "Peças, remédios e informação. A informação é a mais cara."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "ruc_tor",
+   "nome": "TOR",
+   "zona": "rc_cidadela",
+   "papel": "Ferreiro da cidadela",
+   "pers": "Silencioso; fala pelo martelo.",
+   "ola": [
+    "…",
+    "Deixa a peça. Volta amanhã. Ou espera."
+   ],
+   "temas": [
+    "Meu avô forjou a coroa do Rei. Fico até alguém tirá-la dele."
+   ],
+   "rumores": [
+    "A cripta da catedral guarda o primeiro cavaleiro que jurou a coroa. Ele ainda está de vigia."
+   ]
+  },
+  {
+   "id": "ruc_saba",
+   "nome": "SABÁ",
+   "zona": "rc_cidadela",
+   "papel": "Curandeira",
+   "pers": "Velha, mordaz, nunca perdeu um paciente que a escutou.",
+   "ola": [
+    "Energia vermelha na ferida? Arde mais que fogo. Senta.",
+    "Mais um herói. Venha ver quantos eu já costurei."
+   ],
+   "temas": [
+    "O que sobrou do coração da capital quando o Rei virou máquina. Ela cura e mata. Na mesma medida."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "ruc_milo",
+   "nome": "MILO",
+   "zona": "rc_cidadela",
+   "papel": "Escriba e artesão",
+   "pers": "Jovem, curioso, coleciona livros que ninguém mais lê.",
+   "ola": [
+    "Trouxe algum livro? Uma página? Uma letra?",
+    "Estou copiando a história da capital. Antes que ela acabe."
+   ],
+   "temas": [
+    "Um engenheiro. Construiu a rede de energia da capital. No Dia Zero, ligou-se a ela para não deixar a cidade apagar."
+   ],
+   "rumores": [
+    "Nos Jardins de Sangue, sob a estátua sem cabeça, os nobres enterraram o tesouro da capital."
+   ]
+  },
+  {
+   "id": "ruc_iara",
+   "nome": "CAPITÃ YARA",
+   "zona": "rc_cidadela",
+   "papel": "Treinadora da Guarda",
+   "pers": "Firme e justa; perdeu a tropa inteira e não perdeu a fé.",
+   "ola": [
+    "A Guarda da Cidadela aceita qualquer um que volte vivo.",
+    "Treine. A capital não perdoa quem hesita."
+   ],
+   "temas": [
+    "Eles somem e aparecem do seu lado. Não corra: gire e golpeie onde vão estar."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "nz_ada",
+   "nome": "ADA",
+   "zona": "nz_santuario",
+   "papel": "Forjadora de código",
+   "pers": "Fala de metal como se fosse programa, e de programa como se fosse metal.",
+   "ola": [
+    "Aqui a forja compila. Mesma coisa, mais rápido.",
+    "Toda peça é um laço. Deixe-me fechar o seu."
+   ],
+   "temas": [
+    "A matéria daqui é instrução. Eu escrevo a peça antes de bater nela."
+   ],
+   "rumores": [
+    "Na Fenda de Dados existe uma descida até a raiz do código. O que guarda a raiz compila quem chega perto."
+   ]
+  },
+  {
+   "id": "nz_eco",
+   "nome": "ECO",
+   "zona": "nz_santuario",
+   "papel": "Curandeira da memória",
+   "pers": "Fala com frases dos outros; diz que guardou todas.",
+   "ola": [
+    "\"Respire fundo.\" Foi o que alguém me disse um dia. Digo para você.",
+    "Aqui o corpo cura rápido. A memória, devagar."
+   ],
+   "temas": [
+    "Uma das pessoas conectadas no Dia Zero. Voltei do Arquivo. Quase inteira."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "nz_bit",
+   "nome": "BIT",
+   "zona": "nz_santuario",
+   "papel": "Artesão de núcleos",
+   "pers": "Criança prodígio; trata o fim do mundo como um quebra-cabeça.",
+   "ola": [
+    "Você é o herói? É mais baixo do que no arquivo.",
+    "Me dá núcleos e eu te dou coisas que não deviam existir."
+   ],
+   "temas": [
+    "A primeira linha do NEXUS. Se ela cair, as outras caem atrás. Simples. Difícil, mas simples."
+   ],
+   "rumores": [
+    "No Mar do Vazio flutua um cofre que ninguém compilou. Dá para abrir com as mãos."
+   ]
+  },
+  {
+   "id": "nz_oren",
+   "nome": "OREN",
+   "zona": "nz_santuario",
+   "papel": "Mestre de armas",
+   "pers": "O último soldado da primeira resistência; não sorri, mas ensina.",
+   "ola": [
+    "Nível cem não é o fim. É onde o treino de verdade começa.",
+    "Mostre a guarda. …De novo."
+   ],
+   "temas": [
+    "Maestria. Cada batalha ainda ensina; o corpo não sobe de nível, mas aprende. Equipamento, conjuntos, aprimoramento: é aí que você cresce."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "met_raia",
+   "nome": "COORDENADORA RAIA",
+   "zona": "metro_centro",
+   "papel": "Coordenadora da Resistência",
+   "pers": "Estrategista; fala em mapas e horários.",
+   "ola": [
+    "Bem-vindo à Metrópole. Fique na praça até aprender as rotas.",
+    "Cada missão aqui tem horário. Atrase e a sentinela chega antes."
+   ],
+   "temas": [
+    "Sentinelas neon que somem e reaparecem, executores com carapaça, agentes que atiram de longe. E o Supervisor, que vê tudo."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "ruc_guardia",
+   "nome": "GUARDIÃ DA CIDADELA",
+   "zona": "rc_cidadela",
+   "papel": "Guardiã da Cidadela",
+   "pers": "Grave e gentil; carrega a chave da cidadela no pescoço.",
+   "ola": [
+    "A cidadela é pequena, mas é nossa.",
+    "Você veio de longe. A capital tem memória longa: ela vai te reconhecer."
+   ],
+   "temas": [
+    "Cavaleiros rubros que se curam quando você para de bater, espectros que atravessam paredes, enxames. E o Rei, no trono."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "nz_engenheiro",
+   "nome": "O ÚLTIMO ENGENHEIRO",
+   "zona": "nz_santuario",
+   "papel": "Último engenheiro do NEXUS",
+   "pers": "Culpado e lúcido; ajudou a construir o que agora combate.",
+   "ola": [
+    "Eu escrevi parte disso. Agora ajudo a apagar.",
+    "Cada fragmento lá fora já foi uma pessoa conectada."
+   ],
+   "temas": [
+    "Fragmentos que se dividem e explodem, arautos que somem e se curam, golens de dados que congelam. Tudo nível alto: venha preparado."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_tobias",
+   "nome": "TOBIAS",
+   "zona": "aurora_bairro",
+   "papel": "Domador da Estrebaria da Guarda",
+   "pers": "Grandalhão de voz mansa; trata os lobos de montaria como filhos.",
+   "ola": [
+    "Devagar perto do cercado. Eles sentem pressa.",
+    "Montaria boa é a que volta sozinha para casa."
+   ],
+   "temas": [
+    "Cavalo não aguenta o Nexus: se assusta com neon, empaca na neve. Lobo grande vai a qualquer lugar. Os cavalos que restam estão nas fazendas do sul, e eu não vendo o que não tenho.",
+    "Não. Montado você corre; para lutar, desce. O lobo se afasta e espera."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_cora",
+   "nome": "CORA ALVES",
+   "zona": "aurora_animais",
+   "papel": "Tratadora de animais",
+   "pers": "Calma e direta; fala com os bichos antes de falar com gente.",
+   "ola": [
+    "Devagar ao entrar: a Asa Noturna estranha gente nova.",
+    "Veio adotar ou só matar a saudade de bicho?"
+   ],
+   "temas": [
+    "O Viveiro dos Alves. Meu avô criava os lobos da guarda; eu cuido de quem chega: lobos, aves, o gato da janela que não é de ninguém.",
+    "Petisco quando tiver fome, brincadeira quando estiver abatido, carinho sempre. Com fome e sozinho, ele murcha. E não leve para a briga: eles não são soldados."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_davi",
+   "nome": "DAVI ALVES",
+   "zona": "aurora_animais",
+   "papel": "Aprendiz do viveiro",
+   "pers": "Menino curioso; jura que entende o que os lobos dizem.",
+   "ola": [
+    "O Farol uivou três vezes hoje. Vai chover, pode escrever.",
+    "A Asa Noturna brilha mais quando está feliz. Repara!"
+   ],
+   "temas": [
+    "Troco a palha, dou comida e escovo os lobos. A Cora diz que um dia eu fico com o viveiro. Se eu não esquecer o portão aberto de novo."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_rui",
+   "nome": "GUARDA RUI",
+   "zona": "aurora_bairro",
+   "papel": "Guarda da muralha",
+   "pers": "Sério e cansado; conta os passos da ronda.",
+   "ola": [
+    "Ronda da muralha. Tudo calmo. Por enquanto.",
+    "Se ouvir o sino do conselho, corra para dentro."
+   ],
+   "temas": [
+    "O Bairro da Muralha: as casas mais velhas da Aurora, encostadas no muro. Taverna, hospedaria, o conselho e o nosso quartel. Quem chega de fora dorme aqui.",
+    "A Capitã Irene treina qualquer um que aguente o boneco de palha. Lá dentro, no quartel.",
+    "Durmo. Das nove às cinco e meia, no beliche do quartel. A Marta fica com a noite; a gente troca na porta, às seis e às dezoito."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_marta",
+   "nome": "GUARDA MARTA",
+   "zona": "aurora_bairro",
+   "papel": "Guarda da muralha (turno da noite)",
+   "pers": "Calada e atenta; prefere a noite porque \"ninguém pergunta nada\".",
+   "ola": [
+    "Ronda da noite. Siga com a lanterna acesa.",
+    "Viu alguma coisa estranha na muralha? Não? Ótimo."
+   ],
+   "temas": [
+    "Porque à noite a rua é honesta: quem anda nela tem motivo. Troco com o Rui na porta do quartel, às seis e às dezoito.",
+    "A taverna enche, a hospedaria apaga as luzes, o Jorge some para a carroça. E eu conto lampiões."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_nina",
+   "nome": "NINA",
+   "zona": "aurora_bairro",
+   "papel": "Moradora",
+   "pers": "Falante, conhece a vida de todo mundo do bairro.",
+   "ola": [
+    "O poço é o melhor lugar para saber das coisas. Água e fofoca, as duas frescas.",
+    "Já foi à taverna? O ensopado do Bento cura até saudade."
+   ],
+   "temas": [
+    "Comer no Javali Dourado, dormir na Chama, levar recado ao conselho e apanhar no quartel. Nessa ordem, se tiver juízo."
+   ],
+   "rumores": [
+    "Meu primo jura que viu luz debaixo da praça de Carmesin. Diz que tem um cofre do tempo do pedágio enterrado lá."
+   ]
+  },
+  {
+   "id": "aur_jorge",
+   "nome": "JORGE",
+   "zona": "aurora_bairro",
+   "papel": "Carroceiro",
+   "pers": "Desconfiado com estranhos, generoso com quem ajuda a descarregar.",
+   "ola": [
+    "Feno, barril e notícia ruim: é o que a carroça traz.",
+    "Cuidado com a roda, está solta desde Velmora."
+   ],
+   "temas": [
+    "Das estradas de Velmora. A floresta engole a trilha toda semana; a gente abre de novo."
+   ],
+   "rumores": [
+    "Na estrada eu passei por uma raiz enorme que descia para o escuro. Os lobos não chegam perto dela."
+   ]
+  },
+  {
+   "id": "aur_bento",
+   "nome": "BENTO",
+   "zona": "aurora_taverna",
+   "papel": "Taverneiro",
+   "pers": "Barrigudo e risonho; serve primeiro e pergunta depois.",
+   "ola": [
+    "Senta! Ensopado de javali, pão de ontem e cerveja de hoje.",
+    "Voltou! O caldeirão sabia."
+   ],
+   "temas": [
+    "O primeiro javali que eu cacei tinha um colar de cobre. Brilhava. Ficou o nome, foi-se o javali."
+   ],
+   "rumores": [
+    "Um cliente bêbado falou de túneis de manutenção em Carmesin que viraram ossário de máquinas. Disse que a entrada fica nas fendas.",
+    "Dizem que um avô escondeu as economias na praça velha, antes do Dia Zero. Ninguém achou."
+   ]
+  },
+  {
+   "id": "aur_cosme",
+   "nome": "COSME",
+   "zona": "aurora_taverna",
+   "papel": "Bardo",
+   "pers": "Dramático; transforma qualquer conversa em balada.",
+   "ola": [
+    "Uma moeda para a canção da noite em que o céu escureceu?",
+    "Ah, um herói! Me conte tudo, eu exagero depois."
+   ],
+   "temas": [
+    "\"Enche a caneca até derramar! Que a noite é longa e o inverno vai durar! O porco tá no fogo e a cerveja é de barril! Batam as botas com força no tablado, que hoje a cantoria é no Javali Dourado! Às três e doze o céu caiu, e quem dormia não acordou; mas numa torre a chama ardeu, e a Aurora ninguém apagou! Bebam até o barril secar, cantem até a garganta rasgar! Um brinde aos loucos que ficaram de pé, um brinde ao Javali Dourado!\"",
+    "\"O vento uiva forte na velha muralha, mas dentro da taberna ninguém perde a batalha! O guarda tá bebendo, esqueceu da guarnição, o taverneiro ri com a moeda na mão! Peguem mais uma rodada de hidromel! Lá fora o mundo desaba em trovão, aqui dentro a gente bate no balcão! Quem cair no chão o companheiro carrega!\"",
+    "Feito de carvalho antigo e cordas de liga flexível. Sobreviveu ao Dia Zero e a duas brigas de taberna. O Bento tentou usar como remo uma vez, mas eu não deixei.",
+    "Fui programador de elevadores. Acredite: a balada paga melhor."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_rosa",
+   "nome": "ROSA",
+   "zona": "aurora_hospedaria",
+   "papel": "Estalajadeira",
+   "pers": "Prática e gentil; troca os lençóis antes de você pedir.",
+   "ola": [
+    "Quarto limpo, porta que tranca e silêncio garantido. Quase sempre.",
+    "A lareira está acesa. Descanse um pouco."
+   ],
+   "temas": [
+    "Da minha mãe, e da mãe dela. A Chama nunca fechou, nem no Dia Zero. A gente só apagou as luzes de fora."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_viajante",
+   "nome": "VIAJANTE ENCAPUZADO",
+   "zona": "aurora_hospedaria",
+   "papel": "Viajante",
+   "pers": "Reservado; fala baixo e olha para a porta.",
+   "ola": [
+    "…Você não me viu aqui.",
+    "As estradas do leste estão vigiadas. Eu vim pelo sul."
+   ],
+   "temas": [
+    "Para onde o NEXUS não olha. Ainda estou procurando esse lugar."
+   ],
+   "rumores": [
+    "Debaixo da lagoa há um arco de pedra com luz azul. Quem desce ouve o mar falando."
+   ]
+  },
+  {
+   "id": "aur_helena",
+   "nome": "CONSELHEIRA HELENA",
+   "zona": "aurora_conselho",
+   "papel": "Conselheira da Aurora",
+   "pers": "Firme e paciente; mede cada palavra.",
+   "ola": [
+    "O conselho ouve todo mundo. Decide devagar, mas decide.",
+    "Há trabalho para quem quer ajudar a cidade."
+   ],
+   "temas": [
+    "Decide quem entra, quem sai, onde vai a comida e quando a Chama acende. E distribui o trabalho: missões e contratos das regiões abertas.",
+    "Ninguém e todos. O conselho tem sete cadeiras; uma está sempre vazia, para quem ainda não voltou."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_didimo",
+   "nome": "ESCRIBA DÍDIMO",
+   "zona": "aurora_conselho",
+   "papel": "Escriba",
+   "pers": "Minucioso; corrige a gramática de quem fala com ele.",
+   "ola": [
+    "Registro tudo. Inclusive esta conversa. Inclusive esta frase.",
+    "Cuidado com os livros. Mais cuidado ainda com o que eles dizem."
+   ],
+   "temas": [
+    "A história da Aurora desde o Dia Zero. Nomes, datas, quem voltou e quem não. O NEXUS apaga; nós escrevemos de novo.",
+    "Às 03:12 a rede inteira obedeceu a uma voz só. Quem estava conectado parou. Quem não estava… fundou esta cidade."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_irene",
+   "nome": "CAPITÃ IRENE",
+   "zona": "aurora_quartel",
+   "papel": "Capitã da Guarda",
+   "pers": "Dura nos treinos, leal fora deles.",
+   "ola": [
+    "Postura! …Ah, é você. Veio treinar ou apanhar?",
+    "O boneco de palha não revida. Os drones revidam. Treine."
+   ],
+   "temas": [
+    "Ronda na muralha, escolta das caravanas e treino de quem quer sair pelos portões e voltar inteiro."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "aur_pedro",
+   "nome": "SOLDADO PEDRO",
+   "zona": "aurora_quartel",
+   "papel": "Soldado",
+   "pers": "Novato animado; ainda acha que a armadura é bonita.",
+   "ola": [
+    "Já derrubei o boneco três vezes hoje! Ele levantou as três.",
+    "A capitã diz que eu luto bem. Ela diz isso rindo."
+   ],
+   "temas": [
+    "Duas semanas. Antes eu vendia pão. Sinto falta do pão."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_ferreiro",
+   "nome": "OSVALDO",
+   "zona": "aurora_bairro",
+   "papel": "Ferreiro ambulante",
+   "pers": "Fala pouco e mostra muito: tudo o que diz cabe numa martelada.",
+   "ola": [
+    "Ferradura, prego, dobradiça. Espada não: espada é com a ferraria grande.",
+    "O fogo da forja esfria se eu parar de falar com você. Brincadeira. Mas nem tanto."
+   ],
+   "temas": [
+    "Onde precisarem. Hoje, nas portas do bairro: metade das dobradiças desta rua fui eu que fiz."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_camponesa",
+   "nome": "LÚCIA",
+   "zona": "aurora",
+   "papel": "Camponesa da feira",
+   "pers": "Prática e risonha; sabe o preço de tudo e o nome de todo mundo.",
+   "ola": [
+    "Ovos de hoje, pão de ontem, conselho de graça.",
+    "Se for subir para a floresta, leve um casaco. A névoa de Velmora não perdoa."
+   ],
+   "temas": [
+    "Do campo para a praça: trigo, lã e ervas. O ferreiro troca dobradiça por queijo, e todo mundo sai ganhando."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_guarda",
+   "nome": "BRUNO",
+   "zona": "aurora",
+   "papel": "Guarda da praça",
+   "pers": "Sério no turno, piadista fora dele.",
+   "ola": [
+    "Praça segura, viajante. Mantenha a lâmina na bainha.",
+    "Ronda das seis, ronda das doze, ronda das dezoito. Entre uma e outra, um pão."
+   ],
+   "temas": [
+    "Na praça, não. Passando os portões, cada região tem o seu. Pergunte no quadro de missões antes de sair."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_hacker",
+   "nome": "NOVA",
+   "zona": "metro_centro",
+   "papel": "Hacker de rua",
+   "pers": "Rápida, irônica, sempre com um olho no visor.",
+   "ola": [
+    "Seu chip está desatualizado. Brincadeira. Você nem tem chip. Isso é ótimo, aliás.",
+    "A praça é segura porque eu deixo ela invisível para eles."
+   ],
+   "temas": [
+    "Escondo a cidade das câmeras do Supervisor. Ele vê um parque vazio. Nós vemos a feira."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_operario",
+   "nome": "BRAGA",
+   "zona": "metro_centro",
+   "papel": "Operário do subsolo",
+   "pers": "Cansado, honesto, cheira a óleo e a café.",
+   "ola": [
+    "Turno de doze horas nos dutos. Se eu dormir em pé, me acorda.",
+    "O teto da caverna pinga. Sempre pingou. A gente só parou de reparar."
+   ],
+   "temas": [
+    "Mantenho o ar circulando. Sem os exaustores, a Metrópole vira uma garrafa fechada."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_comerciante",
+   "nome": "SILAS",
+   "zona": "metro_mercado",
+   "papel": "Comerciante neon",
+   "pers": "Sorriso largo, preço mais largo ainda.",
+   "ola": [
+    "Tudo original, tudo com garantia. A garantia sou eu.",
+    "Neon novo pro seu casaco? Fica lindo na escuridão."
+   ],
+   "temas": [
+    "Luz. Em fios, em placas, em casacos. Aqui embaixo, luz é o que mais vende."
+   ],
+   "rumores": []
+  },
+  {
+   "id": "mes_gm",
+   "nome": "GUARDIÃO DO MUNDO",
+   "zona": "aurora",
+   "papel": "Guardião do Mundo · GM",
+   "pers": "Calmo, direto e justo: fala como quem cuida do mundo inteiro e ainda tem tempo para você.",
+   "ola": [
+    "Eu vigio este mundo. Se precisar de força para a próxima jornada, peça.",
+    "Toda bênção tem hora para acabar. Use bem a sua."
+   ],
+   "temas": [
+    "Vigio. Cuido para que quem luta por este lugar não lute sozinho.",
+    "Força emprestada: experiência em dobro, golpes mais fortes, pele mais dura, pés mais leves. Cada uma dura um tempo do relógio de verdade — e acaba mesmo se você for dormir."
+   ],
+   "rumores": []
+  }
+ ]
+}

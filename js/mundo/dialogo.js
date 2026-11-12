@@ -31,7 +31,8 @@ const Dialogo = {
     this.texto = String(texto || ''); this.vis = 0; this.t = 0;
     this.opcoes = opcoes && opcoes.length ? opcoes : [{ id: 'sair', txt: 'Até logo.', fn: () => this.fechar() }];
     this.sel = Math.max(0, this.opcoes.findIndex((o) => !o.off));
-    if (this.texto) VozSintetica.falar(this.quem, this.texto);
+    // voz gravada do morador (js/mundo/vozes.js); sem dublagem, a voz sintética opcional de sempre
+    if (this.texto && !(typeof Vozes !== 'undefined' && Vozes.falar(this.npc, this.texto))) VozSintetica.falar(this.quem, this.texto);
   },
   fechar() {
     if (!this.aberto) return;
@@ -39,6 +40,7 @@ const Dialogo = {
     if (this.npc) this.npc.talkT = 1.5;
     this.npc = null;
     VozSintetica.parar();
+    if (typeof Vozes !== 'undefined') Vozes.parar();
     if (typeof game !== 'undefined' && game.audio && game.audio.narration) game.audio.narration.stop({ fade: 0.5 });
     if (game.state === 'worlddlg') game.state = 'playing';
     World.save();

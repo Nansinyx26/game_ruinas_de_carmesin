@@ -171,6 +171,12 @@ const Guardiao = {
     const h = Math.floor(seg / 3600), m = Math.floor((seg % 3600) / 60), s2 = seg % 60;
     return h > 0 ? `${h}h${m ? ' ' + String(m).padStart(2, '0') + 'min' : ''}` : m > 0 ? (seg < 600 ? `${m}:${String(s2).padStart(2, '0')}` : `${m} min`) : `${s2}s`;
   },
+  // Tempo curto para a HUD: 23h58, 58m, 4:05, 40s
+  curto(seg) {
+    seg = Math.max(0, Math.round(seg));
+    const h = Math.floor(seg / 3600), m = Math.floor((seg % 3600) / 60), s2 = seg % 60;
+    return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : m >= 10 ? `${m}m` : m > 0 ? `${m}:${String(s2).padStart(2, '0')}` : `${s2}s`;
+  },
   icone(id) {
     let I = this.img[id];
     if (!I) { I = this.img[id] = new Image(); I.src = `assets/icons/buffs/${id}.png`; }
@@ -196,8 +202,8 @@ const Guardiao = {
       if (k > 0.004) { ctx.fillStyle = 'rgba(4,6,12,0.6)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, T / 2 - 1, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.closePath(); ctx.fill(); }
       ctx.globalAlpha = 1;
       ctx.font = `bold 10px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4,6,12,0.9)'; ctx.strokeText(this.tempo(q.r), cx, y + T + 2);
-      ctx.fillStyle = acabando ? '#ff9a8a' : '#e8eefc'; ctx.fillText(this.tempo(q.r), cx, y + T + 2);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4,6,12,0.9)'; ctx.strokeText(this.curto(q.r), cx, y + T + 2);
+      ctx.fillStyle = acabando ? '#ff9a8a' : '#e8eefc'; ctx.fillText(this.curto(q.r), cx, y + T + 2);
       if (q.txt) { ctx.font = `bold 10px ${FONT_UI}`; ctx.textBaseline = 'alphabetic'; ctx.strokeText(q.txt, cx + T / 2 - 6, y + T - 1); ctx.fillStyle = rgba(q.rgb, 1); ctx.fillText(q.txt, cx + T / 2 - 6, y + T - 1); }
       this._hudRects.push({ id: q.id, x: cx - T / 2, y, w: T, h: T + 14 });
     });

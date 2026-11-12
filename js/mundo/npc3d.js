@@ -210,7 +210,7 @@ const NpcModelo = {
     { id: 'mes_gm', npc: 'npc_gm', nome: 'GUARDIÃO DO MUNDO', zona: 'aurora', at: [0.6, 0.42], facing: 1.9, papel: 'Guardião do Mundo · GM', servicos: ['gm'],
       personalidade: 'Calmo, direto e justo: fala como quem cuida do mundo inteiro e ainda tem tempo para você.',
       ola: ['Eu vigio este mundo. Se precisar de força para a próxima jornada, peça.', 'Toda bênção tem hora para acabar. Use bem a sua.'],
-      temas: [['Quem é você?', 'O Guardião do Mundo. Cuido para que quem luta por este lugar não lute sozinho.'],
+      temas: [['O que você faz aqui?', 'Vigio. Cuido para que quem luta por este lugar não lute sozinho.'],
         ['O que são as bênçãos?', 'Força emprestada: experiência em dobro, golpes mais fortes, pele mais dura, pés mais leves. Cada uma dura um tempo do relógio de verdade — e acaba mesmo se você for dormir.']],
       props: [{ id: 'gm_fuzil', no: 'torso', g: [-6.0, -2.2, 6.5], d: [0.04, 0.42, 0.9], y: [-1, 0, 0] },
         { id: 'gm_pistola', no: 'thighR', g: [0.6, 3.4, -4.5], d: [0.28, 0, -0.96], y: [0, 1, 0] }] },
