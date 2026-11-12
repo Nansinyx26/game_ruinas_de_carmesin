@@ -47,11 +47,13 @@ TIPOS = {
 # Fontes com o nome de exportação do Meshy (assets/extra: a cidade abandonada): pedaço do nome do
 # arquivo → (id no jogo, tipo, estilo). O carimbo de data do nome identifica cada uma.
 APELIDOS = {
-    '1110202628': ('predio_abandonado', 'estrutura', 'ruina'), '1110202521': ('bloco_17', 'estrutura', 'ruina'),
-    '1110202848': ('predio_musgo', 'estrutura', 'ruina'), '1110095313': ('galpao_abandonado', 'estrutura', 'ruina'),
-    '1110202701': ('torre_tomada', 'estrutura', 'ruina'), '1110203224': ('ruinas_retomadas', 'estrutura', 'ruina'),
+    # (4º campo: orçamento próprio — prédios cheios de janelas e vegetação solta, em que a redução
+    # empaca acima dos 16 mil triângulos sem perder a forma)
+    '1110202628': ('predio_abandonado', 'estrutura', 'ruina'), '1110202521': ('bloco_17', 'estrutura', 'ruina', 36000),
+    '1110202848': ('predio_musgo', 'estrutura', 'ruina', 30000), '1110095313': ('galpao_abandonado', 'estrutura', 'ruina'),
+    '1110202701': ('torre_tomada', 'estrutura', 'ruina', 30000), '1110203224': ('ruinas_retomadas', 'estrutura', 'ruina'),
     '1110202815': ('predio_de_guerra', 'estrutura', 'ruina'), '1110090007': ('arranha_ceu_caido', 'estrutura', 'ruina'),
-    '1110203006': ('casarao_abandonado', 'estrutura', 'ruina'), '1110203337': ('sobrado_pos_punk', 'estrutura', 'ruina'),
+    '1110203006': ('casarao_abandonado', 'estrutura', 'ruina'), '1110203337': ('sobrado_pos_punk', 'estrutura', 'ruina', 30000, 0.015),   # (5º campo: desvio aceito — sacadas e grades finas)
     'pistola_gm': ('pistola_gm', 'item', 'cyberpunk'), 'metralhadora_gm': ('metralhadora_gm', 'item', 'cyberpunk'), 'coldre_t': ('coldre_gm', 'item', 'cyberpunk'),
     'alaude_bardo': ('alaude_bardo', 'item', 'medieval'),
 }
@@ -196,7 +198,12 @@ def processar(arq, original=None):
     rel = os.path.relpath(original or arq, RAIZ)
     nome = ident(original or arq)
     tipo = tipo_de(rel, nome)
-    T = TIPOS[tipo]
+    T = dict(TIPOS[tipo])
+    ap = _apelido(original or arq)
+    if ap and len(ap) > 3:
+        T['tris'] = ap[3]
+    if ap and len(ap) > 4:
+        T['limite'] = ap[4]
     U.limpar_cena()
     fonte = R.importar(arq, 'Fonte')
     antes = R.diagnosticar(fonte)

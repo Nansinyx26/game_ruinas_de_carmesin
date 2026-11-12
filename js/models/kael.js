@@ -878,6 +878,59 @@ function buildTempestadeNula(g, k, part, lod) {
     return P;
   }
 
+  // ------------------------------------------------------------ inimigos de corpo inteiro
+  // Zumbis e afins (os GLB enviados, no esqueleto do jogo: js/mundo/corpos_inimigos.js). e.zb:
+  // { curva (o quanto anda curvado), bracos (1: estendidos para a frente; 0: pendurados),
+  //   manca (a perna esquerda arrasta), fase (0–1 preparo, 1–2 golpe, 2–3 volta) }
+  const ZB0 = { curva: 0.3, bracos: 1, manca: 0.4, fase: 0 };
+  function zumbiPose(P, e) {
+    rest(P, e);
+    const t = num(e.animTime), Z = e.zb || ZB0, v = num(e.moveSpeed), k = cl(v / 45, 0, 1), cor = cl((v - 70) / 90, 0, 1);
+    const rate = 4.4 + 7.5 * cor, A = 5.5 + 5 * cor;
+    if (e._gt === undefined || t < e._gt || t - e._gt > 0.5) e._gp = t * rate;
+    else e._gp += (t - e._gt) * rate;
+    e._gt = t;
+    const ph = e._gp, s = Math.sin(ph), c = Math.cos(ph), w = Math.sin(t * 1.1 + num(e.x) * 0.01);
+    const mc = Z.manca * (1 - cor);
+    P.bz = Math.abs(c) * (0.7 + 1.1 * cor) * k;
+    P.hz = HZR - 0.9 - Z.curva * 1.8 - 0.6 * cor;
+    P.tp = 0.14 + Z.curva * 0.5 + 0.2 * cor + s * 0.05 * k; P.ty = -s * 0.2 * k; P.tr = (s * 0.1 + mc * 0.12) * k + w * 0.03;
+    P.hy = s * 0.2 * k;
+    P.hp = -0.12 - Z.curva * 0.35; P.hyw = w * 0.2; P.hr = 0.22 + w * 0.08;
+    set3(P.fL, mix(1.4, s * A * (1 - mc * 0.6) + 0.6, k), -4.6 - mc, Math.max(0, c) * (2.2 + 3 * cor) * k * (1 - mc * 0.8));
+    set3(P.fR, mix(-1.4, -s * A + 1, k), 4.8, Math.max(0, -c) * (2.6 + 3 * cor) * k);
+    P.toeL = Math.max(0, -s) * 0.4 * k; P.toeR = Math.max(0, s) * 0.4 * k;
+    // braços: estendidos para a frente (as mãos tremem e balançam fora de compasso) ou pendurados e pesados
+    const b = Z.bracos, tr = Math.sin(t * 9.1) * 0.25;
+    set3(P.hL, mix(1.5 - s * 3 * k, 12.4 + s * 1.6 * k + tr, b), mix(-9.6, -5.4, b), mix(20.5 - Z.curva * 3, 28.6 + c * 1.3 * k + w * 0.8, b));
+    set3(P.hR, mix(1.5 + s * 3 * k, 13.6 - s * 1.6 * k - tr, b), mix(10.2, 5.8, b), mix(21 - Z.curva * 3, 30.2 - c * 1.3 * k - w * 0.8, b));
+    set3(P.pL, 0.2, 0.5, -0.9); set3(P.pR, 0.2, -0.5, -0.9);
+    P.bs = 0; P.cB = 0.04 + 0.3 * k; P.vein = 0; P.rune = 0; P.markE = 0;
+    return P;
+  }
+  // bote: recua os dois braços para cima (preparo), desce com o tronco inteiro (golpe) e volta
+  function zumbiAtaque(P, e) {
+    zumbiPose(P, e);
+    const Z = e.zb || ZB0, f = num(Z.fase);
+    const pre = f < 1 ? eoc(f) : f < 2 ? 1 - eoc(f - 1) : 0;                       // braços recolhidos
+    const gol = f < 1 ? 0 : f < 2 ? eoc(f - 1) : 1 - eoc(cl(f - 2, 0, 1));         // corpo lançado
+    P.tp += -0.22 * pre + 0.42 * gol; P.hz -= 1.6 * gol; P.hp += 0.2 * pre - 0.15 * gol; P.bp = 0.1 * gol;
+    for (const [H, y, dz] of [[P.hL, -5.8, 0], [P.hR, 6.2, 1.2]]) {
+      const x = mix(mix(H[0], 3.5, pre), 17.5, gol), z = mix(mix(H[2], 37 + dz, pre), 25.5 + dz, gol);
+      set3(H, x, mix(H[1], y, Math.max(pre, gol)), z);
+    }
+    set3(P.fR, P.fR[0] + 5 * gol, P.fR[1], P.fR[2]);
+    return P;
+  }
+  // atordoado: cambaleia no lugar com os braços caídos
+  function zumbiTonto(P, e) {
+    zumbiPose(P, e);
+    const t = num(e.animTime), a = Math.sin(t * 5.2), b = Math.cos(t * 3.7);
+    P.tp = 0.3 + a * 0.12; P.tr = b * 0.2; P.hr = b * 0.35; P.hp = 0.25; P.hz = HZR - 2.6 + a * 0.3;
+    set3(P.hL, 2 + a * 2, -9.5, 19.5); set3(P.hR, 2 - a * 2, 10, 20);
+    return P;
+  }
+
   // Defesa (js/heroes/pulo_defesa.js): base baixa e a arma atravessada na frente do peito,
   // nas duas mãos; sobe rápido (a janela do aparo) e treme um pouco a cada golpe defendido
   function blockPose(P, e) {
@@ -1425,6 +1478,9 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (st === 'montado') P = montarPose(POSE, e, m.props || KAEL_PROPS);
       else if (st === 'npc_falar') P = falarPose(POSE, e);
       else if (st === 'npc_guarda') P = guardaPose(POSE, e);
+      else if (st === 'zb_andar') P = zumbiPose(POSE, e);
+      else if (st === 'zb_ataque') P = zumbiAtaque(POSE, e);
+      else if (st === 'zb_tonto') P = zumbiTonto(POSE, e);
       else if (st === 'run') P = runPose(POSE, e);
       else if (st === 'attack') P = attackPose(POSE, e);
       else if (st === 'charge') P = chargePose(POSE, e);

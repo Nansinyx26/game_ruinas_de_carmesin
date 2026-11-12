@@ -975,6 +975,16 @@ const Terreno = (function () {
       T.luzes(100, 0.24); T.sombras(true); T.variacao(0.18, ['120,80,200', '40,160,200']);
     } },
     metropole: { det: 'concreto', pintar: (T, R) => tecno(T, R, ZONAS_TEC[R.def && R.def.id] || ZONAS_TEC._) },
+    // Cidade Morta (js/mundo/cidade_morta.js): asfalto rachado, calçada quebrada, entulho e o mato voltando
+    abandonada: { det: 'concreto', pintar(T, R) {
+      T.base('asfalto');
+      T.camada('concreto', T.manchas(0.22, 300, 131, 0.04));
+      T.camada('destrocos', T.manchas(0.16, 220, 133, 0.04));
+      T.camada('grama', T.manchas(0.2, 180, 137, 0.05));
+      T.camada('terra', T.manchas(0.1, 240, 139, 0.04));
+      T.rachaduras(34, 260); T.sujeira(36, ['18,20,18', '40,44,36'], 20, 90, 0.16, 0.34); T.pocas(9, 18, 60, '22,28,30');
+      T.luzes(100, 0.2); T.sombras(true); T.variacao(0.24, ['70,90,60', '90,90,96']);
+    } },
     // ---- masmorras (por nome da zona)
     caverna: { det: 'pedra', pintar(T, R) {
       T.base('rocha');
@@ -1157,7 +1167,7 @@ const Terreno = (function () {
     const R = { def, theme: THEMES && THEMES[def.theme], w: 1000, h: 1000 }, rec = receita(R);
     if (!rec) return;
     const ids = new Set();
-    const base = { floresta: ['grama', 'terra', 'folhas', 'rocha'], deserto: ['areia', 'rachado', 'rocha', 'destrocos'], neve: ['neve', 'gelo', 'rocha', 'terra'], lagoa: ['grama', 'lama', 'folhas', 'cascalho', 'leito'], vulcao: ['basalto', 'cinza', 'contaminado', 'destrocos', 'rocha'], metropole: ['concreto', 'calcada', 'asfalto', 'grade', 'circuito', 'plataforma'] }[def.theme] || [];
+    const base = { floresta: ['grama', 'terra', 'folhas', 'rocha'], deserto: ['areia', 'rachado', 'rocha', 'destrocos'], neve: ['neve', 'gelo', 'rocha', 'terra'], lagoa: ['grama', 'lama', 'folhas', 'cascalho', 'leito'], vulcao: ['basalto', 'cinza', 'contaminado', 'destrocos', 'rocha'], metropole: ['concreto', 'calcada', 'asfalto', 'grade', 'circuito', 'plataforma'], abandonada: ['asfalto', 'concreto', 'destrocos', 'grama', 'terra'] }[def.theme] || [];
     base.forEach((id) => ids.add(id));
     detalhe(rec.det);
     const fila = [...ids], vez = () => { const id = fila.shift(); if (!id) return; material(id, def.theme === 'metropole' ? 'ciano' : undefined); agenda(vez); };

@@ -52,7 +52,8 @@ class Enemy extends Entity {
   canBeHit() { return this.alive && this.state !== 'spawn' && this.state !== 'dying' && !this.invulnerable; }
   setState(s) { this.state = s; this.stateTime = 0; }
   // Modelo 3D: o do chefe, a criatura do Blender da variante (js/mundo/criaturas3d.js) ou o do tipo
-  modelo3() { return this.isBoss ? 'nexus' : (typeof Criaturas3D !== 'undefined' && Criaturas3D.chave(this)) || this.type; }
+  // (criatura do Blender ou o corpo GLB enviado da variante: js/mundo/criaturas3d.js, js/mundo/corpos_inimigos.js)
+  modelo3() { return this.isBoss ? 'nexus' : (typeof Criaturas3D !== 'undefined' && Criaturas3D.chave(this)) || (typeof CorposInimigos !== 'undefined' && CorposInimigos.chave(this)) || this.type; }
   // Transparência da morte: some no fim (quem tem animação de morte própria demora mais)
   morteAlfa() { const D = this.morteDur || 0.45; return clamp((D - this.stateTime) / Math.min(D, 0.45), 0, 1); }
   releaseToken() { if (this.hasToken) game.director.release(this); }
@@ -248,6 +249,7 @@ class Enemy extends Entity {
     if (this.tracos) EnemyTraits.morreu(this);   // explode, divide
     this.setState('dying');
     if (this.cri) this.morteDur = Criaturas3D.MORTE;   // a criatura cai com a animação de morte
+    else if (this.corpoGLB) this.morteDur = CorposInimigos.MORTE;   // o corpo enviado cai no chão antes de sumir
     this.flash = 0.18;
     this.kbx += (h.kx || 0) * 260 / this.mass; this.kby += (h.ky || 0) * 260 / this.mass;
     if (this.launchable) this.vz = Math.max(this.vz, 160);

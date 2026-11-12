@@ -649,12 +649,10 @@
    1.172,
    1.853
   ],
-  "aprovada": false,
-  "falhas": [
-   "34735 triângulos acima do orçamento 16000"
-  ],
+  "aprovada": true,
+  "falhas": [],
   "glb": "assets/models/estruturas/bloco_17.glb",
-  "segundos": 283
+  "segundos": 298
  },
  {
   "id": "blue_roof_cottage",
@@ -2587,12 +2585,12 @@
   "tipo": "estrutura",
   "estilo": "ruina",
   "antes": 4920607,
-  "depois": 25424,
-  "lod": 22474,
+  "depois": 26615,
+  "lod": 23063,
   "passadas": 3,
   "distancia": {
-   "media": 0.00274,
-   "p95": 0.00954
+   "media": 0.00252,
+   "p95": 0.00859
   },
   "texturas": 4,
   "lado": 1024,
@@ -2601,12 +2599,10 @@
    0.08,
    0.121
   ],
-  "aprovada": false,
-  "falhas": [
-   "25424 triângulos acima do orçamento 16000"
-  ],
+  "aprovada": true,
+  "falhas": [],
   "glb": "assets/models/estruturas/predio_musgo.glb",
-  "segundos": 209
+  "segundos": 170
  },
  {
   "id": "quadro_de_missoes_medieval",
@@ -2714,27 +2710,24 @@
   "tipo": "estrutura",
   "estilo": "ruina",
   "antes": 1157888,
-  "depois": 24372,
-  "lod": 22029,
+  "depois": 27651,
+  "lod": 24633,
   "passadas": 3,
   "distancia": {
-   "media": 0.00384,
-   "p95": 0.01579
+   "media": 0.00303,
+   "p95": 0.01292
   },
   "texturas": 3,
   "lado": 1024,
   "dims": [
    1.279,
    1.14,
-   2.001
+   2.002
   ],
-  "aprovada": false,
-  "falhas": [
-   "desvio de 95% 1.58% acima de 1.2%",
-   "24372 triângulos acima do orçamento 16000"
-  ],
+  "aprovada": true,
+  "falhas": [],
   "glb": "assets/models/estruturas/sobrado_pos_punk.glb",
-  "segundos": 55
+  "segundos": 46
  },
  {
   "id": "torre_antena",
@@ -2767,26 +2760,24 @@
   "tipo": "estrutura",
   "estilo": "ruina",
   "antes": 3417059,
-  "depois": 24411,
-  "lod": 21817,
+  "depois": 26953,
+  "lod": 23820,
   "passadas": 3,
   "distancia": {
-   "media": 0.00186,
-   "p95": 0.00594
+   "media": 0.00151,
+   "p95": 0.00455
   },
   "texturas": 3,
   "lado": 1024,
   "dims": [
    1.007,
-   1.006,
+   0.993,
    1.886
   ],
-  "aprovada": false,
-  "falhas": [
-   "24411 triângulos acima do orçamento 16000"
-  ],
+  "aprovada": true,
+  "falhas": [],
   "glb": "assets/models/estruturas/torre_tomada.glb",
-  "segundos": 146
+  "segundos": 114
  },
  {
   "id": "totem_info",

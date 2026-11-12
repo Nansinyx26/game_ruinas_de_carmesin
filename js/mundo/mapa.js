@@ -16,7 +16,7 @@
 // ---------------------------------------------------------------------------
 const WorldMapArt = (function () {
   const BIOMA = { carmesin: 'ruinas', velmora: 'floresta', asterion: 'montanha', nexus: 'cidade', lagoa: 'lago', seraph: 'deserto', obsidiano: 'vulcao',
-    metropole: 'cidade', ruinas: 'ruinas', nexuszero: 'cidade' };
+    metropole: 'cidade', ruinas: 'ruinas', nexuszero: 'cidade', cidademorta: 'ruinas' };
   const VW = 1100;
 
   // ------------------------------------------------------------ ruído (determinístico)
