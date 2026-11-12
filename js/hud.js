@@ -177,6 +177,7 @@ class HUD {
     // Painéis fixos
     this.drawVitals(ctx, p);
     if (game.world && World.zone) Clima.desenharHud(ctx, HUDV.x, HUDV.bottom + 2);   // temperatura do corpo, roupa molhada
+    this.gmH = game.world && World.zone && typeof Guardiao !== 'undefined' ? Guardiao.hud(ctx, HUDV.x, HUDV.bottom + 28) : 0;   // bênçãos do Guardião: um ícone por bênção, logo abaixo dos vitais
     if (game.world && World.zone && typeof Pets !== 'undefined') Pets.desenharHud(ctx, HUDV.x, HUDV.bottom + 26);   // o animal de companhia e as necessidades
     this.drawRadar(ctx, p, L);
     this.drawScore(ctx, L);
@@ -239,7 +240,7 @@ class HUD {
     if (p.counterT > 0) B.push(['counter', p.counterT, '220,228,240', 'Contra-ataque']);
     if (p.kit) p.kit.hudBuffs(p, B);   // efeitos próprios do personagem (Foco, camuflagem…)
     if (game.world && typeof Oficios !== 'undefined') Oficios.hudBuffs(p, B);   // consumíveis do mundo aberto
-    L.lvlY = (L.compact ? 266 : 140) + (game.world ? 24 : 0);   // no mundo, o termômetro fica logo abaixo dos vitais
+    L.lvlY = (L.compact ? 266 : 140) + (game.world ? 24 : 0) + (this.gmH || 0);   // no mundo, o termômetro fica logo abaixo dos vitais
     L.cellsX = 20; L.cellsY = VIEW_H - 80; L.cellsS = 58;
     // Legenda (caixa e linhas) e altura do letreiro, que sobe para não cobrir a legenda
     this.subBox(ctx);
@@ -257,7 +258,7 @@ class HUD {
     this.zoneN = 0;
     const c = game.counter;
     this.zone('L', 0, 0, HUDV.right, HUDV.bottom);
-    if (game.world) this.zone('L', 0, HUDV.bottom, HUDV.right, HUDV.bottom + 24);   // termômetro (js/mundo/clima.js)
+    if (game.world) this.zone('L', 0, HUDV.bottom, HUDV.right, HUDV.bottom + 24 + (this.gmH || 0));   // termômetro (js/mundo/clima.js) e bênçãos do Guardião
     if (this.lvl) this.zone('L', 0, L.lvlY, 420, L.lvlY + 112);
     this.zone('R', L.radar.x - L.radar.r - 16, 0, VIEW_W, L.radar.y + L.radar.r + 6);
     this.zone('R', VIEW_W - 220, L.scoreY - 24, VIEW_W, L.scoreY + 6);

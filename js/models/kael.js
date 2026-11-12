@@ -878,6 +878,26 @@ function buildTempestadeNula(g, k, part, lod) {
     return P;
   }
 
+  // Tocando o alaúde (o Bardo na taverna, js/mundo/npc3d.js): o instrumento atravessado no tronco,
+  // o bojo no quadril direito e o braço subindo para a esquerda. A mão esquerda segura o braço do
+  // alaúde e troca de casa de tempos em tempos; a direita dedilha sobre a boca do bojo no compasso
+  // (e.compasso: batidas por segundo; e.voz: 0–1, o quanto está cantando agora); o corpo balança,
+  // o pé marca o tempo e a cabeça acompanha o canto, virando de um lado ao outro da sala
+  function tocarPose(P, e) {
+    rest(P, e);
+    const t = num(e.animTime), w = t * num(e.compasso, 2) * Math.PI * 2, voz = num(e.voz, 0.6);
+    const s = Math.sin(w), s2 = Math.sin(w * 2), lento = Math.sin(w * 0.125), casa = Math.sin(t * 0.83) > 0.25 ? 1 : 0;
+    P.hz = HZR - 0.45 + 0.22 * Math.abs(s);
+    P.ty = 0.12 + lento * 0.12; P.tr = lento * 0.05; P.tp = 0.09 + 0.03 * s;
+    P.hp = -0.05 - 0.1 * voz + 0.05 * s; P.hyw = -0.08 + lento * 0.32; P.hr = 0.04 + lento * 0.07;
+    set3(P.hL, 6.9 + casa * 0.1, -5.9 - casa * 1.6, 37.9 + casa * 1.3);
+    set3(P.hR, 8.9 + 0.35 * s2, 3.0 + 1.0 * s2, 31.4 - 1.5 * s2);
+    set3(P.pL, 0.5, 0.6, 0.6); set3(P.pR, -0.4, -0.7, -0.5);
+    set3(P.fL, 2.2, -4.8, 0); set3(P.fR, -1.2, 5.0, 0); P.toeR = Math.max(0, s) * 0.4;
+    P.bs = 0; P.vein = 0; P.rune = 0; P.markE = 0;
+    return P;
+  }
+
   // ------------------------------------------------------------ inimigos de corpo inteiro
   // Zumbis e afins (os GLB enviados, no esqueleto do jogo: js/mundo/corpos_inimigos.js). e.zb:
   // { curva (o quanto anda curvado), bracos (1: estendidos para a frente; 0: pendurados),
@@ -1478,6 +1498,7 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (st === 'montado') P = montarPose(POSE, e, m.props || KAEL_PROPS);
       else if (st === 'npc_falar') P = falarPose(POSE, e);
       else if (st === 'npc_guarda') P = guardaPose(POSE, e);
+      else if (st === 'npc_tocar') P = tocarPose(POSE, e);
       else if (st === 'zb_andar') P = zumbiPose(POSE, e);
       else if (st === 'zb_ataque') P = zumbiAtaque(POSE, e);
       else if (st === 'zb_tonto') P = zumbiTonto(POSE, e);

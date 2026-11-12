@@ -94,29 +94,86 @@ const CONVERSAS = {
     ['aur_jorge', 'Se eu soubesse, já tinha bebido.'], ['aur_nina', 'A Rosa disse que tem hóspede novo. Encapuzado.'], ['aur_jorge', 'Encapuzado na Aurora? Ou é poeta ou é problema.'],
     ['aur_nina', 'Ou os dois.'], ['aur_jorge', 'Os dois é o pior tipo.']],
 };
-// O que o bardo canta (balões) e o que quem dorme resmunga
-const CANTIGAS = [
-  '♪ Enche a caneca até derramar! ♪',
-  '♪ Que a noite é longa e o inverno vai durar! ♪',
-  '♪ O porco tá no fogo e a cerveja é de barril… ♪',
-  '♪ Batam as botas com força no tablado! ♪',
-  '♪ Que hoje a cantoria é no Javali Dourado! ♪',
-  '♪ Às três e doze o céu caiu… ♪',
-  '♪ …e quem dormia não acordou… ♪',
-  '♪ …mas numa torre a chama ardeu… ♪',
-  '♪ …e a Aurora ninguém apagou! ♪',
-  '♪ Bebam até o barril secar! ♪',
-  '♪ Cantem até a garganta rasgar! ♪',
-  '♪ O vento uiva forte na velha muralha… ♪',
-  '♪ …mas na taberna ninguém perde a batalha! ♪',
-  '♪ Lá fora o mundo desaba em trovão… ♪',
-  '♪ …aqui dentro a gente bate no balcão! ♪',
-  '♪ Um brinde aos loucos que ficaram de pé! ♪',
-  '♪ Um brinde ao Javali Dourado! ♪'
+// O que o bardo canta: a letra REAL de dublagem/Bardo/brinde_javali_dourado.mp3, verso a verso, com o
+// começo e o fim de cada um em segundos (transcrição do próprio áudio, com marcação de tempo). O
+// relógio da letra é o do áudio (currentTime): o verso só aparece enquanto está sendo cantado.
+const CANTIGA_SRC = 'dublagem/Bardo/brinde_javali_dourado.mp3';
+const CANTIGA_DUR = 195.6;   // segundos (vale enquanto o arquivo não chegou; depois, a duração dele)
+const CANTIGA = [
+  [19.60, 23.90, 'Eu já passei a vida olhando tela e conexão,'],
+  [24.44, 28.84, 'programava elevador sem ter destino, direção.'],
+  [29.30, 33.96, 'Mas quando o mundo escureceu e tudo ruiu,'],
+  [34.76, 38.90, 'troquei o velho ofício pelas cordas que o céu não viu.'],
+  [39.62, 44.06, 'O vento enche a caneca, o fogo estala no chão.'],
+  [44.76, 49.50, 'Sentem mais perto, amigos, ouçam esta canção.'],
+  [53.06, 56.82, 'Às três e doze o céu caiu,'],
+  [58.08, 61.98, 'e quem dormia não acordou.'],
+  [63.02, 67.84, 'Mas numa torre a chama ardeu,'],
+  [67.92, 71.50, 'e a nossa Aurora ninguém apagou.'],
+  [77.82, 81.62, 'E a nossa Aurora ninguém apagou.'],
+  [85.84, 90.24, 'O sentinela treme no frio da muralha escura.'],
+  [90.60, 95.12, 'O andarilho quieto esconde a amargura.'],
+  [95.18, 99.74, 'Dizem que um homem de preto vaga pelas fendas além,'],
+  [100.08, 104.76, 'com uma lâmpada azul no pulso e a espada de ninguém.'],
+  [104.84, 109.56, 'O mundo lá fora foi tomado pelo ferro e pelo pó,'],
+  [109.94, 118.10, 'mas nesta mesa de madeira nós não estamos sós.'],
+  [118.54, 122.12, 'Às três e doze o céu caiu,'],
+  [123.40, 127.12, 'e quem dormia não acordou.'],
+  [128.32, 133.14, 'Mas numa torre a chama ardeu,'],
+  [133.22, 136.92, 'e a nossa Aurora ninguém apagou.'],
+  [137.90, 141.96, 'Ergam suas canecas, um contra a escuridão.'],
+  [143.28, 149.90, 'Um brinde ao Javali Dourado, que ainda bate em nosso coração.'],
+  [153.74, 157.60, 'Às três e doze o céu caiu,'],
+  [159.22, 163.02, 'mas a Aurora ninguém apagou.'],
+  [166.60, 169.12, 'Saúde, amigo.'],
 ];
+// A cantoria: o áudio toca UMA vez do começo ao fim (sem repetir em laço e sem corte); acabou, o bardo
+// descansa um pouco e começa de novo. Sai da taverna (ou acaba a hora dele): o som para e volta ao zero.
+const Cantoria = {
+  audio: null, t: 0, tocando: false, descanso: 0, mudo: false, DESCANSO: 22, COMPASSO: 1.9,
+  som() {
+    if (this.audio || typeof Audio === 'undefined') return this.audio;
+    const a = this.audio = new Audio(encodeURI(CANTIGA_SRC));
+    a.preload = 'auto'; a.loop = false;
+    a.addEventListener('ended', () => { this.tocando = false; this.descanso = this.DESCANSO; this.t = 0; });
+    a.addEventListener('error', () => { this.mudo = true; });   // arquivo não veio: canta em silêncio, no relógio do jogo
+    return a;
+  },
+  dur() { const a = this.audio; return a && a.duration > 0 && isFinite(a.duration) ? a.duration : CANTIGA_DUR; },
+  parar() {
+    const a = this.audio;
+    if (a) { try { a.pause(); a.currentTime = 0; } catch (e) { /* ainda sem dados */ } }
+    this.tocando = false; this.t = 0; this.descanso = 0;
+  },
+  // A cada quadro em que o bardo está no palco: toca (ou segue tocando) e acerta o volume
+  passo(n, dt) {
+    const A = game.audio, a = this.som(), narrando = !!(A && A.narration && A.narration.isPlaying());
+    if (this.descanso > 0) { this.descanso -= dt; return; }
+    if (narrando) { if (a && !a.paused) { try { a.pause(); } catch (e) { /* nada */ } } return; }   // a narração da história tem a vez
+    if (!a || this.mudo) {   // sem áudio: a música corre no relógio do jogo, só com a letra
+      this.tocando = true; this.t += dt;
+      if (this.t >= CANTIGA_DUR) { this.tocando = false; this.t = 0; this.descanso = this.DESCANSO; }
+      return;
+    }
+    const d = dist(n.x, n.y, game.player.x, game.player.y), perto = clamp(1 - (d / 650) * 0.45, 0.55, 1);
+    a.muted = !!(A && A.muted);
+    a.volume = A ? clamp((A.volume / 0.69) * (A.voiceVol === undefined ? 1 : A.voiceVol) * 0.85 * perto, 0, 1) : 0.8;
+    if (a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => { this.mudo = !this.tocando && a.currentTime === 0; }); }
+    this.tocando = true; this.t = a.currentTime;
+  },
+  // Verso que está sendo cantado agora: { txt, k, a (0–1, entrando e saindo) } ou null (só instrumento)
+  verso() {
+    if (!this.tocando) return null;
+    const t = this.t;
+    for (let k = 0; k < CANTIGA.length; k++) {
+      const V = CANTIGA[k];
+      if (t < V[0] - 0.25) break;
+      if (t <= V[1] + 0.45) return { txt: V[2], k, a: clamp(Math.min((t - (V[0] - 0.25)) / 0.45, (V[1] + 0.45 - t) / 0.6), 0, 1) };
+    }
+    return null;
+  },
+};
 const RESMUNGOS = ['Zzz…', 'Hm… só mais cinco minutos…', 'Zzz… o portão… zzz…', '…volte de manhã…'];
-const BARD_AUDIO_SRC = 'dublagem/Bardo/brinde_javali_dourado.mp3';
-let bardAudio = null;
 
 const Rotina = {
   passo: 0,
@@ -168,9 +225,7 @@ const Rotina = {
   },
   // ------------------------------------------------------------ montagem da zona (World.loadZone)
   aoCarregar(z) {
-    if (bardAudio && (!z || z.id !== 'aurora_taverna')) {
-      try { bardAudio.pause(); bardAudio.currentTime = 0; } catch (e) {}
-    }
+    Cantoria.parar();   // trocou de zona: a música para e volta ao começo
     const g = game, R = g.room;
     for (let i = g.npcs.length - 1; i >= 0; i--) {   // quem tem compromisso em outro lugar não está aqui
       const n = g.npcs[i];
@@ -209,16 +264,9 @@ const Rotina = {
   // ------------------------------------------------------------ a cada quadro (World.update)
   update(dt) {
     const z = World.zone, g = game, R = g.room;
-    if (!z || !R || !(z.distrito || z.id === BAIRRO_ID)) {
-      if (bardAudio && !bardAudio.paused) { try { bardAudio.pause(); } catch (e) {} }
-      return;
-    }
-    if (bardAudio && !bardAudio.paused) {
-      const cosmeAgora = this.agora('aur_cosme');
-      if (z.id !== 'aurora_taverna' || !cosmeAgora || cosmeAgora.tipo !== 'cantar') {
-        try { bardAudio.pause(); } catch (e) {}
-      }
-    }
+    if (!z || !R || !(z.distrito || z.id === BAIRRO_ID)) { if (Cantoria.tocando || Cantoria.descanso > 0) Cantoria.parar(); return; }
+    // a música só existe com o bardo no palco: sem ele cantando nesta zona, para e volta ao começo
+    if ((Cantoria.tocando || Cantoria.descanso > 0) && !g.npcs.some((q) => q instanceof Morador && q.rot && q.rot.tipo === 'cantar' && !q.indo && !q.saindo && !q.sumiu)) Cantoria.parar();
     if ((this.passo -= dt) > 0) return;
     this.passo = 0.5;
     for (let i = g.npcs.length - 1; i >= 0; i--) if (g.npcs[i].sumiu) g.npcs.splice(i, 1);
@@ -263,43 +311,19 @@ const Rotina = {
       return true;
     }
     if (E.tipo === 'cantar') {
-      const narrando = !!(game.audio && game.audio.narration && game.audio.narration.isPlaying());
-      if (!bardAudio) {
-        bardAudio = new Audio(encodeURI(BARD_AUDIO_SRC));
-        bardAudio.preload = 'auto';
-        bardAudio.loop = true;
-        bardAudio.addEventListener('timeupdate', () => {
-          if (!World.zone || World.zone.id !== 'aurora_taverna' || (game.audio && game.audio.muted)) {
-            try { bardAudio.pause(); bardAudio.currentTime = 0; } catch (e) {}
-          }
-        });
-      }
-      if (narrando) {
-        if (!bardAudio.paused) try { bardAudio.pause(); } catch (e) {}
-      } else if (game.audio && !game.audio.muted) {
-        const d = dist(n.x, n.y, game.player.x, game.player.y);
-        const distGain = clamp(1 - (d / 650) * 0.45, 0.55, 1.0);
-        const master = game.audio.volume / 0.69;
-        const voice = game.audio.voiceVol ?? 1.0;
-        bardAudio.volume = clamp(master * voice * 0.85 * distGain, 0, 1);
-        if (bardAudio.paused) {
-          const p = bardAudio.play();
-          if (p && p.catch) p.catch(() => {});
-        }
-      }
-      const isPlaying = bardAudio && !bardAudio.paused && bardAudio.duration > 0;
-      const verseDur = isPlaying ? (bardAudio.duration / CANTIGAS.length) : 4.2;
-      const idx = isPlaying ? Math.floor((bardAudio.currentTime / bardAudio.duration) * CANTIGAS.length) : Math.floor(game.realTime / 4.2);
-      const k = idx % CANTIGAS.length;
-      if (!falando) {
-        n.setState('talk');
-        n.balao(CANTIGAS[k], k, verseDur);
-      }
+      Cantoria.passo(n, dt);
+      n.verso = Cantoria.verso();   // a letra acima da cabeça (Morador.desenharBalao), no tempo do áudio
+      if (!falando) n.setState('talk');
       this.olhar(n, L.giro, dt);
       return true;
     }
     return false;   // trabalho e patrulha: o andar de sempre do morador (pela rota ou de volta ao posto)
   },
+  // O bardo tocando agora (js/mundo/npc3d.js: a pose do alaúde), o compasso e o quanto ele canta (0–1)
+  cantando(n) { return !!(n && n.rot && n.rot.tipo === 'cantar' && !n.indo && !n.saindo && Cantoria.tocando); },
+  compasso() { return Cantoria.COMPASSO; },
+  voz() { const V = Cantoria.verso(); return V ? 0.35 + 0.65 * V.a : 0.08; },
+  cantoria: Cantoria,
   olhar(n, giro, dt) {
     const p = game.player, d = dist(n.x, n.y, p.x, p.y);
     const alvo = d < 160 ? Math.atan2(p.y - n.y, p.x - n.x) : giro;

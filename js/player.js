@@ -1189,6 +1189,7 @@ class Player extends Entity {
     if (this.def.classe && typeof PersClasse !== 'undefined') PersClasse.aplicar(this.def.classe, S);   // classe do personagem criado (js/criacao/dados.js)
     if (typeof Atributos !== 'undefined') Atributos.aplicar(pr, S);   // Força, Vitalidade, Resistência, Agilidade, Inteligência e Sorte (js/atributos.js)
     if (game.world && typeof WorldInv !== 'undefined') WorldInv.apply(S);   // relíquias equipadas (só no mundo aberto)
+    if (game.world && typeof Guardiao !== 'undefined') Guardiao.aplicar(S);   // bênçãos do Guardião do Mundo (js/mundo/guardiao.js)
     HeroPassives.apply(this, S, pr);   // efeitos das passivas das árvores (js/heroes/passivas.js)
     S.armor = Math.min(0.75, S.armor);
     const B = this.def.stats;
@@ -1674,6 +1675,7 @@ class Player extends Entity {
   drawAura(ctx, t) {
     if (this.kit) this.kit.drawAura(this, ctx, t);
     if (typeof AllyFx !== 'undefined') AllyFx.drawAura(this, ctx, t);   // muralha, grito, sentinela, fumaça…
+    if (game.world && typeof Guardiao !== 'undefined') Guardiao.aura(ctx, this, t);   // bênçãos do Guardião: um anel por bênção, na cor dela
     const b = this.buffs;
     const aid = (typeof RosterManager !== 'undefined' && this.def) ? RosterManager.equippedArmor(this.def.id) : null;
     const aDef = (aid && typeof ARMOR_DEFS !== 'undefined') ? ARMOR_DEFS[aid] : null;

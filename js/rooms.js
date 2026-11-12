@@ -268,7 +268,6 @@ class Room {
     if (this.bairro && (x < BAIRRO_RECUO + r || y < BAIRRO_RECUO + r)) return true;
     for (const p of this.pillars) {
       if (p.deco) continue;
-      if (p.cenId === 'alaude_bardo' && typeof Rotina !== 'undefined' && Rotina.agora && Rotina.agora('aur_cosme')?.tipo === 'cantar') continue;
       if (dist2(x, y, p.x, p.y) < (p.r + r) * (p.r + r)) return true;
     }
     return false;

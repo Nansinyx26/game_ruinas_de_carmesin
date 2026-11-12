@@ -4,25 +4,25 @@
   "fonte": "assets/npcs/meshy/alaude_bardo.glb",
   "tipo": "item",
   "estilo": "medieval",
-  "antes": 52418,
+  "antes": 386710,
   "depois": 6000,
   "lod": 1500,
   "passadas": 1,
   "distancia": {
-   "media": 0.00014,
-   "p95": 0.00034
+   "media": 0.00025,
+   "p95": 0.00073
   },
-  "texturas": 3,
+  "texturas": 4,
   "lado": 512,
   "dims": [
-   0.683,
-   0.353,
-   1.899
+   0.997,
+   1.902,
+   1.332
   ],
   "aprovada": true,
   "falhas": [],
   "glb": "assets/models/estruturas/alaude_bardo.glb",
-  "segundos": 2
+  "segundos": 13
  },
  {
   "id": "apartamento_urbano",

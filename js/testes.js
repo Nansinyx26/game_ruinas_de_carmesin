@@ -2004,7 +2004,26 @@ const EclipseTests = {
       let L = em('aurora_taverna', 20);
       const sentados = L.filter((n) => n.state === 'eat' || n.state === 'drink' || n.state === 'sit');
       this.ok('rotina: às 20 h a taverna enche (5+ sentados comendo ou bebendo)', sentados.length >= 5, L.map((n) => `${n.name}:${n.state}`).join(' '));
-      this.ok('rotina: o bardo canta (balão com a cantiga)', !!nome(L, 'COSME') && nome(L, 'COSME').state === 'talk' && (g.realTime += 0.1, Rotina.atualizar(nome(L, 'COSME'), 0.1), !!nome(L, 'COSME').bolha));
+      {
+        // o bardo: a música inteira, uma vez, com a letra real no tempo do áudio
+        const C = Rotina.cantoria, cosme = nome(L, 'COSME'), som0 = C.audio, mudo0 = C.mudo, fSom = C.som;
+        C.parar(); C.audio = null; C.mudo = true; C.som = () => null;   // no teste, o relógio do jogo (sem tocar o arquivo)
+        Rotina.atualizar(cosme, 0.1);
+        this.ok('rotina: o bardo canta (toca o alaúde no palco)', !!cosme && cosme.state === 'talk' && Rotina.cantando(cosme));
+        this.ok('rotina: letra do bardo em ordem, sem sobrepor versos', CANTIGA.every((v, i) => v[1] > v[0] && (i === 0 || v[0] >= CANTIGA[i - 1][1])) && CANTIGA[CANTIGA.length - 1][1] < CANTIGA_DUR);
+        C.t = 10; this.ok('rotina: na introdução (só alaúde) não aparece letra', C.verso() === null);
+        C.t = 21; const v1 = C.verso(); this.ok('rotina: o verso aparece no tempo dele', !!v1 && v1.k === 0 && v1.a > 0.9, JSON.stringify(v1));
+        C.t = 19.5; const v0 = C.verso(); C.t = 24.2; const v2 = C.verso();
+        this.ok('rotina: o verso entra e sai aos poucos', !!v0 && v0.a > 0 && v0.a < 0.6 && !!v2 && v2.k === 0 && v2.a < 0.6, JSON.stringify([v0, v2]));
+        C.t = 51.5; this.ok('rotina: entre os versos a letra some', C.verso() === null);
+        C.t = CANTIGA_DUR - 0.05; Rotina.atualizar(cosme, 0.1);
+        this.ok('rotina: a música acaba sem repetir em laço (o bardo descansa)', !C.tocando && C.descanso > 0 && !Rotina.cantando(cosme) && cosme.verso === null);
+        C.descanso = 0.05; Rotina.atualizar(cosme, 0.1); Rotina.atualizar(cosme, 0.1);
+        this.ok('rotina: depois do descanso recomeça do início', C.tocando && C.t < 1);
+        C.t = 60; C.parar();
+        this.ok('rotina: parar a cantoria volta ao começo', !C.tocando && C.t === 0);
+        C.som = fSom; C.audio = som0; C.mudo = mudo0;
+      }
       this.ok('rotina: quem senta fica no lugar (não anda)', sentados.every((n) => !n.indo && !n.saindo));
       L = em('aurora_taverna', 3);
       this.ok('rotina: de madrugada a taverna está fechada (o Bento dorme)', !nome(L, 'BENTO'));

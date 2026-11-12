@@ -577,6 +577,7 @@ const ThirdView = {
       g.drawGlows(ctx);
       if (R3D && g.room.theme.rain) Backdrop.drawRain(ctx, g.realTime, 0.7);
       for (const e of g.enemies) if (!e.isBoss) e.drawHpBar(ctx);
+      for (const n of g.npcs) if (n.desenharBalao && !n.sumiu) n.desenharBalao(ctx);   // falas dos moradores e a letra do bardo
       g.texts.draw(ctx);
     } finally {
       isoX = ix; isoY = iy;

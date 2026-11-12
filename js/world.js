@@ -547,6 +547,7 @@ const World = {
     Aventuras.update(dt);   // lugares escondidos e quem volta para casa
     Eventos.update(dt);     // eventos dinâmicos da região
     Rotina.update(dt);      // moradores do bairro: chegam, saem e mudam de lugar com a hora
+    if (typeof Guardiao !== 'undefined') Guardiao.update(dt);   // bênçãos do Guardião: regeneração, avisos e fim pelo relógio de verdade
     if (typeof Pets !== 'undefined') Pets.update(dt);   // fome e humor do animal de companhia
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }

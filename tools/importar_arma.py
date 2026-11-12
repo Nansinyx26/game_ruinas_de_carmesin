@@ -76,6 +76,11 @@ ARMAS = {
     'orion_pistola': dict(arq='orion_secundaria.glb', eixo='x', largura='y', inv=True, invz=False, cabo=0.1, mz=-0.2, len=19, tri=6000, fio=True, glow='255,138,31'),
     'sera_bastao': dict(arq='sera_bastao.glb', eixo='x', largura='z', inv=False, invz=False, cabo=0.45, len=62, tri=2400, glow='25,230,210'),
     'sera_drone': dict(arq='sera_drone.glb', eixo='x', largura='z', inv=False, invz=False, cabo=0.5, len=17, tri=2600, glow='25,230,210'),
+    # GM — Guardião do Mundo (assets/GM): o fuzil Solar Viper (o GLB enviado que trocou a metralhadora) e a
+    # pistola do coldre; Bardo (assets/npcs/meshy): o alaúde que ele toca na taverna (na diagonal no arquivo: pca)
+    'gm_fuzil': dict(arq='Fuzil_GM.glb', pasta='assets/GM', eixo='x', largura='y', inv=True, invz=False, cabo=0.33, mz=-0.3, len=36, tri=5200, fio=True, glow='255,196,40'),
+    'gm_pistola': dict(arq='Pistola_GM.glb', pasta='assets/GM', eixo='x', largura='y', inv=True, invz=False, cabo=0.22, mz=-0.3, len=11, tri=3000, fio=True, glow='255,196,40'),
+    'bardo_alaude': dict(arq='alaude_bardo.glb', pasta='assets/npcs/meshy', pca=True, eixo='x', largura='z', inv=True, invz=False, cabo=0.27, len=30, tri=5200, glow='255,190,90'),   # origem no bojo; +X para o braço
 }
 # Armas feitas no Blender (tools/blender/asset_*.py): convertidas sob pedido (--blender), fora da
 # lista padrão até alguém as usar no jogo. glTF com +Y para cima: o comprimento é o eixo y do arquivo

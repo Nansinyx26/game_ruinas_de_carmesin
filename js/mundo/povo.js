@@ -221,7 +221,7 @@ class Morador extends NPC {
     this.bolha = null;   // balão de fala (conversas entre moradores, o bardo, quem resmunga dormindo)
   }
   // Balão sobre a cabeça (k: a fala da vez; a mesma fala não reinicia o balão)
-  balao(txt, k, dur = 3.2) { if (this.bolha && this.bolha.k === k) return; this.bolha = { txt, k, t: dur }; }
+  balao(txt, k, dur = 3.2) { if (this.bolha && this.bolha.k === k) return; this.bolha = { txt, k, t: dur, d: dur }; }
   // Pontos da rotina na sala (frações → posições livres)
   preparar(R) {
     const P = this.P;
@@ -243,76 +243,48 @@ class Morador extends NPC {
     } else {
       super.draw(ctx);
     }
-    this.desenharAderecos(ctx);
-  }
-  desenharAderecos(ctx) {
-    const isBardo = this.P && (this.P.id === 'aur_cosme' || this.P.id === 'npc_bardo');
-    if (!isBardo) return;
-    const cantando = (this.rot && this.rot.tipo === 'cantar') ||
-      (typeof Rotina !== 'undefined' && Rotina.agora && Rotina.agora('aur_cosme')?.tipo === 'cantar' && World.zone && World.zone.id === 'aurora_taverna');
-    if (!cantando) return;
-
-    if (!Morador._alaudeImg) {
-      Morador._alaudeImg = new Image();
-      Morador._alaudeImg.src = 'assets/npcs/meshy/alaude_bardo.png';
-    }
-    const img = Morador._alaudeImg;
-    if (!img.complete || img.naturalWidth === 0) return;
-
-    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
-    const t = typeof game !== 'undefined' ? game.realTime : 0;
-    const dedilhado = Math.sin(t * 8) * 1.5;
-    const balanco = Math.sin(t * 3.5) * 0.08;
-
-    ctx.save();
-    // Posiciona na altura do peito/braços do bardo tocando o alaúde
-    ctx.translate(sx + 2, sy - 24 + dedilhado);
-    ctx.rotate(-0.55 + balanco);
-
-    // O arquivo alaude_bardo.png tem bbox (380, 0, 466, 1276)
-    // Recorta o instrumento com fidelidade e posiciona no corpo do bardo
-    const dw = 14, dh = 36;
-    ctx.drawImage(img, 380, 0, 466, 1276, -dw * 0.5, -dh * 0.45, dw, dh);
-    ctx.restore();
-
-    // Notas musicais flutuando suavemente enquanto canta e toca
-    const noteTime = t * 3.2;
-    const cycle = noteTime % 2.5;
-    if (cycle < 1.8) {
-      ctx.save();
-      const progress = cycle / 1.8;
-      const noteAlpha = Math.sin(progress * Math.PI);
-      const noteX = sx + 8 + Math.sin(progress * 4) * 6;
-      const noteY = sy - 34 - progress * 24;
-      ctx.fillStyle = `rgba(255, 220, 120, ${noteAlpha * 0.85})`;
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(Math.floor(noteTime) % 2 === 0 ? '♪' : '♫', noteX, noteY);
-      ctx.restore();
-    }
-  }
-  desenharAderecosEmissive(ctx) {
-    const isBardo = this.P && (this.P.id === 'aur_cosme' || this.P.id === 'npc_bardo');
-    if (!isBardo) return;
-    const cantando = (this.rot && this.rot.tipo === 'cantar') ||
-      (typeof Rotina !== 'undefined' && Rotina.agora && Rotina.agora('aur_cosme')?.tipo === 'cantar' && World.zone && World.zone.id === 'aurora_taverna');
-    if (!cantando) return;
-
-    if (typeof GlowCache !== 'undefined') {
-      const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
-      const t = typeof game !== 'undefined' ? game.realTime : 0;
-      GlowCache.draw(ctx, '255,190,90', sx + 2, sy - 24, 24, 0.22 + 0.08 * Math.sin(t * 4));
-    }
   }
   drawEmissive(ctx) {
     if (this.sumiu) return;
     if (!this.foto3d) super.drawEmissive(ctx);
-    this.desenharAderecosEmissive(ctx);
-    const B = this.bolha, p = game.player;
-    if (!B || B.t <= 0 || !p || dist(p.x, p.y, this.x, this.y) > 520) return;
+    this.desenharBalao(ctx);
+  }
+  // Ponto da tela logo acima da cabeça (vista isométrica ou 3ª pessoa); null fora da vista
+  topo() {
+    const baixo = this.state === 'sit' || this.state === 'eat' || this.state === 'drink';
+    if (typeof ThirdView !== 'undefined' && ThirdView.active()) {
+      const P = ThirdView.proj(this.x, this.y, this.state === 'sleep' ? 26 : baixo ? this.height * 0.8 : this.height + 12);
+      return P.vis ? { x: P.x, y: P.y - 4 } : null;
+    }
+    return { x: isoX(this.x, this.y), y: isoY(this.x, this.y) - (this.state === 'sleep' ? 40 : baixo ? this.height * 0.85 : this.height + 24) };
+  }
+  // O que está sobre a cabeça: a letra da música (o bardo, no tempo do áudio) ou o balão da fala
+  desenharBalao(ctx) {
+    const p = game.player;
+    if (!p || dist(p.x, p.y, this.x, this.y) > 520) return;
+    const V = this.verso, B = this.bolha;
+    if (V && V.a > 0.01) {
+      // letra cantada: sem caixa, flutuando, entrando e saindo com o verso
+      const T = this.topo(); if (!T) return;
+      const t = game.realTime, sobe = (1 - V.a) * 5 + Math.sin(t * 1.7) * 1.5;
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = V.a;
+      ctx.font = `italic 600 14px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const txt = '♪ ' + V.txt + ' ♪', w = Math.min(430, ctx.measureText(txt).width);
+      ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(12,8,6,0.88)';
+      ctx.strokeText(txt, T.x, T.y - 44 - sobe, w);
+      ctx.fillStyle = '#ffe3a6'; ctx.fillText(txt, T.x, T.y - 44 - sobe, w);
+      ctx.restore();
+      return;
+    }
+    if (!B || B.t <= 0) return;
     // balão: caixa escura com a fala, acima da cabeça, sumindo no fim
-    const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y) - (this.state === 'sleep' ? 40 : this.state === 'sit' || this.state === 'eat' || this.state === 'drink' ? this.height * 0.85 : this.height + 24);
+    const T = this.topo(); if (!T) return;
+    const sx = T.x, sy = T.y;
     ctx.save();
-    ctx.globalAlpha = Math.min(1, B.t / 0.4, (3.2 - B.t) / 0.2 + 0.2);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = clamp(Math.min(B.t / 0.4, ((B.d || 3.2) - B.t) / 0.2 + 0.2), 0, 1);
     ctx.font = `12px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const w = Math.min(300, ctx.measureText(B.txt).width + 18);
     ctx.fillStyle = 'rgba(10,8,14,0.82)'; ctx.strokeStyle = 'rgba(255,214,150,0.55)'; ctx.lineWidth = 1;
@@ -325,6 +297,7 @@ class Morador extends NPC {
     this.animTime += dt; this.stateTime += dt;
     if (this.talkT > 0) this.talkT -= dt;
     if (this.bolha) this.bolha.t -= dt;
+    this.verso = null;   // a letra da música: a rotina repõe a cada quadro enquanto o bardo canta
     const p = game.player, medo = this.perigo();
     // agenda do dia (js/mundo/rotina.js): sentar, comer, dormir, conversar, a guarda, entrar e sair
     if (!medo && this.rot !== undefined && typeof Rotina !== 'undefined' && Rotina.atualizar(this, dt)) return;
@@ -466,6 +439,7 @@ const Povo = {
   servico(npc, s, o, volta) {
     if (Cidade.servico(npc, s, o, volta)) return;   // estações e serviços da cidade principal (js/mundo/cidade.js)
     if (Bairro.servico(npc, s, o, volta)) return;   // a refeição da taverna (js/mundo/bairro.js)
+    if (typeof Guardiao !== 'undefined' && Guardiao.servico(npc, s, o, volta)) return;   // bênçãos do Guardião do Mundo (js/mundo/guardiao.js)
     const reg = World.zone.region, d = Oficios.desconto(reg);
     const extra = d ? ` (−${Math.round(d * 100)}% pela reputação)` : '';
     if (s === 'loja') o.push({ id: 'loja', tag: '$', txt: `Ver mercadorias${extra}`, fn: () => { Dialogo.fechar(); WorldInv.abrir('loja', true, 'mercador'); } });

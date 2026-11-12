@@ -18,10 +18,12 @@
 const NPC3D = {
   aur_bento: { ap: { corpoG: 0, rostoG: 3, cabeloG: 19, barbaG: 9, pele: 3, corCabelo: 1, corBarba: 0, olhos: 0, porte: 2, altura: 1 },
     roupa: { peitoral: 'ini_peitoral', calcas: 'ini_calca', botas: 'ini_botas' } },
-  aur_cosme: { ap: { corpoG: 0, rostoG: 1, cabeloG: 13, barbaG: 11, pele: 1, corCabelo: 3, corBarba: 0, olhos: 2, porte: 0, altura: 3 },
-    roupa: { peitoral: 'n30_patrulheiro_peitoral', calcas: 'ini_calca', botas: 'ini_botas', capa: 'ini_capa' } },
-  npc_bardo: { ap: { npc: 'npc_bardo', corpoG: 0, rostoG: 1, cabeloG: 13, barbaG: 11, pele: 1, corCabelo: 3, corBarba: 0, olhos: 2, porte: 0, altura: 3 },
-    roupa: { peitoral: 'n30_patrulheiro_peitoral', calcas: 'ini_calca', botas: 'ini_botas', capa: 'ini_capa' } },
+  // Cosme, o bardo: o corpo é o GLB enviado (assets/npcs/meshy/Bardo.glb, convertido com o esqueleto
+  // do jogo: tools/importar_criacao.py --so npc_bardo) e o alaúde é o GLB enviado
+  // (assets/npcs/meshy/alaude_bardo.glb → WEAPON3D.bardo_alaude): nas costas e, cantando, nas mãos
+  aur_cosme: { ap: { npc: 'npc_bardo' }, roupa: {},
+    props: [{ id: 'bardo_alaude', no: 'torso', g: [-6.4, 1.5, 9], d: [-0.04, -0.5, 0.86], y: [-1, 0, 0], se: (c) => c.state !== 'npc_tocar' },
+      { id: 'bardo_alaude', no: 'torso', g: [6.5, 3.5, 4], d: [0.033, -0.783, 0.62], y: [1, 0, 0], se: (c) => c.state === 'npc_tocar' }] },
   aur_rosa: { ap: { corpoG: 1, rostoG: 4, cabeloG: 14, barbaG: 0, pele: 1, corCabelo: 2, olhos: 1, porte: 1, altura: 1 },
     roupa: { peitoral: 'ini_peitoral', calcas: 'n30_mago_calcas', botas: 'ini_botas' } },
   aur_helena: { ap: { corpoG: 1, rostoG: 5, cabeloG: 11, barbaG: 0, pele: 2, corCabelo: 4, olhos: 3, porte: 1, altura: 2 },
@@ -37,6 +39,7 @@ const NPC3D = {
 const NpcModelo = {
   defs: {},
   // Estado do morador → estado do corpo no esqueleto do Kael (e a ação da postura)
+  TOCAR: ['npc_tocar', null],
   ESTADOS: { walk: ['run', null], talk: ['npc_falar', null], listen: ['npc_falar', 'ouvir'], sit: ['npc_sentar', null], eat: ['npc_sentar', 'comer'],
     drink: ['npc_sentar', 'beber'], sleep: ['npc_dormir', null], guard: ['npc_guarda', null], fear: ['block', null], idle: ['idle', null] },
   ok() { return typeof PersonagemModelo !== 'undefined' && typeof Criacao3D !== 'undefined' && typeof Player !== 'undefined' && typeof persAparenciaPadrao === 'function'; },
@@ -53,8 +56,12 @@ const NpcModelo = {
       if (!Criacao3D.usa(d)) { this.defs[P.id] = null; return null; }   // sem as peças do corpo: o modelo de sempre
       PersonagemModelo.registrar(d);
       const M = MODELS3D[d.model], pose0 = M.pose, opts0 = M.opts, build0 = M.build;
-      M.build = () => { const m = build0(); if (m) m.pecas = null; return m; };   // só as peças GLB (sem as procedurais do Arsenal)
-      M.pose = (m, e, o) => pose0(m, this.corpo(e, d), o);
+      M.build = () => { const m = build0(); if (m) { m.pecas = null; this.aderecos(m, N); } return m; };   // só as peças GLB (sem as procedurais do Arsenal)
+      M.pose = (m, e, o) => {
+        const c = this.corpo(e, d);
+        pose0(m, c, o);
+        if (m.aderecos) for (const q of m.aderecos) q.nd.vis = !q.se || q.se(c);   // (o alaúde nas costas ou nas mãos)
+      };
       M.opts = (e) => {
         const b = opts0(this.corpo(e, d)), O = e._oNpc || (e._oNpc = {});
         for (const k in O) delete O[k];
@@ -67,6 +74,26 @@ const NpcModelo = {
     }
     return d ? d.model : null;
   },
+  // Adereços do morador (N.props): modelos GLB convertidos pelo importador das armas (WEAPON3D),
+  // presos a um osso — g: ponto no osso; d: para onde aponta o comprimento; y: para onde vai a
+  // espessura (a frente do instrumento, o lado da arma); se(corpo): quando aparece
+  aderecos(m, N) {
+    if (!N.props || !m.nodes) return;
+    const nor = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+    m.aderecos = [];
+    N.props.forEach((Q, k) => {
+      const pai = m.nodes[Q.no], geo = typeof WeaponRig !== 'undefined' ? WeaponRig.geo(Q.id, !!m.tex) : null;
+      if (!pai || !geo) { console.error(`NpcModelo: adereço '${Q.id}' sem modelo convertido (tools/importar_arma.py ${Q.id})`); return; }
+      const nd = pai.add(new N3('adereco' + k)), X = nor(Q.d), Y = nor(Q.y);
+      let Z = nor([X[1] * Y[2] - X[2] * Y[1], X[2] * Y[0] - X[0] * Y[2], X[0] * Y[1] - X[1] * Y[0]]);
+      nd.geo = geo; nd.p = Q.g.slice();
+      // ângulos do nó (como o encaixe das armas, js/heroes/armas3d.js): X ao longo da peça, Z a largura
+      const y2 = Z[0] * X[1] - Z[1] * X[0];
+      nd.r = [Math.atan2(y2, Z[2]), Math.asin(clamp(-X[2], -1, 1)), Math.atan2(X[1], X[0])];
+      m.nodes[nd.name] = nd; m.rest[nd.name] = { p: nd.p.slice(), r: nd.r.slice(), s: nd.s.slice() };
+      m.aderecos.push({ nd, se: Q.se });
+    });
+  },
   // Corpo de vitrine do morador: um Player fora do jogo com a posição, o giro e o estado dele
   corpo(e, d) {
     let c = e._corpo;
@@ -74,7 +101,12 @@ const NpcModelo = {
       c = e._corpo = new Player(e.x, e.y, d);
       c.vitrine = true; c.wpnOut = false; c.pecasPrevia = d.roupa; c.idleVariant = 'idle_breathing'; c.idleBlend = 0;
     }
-    const S = this.ESTADOS[e.state] || this.ESTADOS.idle;
+    let S = this.ESTADOS[e.state] || this.ESTADOS.idle;
+    // cantando na hora da cantoria (js/mundo/rotina.js): toca o alaúde, no compasso e na voz da música
+    if (e.P && (e.state === 'talk' || e.state === 'idle') && typeof Rotina !== 'undefined' && Rotina.cantando && Rotina.cantando(e)) {
+      S = this.TOCAR;
+      c.compasso = Rotina.compasso ? Rotina.compasso() : 2; c.voz = Rotina.voz ? Rotina.voz() : 0.6;
+    }
     if (c.state !== S[0]) c.stateTime = 0;
     c.state = S[0]; c.npcAcao = S[1];
     c.x = e.x; c.y = e.y; c.z = 0; c.facing = c.viewFacing = e.facing;
@@ -172,11 +204,21 @@ const NpcModelo = {
       personalidade: 'Sorriso largo, preço mais largo ainda.',
       ola: ['Tudo original, tudo com garantia. A garantia sou eu.', 'Neon novo pro seu casaco? Fica lindo na escuridão.'],
       temas: [['O que você vende?', 'Luz. Em fios, em placas, em casacos. Aqui embaixo, luz é o que mais vende.']] },
+    // O Guardião do Mundo (GM): o corpo é o GLB enviado (assets/GM/GM_parado.glb → npc_gm), com o fuzil
+    // (assets/GM/Fuzil_GM.glb → WEAPON3D.gm_fuzil) atravessado nas costas e a pistola
+    // (assets/GM/Pistola_GM.glb → gm_pistola) na coxa. As bênçãos dele: js/mundo/guardiao.js
+    { id: 'mes_gm', npc: 'npc_gm', nome: 'GUARDIÃO DO MUNDO', zona: 'aurora', at: [0.6, 0.42], facing: 1.9, papel: 'Guardião do Mundo · GM', servicos: ['gm'],
+      personalidade: 'Calmo, direto e justo: fala como quem cuida do mundo inteiro e ainda tem tempo para você.',
+      ola: ['Eu vigio este mundo. Se precisar de força para a próxima jornada, peça.', 'Toda bênção tem hora para acabar. Use bem a sua.'],
+      temas: [['Quem é você?', 'O Guardião do Mundo. Cuido para que quem luta por este lugar não lute sozinho.'],
+        ['O que são as bênçãos?', 'Força emprestada: experiência em dobro, golpes mais fortes, pele mais dura, pés mais leves. Cada uma dura um tempo do relógio de verdade — e acaba mesmo se você for dormir.']],
+      props: [{ id: 'gm_fuzil', no: 'torso', g: [-6.0, -2.2, 6.5], d: [0.04, 0.42, 0.9], y: [-1, 0, 0] },
+        { id: 'gm_pistola', no: 'thighR', g: [0.6, 3.4, -4.5], d: [0.28, 0, -0.96], y: [0, 1, 0] }] },
   ];
   for (const P of M) {
-    NPC3D[P.id] = { ap: { npc: P.npc }, roupa: {} };
+    NPC3D[P.id] = { ap: { npc: P.npc }, roupa: {}, props: P.props };
     if (typeof WORLD_POVO !== 'undefined' && !WORLD_POVO.some((q) => q.id === P.id)) {
-      const { npc, ...dados } = P;
+      const { npc, props, ...dados } = P;
       WORLD_POVO.push(Object.assign({ model: 'civil', variant: 0, servicos: [], meshy: npc }, dados));
     }
   }

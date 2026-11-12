@@ -84,9 +84,6 @@ const Cenario = (function () {
   // js/assets/arquitetura3d.js, pelo js/mundo/bairro.js)
   function registrarModelos() {
     if (typeof PROPS3D === 'undefined') return;
-    if (!PROPS3D.alaude_bardo) {
-      PROPS3D.alaude_bardo = { n: 120, q: 10, w: 14.0, d: 8.0, h: 26.0, r: 8.0, glow: '255,190,90', src: 'assets/npcs/meshy/alaude_bardo.glb', img: 'assets/npcs/meshy/alaude_bardo.png' };
-    }
     for (const id in PROPS3D) {
       if (MODELS3D['cen_' + id]) continue;
       MODELS3D['cen_' + id] = {
@@ -115,47 +112,25 @@ const Cenario = (function () {
     }
     canTalk() { return false; }
     update(dt) { this.t += dt; }
-    estaEmUso() {
-      if (this.cenId === 'alaude_bardo') {
-        const cosme = typeof Rotina !== 'undefined' && Rotina.agora && Rotina.agora('aur_cosme');
-        return !!(cosme && cosme.tipo === 'cantar');
-      }
-      return false;
-    }
     drawShadow(ctx) {
-      if (this.estaEmUso()) return;
       const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(sx, sy, this.radius * 1.2, this.radius * 0.6, 0, 0, TAU); ctx.fill();
     }
     draw(ctx) {
-      if (this.estaEmUso()) return;
       const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y);
-      const W = typeof PROPS3D !== 'undefined' && PROPS3D[this.cenId];
-      if (W && W.img) {
-        if (!this._propImg) { this._propImg = new Image(); this._propImg.src = encodeURI(W.img); }
-        if (this._propImg.complete && this._propImg.naturalWidth > 0) {
-          const w = this.radius * 3.4, h = (w / this._propImg.naturalWidth) * this._propImg.naturalHeight;
-          ctx.drawImage(this._propImg, sx - w / 2, sy - h + 4, w, h);
-          return;
-        }
-      }
       if (game.use3D && this.spr && this.spr.ok) { R3D.blit(ctx, this.spr, sx, sy); return; }
       // sem o motor 3D: um bloco com a cor do brilho
       ctx.fillStyle = 'rgba(40,40,56,0.95)'; ctx.fillRect(sx - this.radius * 0.7, sy - this.height, this.radius * 1.4, this.height);
       if (this.lightRgb) { ctx.fillStyle = rgba(this.lightRgb, 0.8); ctx.fillRect(sx - 2, sy - this.height * 0.9, 4, this.height * 0.7); }
     }
     drawEmissive(ctx) {
-      if (this.estaEmUso()) return;
       if (!game.use3D || !this.spr || !this.spr.ok) return;
       R3D.blitEmissive(ctx, this.spr, isoX(this.x, this.y), isoY(this.x, this.y), 1);
       if (this.lightRgb) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; GlowCache.draw(ctx, this.lightRgb, isoX(this.x, this.y), isoY(this.x, this.y) - this.height * 0.6, this.radius * 1.6, 0.18 + 0.05 * Math.sin(this.t * 2)); ctx.restore(); }
     }
     headPoint() { return { x: isoX(this.x, this.y), y: isoY(this.x, this.y) - this.height }; }
     // 3ª pessoa (ThirdView.queueProp): o mesmo modelo, com o giro do objeto
-    modelo3D() {
-      if (this.estaEmUso()) return null;
-      return game.model3(this.key);
-    }
+    modelo3D() { return game.model3(this.key); }
   }
 
   // Põe os objetos da zona que carregou (longe das passagens, do portal e dos moradores) e o
