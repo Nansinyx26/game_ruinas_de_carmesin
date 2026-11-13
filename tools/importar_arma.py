@@ -63,7 +63,7 @@ ARMAS = {
     'kael_espada': dict(arq='kael_espada_oficial.glb', cortar=[(50, 70, -9, -2.4)], eixo='y', largura='x', inv=True, invz=False, cabo=0.1, len=64, tri=2600, glow='60,150,255'),
     # a variação lê o remesh do Meshy (lote de teste, docs/topologia/LOTE_MESHY.md: 2.986 triângulos,
     # desvio de 95% 0,04%), já devolvido à escala da fonte; a fonte continua em assets/armas/eclipse/kael_espada.glb
-    'kael_espada_alt': dict(arq='kael_espada_alinhado.glb', pasta='assets/_retopo/meshy', pca=True, eixo='x', largura='z', inv=True, invz=False, cabo=0.12, len=64, tri=2400, glow='60,150,255'),
+    'kael_espada_alt': dict(arq='kael_espada_alinhado.glb', pasta='assets/_retopo/meshy', pca=True, eixo='x', largura='z', inv=False, invz=False, cabo=0.12, len=64, tri=2400, glow='60,150,255'),
     'drakos_machado': dict(arq='drakos_machado.glb', eixo='y', largura='x', inv=False, invz=True, cabo=0.2, len=60, tri=2800, glow='255,46,61'),
     'drakos_martelo': dict(arq='drakos_martelo.glb', eixo='y', largura='x', inv=False, invz=False, cabo=0.2, len=60, tri=2800, glow='255,46,61'),
     'lyra_arco': dict(arq='lyra_arco.glb', eixo='y', largura='x', inv=False, invz=False, cabo=0.5, len=46, tri=2600, glow='190,90,255',
@@ -79,6 +79,8 @@ ARMAS = {
     # GM — Guardião do Mundo (assets/GM): o fuzil Solar Viper (o GLB enviado que trocou a metralhadora) e a
     # pistola do coldre; Bardo (assets/npcs/meshy): o alaúde que ele toca na taverna (na diagonal no arquivo: pca)
     'gm_fuzil': dict(arq='Fuzil_GM.glb', pasta='assets/GM', eixo='x', largura='y', inv=True, invz=False, cabo=0.33, mz=-0.3, len=36, tri=5200, fio=True, glow='255,196,40'),
+    # o coldre tático da coxa do Guardião (o comprimento vai do cinto para baixo; a origem fica no corpo do coldre)
+    'gm_coldre': dict(arq='Coldre_Tático.glb', pasta='assets/GM', eixo='y', largura='x', inv=True, invz=False, cabo=0.42, len=15, tri=3600, fio=True, glow='255,196,40'),
     'gm_pistola': dict(arq='Pistola_GM.glb', pasta='assets/GM', eixo='x', largura='y', inv=True, invz=False, cabo=0.22, mz=-0.3, len=11, tri=3000, fio=True, glow='255,196,40'),
     'bardo_alaude': dict(arq='alaude_bardo.glb', pasta='assets/npcs/meshy', pca=True, eixo='x', largura='z', inv=True, invz=False, cabo=0.27, len=30, tri=5200, glow='255,190,90'),   # origem no bojo; +X para o braço
 }

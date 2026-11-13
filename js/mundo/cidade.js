@@ -426,8 +426,11 @@ class CidadeProp extends NPC {
     super({ model: null, name: '', lines: ['…'] }, x, y);
     this.kind = kind; this.data = data || {}; this.key = null; this.t = rand(0, 10);
     const B = this.data.predio;
-    this.radius = kind === 'monumento' ? 46 : kind === 'banca' ? 30 : 20;
-    this.height = kind === 'monumento' ? 90 : 34;
+    // a Chama da Aurora: o corpo é o GLB do Altar de Cristal Dourado (estrutura altar_cristal, js/mundo/estruturas.js);
+    // este objeto fica como o ponto de interação, o calor (js/mundo/clima.js) e o brilho do cristal
+    this.altar = kind === 'monumento' && typeof ESTRUTURAS_INDICE !== 'undefined' && !!ESTRUTURAS_INDICE.altar_cristal;
+    this.radius = kind === 'monumento' ? (this.altar ? 64 : 46) : kind === 'banca' ? 30 : 20;
+    this.height = kind === 'monumento' ? (this.altar ? 122 : 90) : 34;
     this.lightRgb = kind === 'monumento' ? '255,190,110' : kind === 'banca' ? '255,214,150' : B ? B.luz : '255,200,120';
     const nomes = { forja: 'FORJA', armas: 'BANCADA DE ARMAS', laboratorio: 'LABORATÓRIO', engenharia: 'BANCADA DE ENGENHARIA', guilda: 'QUADRO DA GUILDA', missoes: 'PAINEL DE MISSÕES', armazem: 'DEPÓSITO', cama: 'CAMA' };
     this.name = kind === 'monumento' ? 'CHAMA DA AURORA' : kind === 'banca' ? 'BANCA DO MERCADO' : nomes[this.data.est] || 'ESTAÇÃO';
@@ -450,7 +453,13 @@ class CidadeProp extends NPC {
       raiz('Contratos de todas as regiões abertas. Escolha a região.');
     }
   }
-  update(dt) { this.t += dt; if (this.talkT > 0) this.talkT -= dt; }
+  update(dt) {
+    this.t += dt; if (this.talkT > 0) this.talkT -= dt;
+    if (this.altar && !this._noAltar && typeof Estruturas !== 'undefined') {   // o ponto de interação e o brilho ficam onde o altar foi posto
+      const A = Estruturas.atual(), L = A && A.lug.find((q) => q.id === 'altar_cristal');
+      if (L) { this.x = L.x; this.y = L.y; this._noAltar = true; }
+    }
+  }
   headPoint() { return { x: isoX(this.x, this.y), y: isoY(this.x, this.y) - this.height - 18 }; }
   drawShadow(ctx) {}
   draw(ctx) {
@@ -462,6 +471,7 @@ class CidadeProp extends NPC {
       f([P(x - w / 2, y + d / 2, z), P(x + w / 2, y + d / 2, z), P(x + w / 2, y + d / 2, z + h), P(x - w / 2, y + d / 2, z + h)], frente);
       f([P(x - w / 2, y - d / 2, z + h), P(x + w / 2, y - d / 2, z + h), P(x + w / 2, y + d / 2, z + h), P(x - w / 2, y + d / 2, z + h)], top);
     };
+    if (this.altar) return;   // (o altar é desenhado pela estrutura)
     ctx.save();
     if (this.kind === 'monumento') {
       caixa(0, 0, 0, 70, 70, 14, '#4a4658', '#2a2836', '#36334a');
@@ -488,7 +498,26 @@ class CidadeProp extends NPC {
   drawEmissive(ctx) {
     const sx = isoX(this.x, this.y), sy = isoY(this.x, this.y), e = this.data.est;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    if (this.kind === 'monumento') GlowCache.draw(ctx, '255,190,110', sx, sy - 80, 120, 0.55 + 0.1 * Math.sin(this.t * 3));
+    if (this.altar) {
+      // brilho do cristal: um núcleo dourado que pulsa, o halo largo, raios girando e centelhas subindo
+      const tp = typeof ThirdView !== 'undefined' && ThirdView.active(), t = this.t, pulso = 0.5 + 0.5 * Math.sin(t * 2.4);
+      const P = (z) => { if (tp) { const q = ThirdView.proj(this.x, this.y, z); return q.vis ? [q.x, q.y, q.k] : null; } return [sx, sy - z, 1]; };
+      const c = P(92), topo = P(118);
+      if (c) {
+        const k = tp ? clamp(c[2], 0.25, 3) : 1;
+        GlowCache.draw(ctx, '255,200,90', c[0], c[1], 150 * k, 0.34 + 0.12 * pulso);
+        GlowCache.draw(ctx, '255,236,170', c[0], c[1], 54 * k, 0.6 + 0.25 * pulso);
+        GlowCache.draw(ctx, '255,255,235', c[0], c[1], 20 * k, 0.75 + 0.2 * pulso);
+        ctx.strokeStyle = `rgba(255,224,140,${(0.16 + 0.1 * pulso).toFixed(3)})`; ctx.lineWidth = 2 * k;
+        for (let i = 0; i < 6; i++) { const a = t * 0.35 + i * Math.PI / 3, r0 = 26 * k, r1 = (70 + 22 * Math.sin(t * 1.3 + i)) * k; ctx.beginPath(); ctx.moveTo(c[0] + Math.cos(a) * r0, c[1] + Math.sin(a) * r0 * 0.8); ctx.lineTo(c[0] + Math.cos(a) * r1, c[1] + Math.sin(a) * r1 * 0.8); ctx.stroke(); }
+        for (let i = 0; i < 7; i++) {   // centelhas: sobem do cristal e somem
+          const f = (t * 0.33 + i / 7) % 1, a = i * 2.4 + t * 0.5, q = P(96 + f * 70);
+          if (q) GlowCache.draw(ctx, '255,214,120', q[0] + Math.cos(a) * (10 + 16 * f) * k, q[1], (5 - 3 * f) * k, 0.8 * (1 - f));
+        }
+        if (topo) GlowCache.draw(ctx, '255,150,60', topo[0], topo[1], 60 * k, 0.2 + 0.1 * Math.sin(t * 5.1));   // o calor do fogo em volta
+      }
+    }
+    else if (this.kind === 'monumento') GlowCache.draw(ctx, '255,190,110', sx, sy - 80, 120, 0.55 + 0.1 * Math.sin(this.t * 3));
     else if (e === 'forja') GlowCache.draw(ctx, '255,120,40', sx - 12, sy - 26, 44, 0.6 + 0.2 * Math.sin(this.t * 7));
     else if (e === 'laboratorio' || e === 'engenharia') GlowCache.draw(ctx, e === 'laboratorio' ? '80,220,255' : '255,214,90', sx, sy - 34, 34, 0.45);
     else GlowCache.draw(ctx, this.lightRgb, sx, sy - 30, 30, 0.25);
@@ -496,6 +525,7 @@ class CidadeProp extends NPC {
   }
   // Modelo para a 3ª pessoa (ThirdView.queueProp)
   modelo3D() {
+    if (this.altar) return null;   // (o altar entra pela fila das estruturas)
     const C = Cidade._m3 || (Cidade._m3 = {}), k = this.kind === 'estacao' ? `est:${this.data.est}` : this.kind;
     if (C[k]) return C[k];
     const g = new G3(), e = this.data.est;

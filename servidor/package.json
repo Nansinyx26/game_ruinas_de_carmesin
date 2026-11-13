@@ -1,0 +1,14 @@
+{
+  "name": "eclipse-zero-servidor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de chat e de Game Master do Eclipse Zero (WebSocket)",
+  "type": "module",
+  "main": "servidor.mjs",
+  "scripts": {
+    "start": "node servidor.mjs",
+    "test": "node teste.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": { "ws": "^8.18.0" }
+}

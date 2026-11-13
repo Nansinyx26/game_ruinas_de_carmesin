@@ -142,9 +142,11 @@ const WorldTime = {
   simular(dt, C) {
     const P = this.parts, W = VIEW_W, H = VIEW_H, wind = (C.wind || 0.4) * (0.4 + 0.6 * this.intensidade());
     // quantidade pela intensidade, pela exposição da zona e pela qualidade dos efeitos de clima
-    const q = this.intensidade() * (typeof Clima !== 'undefined' ? Clima.qual().part * (0.3 + 0.7 * Clima.exposicao()) : 1);
+    const expo = typeof Clima !== 'undefined' ? Clima.exposicao() : 1;
+    const q = this.intensidade() * (typeof Clima !== 'undefined' ? Clima.qual().part : 1);
     const n = (v) => Math.round((v || 0) * q);
-    const fl = n(C.flakes), sa = n(C.sand), as = n(C.ash), em = n(C.embers), ff = n(C.fireflies);
+    // lugar fechado: nada do que cai do céu (neve, areia, cinza) entra; brasas e vaga-lumes são do lugar
+    const fl = expo > 0 ? n(C.flakes) : 0, sa = expo > 0 ? n(C.sand) : 0, as = expo > 0 ? n(C.ash) : 0, em = n(C.embers), ff = expo > 0 ? n(C.fireflies) : 0;
     const want = fl + sa + as + em + ff;
     if (P.length > want) P.length = want;
     while (P.length < want) {
@@ -188,10 +190,10 @@ const WorldTime = {
         ctx.fillStyle = g; ctx.fillRect(x - 320, y - 320, 640, 640);
       }
     }
-    // chuva: a quantidade pela intensidade; nos interiores, só um pouco (pelas frestas)
-    // (dentro dos prédios do bairro, js/mundo/bairro.js, nada: nem chuva nem neve)
-    const dentro = !!game.room.interior;
-    if (C.rain && !dentro && typeof Backdrop !== 'undefined') Backdrop.drawRain(ctx, t, C.rain * k * (typeof Clima !== 'undefined' ? 0.25 + 0.75 * Clima.exposicao() : 1));
+    // chuva: a quantidade pela intensidade. Em lugar fechado (interiores dos prédios, masmorras,
+    // laboratórios, cavernas) nada: nem chuva, nem neve, nem areia, nem cinza
+    const dentro = !!game.room.interior || (typeof Clima !== 'undefined' && Clima.coberto());
+    if (C.rain && !dentro && typeof Backdrop !== 'undefined') Backdrop.drawRain(ctx, t, C.rain * k);
     if (!dentro) for (const q of this.parts) {
       if (q.k === 'neve') { ctx.fillStyle = 'rgba(240,246,255,0.85)'; ctx.beginPath(); ctx.arc(q.x, q.y, 1.2 + q.s, 0, TAU); ctx.fill(); }
       else if (q.k === 'areia') { ctx.strokeStyle = 'rgba(230,180,110,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q.x - 18 * q.s, q.y - 2); ctx.stroke(); }

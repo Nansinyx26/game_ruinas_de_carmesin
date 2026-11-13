@@ -486,7 +486,8 @@ const ThirdView = {
       // estações, monumento e bancas da cidade (js/mundo/cidade.js): de frente para a rua
       const o = n._o3p || (n._o3p = {}), B = n.data && n.data.predio;
       o.yaw = n.cenId ? n.facing : B && B.lado === 'W' ? -Math.PI / 2 : 0; o.scale = n.escalaCen || 1; o.lift = 0; o.roll = 0; o.pitch = 0; o.flash = 0; o.emi = 1; o.holo = false; o.ghost = null; o.tint = null;
-      place(R3D.queue(n.modelo3D(), null, null, o), n);
+      const M3d = n.modelo3D();
+      if (M3d) place(R3D.queue(M3d, null, null, o), n);
     } else if (n.kind === 'quadro' || (n.kind === 'evento' && n.sub !== 'fragmento' && !n.feito)) {
       // quadro de contratos, estandarte da incursão e carroça da caravana (js/mundo/povo.js, eventos.js)
       const o = n._o3p || (n._o3p = {});
@@ -553,7 +554,7 @@ const ThirdView = {
       for (const n of g.npcs) {
         const k = n.kind;
         if (k === 'gate' || k === 'portal' || k === 'campanha' || k === 'missao' || k === 'entrada' || k === 'tesouro' || (k === 'evento' && n.sub === 'fragmento')) { n.draw(ctx); n.drawEmissive(ctx); }
-        else if (k === 'quadro' || k === 'evento' || (k === 'chest' && n.rar !== undefined)) n.drawEmissive(ctx);   // brilho e vida da carroça (o modelo vai em 3D); aura e nome dos baús
+        else if (k === 'quadro' || k === 'evento' || k === 'monumento' || (k === 'chest' && n.rar !== undefined)) n.drawEmissive(ctx);   // brilho e vida da carroça (o modelo vai em 3D); aura e nome dos baús
       }
       ctx.restore();
       p.drawAura(ctx, g.realTime);
@@ -575,7 +576,7 @@ const ThirdView = {
       g.drawEclipseFx(ctx);
       g.arcs.draw(ctx, g.realTime);
       g.drawGlows(ctx);
-      if (R3D && g.room.theme.rain) Backdrop.drawRain(ctx, g.realTime, 0.7);
+      if (R3D && g.room.theme.rain && !g.room.interior && !(g.world && typeof Clima !== 'undefined' && Clima.coberto())) Backdrop.drawRain(ctx, g.realTime, 0.7);   // (nunca em lugar fechado)
       for (const e of g.enemies) if (!e.isBoss) e.drawHpBar(ctx);
       for (const n of g.npcs) if (n.desenharBalao && !n.sumiu) n.desenharBalao(ctx);   // falas dos moradores e a letra do bardo
       g.texts.draw(ctx);

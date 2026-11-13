@@ -455,6 +455,14 @@ function buildTempestadeNula(g, k, part, lod) {
     // espada relaxada, baixa e ao lado da perna direita: a lâmina cai na diagonal para fora, ponta perto do chão
     set3(P.hR, 2.5, 9.6, 24.6 + br * 0.2); set3(P.pR, -0.8, 0.7, -0.2);
     set3(P.hL, 0.8, -8.3, 21.5 + br * 0.2); set3(P.pL, -0.8, -0.5, -0.2);
+    // moradores e inimigos de corpo inteiro (sem arma na mão): os dois braços soltos e iguais, um pouco
+    // mais baixos e afastados (e.maoZ, e.maoY: ajuste pelo tamanho do corpo), em vez da mão direita na
+    // posição de quem segura a espada
+    if (e.vitrine && e.wpnOut === false && e.def && e.def.npc) {
+      const dz = num(e.maoZ), dy = num(e.maoY);
+      set3(P.hL, 0.8, -8.3 - dy, 21.5 + dz + br * 0.2); set3(P.hR, 0.8, 8.3 + dy, 21.5 + dz + br * 0.2);
+      set3(P.pL, -0.8, -0.5, -0.2); set3(P.pR, -0.8, 0.5, -0.2);
+    }
     set3(P.bd, 0.30, 0.78, -0.45); set3(P.bu, 0, 0, 1);
     P.bs = 1; P.reach = 0; P.grip2 = 0; P.fc = 1;
     P.cB = 0.04; P.cFl = 0.02; P.cFq = 1.7; P.flare = 0.06;

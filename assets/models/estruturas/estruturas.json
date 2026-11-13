@@ -25,6 +25,31 @@
   "segundos": 13
  },
  {
+  "id": "altar_cristal",
+  "fonte": "assets/estruturas_ambiente/Estruturas_Superficie/Altar_Cristal_Dourado.glb",
+  "tipo": "estrutura",
+  "estilo": "medieval",
+  "antes": 30878,
+  "depois": 11998,
+  "lod": 2998,
+  "passadas": 1,
+  "distancia": {
+   "media": 0.0001,
+   "p95": 0.00029
+  },
+  "texturas": 3,
+  "lado": 1024,
+  "dims": [
+   0.782,
+   0.772,
+   0.951
+  ],
+  "aprovada": true,
+  "falhas": [],
+  "glb": "assets/models/estruturas/altar_cristal.glb",
+  "segundos": 4
+ },
+ {
   "id": "apartamento_urbano",
   "fonte": "assets/estruturas_ambiente/Estruturas_Subsolo_tecnologico/Apartamento_urbano.glb",
   "tipo": "estrutura",

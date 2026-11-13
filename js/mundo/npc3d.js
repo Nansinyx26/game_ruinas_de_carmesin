@@ -86,7 +86,7 @@ const NpcModelo = {
       if (!pai || !geo) { console.error(`NpcModelo: adereço '${Q.id}' sem modelo convertido (tools/importar_arma.py ${Q.id})`); return; }
       const nd = pai.add(new N3('adereco' + k)), X = nor(Q.d), Y = nor(Q.y);
       let Z = nor([X[1] * Y[2] - X[2] * Y[1], X[2] * Y[0] - X[0] * Y[2], X[0] * Y[1] - X[1] * Y[0]]);
-      nd.geo = geo; nd.p = Q.g.slice();
+      nd.geo = geo; nd.p = Q.g.slice(); if (Q.e) nd.s = [Q.e, Q.e, Q.e];   // (e: escala da peça)
       // ângulos do nó (como o encaixe das armas, js/heroes/armas3d.js): X ao longo da peça, Z a largura
       const y2 = Z[0] * X[1] - Z[1] * X[0];
       nd.r = [Math.atan2(y2, Z[2]), Math.asin(clamp(-X[2], -1, 1)), Math.atan2(X[1], X[0])];
@@ -100,6 +100,7 @@ const NpcModelo = {
     if (!c) {
       c = e._corpo = new Player(e.x, e.y, d);
       c.vitrine = true; c.wpnOut = false; c.pecasPrevia = d.roupa; c.idleVariant = 'idle_breathing'; c.idleBlend = 0;
+      const N = e.P && NPC3D[e.P.id]; if (N && N.pose) Object.assign(c, N.pose);   // ajuste da pose pelo corpo (mãos)
     }
     let S = this.ESTADOS[e.state] || this.ESTADOS.idle;
     // cantando na hora da cantoria (js/mundo/rotina.js): toca o alaúde, no compasso e na voz da música
@@ -206,19 +207,23 @@ const NpcModelo = {
       temas: [['O que você vende?', 'Luz. Em fios, em placas, em casacos. Aqui embaixo, luz é o que mais vende.']] },
     // O Guardião do Mundo (GM): o corpo é o GLB enviado (assets/GM/GM_parado.glb → npc_gm), com o fuzil
     // (assets/GM/Fuzil_GM.glb → WEAPON3D.gm_fuzil) atravessado nas costas e a pistola
-    // (assets/GM/Pistola_GM.glb → gm_pistola) na coxa. As bênçãos dele: js/mundo/guardiao.js
+    // (assets/GM/Pistola_GM.glb → gm_pistola) no coldre tático da coxa (Coldre_Tático.glb → gm_coldre). As bênçãos dele: js/mundo/guardiao.js
     { id: 'mes_gm', npc: 'npc_gm', nome: 'GUARDIÃO DO MUNDO', zona: 'aurora', at: [0.6, 0.42], facing: 1.9, papel: 'Guardião do Mundo · GM', servicos: ['gm'],
       personalidade: 'Calmo, direto e justo: fala como quem cuida do mundo inteiro e ainda tem tempo para você.',
       ola: ['Eu vigio este mundo. Se precisar de força para a próxima jornada, peça.', 'Toda bênção tem hora para acabar. Use bem a sua.'],
       temas: [['O que você faz aqui?', 'Vigio. Cuido para que quem luta por este lugar não lute sozinho.'],
         ['O que são as bênçãos?', 'Força emprestada: experiência em dobro, golpes mais fortes, pele mais dura, pés mais leves. Cada uma dura um tempo do relógio de verdade — e acaba mesmo se você for dormir.']],
-      props: [{ id: 'gm_fuzil', no: 'torso', g: [-6.0, -2.2, 6.5], d: [0.04, 0.42, 0.9], y: [-1, 0, 0] },
-        { id: 'gm_pistola', no: 'thighR', g: [0.6, 3.4, -4.5], d: [0.28, 0, -0.96], y: [0, 1, 0] }] },
+      pose: { maoZ: -1.5, maoY: 1.2 },   // (ombros largos: as mãos descem ao lado das coxas, com o braço estendido)
+      props: [{ id: 'gm_fuzil', no: 'torso', g: [-6.2, 4.0, 4.0], d: [0.04, 0.42, 0.9], y: [-1, 0, 0] },   // (a origem do fuzil é o punho: o corpo dele fica 12 unidades para o lado, daí o ponto à direita)
+        // o coldre tático (assets/GM/Coldre_Tático.glb → gm_coldre) preso à coxa direita, com a pistola dentro
+        // (a pistola fica DENTRO do estojo: mesmo eixo do coldre, o cano até o fundo e só o punho de fora)
+        { id: 'gm_coldre', no: 'thighR', g: [0, 3.0, -6.2], d: [0, 0, -1], y: [0, -1, 0], e: 0.9 },
+        { id: 'gm_pistola', no: 'thighR', g: [0.3, 5.5, -4.4], d: [0, 0, -1], y: [0, 1, 0], e: 0.82 }] },
   ];
   for (const P of M) {
-    NPC3D[P.id] = { ap: { npc: P.npc }, roupa: {}, props: P.props };
+    NPC3D[P.id] = { ap: { npc: P.npc }, roupa: {}, props: P.props, pose: P.pose };
     if (typeof WORLD_POVO !== 'undefined' && !WORLD_POVO.some((q) => q.id === P.id)) {
-      const { npc, props, ...dados } = P;
+      const { npc, props, pose, ...dados } = P;
       WORLD_POVO.push(Object.assign({ model: 'civil', variant: 0, servicos: [], meshy: npc }, dados));
     }
   }

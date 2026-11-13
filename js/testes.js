@@ -2044,6 +2044,10 @@ const EclipseTests = {
         this.ok('guardião: acabou o tempo, a bênção sai e os atributos voltam', G.lista().length === 0 && Math.abs(p.stats.dmgMult - d0) < 1e-6 && G.xpMult() === 1);
         this.ok('guardião: tudo fica no registro', World.state.gm.log.length >= 5);
         G.agora = agora0; World.state.gm = st0; G._ev = ev0; p.recalc(false);
+        // lugar fechado (a taverna): nada cai do céu lá dentro
+        { const C0 = WorldTime.C; WorldTime.C = () => ({ rain: 1, flakes: 120, sand: 50, ash: 50, wind: 1 }); WorldTime.parts.length = 0; WorldTime.simular(0.1, WorldTime.C());
+          this.ok('clima: em lugar fechado não chove, não neva e não cai areia nem cinza', Clima.coberto() && Clima.exposicao() === 0 && Clima.vento() === 0 && !WorldTime.parts.some((q) => q.k === 'neve' || q.k === 'areia' || q.k === 'cinza'), `${Clima.exposicao()} ${WorldTime.parts.length}`);
+          WorldTime.C = C0; WorldTime.parts.length = 0; }
         // dublagem: o código da fala é o mesmo da ferramenta e toda fala do manifesto existe no jogo
         this.ok('vozes: código FNV-1a igual ao da ferramenta', Vozes.codigo('Sem pressa. A pressa mata.') === Vozes.codigo('Sem pressa. A pressa mata.') && Vozes.codigo('abc') === '1a47e90b' && Vozes.codigo('ação') !== Vozes.codigo('acao'));
         const semDono = Object.keys(VOZES_NPC).filter((id) => { const P = WORLD_POVO.find((q) => q.id === id); return !P || Vozes.falasDe(P).length !== Object.keys(VOZES_NPC[id].falas).length; });

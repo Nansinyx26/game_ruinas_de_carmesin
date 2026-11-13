@@ -465,5 +465,10 @@
  "alaude_bardo": {
   "altura": 0.82,
   "nome": "Alaúde do bardo"
+ },
+ "altar_cristal": {
+  "altura": 3.6,
+  "nome": "Chama da Aurora",
+  "tex": 1024
  }
 }

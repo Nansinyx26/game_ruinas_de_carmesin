@@ -64,8 +64,10 @@ const Clima = {
   // ------------------------------------------------------------ leitura do tempo
   tipo() { return WorldTime.clima(); },
   k() { return WorldTime.intensidade(); },
-  // A zona é a céu aberto? (biomas e a cidade: 1; interiores: 0.2, só pelas frestas)
-  exposicao() { const R = game.room; return R && WorldTime.aberto(R.theme) >= 0.6 ? 1 : 0.2; },
+  // A zona é a céu aberto? (biomas e a cidade: 1; lugares fechados — interiores dos prédios, masmorras,
+  // laboratórios, cavernas — 0: lá dentro não chove nem neva, não venta e não cai areia nem cinza)
+  exposicao() { const R = game.room; return R && !R.interior && WorldTime.aberto(R.theme) >= 0.6 ? 1 : 0; },
+  coberto() { return this.exposicao() <= 0; },
   chuva() { const C = WorldTime.C(); return C.rain ? C.rain * this.k() : 0; },
   nevando() { const C = WorldTime.C(); return C.flakes ? Math.min(1, C.flakes / 120 + 0.35) * this.k() : 0; },
   // Vento (0 a ~2): a capa das peças balança com ele (js/heroes/pecas3d.js)

@@ -233,7 +233,8 @@ const Fogo = (function () {
   // pontos: onde ficam as chamas no modelo (+x frente, +y lado; medidas da peça em escala 1), no
   // lugar do centro; o giro e a escala da estrutura levam junto (o arco tem um braseiro em cada pé)
   const COM_FOGO = { item_ambiente_md_8: { fogo: ['tocha', 0.86, 1.2] }, forno_pedra: { fumaca: 1 }, hearthside_forge: { fumaca: 1.3 },
-    arco_braseiros: { fogo: ['tocha', 0.38, 1.1], pontos: [[47.9, 64.1], [37.5, -83.4]] } };
+    arco_braseiros: { fogo: ['tocha', 0.38, 1.1], pontos: [[47.9, 64.1], [37.5, -83.4]] },
+    altar_cristal: { fogo: ['fogueira', 0.58, 1.1], fumaca: 0.7 } };   // a Chama da Aurora: fogo em volta do cristal e a fumaça subindo
   function estruturas(lugares) {
     const I = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {};
     for (const L of lugares || []) {

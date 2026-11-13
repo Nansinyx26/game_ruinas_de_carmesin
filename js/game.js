@@ -1532,7 +1532,7 @@ class Game {
     this.arcs.draw(ctx, this.realTime);
     ctx.restore();
     this.drawGlows(ctx);
-    if (room.theme.rain) Backdrop.drawRain(ctx, this.realTime, 0.7);
+    if (room.theme.rain && !room.interior && !(this.world && typeof Clima !== 'undefined' && Clima.coberto())) Backdrop.drawRain(ctx, this.realTime, 0.7);   // (nunca em lugar fechado)
 
     // 4) Sobreposições do mundo: barras de vida, números de dano e debug
     ctx.save();

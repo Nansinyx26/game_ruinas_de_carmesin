@@ -60,7 +60,7 @@ const Estruturas = (() => {
     seraph_dunas: [['rochas_grupo', 0.28, 0.3, 0, 1.3], ['rochas_grupo', 0.74, 0.7, 1.1, 1.1], ['arvore_6', 0.8, 0.22, 0.5, 1]],
     // Refúgio da Aurora (cidade principal, medieval): a praça do mercado com os assets gerados no
     // Meshy — fileira de bancas, forno e carroças, estandartes, lampiões e a Fonte do Guardião
-    aurora: [['fonte_do_guardiao', 0.5, 0.42, 0, 0.75], ['moonlit_medieval_mark', 0.3, 0.3, 0.4, 0.9], ['banca_ceramica', 0.4, 0.26, 0.2, 0.9], ['estrutura_md_7', 0.6, 0.26, -0.2, 0.9],
+    aurora: [['altar_cristal', 0.42, 0.42, 0, 1], ['fonte_do_guardiao', 0.5, 0.42, 0, 0.75], ['moonlit_medieval_mark', 0.3, 0.3, 0.4, 0.9], ['banca_ceramica', 0.4, 0.26, 0.2, 0.9], ['estrutura_md_7', 0.6, 0.26, -0.2, 0.9],
       ['forno_pedra', 0.72, 0.3, -0.5, 0.9], ['estrutura_md_8', 0.24, 0.62, 1.2, 0.9], ['item_ambiente_md_4', 0.76, 0.62, 2.2, 1], ['item_ambiente_md_3', 0.34, 0.2, 0, 1],
       ['item_ambiente_md_1', 0.66, 0.2, 0.4, 1], ['item_ambiente_md_5', 0.42, 0.55, 0, 1], ['item_ambiente_md_6', 0.58, 0.55, 0, 1], ['estrutura_md_12', 0.36, 0.44, 0, 1],
       ['estrutura_md_12', 0.64, 0.44, 0, 1], ['estrutura_md_10', 0.84, 0.46, 0, 0.9], ['canhao_medieval', 0.16, 0.42, 0.8, 1],
@@ -169,7 +169,8 @@ const Estruturas = (() => {
   // não tira uma estrutura do lugar: sai do caminho dela (afastar). Portais, portões, baús, bancas,
   // estações e objetos do cenário continuam valendo (a estrutura procura outro lugar livre).
   // (as classes de outros arquivos não ficam em globalThis: cada uma pelo nome, se já existir)
-  const movel = (q) => q.kind === 'coleta' || (typeof Morador !== 'undefined' && q instanceof Morador) || (typeof AnimalCidade !== 'undefined' && q instanceof AnimalCidade) ||
+  const movel = (q) => q.kind === 'coleta' || q.kind === 'monumento' ||   // (monumento: o ponto de interação da Chama da Aurora, sem corpo; o altar é a estrutura)
+    (typeof Morador !== 'undefined' && q instanceof Morador) || (typeof AnimalCidade !== 'undefined' && q instanceof AnimalCidade) ||
     (typeof CompanheiroPet !== 'undefined' && q instanceof CompanheiroPet) || (typeof MontariaEnt !== 'undefined' && q instanceof MontariaEnt);
   function afastar(R, g, x, y, r) {
     for (const q of g.npcs) {

@@ -58,7 +58,7 @@ def data_url(img, lado, qualidade=88):
     return 'data:image/webp;base64,' + base64.b64encode(b.tobytes()).decode('ascii')
 
 
-def converter(caminho, lado_max=1024, escala=None, indexado=False, chao=True):
+def converter(caminho, lado_max=1024, escala=None, indexado=False, chao=True, tex_forcada=0):
     """escala: unidades do jogo por unidade do arquivo (padrão: metros → 34); indexado: vértices
     únicos + índices (as estruturas enviadas, malhas grandes: ~40% menor que um canto por vez)."""
     V, UV, F, mapas = ler_glb(caminho)
@@ -125,6 +125,8 @@ def converter(caminho, lado_max=1024, escala=None, indexado=False, chao=True):
     if tex:
         # textura no jogo: 1024 nos objetos grandes (mais de 4 m), 512 nos pequenos
         lado = min(lado_max, 1024 if ext.max() / ESCALA > 4 else 512)
+        if tex_forcada:   # peça de destaque (tools/estruturas/escalas.json, campo tex): a textura no lado pedido
+            lado = tex_forcada
         if lado_max < 1024 and ext.max() / ESCALA < 1.6:
             lado = 256                                     # (kit da natureza: as peças pequenas, de chão)
         mr = mapas['mr']                                   # BGR: B metal, G aspereza, R oclusão
@@ -177,7 +179,7 @@ def estruturas(ids):
             dx, dy, dz = rr['dims']                  # Blender: z para cima
             return (E['altura'] * ESCALA / dz if 'altura' in E else E['lado'] * ESCALA / max(dx, dy)), E
         k, E = fator(id_, r)
-        info = converter(os.path.join(RAIZ, r['glb']), 1024 if r['tipo'] in ('estrutura', 'arvore') else 512, escala=k, indexado=True, chao=r.get('base_no_chao', True))
+        info = converter(os.path.join(RAIZ, r['glb']), 1024 if r['tipo'] in ('estrutura', 'arvore') else 512, escala=k, indexado=True, chao=r.get('base_no_chao', True), tex_forcada=int(E.get('tex', 0)))
         info.update(tipo=r['tipo'], estilo=r['estilo'])
         if r.get('dobradica'):   # a dobradiça da tampa (Blender → jogo: x = −y, y = −x, z = z)
             d = r['dobradica']

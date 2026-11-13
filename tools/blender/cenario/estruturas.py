@@ -56,6 +56,8 @@ APELIDOS = {
     '1110203006': ('casarao_abandonado', 'estrutura', 'ruina'), '1110203337': ('sobrado_pos_punk', 'estrutura', 'ruina', 30000, 0.015),   # (5º campo: desvio aceito — sacadas e grades finas)
     'pistola_gm': ('pistola_gm', 'item', 'cyberpunk'), 'metralhadora_gm': ('metralhadora_gm', 'item', 'cyberpunk'), 'coldre_t': ('coldre_gm', 'item', 'cyberpunk'),
     'alaude_bardo': ('alaude_bardo', 'item', 'medieval'),
+    # o altar que guarda a Chama da Aurora, no centro da praça do Refúgio (peça de destaque: orçamento de prédio)
+    'altar_cristal': ('altar_cristal', 'estrutura', 'medieval', 12000),
 }
 
 
