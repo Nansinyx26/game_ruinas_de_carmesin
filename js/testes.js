@@ -2044,6 +2044,38 @@ const EclipseTests = {
         this.ok('guardião: acabou o tempo, a bênção sai e os atributos voltam', G.lista().length === 0 && Math.abs(p.stats.dmgMult - d0) < 1e-6 && G.xpMult() === 1);
         this.ok('guardião: tudo fica no registro', World.state.gm.log.length >= 5);
         G.agora = agora0; World.state.gm = st0; G._ev = ev0; p.recalc(false);
+        // paisagens procedurais: a semente manda (js/mundo/paisagem.js)
+        {
+          const lago = (x, y) => { const d = Math.hypot((x - 1300) / 420, (y - 1200) / 300); return d < 1 ? 1 - d : 0; };
+          const Az = (tema, semente, agua) => ({ id: 'zona_teste', w: 2400, h: 2200, tema, semente, agua: agua ? lago : null, fixos: [{ x: 500, y: 500, r: 120 }], passagens: [{ x: 1200, y: 60 }, { x: 60, y: 1100 }, { x: 2340, y: 1100 }], raio: (id) => (ESTRUTURAS_INDICE[id] ? ESTRUTURAS_INDICE[id].r : 40) });
+          const ch = (G) => G.itens.map((o) => `${o.id}:${o.x.toFixed(1)}:${o.y.toFixed(1)}:${o.esc}`).join('|');
+          const G1 = Paisagem.gerar(Az('floresta', 123, true)), G2 = Paisagem.gerar(Az('floresta', 123, true)), G3 = Paisagem.gerar(Az('floresta', 999, true));
+          this.ok('paisagem: a mesma semente dá exatamente o mesmo mapa', ch(G1) === ch(G2) && G1.itens.length > 40);
+          this.ok('paisagem: semente diferente dá outro mapa', ch(G1) !== ch(G3));
+          this.ok('paisagem: sementes independentes por sistema', new Set(Object.values(Paisagem.sementes('zona_teste', 123))).size === Paisagem.SISTEMAS.length);
+          this.ok('paisagem: nada dentro d\'água, fora do mapa ou em cima do que já existe', G1.itens.every((o) => lago(o.x, o.y) === 0 && o.x > 80 && o.y > 80 && o.x < 2320 && o.y < 2120 && Math.hypot(o.x - 500, o.y - 500) > 120));
+          this.ok('paisagem: caminhos por A* chegam a todas as passagens e ficam livres', G1.rotas.every((r) => r.ok && r.pts.length > 3) && G1.relatorio.ok && G1.itens.every((o) => o.tipo === 'poi' || !G1.rotas.some((r) => r.pts.some((p) => Math.hypot(p[0] - o.x, p[1] - o.y) < 28))));
+          this.ok('paisagem: o caminho contorna o lago em vez de atravessar o fundo', G1.rotas.every((r) => r.pts.every((p) => lago(p[0], p[1]) <= 0.3)));
+          this.ok('paisagem: sem peças sobrepostas', G1.itens.every((o, i) => G1.itens.every((q, j) => j >= i || Math.hypot(q.x - o.x, q.y - o.y) >= Math.min(o.r, q.r) * 0.9)));
+          const Gd = Paisagem.gerar(Az('deserto', 5, false)), Gn = Paisagem.gerar(Az('neve', 5, true)), Gl = Paisagem.gerar(Az('lagoa', 3, true));
+          this.ok('paisagem: espécies do bioma (agave no deserto; sem palmeira na neve nem no deserto seco; palmeira e bambu na lagoa)', Gd.itens.some((o) => o.id === 'planta_6') && !Gd.itens.some((o) => /arvore/.test(o.id)) && !Gn.itens.some((o) => /arvore|planta/.test(o.id)) && Gl.itens.some((o) => o.id === 'arvore_7') && Gl.itens.some((o) => o.id === 'planta_5'));
+          this.ok('paisagem: toda espécie e todo ponto de interesse é um GLB do índice', Paisagem.ESPECIES.every((E) => ESTRUTURAS_INDICE[E.id]) && Object.values(Paisagem.POIS).every((L) => L.every((p) => ESTRUTURAS_INDICE[p[0]])));
+          this.ok('paisagem: sub-biomas variados e transição contínua (campos sem salto)', Object.keys(G1.relatorio.biomas).length >= 3 && Math.abs(G1.campos.umid(800, 800) - G1.campos.umid(806, 800)) < 0.05 && Math.abs(G1.campos.alt(800, 800) - G1.campos.alt(806, 800)) < 0.05);
+          this.ok('paisagem: pontos de fauna fora d\'água', G1.fauna.length >= 3 && G1.fauna.every((f) => lago(f.x, f.y) === 0));
+          // na zona de verdade: entra na lista das estruturas, com teto de peças, e volta igual ao recarregar
+          const pz0 = World.state.paisagem; World.state.paisagem = null;
+          World.loadZone('velmora_clareira', null);
+          const Rv = Paisagem.relatorio.velmora_clareira, L1 = JSON.stringify(Estruturas.ZONAS.velmora_clareira), nBase = Paisagem._base.velmora_clareira.length;
+          this.ok('paisagem: a zona natural recebe a paisagem gerada e validada', !!Rv && Rv.natural && Rv.ok && Estruturas.ZONAS.velmora_clareira.length > nBase, JSON.stringify(Rv));
+          this.ok('paisagem: teto de peças por zona', Estruturas.ZONAS.velmora_clareira.length - nBase <= Paisagem.TETO.arvore + Paisagem.TETO.planta + Paisagem.TETO.rocha + 2);
+          World.loadZone('aurora', null); World.loadZone('velmora_clareira', null);
+          this.ok('paisagem: sair e voltar dá a mesma paisagem', JSON.stringify(Estruturas.ZONAS.velmora_clareira) === L1);
+          Paisagem.definirZona('velmora_clareira', 4242); World.loadZone('velmora_clareira', null);
+          this.ok('paisagem: trocar a semente de uma zona muda só ela', JSON.stringify(Estruturas.ZONAS.velmora_clareira) !== L1 && Paisagem.configuracao().zonas.velmora_clareira === 4242 && Paisagem.sementeDe('velmora_lago') === Paisagem.sementeDe('velmora_lago'));
+          World.state.paisagem = pz0; delete Paisagem._cache.velmora_clareira;
+          this.ok('paisagem: cidade e interiores ficam como são', !Paisagem.relatorio.aurora && !Paisagem.relatorio.aurora_taverna);
+          World.loadZone('aurora_taverna', null);
+        }
         // lugar fechado (a taverna): nada cai do céu lá dentro
         { const C0 = WorldTime.C; WorldTime.C = () => ({ rain: 1, flakes: 120, sand: 50, ash: 50, wind: 1 }); WorldTime.parts.length = 0; WorldTime.simular(0.1, WorldTime.C());
           this.ok('clima: em lugar fechado não chove, não neva e não cai areia nem cinza', Clima.coberto() && Clima.exposicao() === 0 && Clima.vento() === 0 && !WorldTime.parts.some((q) => q.k === 'neve' || q.k === 'areia' || q.k === 'cinza'), `${Clima.exposicao()} ${WorldTime.parts.length}`);

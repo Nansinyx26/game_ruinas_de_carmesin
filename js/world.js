@@ -450,6 +450,7 @@ const World = {
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
     Locais.aoCarregar(z);       // entradas de masmorra, tesouros, andares (js/mundo/locais.js)
     Cenario.aoCarregar(z);      // objetos de cenário modelados no Blender (js/mundo/cenario.js)
+    if (typeof Paisagem !== 'undefined') Paisagem.aoCarregar(z);   // paisagem gerada pela semente da zona: vegetação, rochas e ruínas entram na lista das estruturas (js/mundo/paisagem.js)
     if (typeof Estruturas !== 'undefined') Estruturas.aoCarregar(z);
     if (typeof Baus !== 'undefined') Baus.aoCarregar(z);   // baús por raridade nos lugares escondidos da zona (js/mundo/baus.js)
     if (typeof CidadeMorta !== 'undefined') CidadeMorta.aoCarregar(z);   // focos de incêndio da cidade abandonada (js/mundo/cidade_morta.js)
