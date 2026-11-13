@@ -343,7 +343,7 @@ class Player extends Entity {
         }
         let tvx = 0, tvy = 0;
         if (wd) {
-          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this) * (this.montado ? this.montado.T.vel : 1) * (typeof Agua !== 'undefined' ? Agua.ritmo(this) : 1);   // (água: js/mundo/agua.js)   // (montaria: js/mundo/montarias.js)
+          const sp = this.baseSpeed * this.stats.speedMult * mag * (this.air ? PULO.AR : 1) * EnemyTraits.lento(this) * (this.montado ? this.montado.T.vel : 1) * (typeof Agua !== 'undefined' ? Agua.ritmo(this) : 1) * (typeof Relevo !== 'undefined' ? Relevo.ritmo(this, wd.x, wd.y) : 1);   // (água: js/mundo/agua.js)   // (montaria: js/mundo/montarias.js)
           tvx = wd.x * sp; tvy = wd.y * sp;
           // de frente para um pilar, contorna pela tangente em vez de empacar (Room.desvio)
           const dv = this.dv || (this.dv = { x: 0, y: 0 });

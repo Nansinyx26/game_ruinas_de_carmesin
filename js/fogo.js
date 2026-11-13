@@ -60,13 +60,13 @@ const Fogo = (function () {
   // ------------------------------------------------------------ projeção
   const PT = { x: 0, y: 0, k: 1, ok: true };
   function ponto(x, y, z) {
-    if (tresP()) { const P = ThirdView.proj(x, y, z); PT.x = P.x; PT.y = P.y; PT.k = P.k; PT.ok = P.vis; }
+    if (tresP()) { const P = ThirdView.projC(x, y, z); PT.x = P.x; PT.y = P.y; PT.k = P.k; PT.ok = P.vis; }
     else { PT.x = isoX(x, y); PT.y = isoY(x, y) - z; PT.k = 1; PT.ok = true; }
     return PT;
   }
   // tela (coordenadas da vista, para o calor e o LOD): onde o ponto cai e quão longe está
   function naTela(x, y, z) {
-    if (tresP()) { const P = ThirdView.proj(x, y, z); return { x: P.x, y: P.y, k: P.k, ok: P.vis, d: P.w }; }
+    if (tresP()) { const P = ThirdView.projC(x, y, z); return { x: P.x, y: P.y, k: P.k, ok: P.vis, d: P.w }; }
     const g = game, S = g.camera.toScreen(isoX(x, y), isoY(x, y) - z);
     return { x: S.x, y: S.y, k: g.camera.zoom || 1, ok: true, d: 400 };
   }
@@ -331,7 +331,7 @@ const Fogo = (function () {
     // a silhueta aproximada do corpo
     let recorte = null;
     if (tresP() && game.player) {
-      const p = game.player, E = ThirdView.eye, A = ThirdView.proj(p.x, p.y, 0), ax = A.x, ay = A.y, B = ThirdView.proj(p.x, p.y, (p.height || 56) + 8);
+      const p = game.player, E = ThirdView.eye, A = ThirdView.projC(p.x, p.y, 0), ax = A.x, ay = A.y, B = ThirdView.projC(p.x, p.y, (p.height || 56) + 8);
       if (A.vis && B.vis) { const w = Math.max(18, (ay - B.y) * 0.42); recorte = { x0: ax - w, x1: ax + w, y0: B.y - 6, y1: ay + 6, d: Math.hypot(p.x - E[0], p.y - E[1]) }; }
     }
     const atras = (x, y) => recorte && Math.hypot(x - ThirdView.eye[0], y - ThirdView.eye[1]) > recorte.d + 10;

@@ -158,6 +158,10 @@ const ThirdView = {
     const T = this.tgt, E = this.eye, A = this.alvo;
     if (this.alvoOk) { T[0] = A[0]; T[1] = A[1]; T[2] = A[2] + this.tz + this.bob + this.quedaZ; }
     else { T[0] = p.x; T[1] = p.y; T[2] = (p.z || 0) + this.tz; }
+    // relevo (js/mundo/relevo.js): o alvo sobe e desce com o chão (suavizado, sem tranco no degrau da grade)
+    const comRelevo = typeof Relevo !== 'undefined' && Relevo.ativo(R), chaoT = comRelevo ? Relevo.altura(T[0], T[1]) : 0;
+    this.chaoZ = this.chaoZ === undefined || Math.abs(this.chaoZ - chaoT) > 90 ? chaoT : this.chaoZ + (chaoT - this.chaoZ) * 0.2;
+    T[2] += this.chaoZ;
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch), fx = Math.cos(this.yaw), fy = Math.sin(this.yaw);
     // não atravessa as paredes: aproxima até a câmera caber na sala
     let d = this.curDist;
@@ -168,6 +172,7 @@ const ThirdView = {
       d *= 0.86;
     }
     E[0] = T[0] - fx * d * cp; E[1] = T[1] - fy * d * cp; E[2] = T[2] + d * sp;
+    if (comRelevo) { const ce = Relevo.altura(E[0], E[1]) + 22; if (E[2] < ce) E[2] = ce; }   // a câmera não entra no morro
     // base da câmera (espelhada como a projeção isométrica do jogo: a mão direita fica à direita)
     const f = this.f, s = this.s, u = this.u;
     f[0] = T[0] - E[0]; f[1] = T[1] - E[1]; f[2] = T[2] - E[2];
@@ -203,6 +208,9 @@ const ThirdView = {
     P.k = this.focal * VIEW_H * 0.5 / cw; P.vis = true;
     return P;
   },
+
+  // O mesmo, com z contado a partir do chão do ponto (efeitos, placas e brilhos presos ao terreno)
+  projC(x, y, z) { return this.proj(x, y, (z || 0) + (typeof Relevo !== 'undefined' ? Relevo.altura(x, y) : 0)); },
 
   // ------------------------------------------------------------------ cenário em 3D
   // Piso em ladrilhos, paredes nos quatro lados (com as aberturas da porta e das passagens do
@@ -307,6 +315,7 @@ const ThirdView = {
     const m = new Model3(root);
     m.walls = R.aberto ? [] : ['N', 'S', 'W', 'E'].map((k) => m.nodes['parede' + k]);
     m.pillars = R.pillars.map((q, i) => [q, m.nodes['pilar' + i]]).filter(([, nd]) => nd);
+    if (typeof Relevo !== 'undefined' && Relevo.ativo(R)) for (const [q, nd] of m.pillars) { nd.p[2] = Relevo.altura(q.x, q.y); if (m.rest[nd.name]) m.rest[nd.name].p[2] = nd.p[2]; }   // (cada um na altura do chão dele)
     return m;
   },
   roomFor(R) {
@@ -323,7 +332,8 @@ const ThirdView = {
     if (!atl) return null;
     const g = new G3(), m = atl.m, L = atl.L, N = 6, emi = tipo === 'lagoa' ? 0.35 : 0;
     const v = (x, y) => [x, y, 0, 0, 0, 1, (x + m) / L, (y + m) / L, 0, emi];
-    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    if (typeof Relevo !== 'undefined' && Relevo.ativo(R)) Relevo.malha(g, m, L, emi);   // chão com altura de verdade
+    else for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
       const x0 = -m + (L * i) / N, y0 = -m + (L * j) / N, x1 = x0 + L / N, y1 = y0 + L / N;
       for (const q of [v(x0, y0), v(x1, y0), v(x1, y1), v(x0, y0), v(x1, y1), v(x0, y1)]) g.d.push(...q);
     }
@@ -375,11 +385,12 @@ const ThirdView = {
     if (typeof Bairro !== 'undefined') Bairro.fila3P(R, Q, E);   // prédios do Bairro da Muralha (kit de arquitetura do Blender)
     if (typeof Estruturas !== 'undefined') Estruturas.fila3P(R, Q, E);   // estruturas enviadas e geradas no Meshy (paradas)
     // modelos (as mesmas chaves e poses da vista isométrica), já no lugar do mundo
+    const relevo = typeof Relevo !== 'undefined' && Relevo.ativo(R);
     const place = (it, e) => {
       if (!it) return null;
       const o = it.o, sc = o.scale || 1, m = o.m3 || (o.m3 = M3.make());
       const lg = sc * (o.larg || 1);   // (porte do personagem criado)
-      M3.trs(m, [e.x, e.y, (e.z || 0) + (o.lift || 0)], [o.roll || 0, o.pitch || 0, o.yaw || 0], [lg, lg, sc]);
+      M3.trs(m, [e.x, e.y, (e.z || 0) + (o.lift || 0) + (relevo ? Relevo.altura(e.x, e.y) : 0)], [o.roll || 0, o.pitch || 0, o.yaw || 0], [lg, lg, sc]);
       o.m = m; it.ent = e;
       Q.push(it);
       return it;
@@ -387,7 +398,9 @@ const ThirdView = {
     const sombra = (e, r) => {
       const o = e._sh3 || (e._sh3 = { m: M3.make() });
       const k = 1 - Math.min(0.5, (e.z || 0) / 160);   // no ar (pulo, lançado), a sombra encolhe
-      M3.trs(o.m, [e.x, e.y, 0.25], [0, 0, 0], [r * k, r * k, 1]);
+      // (no relevo, a sombra deita na ladeira: inclina pela normal do chão)
+      const nz = relevo ? Relevo.normal(e.x, e.y, this._nz || (this._nz = [0, 0, 1])) : null;
+      M3.trs(o.m, [e.x, e.y, (relevo ? Relevo.altura(e.x, e.y) : 0) + 0.6], nz ? [Math.atan2(nz[1], nz[2]) * -1, Math.atan2(nz[0], nz[2]), 0] : [0, 0, 0], [r * k, r * k, 1]);
       const si = R3D.queue(this.shadowModel(), null, null, o);
       si.ent = null; Q.push(si);
     };
@@ -397,7 +410,7 @@ const ThirdView = {
     o3.tint = heroArmorTint(p.def.id);
     sombra(p, 22);
     const itP = g.queue3(mk, p.montado && typeof Montarias !== 'undefined' ? Montarias.proxy(p) : p, o3);   // (montado: a pose da sela)
-    if (itP) { itP.o.pitch = (itP.o.pitch || 0) + this.inclina; itP.o.roll = (itP.o.roll || 0) + this.giro; }   // inclinação do corpo
+    if (itP) { itP.o.pitch = (itP.o.pitch || 0) + this.inclina + (relevo ? clamp(Math.atan(Relevo.subida(p.x, p.y, Math.cos(p.facing), Math.sin(p.facing))) * -0.35, -0.22, 0.22) : 0); itP.o.roll = (itP.o.roll || 0) + this.giro; }   // inclinação do corpo
     p.spr = place(itP, p);
     for (const e of g.enemies) {
       if ((e.state === 'spawn' && e.stateTime < e.spawnDur * 0.5) || e.oculto > 0) continue;   // enterrado: some
@@ -541,8 +554,8 @@ const ThirdView = {
   // Efeitos 2D do jogo na perspectiva: isoX/isoY passam a projetar o ponto do chão pela câmera
   effects(ctx, t) {
     const g = game, p = g.player, ix = isoX, iy = isoY, self = this;
-    isoX = (x, y) => self.proj(x, y, 0).x;
-    isoY = (x, y) => self.proj(x, y, 0).y;
+    isoX = (x, y) => self.projC(x, y, 0).x;
+    isoY = (x, y) => self.projC(x, y, 0).y;
     try {
       g.particles.drawSolid(ctx);
       ctx.save();

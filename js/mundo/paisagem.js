@@ -102,7 +102,7 @@ const Paisagem = (() => {
       for (let j = ny - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { const q = j * nx + i; if (i < nx - 1) longe[q] = Math.min(longe[q], longe[q + 1] + 1); if (j < ny - 1) longe[q] = Math.min(longe[q], longe[q + nx] + 1); }
     }
     const perto = (x, y) => { if (!temAgua) return 0; const i = cl(Math.round(x / P), 0, nx - 1), j = cl(Math.round(y / P), 0, ny - 1); return cl(1 - longe[j * nx + i] / 5, 0, 1); };
-    const alt = (x, y) => {
+    const alt = A.alt ? (x, y) => A.alt(x, y) * (1 - 0.75 * perto(x, y)) : (x, y) => {
       const wx = x * esc + (dobra(x * esc * 0.7, y * esc * 0.7) - 0.5) * 0.9, wy = y * esc + (dobra(y * esc * 0.7 + 9, x * esc * 0.7 + 4) - 0.5) * 0.9;   // dobra o domínio: sem padrão repetido
       const b = base(wx, wy), r = 1 - Math.abs(2 * crista(wx * 1.3 + 3, wy * 1.3 + 8) - 1);   // cristas (cadeias) por cima das colinas
       let a = b * (1 - montanhoso) + r * r * montanhoso;
@@ -298,7 +298,8 @@ const Paisagem = (() => {
       fixos: lista.filter((L) => I[L[0]]).map((L) => ({ x: R.w * L[1], y: R.h * L[2], r: I[L[0]].r * (L[4] || 1) }))
         .concat(g.npcs.filter((q) => q.kind === 'chest' || q.kind === 'terminal' || q.kind === 'portal' || q.kind === 'entrada' || q.kind === 'tesouro' || q.kind === 'quadro').map((q) => ({ x: q.x, y: q.y, r: (q.radius || 20) + 40 }))),
       passagens: g.npcs.filter((q) => q.kind === 'gate').map((q) => ({ x: q.x, y: q.y })),
-      raio: (id) => (I[id] ? I[id].r : 40), temPeca: (id) => !!I[id] };
+      raio: (id) => (I[id] ? I[id].r : 40), temPeca: (id) => !!I[id],
+      alt: typeof Relevo !== 'undefined' && Relevo.estado() ? Relevo.alt01 : null };   // a altitude é a do relevo de verdade (js/mundo/relevo.js)
   }
   // Junta a paisagem gerada à lista de estruturas da zona (uma vez por zona e semente)
   function aoCarregar(z) {

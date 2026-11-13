@@ -1092,7 +1092,8 @@ const Terreno = (function () {
     if (!A || typeof G3 === 'undefined') return null;
     const g = new G3(), m = A.m, L = A.L, N = 6;
     const v = (x, y) => [x, y, 0, 0, 0, 1, (x + m) / L, (y + m) / L, 0, 0];
-    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    if (typeof Relevo !== 'undefined' && Relevo.ativo(R)) Relevo.malha(g, m, L, 0);   // chão com altura de verdade (js/mundo/relevo.js)
+    else for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
       const x0 = -m + (L * i) / N, y0 = -m + (L * j) / N, x1 = x0 + L / N, y1 = y0 + L / N;
       for (const q of [v(x0, y0), v(x1, y0), v(x1, y1), v(x0, y0), v(x1, y1), v(x0, y1)]) g.d.push(...q);
     }

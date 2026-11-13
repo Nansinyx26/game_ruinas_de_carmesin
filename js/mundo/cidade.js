@@ -501,7 +501,7 @@ class CidadeProp extends NPC {
     if (this.altar) {
       // brilho do cristal: um núcleo dourado que pulsa, o halo largo, raios girando e centelhas subindo
       const tp = typeof ThirdView !== 'undefined' && ThirdView.active(), t = this.t, pulso = 0.5 + 0.5 * Math.sin(t * 2.4);
-      const P = (z) => { if (tp) { const q = ThirdView.proj(this.x, this.y, z); return q.vis ? [q.x, q.y, q.k] : null; } return [sx, sy - z, 1]; };
+      const P = (z) => { if (tp) { const q = ThirdView.projC(this.x, this.y, z); return q.vis ? [q.x, q.y, q.k] : null; } return [sx, sy - z, 1]; };
       const c = P(92), topo = P(118);
       if (c) {
         const k = tp ? clamp(c[2], 0.25, 3) : 1;

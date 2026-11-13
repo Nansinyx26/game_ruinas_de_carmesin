@@ -397,7 +397,7 @@ const Clima = {
   // Ponto na tela: vista isométrica ou 3ª pessoa (z para cima; k = pixels por unidade)
   _P: { x: 0, y: 0, k: 1, vis: true },
   pt(x, y, z = 0) {
-    if (typeof ThirdView !== 'undefined' && ThirdView.active()) return ThirdView.proj(x, y, z);
+    if (typeof ThirdView !== 'undefined' && ThirdView.active()) return ThirdView.projC(x, y, z);
     const P = this._P;
     P.x = x - y; P.y = (x + y) / 2 - z; P.k = 1; P.vis = true;
     return P;
@@ -562,7 +562,7 @@ const Clima = {
     // neblina densa, nevasca, areia: a visão fecha em volta do herói
     const nd = this.neblina();
     if (nd > 0.05) {
-      const P = typeof ThirdView !== 'undefined' && ThirdView.active() ? ThirdView.proj(p.x, p.y, 30) : g.camera.toScreen(isoX(p.x, p.y), isoY(p.x, p.y) - 30), tp = this.tipo(), luz = 0.35 + 0.65 * WorldTime.luz();
+      const P = typeof ThirdView !== 'undefined' && ThirdView.active() ? ThirdView.projC(p.x, p.y, 30) : g.camera.toScreen(isoX(p.x, p.y), isoY(p.x, p.y) - 30), tp = this.tipo(), luz = 0.35 + 0.65 * WorldTime.luz();
       const base = tp === 'areia' ? [205, 155, 95] : tp === 'nevasca' ? [228, 234, 246] : [185, 198, 210];
       const c = base.map((v) => Math.round(v * luz)).join(','), r0 = 620 - 470 * nd, r1 = r0 + 300;
       const gr = ctx.createRadialGradient(P.x, P.y, r0, P.x, P.y, r1);

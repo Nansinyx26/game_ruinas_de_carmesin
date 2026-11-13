@@ -136,7 +136,7 @@ const Natureza3D = (() => {
       if (!o) {   // parado: a matriz uma vez e os vértices guardados pelo motor (o.fixo)
         o = q._o3n = { m: M3.make(), fixo: true, flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0,
           vento: /rocha|pedra|toco|tronco|cogumelo/.test(k.id) ? 0 : q.enfeite ? 1.3 : 0.7 };   // árvores e arbustos balançam (o motor, na placa de vídeo)
-        M3.trs(o.m, [q.x, q.y, 0], [0, 0, k.giro * Math.PI * 2 / GIROS], [k.esc, k.esc, k.esc]);
+        M3.trs(o.m, [q.x, q.y, typeof Relevo !== 'undefined' ? Relevo.altura(q.x, q.y) - Relevo.inclinacao(q.x, q.y) * Math.min(q.r || 10, 30) * 0.6 : 0], [0, 0, k.giro * Math.PI * 2 / GIROS], [k.esc, k.esc, k.esc]);   // (no relevo: o pé no chão)
       }
       const it = R3D.queue(m, null, null, o);
       it.ent = null;

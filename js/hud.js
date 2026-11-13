@@ -1544,7 +1544,7 @@ class HUD {
 // projeção da câmera (null quando fica atrás dela)
 function hudHeadPoint(n, up) {
   if (typeof ThirdView !== 'undefined' && ThirdView.active()) {
-    const P = ThirdView.proj(n.x, n.y, (n.height || 40) + 14);
+    const P = ThirdView.projC(n.x, n.y, (n.height || 40) + 14);
     return P.vis ? { x: P.x, y: P.y - up } : null;
   }
   const h = n.headPoint();

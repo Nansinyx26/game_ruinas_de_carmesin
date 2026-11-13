@@ -253,7 +253,7 @@ class Morador extends NPC {
   topo() {
     const baixo = this.state === 'sit' || this.state === 'eat' || this.state === 'drink';
     if (typeof ThirdView !== 'undefined' && ThirdView.active()) {
-      const P = ThirdView.proj(this.x, this.y, this.state === 'sleep' ? 26 : baixo ? this.height * 0.8 : this.height + 12);
+      const P = ThirdView.projC(this.x, this.y, this.state === 'sleep' ? 26 : baixo ? this.height * 0.8 : this.height + 12);
       return P.vis ? { x: P.x, y: P.y - 4 } : null;
     }
     return { x: isoX(this.x, this.y), y: isoY(this.x, this.y) - (this.state === 'sleep' ? 40 : baixo ? this.height * 0.85 : this.height + 24) };

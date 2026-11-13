@@ -2072,6 +2072,42 @@ const EclipseTests = {
           this.ok('paisagem: sair e voltar dá a mesma paisagem', JSON.stringify(Estruturas.ZONAS.velmora_clareira) === L1);
           Paisagem.definirZona('velmora_clareira', 4242); World.loadZone('velmora_clareira', null);
           this.ok('paisagem: trocar a semente de uma zona muda só ela', JSON.stringify(Estruturas.ZONAS.velmora_clareira) !== L1 && Paisagem.configuracao().zonas.velmora_clareira === 4242 && Paisagem.sementeDe('velmora_lago') === Paisagem.sementeDe('velmora_lago'));
+          // relevo: altura real do chão (js/mundo/relevo.js)
+          {
+            World.state.paisagem = null; delete Paisagem._cache.velmora_clareira;
+            World.loadZone('velmora_clareira', null);
+            const Rr = g.room, E0 = Relevo.estado(), hs = [];
+            for (let x = 100; x < Rr.w; x += 90) for (let y = 100; y < Rr.h; y += 90) hs.push(Relevo.altura(x, y));
+            this.ok('relevo: a zona natural tem chão com alturas diferentes (não é uma placa)', Relevo.ativo(Rr) && !!E0 && Math.max(...hs) - Math.min(...hs) > 35 && Math.min(...hs) >= 0, `${Math.min(...hs).toFixed(1)} a ${Math.max(...hs).toFixed(1)}`);
+            let salto = 0; for (let x = 100; x < Rr.w - 100; x += 37) salto = Math.max(salto, Math.abs(Relevo.altura(x + 6, 700) - Relevo.altura(x, 700)));
+            this.ok('relevo: superfície contínua (sem degrau nem buraco)', salto < 6, salto.toFixed(2));
+            let naAgua = 0, molhados = 0; for (let x = 60; x < Rr.w; x += 40) for (let y = 60; y < Rr.h; y += 40) if (Agua.profundidade(x, y) > 0.3) { molhados++; naAgua = Math.max(naAgua, Relevo.altura(x, y)); }
+            this.ok('relevo: a água fica no baixo (o terreno desce até a margem)', molhados > 0 && naAgua < 2.5, `${molhados} pontos, máx ${naAgua.toFixed(2)}`);
+            const Lc = Estruturas.atual().lug.find((q) => Estruturas.IDX[q.id].tipo !== 'arvore' && Estruturas.IDX[q.id].tipo !== 'planta'), rc = Lc ? Estruturas.IDX[Lc.id].r * Lc.esc : 0;
+            this.ok('relevo: construção em patamar (nem flutua nem fica enterrada)', !!Lc && Math.abs(Relevo.altura(Lc.x + rc * 0.7, Lc.y) - Relevo.altura(Lc.x - rc * 0.7, Lc.y)) < 2 && Math.abs(Relevo.altura(Lc.x, Lc.y + rc * 0.7) - Relevo.altura(Lc.x, Lc.y)) < 2, Lc && Lc.id);
+            const gt = g.npcs.find((q) => q.kind === 'gate');
+            this.ok('relevo: passagem em chão firme', !gt || Math.abs(Relevo.altura(gt.x + 20, gt.y) - Relevo.altura(gt.x - 20, gt.y)) < 2);
+            // ladeira: subir reduz o passo, descer não trava
+            let pico = null; for (let x = 150; x < Rr.w - 150; x += 60) for (let y = 150; y < Rr.h - 150; y += 60) { const i = Relevo.inclinacao(x, y); if (!pico || i > pico.i) pico = { x, y, i }; }
+            const dv = Relevo.declive(pico.x, pico.y, [0, 0]);
+            this.ok('relevo: ladeira acima reduz o passo; ladeira abaixo, não', pico.i > 0.05 && Relevo.ritmo(pico, dv[0], dv[1]) < 0.99 && Relevo.ritmo(pico, -dv[0], -dv[1]) >= 1, `${pico.i.toFixed(2)} ${Relevo.ritmo(pico, dv[0], dv[1]).toFixed(2)}`);
+            // continuidade entre zonas vizinhas (mesma altura na borda comum)
+            const za = WORLD_ZONES.velmora_clareira, viz = [[0, 1], [0, -1], [1, 0], [-1, 0]].map(([dr, dc]) => [dr, dc, worldZoneAt(za.r + dr, za.c + dc, za.region)]).find((q) => q[2] && Relevo.forcaZona(Object.assign({ aberto: true }, q[2])) > 0);
+            if (viz) {
+              const [dr, dc, zb] = viz, fr = [0.2, 0.5, 0.8];
+              const ha = fr.map((f) => Relevo.bruta(dc > 0 ? Rr.w : dc < 0 ? 0 : Rr.w * f, dr > 0 ? Rr.h : dr < 0 ? 0 : Rr.h * f));
+              const idb = Object.keys(WORLD_ZONES).find((k) => WORLD_ZONES[k] === zb); World.loadZone(idb, null);
+              const Rb = g.room, hb = fr.map((f) => Relevo.bruta(dc > 0 ? 0 : dc < 0 ? Rb.w : Rb.w * f, dr > 0 ? 0 : dr < 0 ? Rb.h : Rb.h * f));
+              this.ok('relevo: a borda de uma zona tem a mesma altura da borda da vizinha', ha.every((h, i) => Math.abs(h - hb[i]) < 0.5), `${ha.map((h) => h.toFixed(1))} / ${hb.map((h) => h.toFixed(1))}`);
+            }
+            World.loadZone('aurora', null);
+            this.ok('relevo: cidade e interiores continuam planos', !Relevo.ativo(g.room) && Relevo.altura(500, 500) === 0 && Relevo.ritmo(g.player, 1, 0) === 1);
+            if (R3D.active && typeof ThirdView !== 'undefined') {
+              World.loadZone('velmora_clareira', null);
+              const m = Terreno.modelo(g.room), d = m && m.root.geo, zs = []; if (d) for (let i = 2; i < d.length; i += 10) zs.push(d[i]);
+              this.ok('relevo: a altura está na geometria do chão (malha com relevo e normais)', zs.length > 3000 && Math.max(...zs) - Math.min(...zs) > 35, `${zs.length} vértices`);
+            }
+          }
           World.state.paisagem = pz0; delete Paisagem._cache.velmora_clareira;
           this.ok('paisagem: cidade e interiores ficam como são', !Paisagem.relatorio.aurora && !Paisagem.relatorio.aurora_taverna);
           World.loadZone('aurora_taverna', null);
