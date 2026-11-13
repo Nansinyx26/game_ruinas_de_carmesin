@@ -207,6 +207,7 @@ const Chat = {
 .ezc-cats{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px}.ezc-gm-meio{flex:1;display:flex;min-height:0}
 .ezc-cmds{flex:1.3;overflow-y:auto;padding:2px 8px;font-size:13px}.ezc-cmd{padding:3px 4px;border-radius:5px;cursor:pointer}.ezc-cmd:hover{background:rgba(255,70,90,.14)}.ezc-cmd b{color:#ff8a98}.ezc-cmd u{color:#ffd166;text-decoration:none}.ezc-cmd span{color:#9fb3d6}
 .ezc-jogs{flex:1;border-left:1px solid rgba(255,70,90,.25);display:flex;flex-direction:column;min-width:0}.ezc-jogs .l{flex:1;overflow-y:auto;padding:2px 8px;font-size:13px}.ezc-jogs .l div{padding:3px 4px;border-radius:5px;cursor:pointer}.ezc-jogs .l .sel{background:rgba(255,70,90,.25)}
+.ezc-jogs input{flex:0 0 auto;padding:6px 8px}
 .ezc-rap{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px;border-top:1px solid rgba(255,70,90,.25)}
 .ezc-saida{height:96px;overflow-y:auto;padding:6px 10px;font-size:12.5px;white-space:pre-wrap;border-top:1px solid rgba(255,70,90,.25);color:#cfe0ff}.ezc-saida .ok{color:#8dffb0}.ezc-saida .no{color:#ff8a8a}
 .ezc-dica{padding:2px 10px;font-size:12px;color:#ffd166;min-height:18px}
