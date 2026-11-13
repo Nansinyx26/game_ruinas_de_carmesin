@@ -58,6 +58,8 @@ APELIDOS = {
     'alaude_bardo': ('alaude_bardo', 'item', 'medieval'),
     # o altar que guarda a Chama da Aurora, no centro da praça do Refúgio (peça de destaque: orçamento de prédio)
     'altar_cristal': ('altar_cristal', 'estrutura', 'medieval', 12000),
+    # árvores refeitas com topologia própria (enviadas com ~30 mil e ~12 mil triângulos): ficam na topologia enviada
+    'arvore_1.glb': ('arvore_1', 'arvore', 'medieval', 30000), 'arvore_9.glb': ('arvore_9', 'arvore', 'medieval', 12000),
 }
 
 

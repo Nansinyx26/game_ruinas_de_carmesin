@@ -470,5 +470,9 @@
   "altura": 3.6,
   "nome": "Chama da Aurora",
   "tex": 1024
+ },
+ "arvore_9": {
+  "altura": 8,
+  "nome": "Árvore"
  }
 }

@@ -11,7 +11,7 @@ const SETTINGS_DEFAULT = {
   // Jogo
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
-  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, fpsLimit: 0, postfx: 2, brightness: 0,
+  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, texHD: 2, vegQ: 2, fpsLimit: 0, postfx: 2, brightness: 0,
   render3d: 'realista', realQual: 2,
   // Áudio
   master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
@@ -46,6 +46,10 @@ const SETTINGS_TABS = [
       hint: 'Realista: sol com sombras projetadas, materiais PBR, reflexos, névoa, oclusão ambiente e brilho. Precisa abrir o jogo por http (GitHub Pages ou servidor local); abrindo o arquivo do disco, fica o Clássico.' },
     { key: 'realQual', label: 'Qualidade realista', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Baixo', 'Médio', 'Alto', 'Ultra', 'Cinematográfico'],
       hint: 'Sombras (1024 a 4096), oclusão ambiente, brilho, multiamostragem e resolução (70% no Baixo, 125% no Cinematográfico).' },
+    { key: 'texHD', label: 'Texturas dos modelos', type: 'choice', values: [0, 1, 2], names: ['Padrão (1K)', 'Alta (2K)', 'Máxima (4K)'],
+      hint: 'Os prédios e objetos mais perto usam a textura original do GLB (2048 ou 4096 px); os de longe ficam na versão leve. Precisa abrir o jogo por http. Em celular, use Padrão.' },
+    { key: 'vegQ', label: 'Vegetação (grama e flores)', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Baixa', 'Média', 'Alta', 'Ultra', 'Cinematográfica'],
+      hint: 'Quantidade de lâminas de grama e flores e até onde elas aparecem. A grama dobra com o vento e quando o herói passa.' },
     { key: 'quality', label: 'Qualidade dos efeitos', type: 'choice', values: [0, 1, 2], names: ['Baixa', 'Média', 'Alta'], hint: 'Quantidade de partículas, faíscas e fumaça.' },
     { key: 'clima', label: 'Efeitos de clima', type: 'choice', values: [0, 1, 2], names: ['Leves', 'Médios', 'Completos'], hint: 'Poças, pegadas, neve e bancos de neblina desenhados, gotas no chão e o ar tremendo no calor. O efeito no jogo (frio, calor, roupa molhada) é o mesmo em todos.' },
     { key: 'fpsLimit', label: 'Limite de FPS', type: 'choice', values: [0, 60, 30], names: ['Sem limite', '60', '30'] },
@@ -83,6 +87,13 @@ const Settings = {
       // Preferência antiga da tecla G
       else if (localStorage.getItem('eclipse_zero_3d') === '0') this.v.gfx3d = false;
     } catch (e) { /* armazenamento indisponível */ }
+    // texturas 4K: celulares e aparelhos com pouca memória começam no Padrão (a escolha salva vale sempre)
+    try {
+      const salvo = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      const fraco = (typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory < 8) || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+      if ((!salvo || salvo.texHD === undefined) && fraco) this.v.texHD = 0;
+      if ((!salvo || salvo.vegQ === undefined) && fraco) this.v.vegQ = 1;
+    } catch (e) { /* nada */ }
     return this.v;
   },
   save() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.v)); } catch (e) { /* armazenamento indisponível */ } },

@@ -47,7 +47,7 @@ const Relevo = (() => {
       const x = gx * e + (dobra(gx * e * 0.6, gy * e * 0.6) - 0.5) * 1.1, y = gy * e + (dobra(gy * e * 0.6 + 7, gx * e * 0.6 + 3) - 0.5) * 1.1;
       const b = base(x, y), r = 1 - Math.abs(2 * crista(x * 1.25 + 5, y * 1.25 + 2) - 1);
       const v = b * (1 - montanhoso) + r * r * montanhoso;
-      return cl((v - 0.26) / 0.52, 0, 1) ** 1.35 + (fino(gx * e * 5, gy * e * 5) - 0.5) * 0.045;
+      return Math.max(0, cl((v - 0.26) / 0.52, 0, 1) ** 1.35 + (fino(gx * e * 5, gy * e * 5) - 0.5) * 0.045);   // (nunca abaixo do nível da água)
     };
   }
   // Prepara o campo da zona (antes de quem põe coisas no chão): a altura "bruta", sem os ajustes do lugar
@@ -58,7 +58,10 @@ const Relevo = (() => {
     if (!f0) return null;
     const tema = (R.def && R.def.theme) || z.theme, forma = formaDe(z.region, tema === 'neve' || tema === 'vulcao' ? 0.6 : tema === 'deserto' ? 0.35 : 0.22);
     // força interpolada entre os centros das zonas vizinhas (contínua na passagem de uma para a outra)
-    const fz = (r, c) => { const v = worldZoneAt(r, c, z.region); return v ? forcaZona(Object.assign({ aberto: true }, v)) || 0 : f0; };
+    // (sem zona naquela casa da grade: a média da região — o mesmo valor para as duas zonas da borda)
+    const zs = typeof worldZonesOf === 'function' ? worldZonesOf(z.region) : [], fs = zs.map((q) => forcaZona(Object.assign({ aberto: true }, q)) || 0).filter((v) => v > 0);
+    const media = fs.length ? fs.reduce((a, b) => a + b, 0) / fs.length : f0;
+    const fz = (r, c) => { const v = worldZoneAt(r, c, z.region); return v ? forcaZona(Object.assign({ aberto: true }, v)) || 0 : media; };
     const F = {}; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) F[`${dr},${dc}`] = dr || dc ? fz(z.r + dr, z.c + dc) : f0;
     const forca = (u, v) => {   // u, v: posição na zona em frações (0 a 1; fora disso, já na vizinha)
       const a = u - 0.5, b = v - 0.5, i = a < 0 ? -1 : 0, j = b < 0 ? -1 : 0, tx = suave(a - i), ty = suave(b - j);

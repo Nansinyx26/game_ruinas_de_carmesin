@@ -456,7 +456,8 @@ const World = {
     if (typeof Baus !== 'undefined') Baus.aoCarregar(z);   // baús por raridade nos lugares escondidos da zona (js/mundo/baus.js)
     if (typeof CidadeMorta !== 'undefined') CidadeMorta.aoCarregar(z);   // focos de incêndio da cidade abandonada (js/mundo/cidade_morta.js)
     if (typeof CorposInimigos !== 'undefined') CorposInimigos.aoCarregar(z);   // corpos GLB dos inimigos da zona, pedidos de antemão
-    if (typeof Relevo !== 'undefined') Relevo.preparar();   // a grade do relevo com os ajustes do lugar: água no baixo, patamar sob as construções
+    if (typeof Relevo !== 'undefined') Relevo.preparar();
+    if (typeof Vegetacao !== 'undefined') Vegetacao.aoCarregar(z);   // grama 3D, flores e juncos por setor, com a semente da zona (js/mundo/vegetacao.js)   // a grade do relevo com os ajustes do lugar: água no baixo, patamar sob as construções
     if (typeof Agua !== 'undefined') Agua.depois();   // quem nasceu dentro d'água vai para a margem   // estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js)
     Bairro.aoCarregar(z);       // Bairro da Muralha, interiores e a passagem da praça (js/mundo/bairro.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)

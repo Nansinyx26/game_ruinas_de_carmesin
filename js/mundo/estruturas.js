@@ -267,6 +267,7 @@ const Estruturas = (() => {
   // guardados pelo motor (o.fixo); somem se a câmera está dentro delas ou longe demais. E: olho da câmera
   function fila3P(R, Q, E) {
     if (!atual || atual.room !== R) return;
+    if (typeof TexHD !== 'undefined') TexHD.atualizar(atual.lug, E);   // as mais perto ganham a textura do GLB original (js/mundo/texturas_hd.js)
     for (const L of atual.lug) {
       if (!L.obj) continue;
       const I = IDX[L.id], r = I.r * L.esc;

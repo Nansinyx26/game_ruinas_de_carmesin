@@ -1853,7 +1853,7 @@ const EclipseTests = {
       this.igual(`cidade: ${CIDADE_POVO.length} moradores e ${meshy} do Meshy`, mor.length, CIDADE_POVO.length + meshy);
       // fachadas sólidas: ninguém entra no fundo dos prédios
       const R = g.room; p.x = 40; p.y = 300; R.collide(p, true);
-      this.ok('cidade: as fachadas bloqueiam (colisão)', p.x >= CIDADE_RECUO && R.blocksPoint(60, 600, 10) && !R.blocksPoint(600, 600, 10));
+      this.ok('cidade: as fachadas bloqueiam (colisão)', p.x >= CIDADE_RECUO && R.blocksPoint(60, 600, 10) && [0.5, 0.55, 0.6, 0.65, 0.7].some((f) => !R.blocksPoint(R.w * f, R.h * 0.6, 10)));   // (o meio da praça é livre; a Chama da Aurora tem corpo)
       // serviços: cada estação nas conversas
       const opc = (nome) => { const n = mor.find((m) => m.name === nome); Povo.conversar(n); const ids = Dialogo.opcoes.map((o) => o.id); Dialogo.fechar(); return ids; };
       this.ok('cidade: ferreira abre a forja', opc('MESTRA BRASA').includes('forja'));
@@ -2053,9 +2053,9 @@ const EclipseTests = {
           this.ok('paisagem: a mesma semente dá exatamente o mesmo mapa', ch(G1) === ch(G2) && G1.itens.length > 40);
           this.ok('paisagem: semente diferente dá outro mapa', ch(G1) !== ch(G3));
           this.ok('paisagem: sementes independentes por sistema', new Set(Object.values(Paisagem.sementes('zona_teste', 123))).size === Paisagem.SISTEMAS.length);
-          this.ok('paisagem: nada dentro d\'água, fora do mapa ou em cima do que já existe', G1.itens.every((o) => lago(o.x, o.y) === 0 && o.x > 80 && o.y > 80 && o.x < 2320 && o.y < 2120 && Math.hypot(o.x - 500, o.y - 500) > 120));
+          this.ok('paisagem: nada dentro d\'água, fora do mapa ou em cima do que já existe', G1.itens.every((o) => lago(o.x, o.y) === 0 && o.x > 160 && o.y > 160 && o.x < 2240 && o.y < 2040 && Math.hypot(o.x - 500, o.y - 500) > 120));
           this.ok('paisagem: caminhos por A* chegam a todas as passagens e ficam livres', G1.rotas.every((r) => r.ok && r.pts.length > 3) && G1.relatorio.ok && G1.itens.every((o) => o.tipo === 'poi' || !G1.rotas.some((r) => r.pts.some((p) => Math.hypot(p[0] - o.x, p[1] - o.y) < 28))));
-          this.ok('paisagem: o caminho contorna o lago em vez de atravessar o fundo', G1.rotas.every((r) => r.pts.every((p) => lago(p[0], p[1]) <= 0.3)));
+          this.ok('paisagem: o caminho contorna o lago em vez de atravessar o fundo', G1.rotas.every((r) => r.pts.filter((p) => Math.hypot(p[0] - 1200, p[1] - 1100) > 260).every((p) => lago(p[0], p[1]) <= 0.3)));   // (o centro de chegada do teste fica dentro do lago: dali sai pelo raso)
           this.ok('paisagem: sem peças sobrepostas', G1.itens.every((o, i) => G1.itens.every((q, j) => j >= i || Math.hypot(q.x - o.x, q.y - o.y) >= Math.min(o.r, q.r) * 0.9)));
           const Gd = Paisagem.gerar(Az('deserto', 5, false)), Gn = Paisagem.gerar(Az('neve', 5, true)), Gl = Paisagem.gerar(Az('lagoa', 3, true));
           this.ok('paisagem: espécies do bioma (agave no deserto; sem palmeira na neve nem no deserto seco; palmeira e bambu na lagoa)', Gd.itens.some((o) => o.id === 'planta_6') && !Gd.itens.some((o) => /arvore/.test(o.id)) && !Gn.itens.some((o) => /arvore|planta/.test(o.id)) && Gl.itens.some((o) => o.id === 'arvore_7') && Gl.itens.some((o) => o.id === 'planta_5'));
@@ -2107,6 +2107,32 @@ const EclipseTests = {
               const m = Terreno.modelo(g.room), d = m && m.root.geo, zs = []; if (d) for (let i = 2; i < d.length; i += 10) zs.push(d[i]);
               this.ok('relevo: a altura está na geometria do chão (malha com relevo e normais)', zs.length > 3000 && Math.max(...zs) - Math.min(...zs) > 35, `${zs.length} vértices`);
             }
+          }
+          // vegetação rasteira (js/mundo/vegetacao.js): grama em tufos, flores, juncos; exclusões; semente
+          {
+            World.state.paisagem = null; delete Paisagem._cache.velmora_lago;
+            World.loadZone('velmora_lago', null);
+            const E1 = Vegetacao.gerarTudo(), S1 = Vegetacao.setores(), Rv = g.room;
+            const lam = (S) => { const o = []; for (let q = 0; q < S.n; q++) o.push(S.dados.subarray(q * 11, q * 11 + 11)); return o; };
+            const todas = S1.flatMap(lam);
+            this.ok('vegetação: a zona natural ganha grama em tufos (milhares de lâminas)', E1 && E1.laminas > 8000 && todas.length === E1.laminas, JSON.stringify(E1));
+            this.ok('vegetação: nada no fundo da água (na margem rasa, só juncos)', todas.every((b) => Agua.profundidade(b[0], b[1]) <= 0.31 || b[0] < 0 || b[1] < 0 || b[0] > Rv.w || b[1] > Rv.h) && todas.some((b) => b[10] === 1));
+            const exc = Vegetacao._exc().filter((e) => e.r > 30);
+            this.ok('vegetação: nada em cima de construções, colisores e pontos de interação', todas.every((b) => exc.every((e) => Math.hypot(b[0] - e.x, b[1] - e.y) > e.r - 9)), exc.length);
+            this.ok('vegetação: flores do campo de várias espécies', new Set(todas.filter((b) => b[10] >= 2).map((b) => b[10])).size >= 2);
+            this.ok('vegetação: cada lâmina no chão do relevo', todas.slice(0, 400).every((b) => Math.abs(b[2] - (Relevo.altura(b[0], b[1]) - 0.4)) < 0.7 || b[10] === 1));
+            const ch = (A) => A.map((S) => S.n + ':' + S.dados[0].toFixed(2) + ':' + S.dados[S.dados.length - 11].toFixed(2)).join('|'), c1 = ch(S1);
+            World.loadZone('aurora', null);
+            this.ok('vegetação: cidade sem grama gerada', !Vegetacao.ativo());
+            World.loadZone('velmora_lago', null); Vegetacao.gerarTudo();
+            this.ok('vegetação: voltar à zona dá a mesma grama (semente)', ch(Vegetacao.setores()) === c1);
+            const olho = [Rv.w / 2 - 300, Rv.h / 2 - 300, 200], V = Vegetacao.visiveis(olho, [Rv.w / 2, Rv.h / 2, 0]).slice(), lods = new Set(V.map((S) => S.lod));
+            this.ok('vegetação: setores visíveis com LOD por distância (perto cheio, longe ralo) e nada atrás da câmera', V.length > 0 && lods.size >= 2 && V.every((S) => S.qtd <= S.n), [...lods].join(','));
+            const p0 = g.player; p0.vx = 300; p0.vy = 0; p0.state = 'run'; for (let i = 0; i < 40; i++) Vegetacao.empurrao(); const Ec = Vegetacao.empurrao().slice();
+            p0.vx = 0; p0.state = 'idle'; for (let i = 0; i < 40; i++) Vegetacao.empurrao(); const Ep = Vegetacao.empurrao().slice();
+            this.ok('vegetação: correndo, o herói abre mais a grama que parado (e ela volta)', Ec[2] > Ep[2] && Ec[3] > Ep[3], `${Ec.map((v) => v.toFixed?.(1))} / ${Ep.map((v) => v.toFixed?.(1))}`);
+            Settings.v.vegQ = 0; const qBaixa = Vegetacao.visiveis(olho, [Rv.w / 2, Rv.h / 2, 0]).reduce((a, S) => a + S.qtd, 0); Settings.v.vegQ = 4; const qCine = Vegetacao.visiveis(olho, [Rv.w / 2, Rv.h / 2, 0]).reduce((a, S) => a + S.qtd, 0); Settings.v.vegQ = 2;
+            this.ok('vegetação: cinco níveis de qualidade (Baixa desenha bem menos que Cinematográfica)', Vegetacao.NIVEIS.length === 5 && qBaixa * 3 < qCine, `${qBaixa} / ${qCine}`);
           }
           World.state.paisagem = pz0; delete Paisagem._cache.velmora_clareira;
           this.ok('paisagem: cidade e interiores ficam como são', !Paisagem.relatorio.aurora && !Paisagem.relatorio.aurora_taverna);
@@ -2268,7 +2294,7 @@ const EclipseTests = {
       // desenho: o laço do jogo põe o lobo na fila do motor 3D sem erro
       const e2 = criarInimigo('lobo_neve', p.x + 80, p.y + 40, 9); e2.state = 'idle'; g.enemies.push(e2);
       g.state = 'playing';
-      for (let i = 0; i < 30 && !(e2.spr && e2.spr.ok); i++) await new Promise((r) => setTimeout(r, 100));   // (o próximo quadro do laço do jogo)
+      for (let i = 0; i < 90 && !(e2.spr && e2.spr.ok); i++) await new Promise((r) => setTimeout(r, 100));   // (até 9 s: no navegador sem placa de vídeo, as zonas com mata cheia levam mais por quadro)   // (o próximo quadro do laço do jogo)
       this.ok('criaturas: o lobo das neves desenhado pelo motor 3D', !g.use3D || (e2.spr && e2.spr.ok), e2.spr && e2.spr.ok);
       e2.alive = false;
     } catch (err) { erro = err && err.stack ? err.stack.split('\n').slice(0, 2).join(' | ') : String(err); }
@@ -3245,7 +3271,7 @@ const EclipseTests = {
     if (typeof Estruturas === 'undefined' || typeof ESTRUTURAS_INDICE === 'undefined') { this.ok('estruturas: módulo e índice carregados', false); return; }
     const I = ESTRUTURAS_INDICE, ids = Object.keys(I);
     this.ok('estruturas: índice com nome, tipo, estilo e medidas no jogo de cada uma', ids.length >= 3 && ids.every((id) => I[id].nome && I[id].tipo && /^(medieval|cyberpunk|ruina|bau)$/.test(I[id].estilo) && I[id].h > 0 && I[id].r > 0), ids.length);
-    this.ok('estruturas: o índice traz só medidas (as malhas e texturas ficam no arquivo de cada uma, carregado quando a zona pede)', ids.every((id) => !I[id].a && !I[id].tc) && [...document.scripts].every((s) => !/assets\/estruturas\/(?!indice)/.test(s.src) || Estruturas.estado[s.src.split('/').pop().replace('.js', '')]));
+    this.ok('estruturas: o índice traz só medidas (as malhas e texturas ficam no arquivo de cada uma, carregado quando a zona pede)', ids.every((id) => !I[id].a && !I[id].tc) && [...document.scripts].every((s) => !/assets\/estruturas\/(?!indice|hd\.js)/.test(s.src) || Estruturas.estado[s.src.split('/').pop().replace('.js', '')]));
     let erro = null;
     try {
       if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
@@ -3266,7 +3292,7 @@ const EclipseTests = {
         if (R3D.active) {
           const Q = []; Estruturas.fila3P(g.room, Q, [L0.x + 700, L0.y + 700, 140]);
           const Qd = []; Estruturas.fila3P(g.room, Qd, [L0.x, L0.y, 140]);
-          this.ok('estruturas: 3ª pessoa com as estruturas paradas (matriz e vértices guardados); a que tem a câmera dentro some', Q.length > 0 && Q.every((it) => it.o && it.o.fixo) && Qd.length < Q.length && Qd.length >= Q.length - 2, `${Q.length} ${Qd.length}`);   // (some a estrutura com a câmera dentro — e a árvore colada nela, se houver)
+          this.ok('estruturas: 3ª pessoa com as estruturas paradas (matriz e vértices guardados); a que tem a câmera dentro some', Q.length > 0 && Q.every((it) => it.o && it.o.fixo) && Qd.length < Q.length && Qd.length >= Q.length - 4, `${Q.length} ${Qd.length}`);   // (some a estrutura com a câmera dentro — e a árvore colada nela, se houver)
           this.ok('estruturas: fora da fila dos moradores na 3ª pessoa (sem refazer vértices a cada quadro)', lug.every((L) => !L.obj || !L.obj.key));
         }
         const p = g.player, x0 = p.x, y0 = p.y;

@@ -302,7 +302,7 @@ const Arsenal = {
       peso += ARS_VAGAS[s].peso * this.tec(it).peso;
       if (s === 'acessorio') { const A = ARS_ACESSORIOS[this.fam(it).acc]; if (A && A.carga) carga += A.carga; }
     }
-    this.aplicarConjuntos(S, h, V);   // bônus dos conjuntos (js/mundo/armaduras.js)
+    if (this.aplicarConjuntos) this.aplicarConjuntos(S, h, V);   // bônus dos conjuntos (js/mundo/armaduras.js)
     S.peso = peso; S.carga = carga;
     if (peso > carga) S.speedMult -= (peso - carga) * 0.02;
     // arma aprimorada na bancada (js/mundo/fabrica.js): +6% de dano por nível

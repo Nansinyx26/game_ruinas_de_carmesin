@@ -87,6 +87,11 @@ const CIDADE_POVO = [
     temas: [['Você mora aqui?', 'Desde sempre! A Aurora é o único lugar onde os drones não chegam. Minha mãe diz que é porque a cidade fica atrás de um espelho.']] },
 ];
 // Bancas do mercado e onde ficam as estações (frações da sala)
+// O corpo de cada estação e banca é um GLB do projeto (js/mundo/estruturas.js), posto ao lado do ponto
+// de interação (o objeto da cidade fica só como o lugar de conversar e o brilho). A cama do alojamento
+// não tem GLB: continua com o modelo próprio.
+const CIDADE_GLB = { forja: 'forno_pedra', armas: 'canhao_medieval', laboratorio: 'item_ambiente_md_9', engenharia: 'item_ambiente_md_4', guilda: 'quadro_de_missoes_medieval',
+  missoes: 'estrutura_md_13', armazem: 'item_ambiente_md_1', banca: ['moonlit_medieval_mark', 'estrutura_md_7', 'banca_ceramica'] };
 const CIDADE_BANCAS = [{ at: [0.36, 0.66], cor: '#7a2a2a' }, { at: [0.5, 0.72], cor: '#2a5a3a' }, { at: [0.28, 0.78], cor: '#2a3a6a' }];
 
 const Cidade = {
@@ -106,9 +111,17 @@ const Cidade = {
   aoCarregar(z) {
     if (!z.cidade || z.distrito) return;   // (o bairro e os interiores: js/mundo/bairro.js)
     const g = game, R = g.room, spot = (at) => npcSpot(R, at[0], at[1]);
-    for (const B of CIDADE_PREDIOS) { const f = this.frente(B, R); g.npcs.push(new CidadeProp('estacao', f.x, f.y, { est: B.est, predio: B })); }
+    const I = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {}, Z = typeof Estruturas !== 'undefined' ? Estruturas.ZONAS : null, extra = [];
+    if (Z && !this._base) this._base = (Z[z.id] || []).slice();
+    // o GLB vai ao lado do ponto de interação (dx, dy: a direção ao longo da fachada ou para trás da banca)
+    const comGLB = (id, x, y, dx, dy, giro) => { const r = I[id] ? I[id].r : 0; if (!r || !Z) return null; extra.push([id, (x + dx * (r + 58)) / R.w, (y + dy * (r + 58)) / R.h, giro, 1]); return id; };
+    for (const B of CIDADE_PREDIOS) {
+      const f = this.frente(B, R), glb = comGLB(CIDADE_GLB[B.est], f.x, f.y, B.lado === 'N' ? 1 : 0, B.lado === 'N' ? 0 : 1, B.lado === 'N' ? Math.PI / 2 : 0);
+      g.npcs.push(new CidadeProp('estacao', f.x, f.y, { est: B.est, predio: B, glb }));
+    }
     g.npcs.push(new CidadeProp('monumento', R.w * 0.42, R.h * 0.42, {}));
-    CIDADE_BANCAS.forEach((b, k) => { const pt = spot(b.at); g.npcs.push(new CidadeProp('banca', pt.x, pt.y, { cor: b.cor, k })); });
+    CIDADE_BANCAS.forEach((b, k) => { const pt = spot(b.at), glb = comGLB(CIDADE_GLB.banca[k % CIDADE_GLB.banca.length], pt.x, pt.y, 0, -1, Math.PI / 2); g.npcs.push(new CidadeProp('banca', pt.x, pt.y, { cor: b.cor, k, glb })); });
+    if (Z) Z[z.id] = this._base.concat(extra);
     // portões de saída: um por região, nas bordas da frente (metade no sul, metade no leste)
     const regs = WORLD_REGIONS.slice().sort((a, b) => a.order - b.order), nS = Math.ceil(regs.length / 2), nL = regs.length - nS;
     regs.forEach((reg, k) => {
@@ -471,7 +484,7 @@ class CidadeProp extends NPC {
       f([P(x - w / 2, y + d / 2, z), P(x + w / 2, y + d / 2, z), P(x + w / 2, y + d / 2, z + h), P(x - w / 2, y + d / 2, z + h)], frente);
       f([P(x - w / 2, y - d / 2, z + h), P(x + w / 2, y - d / 2, z + h), P(x + w / 2, y + d / 2, z + h), P(x - w / 2, y + d / 2, z + h)], top);
     };
-    if (this.altar) return;   // (o altar é desenhado pela estrutura)
+    if (this.altar || this.data.glb) return;   // (o altar e as estações com GLB são desenhados pela estrutura)
     ctx.save();
     if (this.kind === 'monumento') {
       caixa(0, 0, 0, 70, 70, 14, '#4a4658', '#2a2836', '#36334a');
@@ -525,7 +538,7 @@ class CidadeProp extends NPC {
   }
   // Modelo para a 3ª pessoa (ThirdView.queueProp)
   modelo3D() {
-    if (this.altar) return null;   // (o altar entra pela fila das estruturas)
+    if (this.altar || this.data.glb) return null;   // (o altar e as estações com GLB entram pela fila das estruturas)
     const C = Cidade._m3 || (Cidade._m3 = {}), k = this.kind === 'estacao' ? `est:${this.data.est}` : this.kind;
     if (C[k]) return C[k];
     const g = new G3(), e = this.data.est;

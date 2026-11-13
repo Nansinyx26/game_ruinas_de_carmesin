@@ -203,7 +203,8 @@ const R3D_VS_P = `
 attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol;
 uniform mat4 uMVP; uniform mediump vec4 uAgua; uniform mediump vec4 uAgua2;   // (mediump explícito: o mesmo do fragmento, ou o programa não liga)
 // vento (js/animacao.js): x = força do item, y = tempo, zw = direção; o que é alto balança mais
-uniform vec4 uVento;
+uniform vec4 uVento; uniform vec4 uVentoO;   // uVentoO: base do objeto no mundo (x, y, z) e escala (w)
+uniform vec4 uEmpurra;   // grama (js/mundo/vegetacao.js): o herói abre a grama em volta [x, y, raio, força]
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 void main() {
   vec3 P = aPos;
@@ -216,10 +217,29 @@ void main() {
           + sin(dot(q, vec2(0.95, -0.3)) * 0.13 + t * 2.9) * 0.25 * ag) * (1.0 - 0.85 * aCol.a) * ag;
   }
   if (uVento.x > 0.0) {
-    float hh = min(max(P.z, 0.0) / 90.0, 1.6), k = hh * hh * uVento.x * 5.0;
-    float fase = dot(P.xy, vec2(0.011, 0.017)) + uVento.y * 1.4;
+    // a altura conta a partir do pé do objeto (no relevo, o chão não é mais z = 0): o tronco fica firme
+    vec3 L = P - uVentoO.xyz;
+    float esc = max(uVentoO.w, 0.2), hh = min(max(L.z, 0.0) / (90.0 * esc), 1.6), k = hh * hh * uVento.x * 5.0;
+    float fase = dot(uVentoO.xy, vec2(0.011, 0.017)) + uVento.y * 1.4;
     float onda = sin(fase) * 0.55 + 0.45 + sin(fase * 2.7 + 1.3) * 0.25;
     P.xy += uVento.zw * onda * k + vec2(sin(uVento.y * 6.3 + P.x * 0.21 + P.z * 0.15), cos(uVento.y * 5.1 + P.y * 0.19)) * k * 0.12;
+    // folhagem: as pontas longe do tronco e acima da metade tremem por conta própria (folhas e galhos finos),
+    // cada folha numa fase; a força segue o vento do momento (rajadas)
+    float raio = length(L.xy) / esc, folha = smoothstep(14.0, 52.0, raio) * smoothstep(0.35, 0.9, hh);
+    float raj = 0.55 + 0.45 * sin(uVento.y * 0.7 + fase * 0.5);
+    vec3 tremor = vec3(sin(uVento.y * 9.1 + P.x * 0.37 + P.z * 0.21), cos(uVento.y * 8.3 + P.y * 0.33 + P.x * 0.11), sin(uVento.y * 11.7 + P.z * 0.29) * 0.6);
+    P += tremor * folha * uVento.x * 2.4 * esc * raj;
+  }
+  if (uVento.x < 0.0) {
+    // GRAMA (js/mundo/vegetacao.js): o comprimento da normal diz a altura do vértice na lâmina (1 base, 2
+    // ponta); só a parte de cima dobra: com o vento, em ondas que atravessam o campo, e com o herói
+    float w = clamp(length(aNor) - 1.0, 0.0, 1.0), d2 = w * w, forca = -uVento.x;
+    float ondas = sin(dot(P.xy, vec2(0.012, 0.009)) + uVento.y * 1.6) * 0.6 + sin(dot(P.xy, vec2(-0.02, 0.031)) + uVento.y * 2.7) * 0.3 + 0.35;
+    P.xy += uVento.zw * ondas * d2 * forca * 7.0 + vec2(sin(uVento.y * 4.3 + P.x * 0.3), cos(uVento.y * 3.7 + P.y * 0.27)) * d2 * forca * 0.9;
+    vec2 dd = P.xy - uEmpurra.xy; float dl = length(dd);
+    float emp = uEmpurra.z > 0.0 ? (1.0 - smoothstep(uEmpurra.z * 0.35, uEmpurra.z, dl)) * uEmpurra.w : 0.0;
+    P.xy += (dl > 0.01 ? dd / dl : vec2(0.0)) * emp * d2 * 11.0;
+    P.z -= emp * d2 * 6.0;
   }
   gl_Position = uMVP * vec4(P, 1.0);
   vNor = aNor; vCol = aCol; vPos = P;
@@ -608,7 +628,7 @@ const R3D = {
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP', 'uAgua2', 'uOnda', 'uVento', 'uLuzP', 'uLuzC', 'uMolhado']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP', 'uAgua2', 'uOnda', 'uVento', 'uVentoO', 'uEmpurra', 'uLuzP', 'uLuzC', 'uMolhado']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -956,6 +976,7 @@ const R3D = {
     if (L.uWet) { const w = o.clima; if (w) gl.uniform4f(L.uWet, w[0], w[1], w[2], 0); else gl.uniform4f(L.uWet, 0, 0, 0, 0); }
     // vento (js/fogo.js: Fogo.vento): árvores, plantas e bandeiras balançam (o.vento = quanto)
     if (L.uVento) { const v = this.vento; gl.uniform4f(L.uVento, o.vento || 0, (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 1000, v[2] * (0.4 + v[0]), v[3] * (0.4 + v[0])); }
+    if (L.uVentoO) { const m = o.m; if (m && o.vento) gl.uniform4f(L.uVentoO, m[3], m[7], m[11], Math.hypot(m[0], m[4], m[8]) || 1); else gl.uniform4f(L.uVentoO, 0, 0, 0, 1); }   // (o pé e a escala do objeto: M3 em linhas, translação em 3, 7 e 11)
     if (L.uMolhado) gl.uniform1f(L.uMolhado, tex && tex.detP ? this.molhado : 0);
     // água (js/mundo/agua.js): material com ondas, reflexo e espuma; o tempo anda sozinho
     if (L.uAgua) { const c = o.agua && o.aguaC; gl.uniform4f(L.uAgua, o.agua ? 1 : 0, o.agua ? (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 62.832 : 0, c ? c[0] : 0, c ? c[1] : 0); }
@@ -1040,6 +1061,8 @@ const R3D = {
         if (!pass && it.o && it.o.agua) { agua.push(it); continue; }
         desenha(it);
       }
+      // grama, flores e juncos (js/mundo/vegetacao.js): buffers estáticos por setor, só na passada de cor
+      if (!pass && typeof Vegetacao !== 'undefined' && Vegetacao.ativo()) { if (cur !== 0) { cur = 0; L = use(0, pass); } Vegetacao.desenharClassico(this, gl, L, view); }
       // Água por último, misturada com o que já está embaixo (o fundo aparece na margem rasa); o
       // alfa do destino continua 1 (a imagem 3D é composta por cima do céu desenhado no 2D)
       if (agua.length) {

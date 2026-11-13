@@ -154,25 +154,25 @@
   "fonte": "assets/estruturas_ambiente/Estruturas_Superficie/Arvore_1.glb",
   "tipo": "arvore",
   "estilo": "medieval",
-  "antes": 1499444,
-  "depois": 8961,
-  "lod": 2553,
-  "passadas": 1,
+  "antes": 28109,
+  "depois": 28109,
+  "lod": 5501,
+  "passadas": 0,
   "distancia": {
-   "media": 0.00145,
-   "p95": 0.00431
+   "media": 0.0,
+   "p95": 0.0
   },
-  "texturas": 2,
+  "texturas": 1,
   "lado": 1024,
   "dims": [
-   1.941,
-   1.582,
-   1.781
+   0.959,
+   0.77,
+   0.948
   ],
   "aprovada": true,
   "falhas": [],
   "glb": "assets/models/estruturas/arvore_1.glb",
-  "segundos": 53
+  "segundos": 6
  },
  {
   "id": "arvore_2",
@@ -348,6 +348,31 @@
   "falhas": [],
   "glb": "assets/models/estruturas/arvore_8.glb",
   "segundos": 39
+ },
+ {
+  "id": "arvore_9",
+  "fonte": "assets/estruturas_ambiente/Estruturas_Superficie/Arvore_9.glb",
+  "tipo": "arvore",
+  "estilo": "medieval",
+  "antes": 11688,
+  "depois": 11688,
+  "lod": 2612,
+  "passadas": 0,
+  "distancia": {
+   "media": 0.0,
+   "p95": 0.0
+  },
+  "texturas": 1,
+  "lado": 1024,
+  "dims": [
+   1.6,
+   1.594,
+   1.873
+  ],
+  "aprovada": true,
+  "falhas": [],
+  "glb": "assets/models/estruturas/arvore_9.glb",
+  "segundos": 1
  },
  {
   "id": "banca_ceramica",

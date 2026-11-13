@@ -320,6 +320,7 @@ const R = {
     cam.aspect = VIEW_W / VIEW_H;
     cam.lookAt(T[0], -T[1], T[2]);
     cam.updateProjectionMatrix();
+    if (typeof window.Vegetacao !== 'undefined') window.Vegetacao.realista(this, THREE, this.raiz);   // grama instanciada (js/mundo/vegetacao.js)
     this.ceuTex.needsUpdate = true;
     if (this.composer) this.composer.render(); else rd.render(this.cena, cam);
     this.camada(true);

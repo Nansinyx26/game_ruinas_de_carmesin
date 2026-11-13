@@ -139,7 +139,7 @@ const Paisagem = (() => {
       // (a água não fecha o caminho — o herói atravessa a vau ou a nado —, mas custa caro: a rota prefere contornar)
       if (bloqueios.some((b) => Math.hypot(b.x - x, b.y - y) < b.r + P * 0.3)) fechado[q] = 1;
       const f = A.agua ? A.agua(x, y) : 0;
-      custo[q] = 1 + C.incl(x, y) * 6 + (f > 0 ? 5 + f * 14 : 0);
+      custo[q] = 1 + C.incl(x, y) * 6 + (f > 0 ? 12 + f * 60 + (f > 0.75 ? 400 : 0) : 0);   // (o fundo do lago e do rio: só quando não há outro jeito — a nado)
     }
     const cel = (x, y) => cl(Math.floor(y / P), 0, ny - 1) * nx + cl(Math.floor(x / P), 0, nx - 1);
     const ini = cel(A.w / 2, A.h / 2), saida = [];
@@ -195,7 +195,7 @@ const Paisagem = (() => {
   // A: { id, w, h, tema, hub, agua(x, y), fixos: [{ x, y, r }] (o que já está na zona: estruturas da
   //      lista, baús, terminais), passagens: [{ x, y }], raio(id) → raio da peça no jogo, semente? }
   function gerar(A) {
-    const S = sementes(A.id, A.semente), C = campos(A, S), M = 90;
+    const S = sementes(A.id, A.semente), C = campos(A, S), M = 170;   // (faixa livre junto às bordas: a travessia para a zona vizinha chega em qualquer ponto dela)
     const itens = [], fora = { agua: 0, caminho: 0, fixo: 0, regra: 0, sobreposto: 0 };
     if (!TEMAS[A.tema]) return { itens, rotas: [], pois: [], fauna: [], campos: C, sementes: S, relatorio: { ok: true, tema: A.tema, natural: false } };
     const raio = (id) => (A.raio ? A.raio(id) : 40);
