@@ -117,6 +117,11 @@ const MapaRegiao = (() => {
       marca(P, `${ic ? ic + ' ' : ''}${cel < 140 ? z.name : z.name.toUpperCase()}`, z.vila || z.territorio === 'vila' ? '#ffe7b0' : z.territorio === 'forte' || z.territorio === 'ruina' ? '#e0d2ff' : 'rgba(235,240,245,0.92)', Math.max(9, Math.min(13, cel * 0.085)));
       if (z.lv) marca({ x: P.x, y: P.y + fs * 1.05 }, `nv ${z.lv}`, 'rgba(200,210,220,0.7)', Math.max(8, fs * 0.62));
     }
+    // as estradas para as regiões vizinhas (js/mundo/ligacoes.js), na borda de onde saem
+    if (typeof Ligacoes !== 'undefined') for (const z of L.zs) for (const E of Ligacoes.saidas(z)) {
+      const f = { N: [0.5, 0.04], S: [0.5, 0.97], W: [0.06, 0.5], E: [0.94, 0.5] }[E.dir], P = L.pos(z, f[0], f[1]), seta = { N: '↑', S: '↓', W: '←', E: '→' }[E.dir];
+      marca(P, `${seta} ${Ligacoes.aberta(E.z) ? '' : '🔒 '}${worldRegion(E.z.region).name}`, Ligacoes.aberta(E.z) ? '#9fe8ff' : '#ffb27a', Math.max(9, Math.min(12, cel * 0.07)));
+    }
     // o herói
     const p = game.player, Rr = game.room;
     if (p && Rr) {
@@ -137,7 +142,7 @@ const MapaRegiao = (() => {
     ctx.strokeStyle = '#dfe6ee'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(40, VIEW_H - 78); ctx.lineTo(40 + m100, VIEW_H - 78); ctx.moveTo(40, VIEW_H - 83); ctx.lineTo(40, VIEW_H - 73); ctx.moveTo(40 + m100, VIEW_H - 83); ctx.lineTo(40 + m100, VIEW_H - 73); ctx.stroke();
     ctx.textAlign = 'left'; ctx.fillStyle = '#dfe6ee'; ctx.font = `11px ${FONT_UI}`; ctx.fillText('100 m', 46 + m100, VIEW_H - 74);
     ctx.fillStyle = 'rgba(205,215,225,0.85)'; ctx.font = `12px ${FONT_UI}`;
-    ctx.fillText('➤ você · ⌂ vilarejo · ♜ ruína / forte · ▭ construção · ● árvore · ◈ portal · ▼ masmorra · ✦ baú · • inimigos · ☠ chefe · ? não descoberto', 40, VIEW_H - 30);
+    ctx.fillText('➤ você · → estrada para outra região · ⌂ vilarejo · ♜ ruína / forte · ▭ construção · ● árvore · ◈ portal · ▼ masmorra · ✦ baú · • inimigos · ☠ chefe · ? não descoberto', 40, VIEW_H - 30);
     ctx.textAlign = 'right'; ctx.fillText('R: mapa do mundo · Q/E zoom · setas ou arrastar: mover · Esc fechar', VIEW_W - 40, VIEW_H - 30);
     ctx.restore();
   }

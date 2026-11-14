@@ -3470,6 +3470,18 @@ const EclipseTests = {
         World.updateMap(0.016, Object.assign(this.entrada(), { pressed: { reroll: true }, held: {}, mouse: { x: 0, y: 0 } })); const mundo = !World.map.regiao; World.closeMap();
         this.ok('mapa da região: nas regiões abertas o M abre o território contínuo; R alterna com o Mapa do Mundo', reg && mundo && MapaRegiao.pode(World) && MapaRegiao.minis.size >= 1);
         World.loadZone('metro_centro', null); this.ok('mapa da região: as regiões de cidade (salas) ainda usam o Mapa do Mundo', !MapaRegiao.pode(World)); }
+      // estradas entre as regiões (js/mundo/ligacoes.js): andando pela borda, sem portal, com carregamento só na troca de região
+      { Ligacoes.montar(); const E = Ligacoes.estrada(WORLD_ZONES.velmora_colinas, 'E');
+        this.ok('estradas: as regiões vizinhas do mapa se ligam pela borda (Velmora → Carmesin, Carmesin → Lagoa…)', !!E && E.z.region === 'carmesin' && Ligacoes.LISTA.filter(([a, b]) => worldZoneAt(a[1], a[2], a[0]) && worldZoneAt(b[1], b[2], b[0])).length >= 12, E && E.z.id);
+        const sv0 = g.progress.level; g.progress.level = Math.max(g.progress.level, 10);
+        World.loadZone('velmora_colinas', null); const p = g.player, R = g.room; p.x = R.w - 10; p.y = R.h * 0.4; p.vx = 200; p.vy = 0; p.state = 'run';
+        World.update(0.016); const indo = !!g.fadeCb, card = Ligacoes.carregando; const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;
+        this.ok('estradas: andar para fora da borda leva à região vizinha, com a tela curta de carregamento (sem portal)', indo && card && World.zone.id === E.z.id && World.zone.region === 'carmesin' && g.player.x < g.room.w * 0.3, `${World.zone.id} ${g.player.x | 0}`);
+        this.ok('estradas: a zona de cidade do outro lado tem a passagem de volta, com o nome da estrada', g.npcs.some((n) => n.kind === 'gate' && n.data.to === 'velmora_colinas' && /ESTRADA DA FLORESTA/.test(n.data.rotulo || '')));
+        g.progress.level = 1; World.loadZone('velmora_pedramusgo', null); const p2 = g.player, R2 = g.room; p2.x = R2.w - 10; p2.y = R2.h * 0.5; p2.vx = 200; p2.vy = 0;
+        World.update(0.016); const travou = !g.fadeCb && World.zone.id === 'velmora_pedramusgo'; if (g.fadeCb) { g.fadeCb = null; g.fadeTarget = 0; g.fade = 0; }
+        this.ok('estradas: região ainda fechada (nível ou chefe): o herói não passa e vê o cadeado', !World.regionOpen('asterion') ? travou : true);
+        g.progress.level = sv0; }
       Settings.v.vizinhos = false; World.loadZone('velmora_clareira', null);
       this.ok('regiões: desligado nas configurações, nada é montado', Vizinhos.estado().vizinhas.length === 0);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }

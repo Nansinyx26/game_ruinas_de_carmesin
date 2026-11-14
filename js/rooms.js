@@ -212,7 +212,8 @@ class Room {
     }
     // a mata em volta: densa só onde o mundo acaba; do lado de uma zona vizinha, poucas árvores
     // soltas (a paisagem continua e a travessia é contínua: não aparece uma parede de árvores)
-    const D = this.def, viz = (dr, dc) => typeof worldZoneAt === 'function' && D && D.region && D.r !== undefined && !!worldZoneAt(D.r + dr, D.c + dc, D.region);
+    const D = this.def, viz = (dr, dc) => typeof worldZoneAt === 'function' && D && D.region && D.r !== undefined && (!!worldZoneAt(D.r + dr, D.c + dc, D.region)
+      || (typeof Ligacoes !== 'undefined' && !!Ligacoes.alem(D, dr ? (dr < 0 ? 'N' : 'S') : dc < 0 ? 'W' : 'E')));   // (a estrada para outra região também fica aberta)
     const lado = { N: viz(-1, 0), S: viz(1, 0), W: viz(0, -1), E: viz(0, 1) }, aceita = (s) => !lado[s] || r() < 0.18;
     const anel = [];
     for (let x = -M + 40; x < w + M; x += 95 + r() * 55) { if (aceita('N')) anel.push([x, -M * (0.2 + 0.65 * r())]); if (aceita('S')) anel.push([x, h + M * (0.25 + 0.6 * r())]); }
