@@ -1,4 +1,4 @@
-// ECLIPSE ZERO · Roda a suíte do jogo (index.html?testes=1) num Chromium sem janela
+// ECLIPSE ZERO · Roda a suíte do jogo (jogar.html?testes=1) num Chromium sem janela
 // ---------------------------------------------------------------------------
 // Sobe um servidor estático da pasta do projeto (os testes conferem os .glb por http), abre o
 // jogo com ?testes=1, espera window.__testes e imprime o resultado. Sai com código 1 se algum
@@ -34,7 +34,7 @@ const servidor = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
-const url = `http://127.0.0.1:${servidor.address().port}/index.html?testes=1`;
+const url = `http://127.0.0.1:${servidor.address().port}/jogar.html?testes=1`;
 
 const navegador = await chromium.launch({
   executablePath: process.env.CHROMIUM || undefined,

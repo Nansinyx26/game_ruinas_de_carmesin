@@ -55,6 +55,9 @@ const MUSIC_TRACKS = {
   },
 };
 
+// Sons genéricos que os poderes tocam ao lançar e que a gravação do poder substitui (lancarPoder)
+const AUDIO_GENERICOS_PODER = new Set(['zap', 'chargeTier', 'deflect', 'memory', 'dash', 'thrust', 'swingHeavy', 'special', 'specialCharge', 'comboName']);
+
 class MusicPlayer {
   constructor(sys) {
     this.sys = sys;
@@ -597,6 +600,26 @@ class AudioSys {
   }
   temGravado(name) { const L = this._grav && this._grav[name]; return !!(L && L.bufs.length); }
 
+  // Poderes por classe: cada habilidade tem a própria gravação (poder_<id>, tools/sfx/gerar_sfx.py) e
+  // cada herói o seu especial (especial_<herói>). Durante o lançamento de um poder com gravação, os sons
+  // genéricos de carga que o código do poder toca (zap, carga, escudo…) ficam calados: a gravação já é
+  // o som do poder. Sem gravação (ou abrindo do disco), fica tudo como antes.
+  poder(nome, p = 1) {
+    if (!this.ctx || this.muted) return false;
+    if (!this._grav) this.carregarGravados();
+    if (!this.temGravado(nome)) return false;
+    return this.gravado(nome, p, 1);
+  }
+  lancarPoder(nome, fn) {
+    const tem = !!(this.ctx && !this.muted && (this._grav || (this.carregarGravados(), this._grav)) && this.temGravado(nome));
+    if (!tem) return fn();
+    this._calar = true;
+    let r;
+    try { r = fn(); } finally { this._calar = false; }
+    if (r !== false) this.poder(nome);
+    return r;
+  }
+
   // Impacto de um golpe que acertou (js/game.js, onHit): a gravação do material (metal nas máquinas,
   // carne nas criaturas; sem ela, o impacto geral) mais as camadas sintetizadas que dão o peso — o
   // baque grave sob o golpe, o estalo do contato e o brilho do crítico. A força (o dano contra a vida
@@ -626,6 +649,7 @@ class AudioSys {
   }
   play(name, p = 1) {
     if (!this.ctx || this.muted) return;
+    if (this._calar && AUDIO_GENERICOS_PODER.has(name)) return;   // (lancarPoder: a gravação do poder no lugar)
     if (!this._grav) this.carregarGravados();
     if (this.gravado(name, p)) return;
     // efeitos que só existem gravados: sem a gravação, o sintetizado mais parecido

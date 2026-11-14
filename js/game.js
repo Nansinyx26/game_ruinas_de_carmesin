@@ -1282,6 +1282,7 @@ class Game {
     if (typeof Graficos !== 'undefined') Graficos.desenhar(ctx, this);
     if (this.dissolve) { ctx.save(); ctx.globalAlpha = clamp(this.dissolve.t / this.dissolve.T, 0, 1); ctx.drawImage(this.dissolve.canvas, 0, 0, VIEW_W, VIEW_H); ctx.restore(); }
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade.toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (typeof Ligacoes !== 'undefined') Ligacoes.desenhar(ctx);   // a tela de carregamento entre regiões
     DevTools.draw(ctx);
     this.menu.drawNotice(ctx);
     ctx.restore();

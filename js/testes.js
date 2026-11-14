@@ -1,5 +1,5 @@
 'use strict';
-// ECLIPSE ZERO · Testes automatizados (sem bibliotecas): abra index.html?testes=1
+// ECLIPSE ZERO · Testes automatizados (sem bibliotecas): abra jogar.html?testes=1
 // ---------------------------------------------------------------------------
 // Roda dentro do jogo de verdade (mesmos scripts, mesmo motor) e mostra o resultado na tela
 // e no console; window.__testes guarda { ok, falhas, total, lista } para automação
@@ -755,7 +755,7 @@ const EclipseTests = {
   mundo() {
     // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
     this.igual('mundo: 11 regiões (com a Cidade Morta)', WORLD_REGIONS.length, 11);
-    this.igual('mundo: 81 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9 + 9 da Cidade Morta)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 81);
+    this.igual('mundo: 100 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9 + 9 da Cidade Morta + 19 do Território de Velmora)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 81 + (typeof Territorio !== 'undefined' ? Territorio.ZONAS.length : 0));
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
@@ -3072,7 +3072,7 @@ const EclipseTests = {
       World.loadZone('velmora_lago', null);
       const R = g.room, C = Agua.corpos(), L = C[0];
       this.ok('motor 3D: os programas de perspectiva (cores e textura) ligam (a água tem precisão igual nos dois shaders)', !R3D.active || (R3D.progsP && R3D.progsP.length === 2 && R3D.progs.length === 2), R3D.progsP && R3D.progsP.length);
-      this.ok('água: o Lago Escuro tem o lago e o rio que deságua nele (e as zonas da lista têm rios e lagos)', C.length === 2 && L.lago && !!C[1].rio && Object.keys(Agua.AGUA_ZONAS).length >= 10, C.length);
+      this.ok('água: o Lago Escuro tem o lago, o rio que deságua nele e a vazão para o sul (e as zonas da lista têm rios e lagos)', C.length === 3 && L.lago && !!C[1].rio && !!C[2].rio && Object.keys(Agua.AGUA_ZONAS).length >= 10, C.length);
       // margem natural: anda do centro para fora em 12 direções até secar; a margem fica perto da
       // elipse (±15%), mas não é a elipse lisa (o raio relativo varia)
       const margem = (a) => { const c = Math.cos(a), s = Math.sin(a); let d = 0; while (d < 4 * L.rx && Agua.profundidade(L.x + c * d, L.y + s * d) > 0) d += 2; return d; };
@@ -3080,8 +3080,8 @@ const EclipseTests = {
       const rel = [...Array(12)].map((_, i) => margem(i * Math.PI / 6) / elipse(i * Math.PI / 6)), m0 = margem(0);
       const pr = (dx) => Agua.profundidade(L.x + dx, L.y);
       this.ok('água: fundo no meio, raso na margem, seco fora', pr(0) === 1 && pr(m0 - 10) > 0 && pr(m0 - 10) < 1 && pr(m0 + 30) === 0, m0);
-      const relM = rel.filter((r) => r > 0.85 && r < 1.15);   // (uma das 12 direções é a foz do rio, onde a água continua)
-      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', relM.length >= 11 && Math.max(...relM) / Math.min(...relM) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
+      const relM = rel.filter((r) => r > 0.85 && r < 1.15);   // (duas das 12 direções são a foz do rio e a vazão para o sul, onde a água continua)
+      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', relM.length >= 10 && Math.max(...relM) / Math.min(...relM) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
       this.ok("água: nenhuma árvore, pedra, morador ou estrutura dentro d'água", !R.pillars.some((q) => !q.cenario && Agua.funda(q.x, q.y)) && !g.npcs.some((n) => Agua.profundidade(n.x, n.y) > 0));
       const p = g.player; p.x = L.x; p.y = L.y; p.air = false; p.state = 'idle'; p.vx = p.vy = 0;
       Agua.update(1 / 60);
@@ -3448,7 +3448,7 @@ const EclipseTests = {
       // distância de visão: Longa e Horizonte mostram também o segundo anel de zonas e afastam a névoa e o corte
       { const v0 = Settings.v.visao;
         Settings.v.visao = 1; const a1 = Vizinhos.de(World.zone).length; Settings.v.visao = 3; const L3 = Vizinhos.de(World.zone);
-        this.ok('visão: quatro distâncias (Curta a Horizonte); Longa e Horizonte trazem as zonas a duas casas', VISAO.length === 4 && L3.length >= a1 && L3.every((q) => q.anel === 1 || Math.max(Math.abs(q.dr), Math.abs(q.dc)) === 2), `${a1} / ${L3.length}`);
+        this.ok('visão: quatro distâncias (Curta a Horizonte); o Horizonte traz as zonas a duas casas', VISAO.length === 4 && L3.length >= a1 && L3.every((q) => q.anel === 1 || Math.max(Math.abs(q.dr), Math.abs(q.dc)) === 2), `${a1} / ${L3.length}`);
         if (R3D.active) { ThirdView.setModo('3p', true); g.render(); const f3 = ThirdView.far, n3 = ThirdView.view.fog ? ThirdView.view.fog[3] : 0; Settings.v.visao = 1; g.render(); const f1 = ThirdView.far, n1 = ThirdView.view.fog ? ThirdView.view.fog[3] : 0;
           this.ok('visão: no Horizonte a névoa começa bem mais longe e o plano de corte vai a 20 mil', f3 >= 20000 && f1 <= 6000 && n3 > n1 * 2, `${f1}/${f3} névoa ${n1 | 0}/${n3 | 0}`); }
         Settings.v.visao = v0; }
@@ -3457,6 +3457,32 @@ const EclipseTests = {
         if (S) { const d = Vegetacao._malha ? Vegetacao._malha(S) : null;
           if (d) { const nL = [d[3], d[4]], nR = [d[6 * 10 + 3], d[6 * 10 + 4]];
             this.ok('grama: cada lâmina tem volume (dobrada na nervura: as duas metades com normais para lados opostos)', Math.hypot(nL[0] - nR[0], nL[1] - nR[1]) > 0.8 * Math.hypot(nL[0], nL[1]), `${nL} / ${nR}`); } } }
+      // território de Velmora: 5 × 5 zonas contínuas, vilarejos com casas GLB e moradores, o rio, o Mapa da Região
+      { const T = Territorio.estado(), zs = worldZonesOf('velmora');
+        this.ok('território: Velmora é um território de 5 × 5 zonas abertas (as 6 de antes e 19 novas, maiores)', T.zonas === 25 && T.grade.join('x') === '5x5' && zs.every((z) => z.aberto) && T.areaHa > 20, JSON.stringify(T));
+        this.ok('território: cada casa da grade tem uma zona (sem buracos: anda-se de qualquer uma para as vizinhas)', [0, 1, 2, 3, 4].every((r) => [0, 1, 2, 3, 4].every((c) => worldZoneAt(r, c, 'velmora'))));
+        this.ok('território: tipos de lugar (campo, bosque, vilarejo, ruína, forte, rio, lago) e o nível sobe com a distância da Clareira', ['campo', 'bosque', 'vila', 'ruina', 'forte', 'rio', 'lago'].every((k) => T.tipos.includes(k)) && WORLD_ZONES.velmora_fim_mata.lv > WORLD_ZONES.velmora_campos_vento.lv);
+        this.ok('território: o rio sai do Lago Escuro e desce pelas zonas novas até o Lago das Garças', ['velmora_vau', 'velmora_ponte_velha', 'velmora_curva', 'velmora_garcas'].every((id) => Agua.AGUA_ZONAS[id]) && Agua.AGUA_ZONAS.velmora_lago.length >= 3);
+        World.loadZone('velmora_moinho', null);
+        const A = Estruturas.atual(), casas = A ? A.lug.filter((L) => /estrutura_md_5|blue_roof_cottage/.test(L.id)).length : 0;
+        this.ok('território: o vilarejo tem casas GLB, poço, forno, ferraria, mercador e moradores com serviço, sem inimigos', casas >= 5 && g.enemies.length === 0 && g.npcs.some((n) => n.def && n.def.merchant) && g.npcs.filter((n) => n instanceof Morador && n.P && (n.P.servicos || []).length).length >= 2, `${casas} casas, ${g.enemies.length} inimigos`);
+        // o Mapa da Região: M abre direto nele numa região aberta; R alterna com o Mapa do Mundo
+        World.openMap(false); const reg = World.map.regiao; g.render();
+        World.updateMap(0.016, Object.assign(this.entrada(), { pressed: { reroll: true }, held: {}, mouse: { x: 0, y: 0 } })); const mundo = !World.map.regiao; World.closeMap();
+        this.ok('mapa da região: nas regiões abertas o M abre o território contínuo; R alterna com o Mapa do Mundo', reg && mundo && MapaRegiao.pode(World) && MapaRegiao.minis.size >= 1);
+        World.loadZone('metro_centro', null); this.ok('mapa da região: as regiões de cidade (salas) ainda usam o Mapa do Mundo', !MapaRegiao.pode(World)); }
+      // estradas entre as regiões (js/mundo/ligacoes.js): andando pela borda, sem portal, com carregamento só na troca de região
+      { Ligacoes.montar(); const E = Ligacoes.estrada(WORLD_ZONES.velmora_colinas, 'E');
+        this.ok('estradas: as regiões vizinhas do mapa se ligam pela borda (Velmora → Carmesin, Carmesin → Lagoa…)', !!E && E.z.region === 'carmesin' && Ligacoes.LISTA.filter(([a, b]) => worldZoneAt(a[1], a[2], a[0]) && worldZoneAt(b[1], b[2], b[0])).length >= 12, E && E.z.id);
+        const sv0 = g.progress.level; g.progress.level = Math.max(g.progress.level, 10);
+        World.loadZone('velmora_colinas', null); const p = g.player, R = g.room; p.x = R.w - 10; p.y = R.h * 0.4; p.vx = 200; p.vy = 0; p.state = 'run';
+        World.update(0.016); const indo = !!g.fadeCb, card = Ligacoes.carregando; const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;
+        this.ok('estradas: andar para fora da borda leva à região vizinha, com a tela curta de carregamento (sem portal)', indo && card && World.zone.id === E.z.id && World.zone.region === 'carmesin' && g.player.x < g.room.w * 0.3, `${World.zone.id} ${g.player.x | 0}`);
+        this.ok('estradas: a zona de cidade do outro lado tem a passagem de volta, com o nome da estrada', g.npcs.some((n) => n.kind === 'gate' && n.data.to === 'velmora_colinas' && /ESTRADA DA FLORESTA/.test(n.data.rotulo || '')));
+        g.progress.level = 1; World.loadZone('velmora_pedramusgo', null); const p2 = g.player, R2 = g.room; p2.x = R2.w - 10; p2.y = R2.h * 0.5; p2.vx = 200; p2.vy = 0;
+        World.update(0.016); const travou = !g.fadeCb && World.zone.id === 'velmora_pedramusgo'; if (g.fadeCb) { g.fadeCb = null; g.fadeTarget = 0; g.fade = 0; }
+        this.ok('estradas: região ainda fechada (nível ou chefe): o herói não passa e vê o cadeado', !World.regionOpen('asterion') ? travou : true);
+        g.progress.level = sv0; }
       Settings.v.vizinhos = false; World.loadZone('velmora_clareira', null);
       this.ok('regiões: desligado nas configurações, nada é montado', Vizinhos.estado().vizinhas.length === 0);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }

@@ -1815,6 +1815,84 @@
    "extras": [
     "KIRA. Bartender do Pulso Neon. Rápida no shaker e na resposta; conhece cada freguês pelo drinque."
    ]
+  },
+  {
+   "id": "pm_olga",
+   "nome": "OLGA",
+   "zona": "velmora_pedramusgo",
+   "papel": "Curandeira de Pedramusgo",
+   "pers": "Brava com quem chega e mansa com quem fica.",
+   "ola": [
+    "Limpe as botas antes de entrar no vilarejo.",
+    "Ferido? Senta aí. Eu já vi pior."
+   ],
+   "temas": [
+    "Pedramusgo: oito casas, um forno e muita pedra. O forte ali do lado protegia a gente. Agora é só ruína e lobo."
+   ],
+   "rumores": [
+    "No Forte Abandonado ainda tem o baú do capitão. Dizem que os caçadores nunca acharam a chave."
+   ],
+   "extras": [
+    "OLGA. Curandeira de Pedramusgo. Brava com quem chega e mansa com quem fica.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
+  },
+  {
+   "id": "pm_teo",
+   "nome": "TEO",
+   "zona": "velmora_pedramusgo",
+   "papel": "Ferreiro de Pedramusgo",
+   "pers": "Fala pouco, bate muito.",
+   "ola": [
+    "Lâmina cega? Traz aqui.",
+    "O ferro do forte virou ferradura. Melhor assim."
+   ],
+   "temas": [
+    "Conserto e afio. Para coisa nova, vá à ferraria da Aurora."
+   ],
+   "rumores": [],
+   "extras": [
+    "TEO. Ferreiro de Pedramusgo. Fala pouco, bate muito."
+   ]
+  },
+  {
+   "id": "mo_bia",
+   "nome": "BIA",
+   "zona": "velmora_moinho",
+   "papel": "Moleira do vilarejo",
+   "pers": "Animada, conta tudo duas vezes.",
+   "ola": [
+    "O moinho não para nem de noite!",
+    "Farinha fresca, pão quente. Quer ajuda com alguma coisa?"
+   ],
+   "temas": [
+    "A gente mói o trigo dos Campos de Feno e manda farinha para a Aurora pela estrada. A ponte velha ainda aguenta a carroça."
+   ],
+   "rumores": [
+    "Na Torre de Vigia Caída ficou um registro das luzes vermelhas da noite do Eclipse."
+   ],
+   "extras": [
+    "BIA. Moleira do vilarejo. Animada, conta tudo duas vezes."
+   ]
+  },
+  {
+   "id": "mo_davi",
+   "nome": "DAVI",
+   "zona": "velmora_moinho",
+   "papel": "Pastor e curandeiro",
+   "pers": "Calmo; mede o tempo pelas ovelhas.",
+   "ola": [
+    "As ovelhas sentiram você chegar.",
+    "Fique para o jantar, se não tiver pressa."
+   ],
+   "temas": [
+    "De dia, sim. À noite os lobos de raiz descem do Bosque Sombrio. A gente fecha a porteira cedo."
+   ],
+   "rumores": [],
+   "extras": [
+    "DAVI. Pastor e curandeiro. Calmo; mede o tempo pelas ovelhas.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   }
  ],
  "perguntas": [
@@ -1922,6 +2000,9 @@
   "O que são as bênçãos?",
   "O que é a Cyber Night?",
   "Quem é o DJ VOLTA?",
-  "O que tem de bom aqui?"
+  "O que tem de bom aqui?",
+  "Você conserta armas?",
+  "O que se faz aqui?",
+  "É seguro aqui?"
  ]
 }

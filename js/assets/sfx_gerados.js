@@ -135,6 +135,264 @@ const SFX_GERADOS = {
   ],
   "vol": 0.8
  },
+ "poder_arco_voltaico": {
+  "src": [
+   "assets/sfx/gerados/poder_arco_voltaico.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_corrente_relampago": {
+  "src": [
+   "assets/sfx/gerados/poder_corrente_relampago.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_campo_magnetico": {
+  "src": [
+   "assets/sfx/gerados/poder_campo_magnetico.mp3"
+  ],
+  "vol": 1.0
+ },
+ "poder_ruptura_plasma": {
+  "src": [
+   "assets/sfx/gerados/poder_ruptura_plasma.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_investida_sombria": {
+  "src": [
+   "assets/sfx/gerados/poder_investida_sombria.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_salto_dimensional": {
+  "src": [
+   "assets/sfx/gerados/poder_salto_dimensional.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_tempestade_laminas": {
+  "src": [
+   "assets/sfx/gerados/poder_tempestade_laminas.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sobrecarga": {
+  "src": [
+   "assets/sfx/gerados/poder_sobrecarga.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_escudo_energia": {
+  "src": [
+   "assets/sfx/gerados/poder_escudo_energia.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sincronizacao": {
+  "src": [
+   "assets/sfx/gerados/poder_sincronizacao.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_lyra_tiro": {
+  "src": [
+   "assets/sfx/gerados/poder_lyra_tiro.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_lyra_armadilha": {
+  "src": [
+   "assets/sfx/gerados/poder_lyra_armadilha.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_lyra_flecha": {
+  "src": [
+   "assets/sfx/gerados/poder_lyra_flecha.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_lyra_foco": {
+  "src": [
+   "assets/sfx/gerados/poder_lyra_foco.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_lyra_rajada": {
+  "src": [
+   "assets/sfx/gerados/poder_lyra_rajada.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_lyra_chuva_fotons": {
+  "src": [
+   "assets/sfx/gerados/poder_lyra_chuva_fotons.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_golpe": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_golpe.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_escudo": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_escudo.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_investida": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_investida.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_zona": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_zona.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_terremoto": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_terremoto.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_drone": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_drone.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_campo": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_campo.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_hack": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_hack.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_cura": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_cura.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_orion_furtividade": {
+  "src": [
+   "assets/sfx/gerados/poder_orion_furtividade.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_orion_duplo": {
+  "src": [
+   "assets/sfx/gerados/poder_orion_duplo.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_orion_lamina": {
+  "src": [
+   "assets/sfx/gerados/poder_orion_lamina.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_orion_furia": {
+  "src": [
+   "assets/sfx/gerados/poder_orion_furia.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_muralha": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_muralha.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_canhao": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_canhao.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_drakos_grito": {
+  "src": [
+   "assets/sfx/gerados/poder_drakos_grito.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_sentinela": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_sentinela.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_pulso": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_pulso.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_apagao": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_apagao.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_sera_injecao": {
+  "src": [
+   "assets/sfx/gerados/poder_sera_injecao.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_orion_fumaca": {
+  "src": [
+   "assets/sfx/gerados/poder_orion_fumaca.mp3"
+  ],
+  "vol": 0.85
+ },
+ "poder_orion_leque": {
+  "src": [
+   "assets/sfx/gerados/poder_orion_leque.mp3"
+  ],
+  "vol": 0.85
+ },
+ "especial_kael": {
+  "src": [
+   "assets/sfx/gerados/especial_kael.mp3"
+  ],
+  "vol": 0.85
+ },
+ "especial_lyra": {
+  "src": [
+   "assets/sfx/gerados/especial_lyra.mp3"
+  ],
+  "vol": 0.85
+ },
+ "especial_drakos": {
+  "src": [
+   "assets/sfx/gerados/especial_drakos.mp3"
+  ],
+  "vol": 0.85
+ },
+ "especial_sera": {
+  "src": [
+   "assets/sfx/gerados/especial_sera.mp3"
+  ],
+  "vol": 0.85
+ },
+ "especial_orion": {
+  "src": [
+   "assets/sfx/gerados/especial_orion.mp3"
+  ],
+  "vol": 0.85
+ },
  "arrow": {
   "src": [
    "assets/sfx/gerados/arrow.mp3",

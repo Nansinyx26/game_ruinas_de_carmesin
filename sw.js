@@ -9,8 +9,8 @@
 // novo misturava versões (ex.: um arsenal.js antigo chamando o que o armaduras.js novo não tinha).
 // Mude VERSAO para descartar o cache antigo.
 // ---------------------------------------------------------------------------
-const VERSAO = 'eclipse-zero-v2';
-const ESSENCIAL = ['./', './index.html', './css/main.css', './manifest.webmanifest',
+const VERSAO = 'eclipse-zero-v3';
+const ESSENCIAL = ['./', './index.html', './jogar.html', './css/main.css', './manifest.webmanifest',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

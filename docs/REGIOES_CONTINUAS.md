@@ -80,3 +80,14 @@ renderizador realista (Three.js) o chão vizinho ainda projeta sombra.
   atlas em 512 e só as estruturas grandes. O renderizador realista usa a mesma lente e o mesmo corte.
 - Limite conhecido: cada vizinha é montada de uma vez no tempo livre (a pintura do chão leva de dezenas a
   centenas de milissegundos): numa máquina lenta, um pequeno engasgo por zona na primeira vez.
+
+## 6. Território de Velmora, Mapa da Região e estradas entre regiões
+
+- **Velmora 5 × 5** (`js/mundo/territorio.js`): 19 zonas novas em volta das 6 de antes, maiores (~100 m), de
+  tipos diferentes (campo, bosque, vilarejo, ruína, forte, acampamento, rio, lago), todas abertas: anda-se de
+  uma para a outra pela borda, sem portal. ~23 hectares de território contínuo.
+- **Mapa da Região** (`js/mundo/mapa_regiao.js`): M nas regiões abertas abre o território emendado (o chão
+  pintado de cada zona), com construções, árvores, trilhas, vilarejos, portais, baús, inimigos, chefe, as
+  estradas para as outras regiões e o herói. R alterna com o Mapa do Mundo.
+- **Estradas entre regiões** (`js/mundo/ligacoes.js`): as 11 regiões se ligam pela borda (13 estradas). A troca
+  de região tem a tela curta de carregamento que o pedido permite; região fechada não deixa passar.

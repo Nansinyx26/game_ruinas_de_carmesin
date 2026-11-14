@@ -13,7 +13,7 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(new URL(q.u
   if (!f.startsWith(raiz + path.sep) || !fs.existsSync(f) || !fs.statSync(f).isFile()) { r.writeHead(404); r.end(); return; } r.writeHead(200); fs.createReadStream(f).pipe(r); });
 await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
 const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const pg = await nav.newPage(); await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await pg.waitForTimeout(2500);
+const pg = await nav.newPage(); await pg.goto(`http://127.0.0.1:${srv.address().port}/jogar.html`); await pg.waitForTimeout(2500);
 const d = await pg.evaluate(() => {
 // Outras falas fixas do morador na conversa (o jogo acha a gravação pelo parágrafo do texto mostrado):
 // a resposta de "Quem é você?", o começo e o fim das missões que ele dá e as respostas dos serviços

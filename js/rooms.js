@@ -205,14 +205,15 @@ class Room {
     let tries = 0;
     while (this.pillars.length < this.def.pillars && tries++ < 500) {
       const px = TILE + r() * (w - 2 * TILE), py = TILE + r() * (h - 2 * TILE);
-      if (dist(px, py, w / 2, h / 2) < 210) continue;
+      if (dist(px, py, w / 2, h / 2) < Math.max(210, (this.def.clareira || 0) * w)) continue;   // (a praça dos vilarejos: js/mundo/territorio.js)
       if ((Math.abs(px - w / 2) < 120 && (py < 190 || py > h - 190)) || (Math.abs(py - h / 2) < 120 && (px < 190 || px > w - 190))) continue;
       if (this.pillars.some((p) => dist(px, py, p.x, p.y) < 150)) continue;
       this.pillars.push(this.makePillar(r, px, py, r() < 0.6));
     }
     // a mata em volta: densa só onde o mundo acaba; do lado de uma zona vizinha, poucas árvores
     // soltas (a paisagem continua e a travessia é contínua: não aparece uma parede de árvores)
-    const D = this.def, viz = (dr, dc) => typeof worldZoneAt === 'function' && D && D.region && D.r !== undefined && !!worldZoneAt(D.r + dr, D.c + dc, D.region);
+    const D = this.def, viz = (dr, dc) => typeof worldZoneAt === 'function' && D && D.region && D.r !== undefined && (!!worldZoneAt(D.r + dr, D.c + dc, D.region)
+      || (typeof Ligacoes !== 'undefined' && !!Ligacoes.alem(D, dr ? (dr < 0 ? 'N' : 'S') : dc < 0 ? 'W' : 'E')));   // (a estrada para outra região também fica aberta)
     const lado = { N: viz(-1, 0), S: viz(1, 0), W: viz(0, -1), E: viz(0, 1) }, aceita = (s) => !lado[s] || r() < 0.18;
     const anel = [];
     for (let x = -M + 40; x < w + M; x += 95 + r() * 55) { if (aceita('N')) anel.push([x, -M * (0.2 + 0.65 * r())]); if (aceita('S')) anel.push([x, h + M * (0.25 + 0.6 * r())]); }

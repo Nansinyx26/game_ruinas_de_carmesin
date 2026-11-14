@@ -17,7 +17,7 @@ await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
 const nav = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const pg = await nav.newPage(); pg.setDefaultTimeout(3600000);
 const erros = []; pg.on('pageerror', (e) => erros.push(e.message));
-await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await pg.waitForTimeout(2500);
+await pg.goto(`http://127.0.0.1:${srv.address().port}/jogar.html`); await pg.waitForTimeout(2500);
 const t0 = Date.now();
 const res = await pg.evaluate(async () => {
   const g = game, esp = (ms) => new Promise((r) => setTimeout(r, ms)); g.slot = 2; g.startRun(); g.saveGame = () => {};

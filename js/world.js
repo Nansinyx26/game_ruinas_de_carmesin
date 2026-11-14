@@ -361,6 +361,10 @@ const World = {
     for (const dir in WORLD_DIRS) {
       const nz = worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
       if (nz) g.npcs.push(new WorldProp('gate', gatePos[dir][0], gatePos[dir][1], { to: nz.id, dir }));
+      else if (typeof Ligacoes !== 'undefined') {   // a estrada para a região vizinha (js/mundo/ligacoes.js)
+        const E = Ligacoes.estrada(z, dir);
+        if (E) g.npcs.push(new WorldProp('gate', gatePos[dir][0], gatePos[dir][1], { to: E.z.id, dir, rotulo: `${{ N: '↑', S: '↓', W: '←', E: '→' }[dir]} ${Ligacoes.aberta(E.z) ? '' : '🔒 '}${E.nome.toUpperCase()} · ${worldRegion(E.z.region).name.toUpperCase()}` }));
+      }
     }
     const spot = (at) => npcSpot(R, at[0], at[1]);
     if (z.portal) { const pt = spot([0.5, 0.5]); g.npcs.push(new WorldProp('portal', pt.x, pt.y, { to: id })); }
@@ -479,6 +483,8 @@ const World = {
   // Vai para outra zona (passagem: 'dir'; portal: dir null)
   go(id, dir, along = null, chegada = null) {
     if (!WORLD_ZONES[id] || game.fadeCb) return;
+    // outra região pela estrada (passagem da borda): a tela de carregamento entre regiões (js/mundo/ligacoes.js)
+    if (dir && this.zone && WORLD_ZONES[id].region !== this.zone.region && typeof Ligacoes !== 'undefined' && Ligacoes.alem(this.zone, dir) === WORLD_ZONES[id]) { Ligacoes.viajar(WORLD_ZONES[id], dir, along); return; }
     // MUNDO CONTÍNUO: pela borda (campo aberto), sem tela preta — a zona vizinha entra na hora, com o
     // herói no mesmo ponto da borda oposta e no mesmo passo, e a imagem de antes se dissolve por
     // cima (0,28 s). Os modelos da vizinha já vinham carregando (preCarregar). Portais e passagens
@@ -547,7 +553,9 @@ const World = {
       if (p.x <= b && p.vx < -20) dir = 'W'; else if (p.x >= Rm.w - b && p.vx > 20) dir = 'E';
       else if (p.y <= b && p.vy < -20) dir = 'N'; else if (p.y >= Rm.h - b && p.vy > 20) dir = 'S';
       const nz = dir && worldZoneAt(z.r + WORLD_DIRS[dir][0], z.c + WORLD_DIRS[dir][1], z.region);
+      const fora = !nz && dir && typeof Ligacoes !== 'undefined' ? Ligacoes.alem(z, dir) : null;   // a estrada para a região vizinha (js/mundo/ligacoes.js)
       if (nz) this.go(nz.id, dir, dir === 'N' || dir === 'S' ? p.x / Rm.w : p.y / Rm.h);
+      else if (fora) Ligacoes.viajar(fora, dir, dir === 'N' || dir === 'S' ? p.x / Rm.w : p.y / Rm.h);
     }
     this.preCarregar(dt);   // streaming: os modelos da zona vizinha, antes de cruzar a borda
     Encontros.update(dt);   // acampamentos: percepção, alerta, luta e coleira (js/mundo/encontros.js)
@@ -676,6 +684,9 @@ const World = {
   openMap(travel = false) {
     const M = this.map;
     M.open = true; M.travel = travel; M.t = 0;
+    // nas regiões abertas, o Mapa da Região (o território contínuo) abre primeiro; R alterna (js/mundo/mapa_regiao.js)
+    M.regiao = !travel && typeof MapaRegiao !== 'undefined' && MapaRegiao.pode(this);
+    if (M.regiao) MapaRegiao.abrir();
     const list = this.mapTargets();
     M.sel = Math.max(0, list.indexOf(this.zone.id));
     game.state = 'worldmap';
@@ -699,6 +710,8 @@ const World = {
     const M = this.map, list = this.mapTargets();
     M.t += dt;
     if (inp.pressed.back || inp.pressed.worldMap || inp.pressed.pause) { this.closeMap(); return; }
+    if (inp.pressed.reroll && typeof MapaRegiao !== 'undefined' && MapaRegiao.pode(this)) { M.regiao = !M.regiao; if (M.regiao) MapaRegiao.abrir(); game.audio.play('uiMove'); }
+    if (M.regiao) { MapaRegiao.atualizar(dt, inp); return; }
     if (inp.pressed.tabPrev) M.zoom = clamp(M.zoom / 1.25, 0.8, 3);
     if (inp.pressed.tabNext) M.zoom = clamp(M.zoom * 1.25, 0.8, 3);
     if (list.length) {
@@ -742,6 +755,7 @@ const World = {
   // exploradas, trilhas e marcadores das zonas, nomes das regiões, a ★ da campanha, moldura de
   // atlas e o painel da zona escolhida
   drawMap(ctx, t) {
+    if (this.map.regiao && typeof MapaRegiao !== 'undefined' && MapaRegiao.pode(this)) { MapaRegiao.desenhar(ctx, t, this); return; }
     const M = this.map, L = this.mapLayout(), S = this.state, list = this.mapTargets();
     const CX = 20, CY = 70, CW = VIEW_W - 40, CH = VIEW_H - 130, zk = Math.min(1.5, M.zoom);
     const sel = list[M.sel];

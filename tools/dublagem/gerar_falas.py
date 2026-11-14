@@ -89,6 +89,8 @@ ELENCO = {
     'mes_operario': ('roger', 0.98, 0.5, 0.25), 'mes_comerciante': ('eric', 1.05, 0.45, 0.35), 'mes_gm': ('brian', 0.94, 0.65, 0.2),
     # Cidade Morta (barricada) e o Pulso Neon
     'cm_mendes': ('harry', 0.94, 0.6, 0.2), 'cm_tonho': ('chris', 1.06, 0.4, 0.4), 'pub_kira': ('laura', 1.06, 0.4, 0.4),
+    # Pedramusgo e o vilarejo do moinho
+    'pm_olga': ('sarah', 0.97, 0.45, 0.35), 'pm_teo': ('adam', 0.92, 0.65, 0.15), 'mo_bia': ('jessica', 1.08, 0.4, 0.45), 'mo_davi': ('roger', 0.92, 0.6, 0.2),
 }
 
 

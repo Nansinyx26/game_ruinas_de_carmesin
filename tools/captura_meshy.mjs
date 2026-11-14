@@ -21,7 +21,7 @@ await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
 const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const pg = await nav.newPage({ viewport: { width: 1280, height: 720 } });
 pg.on('pageerror', (e) => console.log('erro na página:', e.message));
-await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html`);
+await pg.goto(`http://127.0.0.1:${srv.address().port}/jogar.html`);
 await pg.waitForFunction(() => typeof game !== 'undefined' && typeof R3D !== 'undefined' && R3D.active, null, { timeout: 120000 });
 const fotos = await pg.evaluate(async () => {
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
