@@ -106,11 +106,12 @@ class Input {
     canvas.addEventListener('mousedown', (e) => {
       const p = game ? game.toLogical(e.clientX, e.clientY) : { x: 0, y: 0 };
       this.mouse.x = p.x; this.mouse.y = p.y; this.mouse.clicked = true;
+      if (e.button === 0) this.mouse.down = true;   // (arrastar: o Mapa da Região)
       if (e.button === 1) { this.keys.add('MouseMiddle'); this.keyPressed.add('MouseMiddle'); e.preventDefault(); }   // mira travada
       this.lastDevice = 'kb';
       if (this.onFirstInput) this.onFirstInput();
     });
-    window.addEventListener('mouseup', (e) => { if (e.button === 1 && this.keys.delete('MouseMiddle')) this.keyReleased.add('MouseMiddle'); });
+    window.addEventListener('mouseup', (e) => { if (e.button === 0) this.mouse.down = false; if (e.button === 1 && this.keys.delete('MouseMiddle')) this.keyReleased.add('MouseMiddle'); });
     // Toque solto (celular): conta como gesto para o navegador. Em jogo os toques não viram
     // cliques (js/touch.js), então é aqui que o áudio volta depois de suspenso (tela bloqueada,
     // troca de app, ligação)

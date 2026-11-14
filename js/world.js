@@ -676,6 +676,9 @@ const World = {
   openMap(travel = false) {
     const M = this.map;
     M.open = true; M.travel = travel; M.t = 0;
+    // nas regiões abertas, o Mapa da Região (o território contínuo) abre primeiro; R alterna (js/mundo/mapa_regiao.js)
+    M.regiao = !travel && typeof MapaRegiao !== 'undefined' && MapaRegiao.pode(this);
+    if (M.regiao) MapaRegiao.abrir();
     const list = this.mapTargets();
     M.sel = Math.max(0, list.indexOf(this.zone.id));
     game.state = 'worldmap';
@@ -699,6 +702,8 @@ const World = {
     const M = this.map, list = this.mapTargets();
     M.t += dt;
     if (inp.pressed.back || inp.pressed.worldMap || inp.pressed.pause) { this.closeMap(); return; }
+    if (inp.pressed.reroll && typeof MapaRegiao !== 'undefined' && MapaRegiao.pode(this)) { M.regiao = !M.regiao; if (M.regiao) MapaRegiao.abrir(); game.audio.play('uiMove'); }
+    if (M.regiao) { MapaRegiao.atualizar(dt, inp); return; }
     if (inp.pressed.tabPrev) M.zoom = clamp(M.zoom / 1.25, 0.8, 3);
     if (inp.pressed.tabNext) M.zoom = clamp(M.zoom * 1.25, 0.8, 3);
     if (list.length) {
@@ -742,6 +747,7 @@ const World = {
   // exploradas, trilhas e marcadores das zonas, nomes das regiões, a ★ da campanha, moldura de
   // atlas e o painel da zona escolhida
   drawMap(ctx, t) {
+    if (this.map.regiao && typeof MapaRegiao !== 'undefined' && MapaRegiao.pode(this)) { MapaRegiao.desenhar(ctx, t, this); return; }
     const M = this.map, L = this.mapLayout(), S = this.state, list = this.mapTargets();
     const CX = 20, CY = 70, CW = VIEW_W - 40, CH = VIEW_H - 130, zk = Math.min(1.5, M.zoom);
     const sel = list[M.sel];

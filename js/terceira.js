@@ -29,7 +29,7 @@ const CAM_MODOS = ['iso', 'iso3d', '3p'];
 const VISAO = [
   { nome: 'Curta', nevoa: 0.8, longe: 5000, chao: 1, aneis: 1, estr: 1500 },
   { nome: 'Média', nevoa: 1, longe: 6000, chao: 1, aneis: 1, estr: 2200 },
-  { nome: 'Longa', nevoa: 1.9, longe: 12000, chao: 2.6, aneis: 2, estr: 3600 },
+  { nome: 'Longa', nevoa: 1.9, longe: 12000, chao: 2.6, aneis: 1, estr: 3600 },
   { nome: 'Horizonte', nevoa: 3.2, longe: 20000, chao: 4.5, aneis: 2, estr: 5200 },
 ];
 const visao = () => VISAO[typeof Settings !== 'undefined' && VISAO[Settings.v.visao] ? Settings.v.visao : 1];

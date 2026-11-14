@@ -56,7 +56,7 @@ const CINEMA = {
         g += mix(vec3(-0.012, 0.0, 0.02), vec3(0.025 + 0.02 * uQuente, 0.008, -0.02), smoothstep(0.15, 0.85, l));   // sombras frias, luzes quentes
         c = mix(c, clamp(g, 0.0, 1.0), uCor);
       }
-      if (uVin > 0.0) { vec2 d = vUv - 0.5; c *= mix(1.0, smoothstep(0.85, 0.25, length(d * vec2(1.0, 0.8))), 0.42 * uVin); }
+      if (uVin > 0.0) { vec2 d = vUv - 0.5; c *= mix(1.0, 1.0 - smoothstep(0.25, 0.85, length(d * vec2(1.0, 0.8))), 0.42 * uVin); }   // (smoothstep com as bordas em ordem: invertidas, o resultado é indefinido e em algumas placas apagava a imagem)
       if (uGrao > 0.0) c += (h(vUv * 1000.0 + uT) - 0.5) * 0.045 * uGrao;
       gl_FragColor = vec4(c, t.a);
     }`,
@@ -358,8 +358,33 @@ const R = {
     if (typeof window.Vegetacao !== 'undefined') window.Vegetacao.realista(this, THREE, this.raiz);   // grama instanciada (js/mundo/vegetacao.js)
     this.ceuTex.needsUpdate = true;
     if (this.composer) this.composer.render(); else rd.render(this.cena, cam);
+    this.vigiar(rd);
     this.camada(true);
     return { canvas: this.canvas, w, h };
+  },
+  // Vigia de tela preta: nos primeiros segundos, a cada 30 quadros, lê 5 pontos da imagem. Se a cena sair
+  // preta 3 vezes seguidas (placa que não aceita algum recurso), desliga o pós de cinema e baixa a
+  // qualidade; se continuar preta, volta para o renderizador clássico e avisa. Com a imagem boa, para.
+  vigiar(rd) {
+    if (this._vigOk) return;
+    this._vig = (this._vig || 0) + 1;
+    if (this._vig % 30) return;
+    const gl = rd.getContext(), px = new Uint8Array(4);
+    let mx = 0;
+    try { for (const [fx, fy] of [[0.5, 0.5], [0.3, 0.4], [0.7, 0.6], [0.5, 0.2], [0.5, 0.8]]) { gl.readPixels(Math.floor(gl.drawingBufferWidth * fx), Math.floor(gl.drawingBufferHeight * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); mx = Math.max(mx, px[0], px[1], px[2]); } } catch (e) { return; }
+    if (mx > 4) { this._pretos = 0; if ((this._bons = (this._bons || 0) + 1) >= 4) this._vigOk = true; return; }
+    if ((this._pretos = (this._pretos || 0) + 1) < 3) return;
+    this._pretos = 0;
+    const V = Settings.v, aviso = (t) => { if (typeof game !== 'undefined' && game.hud && game.hud.toast) game.hud.toast(t, '255,200,90'); };
+    if (!this._socorro) {
+      this._socorro = 1;
+      V.cineCor = V.cineVinheta = V.cineGrao = V.cineNitidez = false; V.realQual = Math.min(V.realQual, 2); V.perfilGfx = 'custom';
+      Settings.save(); this.qualAtual = null; this.cineAtual = null;
+      aviso('3ª pessoa: a imagem saiu preta nesta placa · qualidade realista reduzida e pós de cinema desligado');
+    } else {
+      V.render3d = 'classico'; Settings.save();
+      aviso('3ª pessoa: renderizador realista desligado nesta placa (voltou para o Clássico) · Configurações → Vídeo');
+    }
   },
   // A imagem não é copiada para o canvas 2D do jogo: o canvas do Three.js fica por baixo dele, no
   // retângulo da vista (o jogo deixa esse retângulo transparente na 3ª pessoa realista e desenha
@@ -420,7 +445,9 @@ const R = {
       if (this.sol.shadow.map) { this.sol.shadow.map.dispose(); this.sol.shadow.map = null; }
     }
     if (this.composer) { this.composer.dispose(); this.composer = null; }
-    const alvo = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: Q.amostras });
+    // multiamostragem: no máximo o que a placa aceita (alvo em ponto flutuante com 8 amostras ficava inválido em muitas placas: a cena saía preta)
+    const maxS = (rd.capabilities && rd.capabilities.maxSamples) || 4, amostras = Math.min(Q.amostras, maxS, 4);
+    const alvo = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: amostras });
     const cp = new EffectComposer(rd, alvo);
     cp.setPixelRatio(1);
     cp.setSize(w, h);

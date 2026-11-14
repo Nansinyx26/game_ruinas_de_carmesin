@@ -48,7 +48,8 @@ const Vizinhos = (() => {
     E.campo = typeof Relevo !== 'undefined' && Relevo.campo ? Relevo.campo(z, E.G) : null;
     E.modelo = malha(E);
     // as estruturas dela (GLB: árvores, rochas, ruínas, construções) e a paisagem gerada pela semente
-    E.estr = typeof Paisagem !== 'undefined' && Paisagem.fantasma ? Paisagem.fantasma(z, E.G, E.campo) : ((typeof Estruturas !== 'undefined' && Estruturas.ZONAS[z.id]) || []);
+    // (o segundo anel, mais longe: só a lista fixa da zona, sem gerar a paisagem — é a parte cara)
+    E.estr = anel === 1 && typeof Paisagem !== 'undefined' && Paisagem.fantasma ? Paisagem.fantasma(z, E.G, E.campo) : ((typeof Estruturas !== 'undefined' && Estruturas.ZONAS[z.id]) || []);
     E.o3e = [];
     if (typeof Estruturas !== 'undefined') for (const L of E.estr) if (Estruturas.IDX[L[0]]) Estruturas.carregar(L[0]);
     E.pronto = !!E.modelo;
@@ -91,7 +92,8 @@ const Vizinhos = (() => {
   function agendar() {
     if (ocupado || !fila.length) return;
     ocupado = true;
-    if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(passo, { timeout: 900 }); else setTimeout(passo, 40);
+    // uma zona por vez, com folga entre elas (a montagem de uma zona leva de dezenas a centenas de ms: espalhada, não trava)
+    setTimeout(() => { if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(passo, { timeout: 2500 }); else passo(); }, 350);
   }
   // ------------------------------------------------------------ zona
   // Na carga da zona: a sala de onde se veio vira vizinha (já montada), e as outras entram na fila

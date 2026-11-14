@@ -201,7 +201,7 @@ const Paisagem = (() => {
     const raio = (id) => (A.raio ? A.raio(id) : 40);
     const fixos = (A.fixos || []).map((f) => ({ x: f.x, y: f.y, r: f.r || 40 }));
     const R = rotas(A, C, A.passagens || [], fixos);
-    const centro = { x: A.w / 2, y: A.h / 2, r: 130 };   // onde o herói chega
+    const centro = { x: A.w / 2, y: A.h / 2, r: A.clareira || 130 };   // onde o herói chega (num vilarejo, a praça inteira: js/mundo/territorio.js)
     const serve = (E, x, y) => { const a = C.alt(x, y), u = C.umid(x, y), t = C.temp(x, y); return a >= E.alt[0] && a <= E.alt[1] && u >= E.umid[0] && u <= E.umid[1] && t >= E.temp[0] && t <= E.temp[1] && C.incl(x, y) <= E.incl; };
     const cabe = (x, y, r, folga) => {
       if (x < M || y < M || x > A.w - M || y > A.h - M) return 'regra';
@@ -293,7 +293,7 @@ const Paisagem = (() => {
   function entrada(z, R) {
     const g = game, I = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {};
     const lista = base[z.id] || [];
-    return { id: z.id, w: R.w, h: R.h, tema: R.def && R.def.theme || z.theme, hub: !!(z.hub || z.seguro),
+    return { id: z.id, w: R.w, h: R.h, tema: R.def && R.def.theme || z.theme, hub: !!(z.hub || z.seguro), clareira: z.clareira ? z.clareira * R.w : 0,
       agua: typeof Agua !== 'undefined' && Agua.profundidade ? (x, y) => Agua.profundidade(x, y) : null,
       fixos: lista.filter((L) => I[L[0]]).map((L) => ({ x: R.w * L[1], y: R.h * L[2], r: I[L[0]].r * (L[4] || 1) }))
         .concat(g.npcs.filter((q) => q.kind === 'chest' || q.kind === 'terminal' || q.kind === 'portal' || q.kind === 'entrada' || q.kind === 'tesouro' || q.kind === 'quadro').map((q) => ({ x: q.x, y: q.y, r: (q.radius || 20) + 40 }))),
@@ -335,7 +335,7 @@ const Paisagem = (() => {
       for (const [dir, [dr, dc]] of Object.entries(typeof WORLD_DIRS !== 'undefined' ? WORLD_DIRS : {})) if (typeof worldZoneAt === 'function' && worldZoneAt(z.r + dr, z.c + dc, z.region)) pass.push({ N: { x: R.w / 2, y: m }, S: { x: R.w / 2, y: R.h - m }, W: { x: m, y: R.h / 2 }, E: { x: R.w - m, y: R.h / 2 } }[dir]);
       const fixos = lista.filter((L) => I[L[0]]).map((L) => fr([L[1], L[2]], I[L[0]].r * (L[4] || 1)))
         .concat((z.chests || []).map((c) => fr(c.at, 60)), z.portal ? [fr([0.5, 0.5], 60)] : [], z.secret ? [fr(z.secret.at, 60)] : [], z.terminal ? [fr(z.terminal.at, 60)] : []);
-      G = gerar({ id: z.id, w: R.w, h: R.h, tema, hub: !!(z.hub || z.seguro), agua: prof ? (x, y) => Math.max(0, prof(x, y)) : null, fixos, passagens: pass,
+      G = gerar({ id: z.id, w: R.w, h: R.h, tema, hub: !!(z.hub || z.seguro), clareira: z.clareira ? z.clareira * R.w : 0, agua: prof ? (x, y) => Math.max(0, prof(x, y)) : null, fixos, passagens: pass,
         raio: (id) => (I[id] ? I[id].r : 40), temPeca: (id) => !!I[id], alt: campo && campo.amp ? (x, y) => cl(campo.bruta(x, y) / campo.amp, 0, 1) : null });
       G.chave = chave; fant[z.id] = G;
     }

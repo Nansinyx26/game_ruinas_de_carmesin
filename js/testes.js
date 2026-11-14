@@ -3447,7 +3447,7 @@ const EclipseTests = {
       // distância de visão: Longa e Horizonte mostram também o segundo anel de zonas e afastam a névoa e o corte
       { const v0 = Settings.v.visao;
         Settings.v.visao = 1; const a1 = Vizinhos.de(World.zone).length; Settings.v.visao = 3; const L3 = Vizinhos.de(World.zone);
-        this.ok('visão: quatro distâncias (Curta a Horizonte); Longa e Horizonte trazem as zonas a duas casas', VISAO.length === 4 && L3.length >= a1 && L3.every((q) => q.anel === 1 || Math.max(Math.abs(q.dr), Math.abs(q.dc)) === 2), `${a1} / ${L3.length}`);
+        this.ok('visão: quatro distâncias (Curta a Horizonte); o Horizonte traz as zonas a duas casas', VISAO.length === 4 && L3.length >= a1 && L3.every((q) => q.anel === 1 || Math.max(Math.abs(q.dr), Math.abs(q.dc)) === 2), `${a1} / ${L3.length}`);
         if (R3D.active) { ThirdView.setModo('3p', true); g.render(); const f3 = ThirdView.far, n3 = ThirdView.view.fog ? ThirdView.view.fog[3] : 0; Settings.v.visao = 1; g.render(); const f1 = ThirdView.far, n1 = ThirdView.view.fog ? ThirdView.view.fog[3] : 0;
           this.ok('visão: no Horizonte a névoa começa bem mais longe e o plano de corte vai a 20 mil', f3 >= 20000 && f1 <= 6000 && n3 > n1 * 2, `${f1}/${f3} névoa ${n1 | 0}/${n3 | 0}`); }
         Settings.v.visao = v0; }
@@ -3456,6 +3456,20 @@ const EclipseTests = {
         if (S) { const d = Vegetacao._malha ? Vegetacao._malha(S) : null;
           if (d) { const nL = [d[3], d[4]], nR = [d[6 * 10 + 3], d[6 * 10 + 4]];
             this.ok('grama: cada lâmina tem volume (dobrada na nervura: as duas metades com normais para lados opostos)', Math.hypot(nL[0] - nR[0], nL[1] - nR[1]) > 0.8 * Math.hypot(nL[0], nL[1]), `${nL} / ${nR}`); } } }
+      // território de Velmora: 5 × 5 zonas contínuas, vilarejos com casas GLB e moradores, o rio, o Mapa da Região
+      { const T = Territorio.estado(), zs = worldZonesOf('velmora');
+        this.ok('território: Velmora é um território de 5 × 5 zonas abertas (as 6 de antes e 19 novas, maiores)', T.zonas === 25 && T.grade.join('x') === '5x5' && zs.every((z) => z.aberto) && T.areaHa > 20, JSON.stringify(T));
+        this.ok('território: cada casa da grade tem uma zona (sem buracos: anda-se de qualquer uma para as vizinhas)', [0, 1, 2, 3, 4].every((r) => [0, 1, 2, 3, 4].every((c) => worldZoneAt(r, c, 'velmora'))));
+        this.ok('território: tipos de lugar (campo, bosque, vilarejo, ruína, forte, rio, lago) e o nível sobe com a distância da Clareira', ['campo', 'bosque', 'vila', 'ruina', 'forte', 'rio', 'lago'].every((k) => T.tipos.includes(k)) && WORLD_ZONES.velmora_fim_mata.lv > WORLD_ZONES.velmora_campos_vento.lv);
+        this.ok('território: o rio sai do Lago Escuro e desce pelas zonas novas até o Lago das Garças', ['velmora_vau', 'velmora_ponte_velha', 'velmora_curva', 'velmora_garcas'].every((id) => Agua.AGUA_ZONAS[id]) && Agua.AGUA_ZONAS.velmora_lago.length >= 3);
+        World.loadZone('velmora_moinho', null);
+        const A = Estruturas.atual(), casas = A ? A.lug.filter((L) => /estrutura_md_5|blue_roof_cottage/.test(L.id)).length : 0;
+        this.ok('território: o vilarejo tem casas GLB, poço, forno, ferraria, mercador e moradores com serviço, sem inimigos', casas >= 5 && g.enemies.length === 0 && g.npcs.some((n) => n.def && n.def.merchant) && g.npcs.filter((n) => n instanceof Morador && n.P && (n.P.servicos || []).length).length >= 2, `${casas} casas, ${g.enemies.length} inimigos`);
+        // o Mapa da Região: M abre direto nele numa região aberta; R alterna com o Mapa do Mundo
+        World.openMap(false); const reg = World.map.regiao; g.render();
+        World.updateMap(0.016, Object.assign(this.entrada(), { pressed: { reroll: true }, held: {}, mouse: { x: 0, y: 0 } })); const mundo = !World.map.regiao; World.closeMap();
+        this.ok('mapa da região: nas regiões abertas o M abre o território contínuo; R alterna com o Mapa do Mundo', reg && mundo && MapaRegiao.pode(World) && MapaRegiao.minis.size >= 1);
+        World.loadZone('metro_centro', null); this.ok('mapa da região: as regiões de cidade (salas) ainda usam o Mapa do Mundo', !MapaRegiao.pode(World)); }
       Settings.v.vizinhos = false; World.loadZone('velmora_clareira', null);
       this.ok('regiões: desligado nas configurações, nada é montado', Vizinhos.estado().vizinhas.length === 0);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
