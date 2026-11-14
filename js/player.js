@@ -547,6 +547,7 @@ class Player extends Entity {
         a.poderS = a.serial; a.poder = null;
         const tema = Poderes.temaDe(this);
         if (tema) a.poder = Poderes.cristais(cx, cy, d.shape.radius || 120, { tema, carga: Math.max(0.12, tW - a.t), dono: a, evitar: [-Math.cos(a.dir) * off, -Math.sin(a.dir) * off] });
+        if (a.poder) game.audio.play('cristaisCarga', 0.8);
       } else if (a.poder) Poderes.mover(a.poder, cx, cy);
     }
 
@@ -779,8 +780,7 @@ class Player extends Entity {
       Poderes.manifestar(I, x, y);
       if (a) a.poder = null;
       game.camera.shake(0.4);
-      game.audio.play('stomp');
-      game.audio.play('thunder', 0.35);
+      game.audio.play('cristais');   // (gravado na ElevenLabs quando houver; senão, o impacto sintetizado)
       return;
     }
     game.particles.ring(x, y, 130, '60,130,255', 0.45, 12);

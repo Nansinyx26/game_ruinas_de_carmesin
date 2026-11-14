@@ -34,6 +34,7 @@ começado. Ao terminar algo, mova o item e registre o commit.
 | Gibão novo | `Peitoral_leve_level_1.glb` enviado no lugar do antigo, reconvertido nos 4 corpos | `assets/Criar_Personagem/Armaduras_Inicial_Level_1/`, `js/assets/criacao/ini_peitoral.js` |
 | Diário de missões redesenhado | Seletor de categorias com contagem, lista com ícone por tipo (secundária, contrato, região, campanha), nível e "rastreada", motivo do bloqueio; ficha com etiquetas, quem pede e onde, objetivos com barra de progresso, recompensas em cartões, histórico e botões no rodapé | `js/mundo/aventuras.js` |
 | Habilidade do Guerreiro: erupção de cristais | Golpes no chão do Guerreiro/Drakos: dois anéis, rachaduras de lava em 3 levas, dezenas de cristais 3D facetados rompendo o chão (carga → manifestação → desintegração), brasas, fumaça, clarões e luz vermelha no chão; nas duas câmeras; dano e área iguais | `js/heroes/poderes.js` |
+| Cabra e ovelha reais | `cabra_de_verdade.glb` e a ovelha real (assets/Creatures/DomesticAnimals) no lugar das feitas da malha do lobo: retopologia, esqueleto de quadrúpede, 15 animações, texturas assadas; chifres da própria malha; escala de ~0,9 m | `tools/blender/criaturas/meshy.py`, `js/assets/criaturas/cabra.js`, `ovelha.js` |
 | Cache do app (erro `aplicarConjuntos`) | O service worker servia scripts antigos misturados com novos; agora o código vem da rede primeiro | `sw.js` |
 
 ---
@@ -45,6 +46,10 @@ começado. Ao terminar algo, mova o item e registre o commit.
 - [ ] **174 falas restantes** (respostas e rumores): a cota gratuita da conta ElevenLabs acabou. Quando renovar (ou com plano pago), rodar `python3 tools/dublagem/gerar_falas.py` — continua de onde parou.
 - [ ] Com plano pago: trocar as vozes padrão por vozes brasileiras da biblioteca (o elenco já está separado por sexo/idade).
 - [ ] Emoções/tags por fala e legendas sincronizadas.
+
+### 2.1b Efeitos sonoros dos ataques e poderes (ElevenLabs)
+- [x] Gerador `tools/sfx/gerar_sfx.py` (19 efeitos: cortes, estocada, impactos, crítico, golpe no chão, ERUPÇÃO DE CRISTAIS e a carga dela, raio, esquiva, escudo, explosão, bola de fogo, especial, flecha; variações sorteadas) e o jogo já toca as gravações no lugar do som sintetizado (`js/audio.js`, `js/assets/sfx_gerados.js`).
+- [ ] **Gerar os arquivos**: a conta ElevenLabs está sem crédito (8 de 10.000; cada efeito custa ~20). Quando renovar: `python3 tools/sfx/gerar_sfx.py` (retoma de onde parou).
 
 ### 2.2 Guardião do Mundo
 - [ ] Animações do GM_VARIOS MOVIMENTOS.glb (andar, atirar) no corpo do morador.
@@ -68,7 +73,6 @@ começado. Ao terminar algo, mova o item e registre o commit.
 - [x] Baús, GM, Bardo, alaúde, prédios e zumbis de `assets/extra`, altar.
 - [ ] 12 cabelos de `assets/cabelos`, 4 elmos/armaduras de `assets/Criar_Personagem`.
 - [ ] Inimigos e chefes: fantasma, sentinelas de bronze e ferrugem, robô de manutenção, astronauta, feiticeiro, bruxo carmesim, Templário, Paladino de Ferro, Guardião de Ferro, Colosso, Golem, Dragão.
-- [ ] `cabra_de_verdade.glb`.
 - [ ] Documento `docs/AUDITORIA_GLB.md` e carregador de GLB em tempo de execução.
 
 ---

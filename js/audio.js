@@ -568,8 +568,34 @@ class AudioSys {
     notes.forEach((n, i) => this.osc(type, n, n, dur, vol, i * step, 0.01));
   }
 
+  // Gravações dos efeitos (ElevenLabs, tools/sfx/gerar_sfx.py → js/assets/sfx_gerados.js): carregadas quando o
+  // áudio é liberado; enquanto não chegam (ou abrindo do disco), toca o som sintetizado de sempre
+  carregarGravados() {
+    if (this._grav || typeof SFX_GERADOS === 'undefined' || !this.ctx || typeof fetch === 'undefined') return;
+    this._grav = {};
+    for (const nome in SFX_GERADOS) {
+      const E = SFX_GERADOS[nome], L = this._grav[nome] = { vol: E.vol || 0.8, bufs: [] };
+      for (const src of E.src) fetch(src).then((r) => (r.ok ? r.arrayBuffer() : null)).then((b) => b && this.ctx.decodeAudioData(b)).then((buf) => { if (buf) L.bufs.push(buf); }).catch(() => {});
+    }
+  }
+  gravado(name, p) {
+    const L = this._grav && this._grav[name];
+    if (!L || !L.bufs.length) return false;
+    if (!this.throttle('g_' + name, 0.03)) return true;
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain();
+    s.buffer = L.bufs[Math.floor(Math.random() * L.bufs.length)];
+    s.playbackRate.value = 0.95 + Math.random() * 0.1;   // (um pouco diferente a cada golpe)
+    g.gain.value = L.vol * p;
+    s.connect(g); g.connect(this.sfx); s.start();
+    return true;
+  }
   play(name, p = 1) {
     if (!this.ctx || this.muted) return;
+    if (!this._grav) this.carregarGravados();
+    if (this.gravado(name, p)) return;
+    // efeitos que só existem gravados: sem a gravação, o sintetizado mais parecido
+    if (name === 'cristais') { this.play('stomp', p); this.play('thunder', p * 0.4); return; }
+    if (name === 'cristaisCarga') { this.play('specialCharge', p * 0.6); return; }
     try {
       switch (name) {
         case 'swing':
