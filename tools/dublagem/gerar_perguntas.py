@@ -32,13 +32,16 @@ HEROIS = {
 
 def manifesto():
     M = {}
+    validas = {codigo(q) for q in json.load(open(FALAS, encoding='utf-8')).get('perguntas') or []}
     for h, (voz, *_r, sexo) in HEROIS.items():
         pasta = os.path.join(SAIDA, h)
         falas = {}
         if os.path.isdir(pasta):
             for arq in sorted(os.listdir(pasta)):
-                if arq.endswith('.mp3'):
-                    falas[arq[:-4]] = round(duracao(os.path.join(pasta, arq)), 2)
+                if not arq.endswith('.mp3'):
+                    continue
+                if arq[:-4] in validas: falas[arq[:-4]] = round(duracao(os.path.join(pasta, arq)), 2)
+                else: os.remove(os.path.join(pasta, arq))   # pergunta que mudou ou saiu do jogo
         if falas:
             M[h] = {'voz': voz, 'sexo': sexo, 'falas': falas}
     with open(MANIFESTO, 'w', encoding='utf-8') as f:

@@ -1328,18 +1328,20 @@
    "nome": "TOBIAS",
    "zona": "aurora_bairro",
    "papel": "Domador da Estrebaria da Guarda",
-   "pers": "Grandalhão de voz mansa; trata os lobos de montaria como filhos.",
+   "pers": "Grandalhão de voz mansa; trata cavalos e lobos de montaria como filhos.",
    "ola": [
     "Devagar perto do cercado. Eles sentem pressa.",
-    "Montaria boa é a que volta sozinha para casa."
+    "Montaria boa é a que volta sozinha para casa.",
+    "Os cavalos chegaram das fazendas do sul. Dá uma olhada no cercado."
    ],
    "temas": [
-    "Cavalo não aguenta o Nexus: se assusta com neon, empaca na neve. Lobo grande vai a qualquer lugar. Os cavalos que restam estão nas fazendas do sul, e eu não vendo o que não tenho.",
-    "Não. Montado você corre; para lutar, desce. O lobo se afasta e espera."
+    "Vendo. Os do cercado aqui do lado vieram das fazendas do sul: o castanho é manso para quem está começando, o tordilho não refuga ponte nem rio e o negro só aceita quem já provou o seu valor. Na estrada, cavalo é o mais rápido.",
+    "Cavalo corre mais na estrada e no campo. Lobo grande aguenta neve, neon e trilha fechada. Escolha pelo caminho que você faz.",
+    "Não. Montado você corre; para lutar, desce. A montaria se afasta e espera."
    ],
    "rumores": [],
    "extras": [
-    "TOBIAS. Domador da Estrebaria da Guarda. Grandalhão de voz mansa; trata os lobos de montaria como filhos."
+    "TOBIAS. Domador da Estrebaria da Guarda. Grandalhão de voz mansa; trata cavalos e lobos de montaria como filhos."
    ]
   },
   {
@@ -1886,7 +1888,8 @@
   "Como se forja num lugar de dados?",
   "O que é o Nexus Zero?",
   "O que vem depois do nível 100?",
-  "Por que lobos e não cavalos?",
+  "Vende cavalos?",
+  "Cavalo ou lobo?",
   "Posso lutar montado?",
   "Como cuido de um companheiro?",
   "Que bairro é este?",

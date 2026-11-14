@@ -4185,7 +4185,7 @@ const EclipseTests = {
 
   async criacaoGLB() {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
-    const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
+    const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 90000); });   // (no runner lento os GLB dos cabelos passavam dos 30 s)
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
     this.igual('catálogo: 4 corpos (os 2 de sempre e os 2 atléticos), 8 rostos, 25 cabelos (8 enviados do Meshy, 15 em mechas do Blender, 5 deles masculinos, e 2 gerados no Meshy por texto), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '4,8,25,18');
