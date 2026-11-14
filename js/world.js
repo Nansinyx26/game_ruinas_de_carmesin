@@ -445,6 +445,7 @@ const World = {
     if (typeof Pets !== 'undefined') Pets.aoCarregar(z);   // o animal de companhia chega junto; a vitrine do viveiro (js/mundo/pets.js)
     if (typeof AnimaisCidade !== 'undefined') AnimaisCidade.aoCarregar(z);   // os animais domésticos da cidade (js/mundo/animais_cidade.js)
     if (typeof Montarias !== 'undefined') Montarias.aoCarregar(z);   // a montaria chega junto (js/mundo/montarias.js)
+    if (typeof TavernaViva !== 'undefined') TavernaViva.aoCarregar(z);   // fregueses da taverna pela hora (js/mundo/taverna_viva.js)
     Povo.aoCarregar(z);         // rotinas e quadro de contratos (js/mundo/povo.js)
     Cidade.aoCarregar(z);       // estações, bancas, monumento e portões da cidade principal (js/mundo/cidade.js)
     Clima.aoCarregar(z);        // poças, bancos de neblina, água e neve no chão da zona (js/mundo/clima.js)
@@ -553,6 +554,7 @@ const World = {
     Rotina.update(dt);      // moradores do bairro: chegam, saem e mudam de lugar com a hora
     if (typeof Guardiao !== 'undefined') Guardiao.update(dt);   // bênçãos do Guardião: regeneração, avisos e fim pelo relógio de verdade
     if (typeof Pets !== 'undefined') Pets.update(dt);   // fome e humor do animal de companhia
+    if (typeof TavernaViva !== 'undefined') TavernaViva.update(dt);   // a casa enche e esvazia com a hora e o Bardo
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }
   },

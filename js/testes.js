@@ -3437,6 +3437,20 @@ const EclipseTests = {
           this.ok('loja: MINHAS MONTARIAS equipa e desequipa', LojaAnimais.botao(mi)[2] === 'desequipar' && LojaAnimais.executar('desequipar', mi) && Montarias.S().ativa === null && LojaAnimais.botao(mi)[2] === 'equipar');
           WorldInv.draw(g.ctx, 0); g.state = 'playing';
           Montarias.guardar(); Object.assign(World.state.montarias, JSON.parse(M0)); g.stats.soulsBank = b0; g.activeProgress().level = lv0; World.save = sv; }
+        // taverna viva (js/mundo/taverna_viva.js): lotação pela hora, Horário do Bardo, reservas sem sobreposição
+        if (typeof TavernaViva !== 'undefined' && NpcModelo.ok()) {
+          const h0t = World.state.hora, dm = Settings.v.diaMin; Settings.v.diaMin = 1e6;
+          World.state.hora = 9; World.loadZone('aurora_taverna', null); const manha = TavernaViva.estado();
+          World.state.hora = 21; World.loadZone('aurora_taverna', null); const bardo = TavernaViva.estado();
+          for (let i = 0; i < 40; i++) { TavernaViva.update(0.25); for (const f of TavernaViva.ativos) f.update(0.25); }
+          const Lt = TavernaViva.ativos.filter((f) => f.lugar), chaves = new Set(Lt.map((f) => f.lugar.i));
+          this.ok('taverna: de manhã quase vazia; no Horário do Bardo, cheia (até o limite)', manha.fregueses <= 2 && bardo.fregueses > manha.fregueses + 4 && bardo.fregueses <= TavernaViva.LIMITE && bardo.bardo, `${manha.fregueses} / ${bardo.fregueses}`);
+          this.ok('taverna: cada freguês com o seu lugar (reserva: ninguém no mesmo assento)', chaves.size === Lt.length && Lt.length > 4);
+          const E = TavernaViva.estado();
+          this.ok('taverna: bebendo, comendo e, perto do palco, palmas ou dança', E.bebendo + E.comendo > 0 && (E.fases.de_pe ? E.dancando + E.palmas > 0 : true), JSON.stringify(E));
+          this.ok('taverna: caneca e prato são os GLB dos utensílios (presos à mão e à mesa)', ['caneca_cerveja', 'prato_sopa', 'prato_vazio', 'copo_neon'].every((id) => WEAPON3D[id]) && NPC3D.freg_a.props.some((q) => q.id === 'caneca_cerveja' && q.no === 'handR'));
+          World.state.hora = h0t; Settings.v.diaMin = dm; World.loadZone('aurora', null);
+        }
         this.ok('diário: recompensas em cartões', !Aventuras.diarioLista('disponiveis')[0] || Aventuras.cartoesRec(Aventuras.diarioLista('disponiveis')[0]).length >= 1);
         g.state = 'playing';
       }

@@ -87,6 +87,12 @@ ARMAS = {
 # Armas feitas no Blender (tools/blender/asset_*.py): convertidas sob pedido (--blender), fora da
 # lista padrão até alguém as usar no jogo. glTF com +Y para cima: o comprimento é o eixo y do arquivo
 ARMAS_BLENDER = {
+    # utensílios da taverna e do pub (tools/blender/asset_utensilios_taverna.py): o comprimento é a altura;
+    # a origem ("cabo") fica na base, que pousa na mesa ou fica na mão
+    'caneca_cerveja': dict(arq='caneca_cerveja.glb', pasta='assets/models/utensilios', eixo='y', largura='x', inv=False, invz=False, cabo=0.0, len=6.0, tri=900, glow='255,200,120'),
+    'prato_sopa': dict(arq='prato_sopa.glb', pasta='assets/models/utensilios', eixo='x', largura='z', inv=False, invz=False, cabo=0.5, len=8.5, tri=900, glow='255,170,90'),
+    'prato_vazio': dict(arq='prato_vazio.glb', pasta='assets/models/utensilios', eixo='x', largura='z', inv=False, invz=False, cabo=0.5, len=8.5, tri=900, glow='255,170,90'),
+    'copo_neon': dict(arq='copo_neon.glb', pasta='assets/models/utensilios', eixo='y', largura='x', inv=False, invz=False, cabo=0.0, len=7.5, tri=600, glow='60,255,220'),
     'lamina_do_iniciado': dict(arq='lamina_do_iniciado.glb', pasta='assets/models/armas', eixo='y', largura='x', inv=False, invz=False, cabo=0.2, len=56, tri=1500, glow='60,215,255'),
 }
 EIXO = {'x': 0, 'y': 1, 'z': 2}
