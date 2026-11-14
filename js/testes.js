@@ -1481,9 +1481,9 @@ const EclipseTests = {
     // renderizador realista (Three.js, js/realista/realista.js): módulo carregado por http, opções no
     // vídeo, e numa placa de vídeo emulada por software (a dos testes) ele mesmo cede ao clássico
     const vid = SETTINGS_TABS.find((t) => t.id === 'video').opts;
-    this.ok('realista: opções de renderizador e cinco qualidades (Baixo a Cinematográfico) no vídeo', vid.some((o) => o.key === 'render3d') && vid.find((o) => o.key === 'realQual').names.join(',') === 'Baixo,Médio,Alto,Ultra,Cinematográfico');
+    this.ok('realista: opções de renderizador e seis qualidades (Baixo a Extreme PC) no vídeo', vid.some((o) => o.key === 'render3d') && vid.find((o) => o.key === 'realQual').names.join(',') === 'Baixo,Médio,Alto,Ultra,Cinematográfico,Extreme PC');
     const RL = typeof window !== 'undefined' ? window.Realista3D : null, atv = RL ? RL.ativo() : false;
-    this.ok('realista: módulo do Three.js carregado (por http) e pronto ou cedendo ao clássico com o motivo', !!RL && RL.QUAL.length === 5 && (RL.ok || /software|WebGL 2/.test(RL.erro || '')), RL ? `ok=${RL.ok} erro=${RL.erro}` : 'sem módulo');
+    this.ok('realista: módulo do Three.js carregado (por http) e pronto ou cedendo ao clássico com o motivo', !!RL && RL.QUAL.length === 6 && (RL.ok || /software|WebGL 2/.test(RL.erro || '')), RL ? `ok=${RL.ok} erro=${RL.erro}` : 'sem módulo');
     if (RL && !atv) {
       // cedeu: a 3ª pessoa desenha pelo motor clássico e a camada do Three.js fica escondida
       ThirdView.set(true, true); g.render(); ThirdView.set(false, true);
@@ -3408,6 +3408,7 @@ const EclipseTests = {
       this.ok('gráficos: nos testes automáticos o benchmark não roda sozinho', !Graficos.precisa());
       Graficos.iniciar(0.5); for (let i = 0; i < 90; i++) Graficos.quadro(1 / 60, g);
       this.ok('gráficos: benchmark mede, escolhe, aplica e guarda o perfil', !Graficos.bench && Graficos.ultimo && GRAFICOS_PERFIS[Graficos.ultimo.perfil] && Graficos.ultimo.fps >= 55 && Settings.v.perfilGfx === Graficos.ultimo.perfil, JSON.stringify(Graficos.ultimo));
+      Object.assign(Graficos.med, { i: 0, n: 0, cpu: 0, cpuAcc: 0, cpuN: 0 });   // (sem os quadros de verdade da suíte)
       for (let i = 0; i < 30; i++) { Graficos.ini(); Graficos.fim(1 / 50); }
       const E = Graficos.estatisticas();
       Settings.v.medidor = true; Graficos.desenhar(g.ctx, g); Settings.v.medidor = false;
