@@ -49,7 +49,9 @@ começado. Ao terminar algo, mova o item e registre o commit.
 
 ### 2.1b Efeitos sonoros dos ataques e poderes (ElevenLabs)
 - [x] Gerador `tools/sfx/gerar_sfx.py` (19 efeitos: cortes, estocada, impactos, crítico, golpe no chão, ERUPÇÃO DE CRISTAIS e a carga dela, raio, esquiva, escudo, explosão, bola de fogo, especial, flecha; variações sorteadas) e o jogo já toca as gravações no lugar do som sintetizado (`js/audio.js`, `js/assets/sfx_gerados.js`).
-- [ ] **Gerar os arquivos**: a conta ElevenLabs está sem crédito (8 de 10.000; cada efeito custa ~20). Quando renovar: `python3 tools/sfx/gerar_sfx.py` (retoma de onde parou).
+- [x] **Arquivos gerados**: os 19 efeitos (24 gravações com as variações) estão em `assets/sfx/gerados/` e no manifesto `js/assets/sfx_gerados.js`; todas decodificam no Web Audio do Chromium.
+- [ ] `arrow.mp3` saiu quase mudo (pico 0,09; a variação `arrow_2.mp3` tem 0,46): apagar e gerar de novo com `python3 tools/sfx/gerar_sfx.py arrow`.
+- [ ] Ouvir os efeitos no jogo e ajustar volume ou descrição dos que não combinarem.
 
 ### 2.2 Guardião do Mundo
 - [ ] Animações do GM_VARIOS MOVIMENTOS.glb (andar, atirar) no corpo do morador.
