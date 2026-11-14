@@ -345,13 +345,13 @@ const WorldInv = {
   },
   fechar() { game.state = 'playing'; World.save(); game.audio.play('uiMove'); },
   abas() {
-    const a = ['mochila', 'equipamento', 'atributos', 'itens', 'oficios', 'diario', 'campanhas'], sv = this.ui.servico;
+    const a = ['mochila', 'equipamento', 'atributos', 'itens', 'oficios', 'animais', 'diario', 'campanhas'], sv = this.ui.servico;   // (animais: PETS & MONTARIAS, js/mundo/loja_animais.js)
     if (this.ui.shop) a.splice(1, 0, 'loja');
     if (sv) a.splice(1, 0, sv === 'armazem' ? 'armazem' : FAB_ESTACOES[sv] ? 'fabrica' : sv);
     return a;
   },
   // Abas dos módulos novos: EQUIPAMENTO (js/mundo/arsenal.js), INVENTÁRIO, estações e ARMAZÉM (js/mundo/fabrica.js)
-  abaModulo(tab) { return tab === 'equipamento' || tab === 'atributos' || tab === 'itens' || tab === 'fabrica' || tab === 'armazem'; },
+  abaModulo(tab) { return tab === 'equipamento' || tab === 'atributos' || tab === 'itens' || tab === 'fabrica' || tab === 'armazem' || tab === 'animais'; },
   // Itens navegáveis da aba: mochila = 3 vagas + mochila; loja = estoque + cápsula; missões: nada;
   // campanhas: os 5 heróis (js/mundo/campanhas.js)
   lista() {
@@ -396,13 +396,13 @@ const WorldInv = {
       game.audio.play('uiMove');
     }
     if (this.abaModulo(U.tab)) {
-      if (U.tab === 'equipamento') Arsenal.updateUI(dt, inp); else if (U.tab === 'atributos') Atributos.updateUI(dt, inp); else Fabrica.updateUI(U.tab, dt, inp);
+      if (U.tab === 'equipamento') Arsenal.updateUI(dt, inp); else if (U.tab === 'atributos') Atributos.updateUI(dt, inp); else if (U.tab === 'animais') LojaAnimais.updateUI(dt, inp); else Fabrica.updateUI(U.tab, dt, inp);
       const m = inp.mouse;
       if (m.clicked) for (const r of U.rects) {
         if (m.x < r.x || m.x > r.x + r.w || m.y < r.y || m.y > r.y + r.h) continue;
         if (r.tab) { U.tab = r.tab; U.sel = 0; Fabrica.ui.cat = 0; game.audio.play('uiMove'); }
         else if (r.btn === 'fechar') this.fechar();
-        else if (U.tab === 'equipamento') Arsenal.clique(r); else if (U.tab === 'atributos') Atributos.clique(r); else Fabrica.clique(U.tab, r);
+        else if (U.tab === 'equipamento') Arsenal.clique(r); else if (U.tab === 'atributos') Atributos.clique(r); else if (U.tab === 'animais') LojaAnimais.clique(r); else Fabrica.clique(U.tab, r);
         break;
       }
       return;
@@ -470,7 +470,7 @@ const WorldInv = {
     ctx.textBaseline = 'middle';
     // abas
     let x = 36;
-    const abas = this.abas(), rotulo = (a) => ({ mochila: 'RELÍQUIAS', loja: U.loja === 'curandeiro' ? 'REMÉDIOS' : U.loja === 'armeiro' ? 'ARMARIA' : 'LOJA', oficios: 'OFÍCIOS', diario: 'DIÁRIO', campanhas: 'CAMPANHAS', ferreiro: 'FERREIRO', artesao: 'ARTESÃO',
+    const abas = this.abas(), rotulo = (a) => ({ mochila: 'RELÍQUIAS', loja: U.loja === 'curandeiro' ? 'REMÉDIOS' : U.loja === 'armeiro' ? 'ARMARIA' : 'LOJA', oficios: 'OFÍCIOS', animais: 'PETS & MONTARIAS', diario: 'DIÁRIO', campanhas: 'CAMPANHAS', ferreiro: 'FERREIRO', artesao: 'ARTESÃO',
         equipamento: 'EQUIPAMENTO', atributos: Atributos.livres(game.activeProgress()) ? `ATRIBUTOS · ${Atributos.livres(game.activeProgress())}` : 'ATRIBUTOS', itens: 'INVENTÁRIO', armazem: 'ARMAZÉM', fabrica: FAB_ESTACOES[U.servico] ? FAB_ESTACOES[U.servico].nome.split(' ')[0].toUpperCase() : 'OFICINA' }[a]);
     // as abas cabem antes do contador de células: letra, espaçamento e margem diminuem quando precisa
     let fs = 15, ls = 3, pad = 30;
@@ -496,6 +496,7 @@ const WorldInv = {
     U.rects.push({ btn: 'fechar', x: VIEW_W - 84, y: 28, w: 48, h: 36 });
     if (U.tab === 'equipamento') Arsenal.draw(ctx, Ly, t);
     else if (U.tab === 'atributos') Atributos.draw(ctx, Ly, t);
+    else if (U.tab === 'animais') LojaAnimais.draw(ctx, Ly, t);
     else if (this.abaModulo(U.tab)) Fabrica.draw(U.tab, ctx, Ly, t);
     else if (U.tab === 'diario') Aventuras.drawDiario(ctx, Ly, L, U.sel, t);
     else if (U.tab === 'oficios') Oficios.draw(ctx, Ly, L, U.sel, this.vende());
@@ -512,7 +513,7 @@ const WorldInv = {
     }
     // dicas
     ctx.font = `12px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(200,214,235,0.75)';
-    const dica = U.tab === 'equipamento' ? Arsenal.dica() : U.tab === 'atributos' ? Atributos.dica() : this.abaModulo(U.tab) ? Fabrica.dica(U.tab) : U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${this.vende() ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
+    const dica = U.tab === 'equipamento' ? Arsenal.dica() : U.tab === 'atributos' ? Atributos.dica() : U.tab === 'animais' ? LojaAnimais.dica() : this.abaModulo(U.tab) ? Fabrica.dica(U.tab) : U.tab === 'mochila' ? `Enter: equipar / tirar · Delete: ${this.vende() ? 'vender (40%)' : 'desmontar (20%)'} · 5: cápsula · Q/E: abas · Esc: fechar`
       : U.tab === 'loja' ? 'Enter: comprar · Q/E: abas · Esc: fechar'
         : U.tab === 'campanhas' ? 'Enter: jogar a campanha (troca para o herói dela) · ★ no mapa e no radar · Q/E: abas · Esc: fechar'
           : U.tab === 'diario' ? '←/→: categoria · Enter: rastrear · Delete: abandonar · ◆ no mapa e na zona · Q/E: abas · Esc: fechar'

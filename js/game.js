@@ -417,6 +417,7 @@ class Game {
     this.particles.update(sdt);
     if (typeof Fogo !== 'undefined') Fogo.update(sdt);   // fogo, fumaça e explosões (js/fogo.js)
     if (typeof Poderes !== 'undefined') Poderes.update(sdt);   // manifestações das habilidades (js/heroes/poderes.js)
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.update(sdt);   // Arqueira, Sacerdote e Arcano (js/heroes/poderes_classes.js)
     this.texts.update(sdt);
     this.trails.update(sdt);
     this.arcs.update(sdt);
@@ -1525,6 +1526,7 @@ class Game {
     this.projectiles.draw(ctx);
     HeroObjects.draw(ctx);
     this.particles.drawEmissive(ctx);
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.desenharIso(ctx);
     this.trails.draw(ctx);
     p.drawEmissive(ctx);
     if (this.use3D) {

@@ -2485,10 +2485,10 @@ const EclipseTests = {
       const Sg = { fl: 0, fi: 0 }, clg = new Set();
       for (let i = 0; i < 60; i++) clg.add(gal.petClipe(Sg, Criaturas3D.dados.galinha, 0.2)[0]);
       this.ok('animais: a galinha parada cisca (comer) e olha em volta', clg.has('comer') && clg.has('idle'), [...clg].join(','));
-      // peças das espécies presas aos ossos: chifres da cabra e bico chato do pato (a galinha enviada
-      // já traz crista e barbela na malha: nenhuma peça a mais)
+      // peças das espécies presas aos ossos: bico chato do pato (a galinha e a cabra reais já trazem
+      // crista e chifres na própria malha: nenhuma peça a mais)
       const peca = (id, osso) => { const mm = g.model3('cri_' + id); return mm && mm.nodes[osso].kids.some((k) => k.name.startsWith('acess_') && k.geo && k.geo.length > 60); };
-      this.ok('animais: chifres na cabra e bico chato no pato; a galinha com a crista da própria malha', peca('cabra', 'cabeca') && peca('pato', 'cabeca') && !peca('galinha', 'cabeca'));
+      this.ok('animais: bico chato no pato; a galinha e a cabra reais com crista e chifres da própria malha', !peca('cabra', 'cabeca') && peca('pato', 'cabeca') && !peca('galinha', 'cabeca'));
       const GA = Criaturas3D.dados.galinha;
       this.ok('animais: a galinha é a malha enviada (esqueleto de ave com as asas dobradas, 11 animações de galinha)', GA && GA.nb === 26 && ['idle', 'andar', 'comer', 'dormir', 'voar', 'chamar'].every((k) => GA.clipes[k]) && !GA.base, GA && Object.keys(GA.clipes).join(','));
       // a ave da Metrópole levanta voo quando o herói chega perto
@@ -3407,10 +3407,36 @@ const EclipseTests = {
       for (let i = 0; i < 80; i++) Poderes.update(0.05);
       this.ok('poderes: etapa 3 (desintegração) e nada fica no cenário', Poderes.ativos.length === 0);
       this.ok('poderes: o Guerreiro tem a manifestação própria; os outros, não (sem cópia com outra cor)', Poderes.temaDe({ def: { id: 'drakos' } }) === 'rubro' && Poderes.temaDe({ def: { id: 'kael' } }) === null);
+      // as outras classes: forma e geometria próprias (não a erupção com outra cor)
+      const PC = PoderesClasses; PC.limpar();
+      this.ok('poderes: cada classe com a sua manifestação (Arqueira violeta, Sacerdote celeste, Arcano azul)', PC.temaDe({ def: { id: 'lyra' } }) === 'violeta' && PC.temaDe({ def: { id: 'sera' } }) === 'celeste' && PC.temaDe({ def: { id: 'kael' } }) === 'arcano' && PC.temaDe({ def: { id: 'drakos' } }) === null);
+      const Ev = PC.estilhacos(p.x, p.y, 30, 0.5, true), Ec = PC.celeste(p.x, p.y, 90, 'cura', p), Ea = PC.arcano(p.x, p.y, 120, { carga: 0.3 });
+      const ch = (E) => E.nos.map((n) => n[0]).join(',');
+      this.ok('poderes: geometrias diferentes por classe (lascas finas; halo, glifos e coluna; círculos e octaedros)', /lascaV/.test(ch(Ev)) && /halo/.test(ch(Ec)) && /coluna/.test(ch(Ec)) && /circA/.test(ch(Ea)) && /octa/.test(ch(Ea)) && !/lasca/.test(ch(Ea)) && !/circ/.test(ch(Ec)));
+      for (let i = 0; i < 4; i++) PC.update(0.05);
+      PC.manifestarArcano(Ea);
+      for (let i = 0; i < 60; i++) PC.update(0.05);
+      this.ok('poderes: Arqueira, Sacerdote e Arcano terminam sem deixar nada no cenário', PC.ativos.length === 0, JSON.stringify(PC.estado()));
+      this.ok('poderes: os ganchos estão nas classes (acerto e chuva da Arqueira, cura e campo do Sacerdote)', !!(lyraHitEnemy._pc && LyraRain.prototype._pc && ABILITIES.sera_cura._pc));
       if (g.world) {
         WorldInv.abrir('diario'); WorldInv.ui.cat = 'disponiveis'; WorldInv.ui.sel = 0; WorldInv.draw(g.ctx, 0);
         const R = WorldInv.ui.rects;
         this.ok('diário: categorias, lista e botão clicáveis', R.filter((r) => r.cat).length === 3 && R.some((r) => r.idx === 0) && (R.some((r) => r.btn === 'main') || !Aventuras.diarioLista('disponiveis').length));
+        // aba PETS & MONTARIAS: sempre visível; a ave de montaria só se compra no viveiro; a compra salva
+        { const b0 = g.stats.soulsBank, lv0 = g.activeProgress().level, M0 = JSON.stringify(Montarias.S()), sv = World.save; World.save = () => {};
+          this.ok('loja: aba PETS & MONTARIAS no inventário, com Pets, Montarias, Minhas montarias e Meus pets', WorldInv.abas().includes('animais') && LojaAnimais.CATS.length === 4);
+          g.stats.soulsBank = 9000; g.activeProgress().level = 25; LojaAnimais.abrir('estrebaria', 'montarias');
+          const ave = LojaAnimais.cartoes().find((c) => c.id === 'ave_asa_noturna');
+          this.ok('loja: a ave de montaria aparece com nome, raridade, preço, velocidade e nível, e na estrebaria diz onde vende', !!ave && ave.E.preco > 0 && ave.E.vel > 1 && ave.E.nivel > 0 && /VIVEIRO/.test(LojaAnimais.botao(ave)[0]));
+          LojaAnimais.abrir('viveiro', 'montarias');
+          const bt = LojaAnimais.botao(ave), ok = bt[2] === 'comprarMont' && LojaAnimais.executar('comprarMont', ave);
+          this.ok('loja: COMPRAR MONTARIA desconta as células e guarda a ave no progresso (equipada)', ok && g.stats.soulsBank === 9000 - ave.E.preco && Montarias.S().lista.includes('ave_asa_noturna') && Montarias.S().ativa === 'ave_asa_noturna', `${g.stats.soulsBank}`);
+          g.stats.soulsBank = 10; const arara = LojaAnimais.cartoes().find((c) => c.id === 'ave_arara');
+          this.ok('loja: sem dinheiro, SALDO INSUFICIENTE (sem botão de compra)', /SALDO INSUFICIENTE/.test(LojaAnimais.botao(arara)[0]) && !LojaAnimais.botao(arara)[2]);
+          LojaAnimais.trocar('minhas'); const mi = LojaAnimais.cartoes().find((c) => c.id === 'ave_asa_noturna');
+          this.ok('loja: MINHAS MONTARIAS equipa e desequipa', LojaAnimais.botao(mi)[2] === 'desequipar' && LojaAnimais.executar('desequipar', mi) && Montarias.S().ativa === null && LojaAnimais.botao(mi)[2] === 'equipar');
+          WorldInv.draw(g.ctx, 0); g.state = 'playing';
+          Montarias.guardar(); Object.assign(World.state.montarias, JSON.parse(M0)); g.stats.soulsBank = b0; g.activeProgress().level = lv0; World.save = sv; }
         this.ok('diário: recompensas em cartões', !Aventuras.diarioLista('disponiveis')[0] || Aventuras.cartoesRec(Aventuras.diarioLista('disponiveis')[0]).length >= 1);
         g.state = 'playing';
       }
