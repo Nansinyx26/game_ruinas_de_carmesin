@@ -168,8 +168,13 @@ const EnemyTraits = {
     if (T.includes('explode')) this.explodir(e, 90, e.dmg * 1.3, e.T.glow, 0.55);
     if (T.includes('divide') && !e.filhote) {
       for (let k = 0; k < 2; k++) {
-        const a = rand(0, TAU), x = e.x + Math.cos(a) * 26, y = e.y + Math.sin(a) * 26;
-        if (!game.room.canStand(x, y, 10)) continue;
+        // (um lugar livre em volta; sem nenhum, o lugar onde ele morreu: perto de parede ou de pilar o
+        //  sorteio caía no obstáculo e o filhote não nascia)
+        let x = e.x, y = e.y;
+        for (let t = 0, a0 = rand(0, TAU); t < 8; t++) {
+          const a = a0 + k * Math.PI + t * TAU / 8, nx = e.x + Math.cos(a) * 26, ny = e.y + Math.sin(a) * 26;
+          if (game.room.canStand(nx, ny, 10)) { x = nx; y = ny; break; }
+        }
         const f = criarInimigo(e.variante, x, y, e.level);
         f.filhote = true; f.maxHp = f.hp = Math.max(4, Math.round(e.maxHp * 0.3));
         f.escala = (f.escala || 1) * 0.7; f.radius = Math.max(8, Math.round(f.radius * 0.7)); f.dmg *= 0.6;
