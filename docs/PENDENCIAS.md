@@ -51,14 +51,14 @@ começado. Ao terminar algo, mova o item e registre o commit.
 ## 2. Parcial (falta terminar)
 
 ### 2.1 Dublagem dos NPCs
-- [x] 190 de 311 falas gravadas (84 moradores).
-- [ ] **121 falas restantes** (respostas e rumores): a cota gratuita da conta ElevenLabs acabou. Quando renovar (ou com plano pago), rodar `python3 tools/dublagem/gerar_falas.py` — continua de onde parou.
+- [x] Todas as 311 falas gravadas (cumprimentos, respostas e rumores de 84 moradores), em `dublagem/npcs/` e no manifesto `js/assets/vozes_npcs.js`.
 - [ ] Com plano pago: trocar as vozes padrão por vozes brasileiras da biblioteca (o elenco já está separado por sexo/idade).
 - [ ] Emoções/tags por fala e legendas sincronizadas.
 
 ### 2.1b Efeitos sonoros dos ataques e poderes (ElevenLabs)
 - [x] Gerador `tools/sfx/gerar_sfx.py` (19 efeitos: cortes, estocada, impactos, crítico, golpe no chão, ERUPÇÃO DE CRISTAIS e a carga dela, raio, esquiva, escudo, explosão, bola de fogo, especial, flecha; variações sorteadas) e o jogo já toca as gravações no lugar do som sintetizado (`js/audio.js`, `js/assets/sfx_gerados.js`).
-- [x] Gerados com a chave nova (26 gravações).
+- [x] Arquivos gerados: 19 efeitos (24 gravações com as variações) em `assets/sfx/gerados/` e no manifesto `js/assets/sfx_gerados.js`; todas decodificam no Web Audio do Chromium.
+- [ ] Ouvir os efeitos no jogo e ajustar volume ou descrição dos que não combinarem.
 
 ### 2.2 Guardião do Mundo
 - [ ] Animações do GM_VARIOS MOVIMENTOS.glb (andar, atirar) no corpo do morador.
