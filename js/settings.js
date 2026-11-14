@@ -12,6 +12,7 @@ const SETTINGS_DEFAULT = {
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
   display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, texHD: 2, vegQ: 2, sombras: 3, diaMin: 10, fpsLimit: 0, postfx: 2, brightness: 0,
+  perfilGfx: 'auto', medidor: false, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: true,
   render3d: 'realista', realQual: 2,
   // Áudio
   master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
@@ -38,14 +39,20 @@ const SETTINGS_TABS = [
     { key: 'textSpeed', label: 'Velocidade do texto', type: 'choice', values: [0, 1, 2], names: ['Lenta', 'Normal', 'Rápida'], hint: 'Velocidade com que as falas e a história aparecem.' },
   ] },
   { id: 'video', name: 'VÍDEO', icon: 'monitor', opts: [
+    { key: 'perfilGfx', label: 'Perfil gráfico', type: 'choice', values: ['auto', 'celular', 'web', 'desktop', 'extremo', 'custom'], names: ['Automático (benchmark)', 'Celular', 'Web', 'Desktop', 'Extreme PC', 'Personalizado'],
+      hint: 'Escolhe de uma vez todas as opções de vídeo abaixo (cada uma continua ajustável). Automático: mede o aparelho e os quadros por alguns segundos e escolhe sozinho (refaz o benchmark ao confirmar).' },
     { key: 'display', label: 'Modo de exibição', type: 'choice', values: ['window', 'full'], names: ['Janela', 'Tela cheia'] },
-    { key: 'renderScale', label: 'Resolução interna', type: 'choice', values: [50, 75, 100, 150], names: ['50%', '75%', '100% (nativa)', '150% (ultra)'], hint: 'Menos deixa o jogo mais leve em aparelhos fracos; 150% desenha acima da resolução da tela (placa de vídeo forte).' },
+    { key: 'renderScale', label: 'Resolução interna', type: 'choice', values: [50, 75, 100, 125, 150, 200], names: ['50%', '75%', '100% (nativa)', '125%', '150% (ultra)', '200% (4K numa tela 1080p)'], hint: 'Menos deixa o jogo mais leve em aparelhos fracos; acima de 100% desenha com mais pixels que a tela e reduz (supersampling: bordas lisas, placa de vídeo forte).' },
     { key: 'kaelLook', label: 'Visual do Kael', type: 'choice', values: ['3d', 'art'], names: ['3D com a arte oficial', 'Sprites 2D da arte'], hint: '3D: modelo com a textura das vistas oficiais. Sprites: os quadros da folha de personagem.' },
     { key: 'gfx3d', label: 'Inimigos e NPCs em 3D', type: 'bool', hint: 'Modelos 3D (WebGL) ou desenho 2D. Tecla G alterna durante o jogo.' },
     { key: 'render3d', label: 'Renderizador da 3ª pessoa', type: 'choice', values: ['realista', 'classico'], names: ['Realista (Three.js)', 'Clássico'],
       hint: 'Realista: sol com sombras projetadas, materiais PBR, reflexos, névoa, oclusão ambiente e brilho. Precisa abrir o jogo por http (GitHub Pages ou servidor local); abrindo o arquivo do disco, fica o Clássico.' },
-    { key: 'realQual', label: 'Qualidade realista', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Baixo', 'Médio', 'Alto', 'Ultra', 'Cinematográfico'],
-      hint: 'Sombras (1024 a 4096), oclusão ambiente, brilho, multiamostragem e resolução (70% no Baixo, 125% no Cinematográfico).' },
+    { key: 'realQual', label: 'Qualidade realista', type: 'choice', values: [0, 1, 2, 3, 4, 5], names: ['Baixo', 'Médio', 'Alto', 'Ultra', 'Cinematográfico', 'Extreme PC'],
+      hint: 'Sombras (1024 a 4096), oclusão ambiente, brilho, multiamostragem e resolução (70% no Baixo, 125% no Cinematográfico, 150% no Extreme PC: para placas de vídeo dedicadas).' },
+    { key: 'cineCor', label: 'Gradação de cor (3ª pessoa)', type: 'bool', hint: 'Contraste e saturação de cinema, sombras frias e luzes quentes (no renderizador realista).' },
+    { key: 'cineVinheta', label: 'Vinheta (3ª pessoa)', type: 'bool', hint: 'Bordas da imagem um pouco mais escuras.' },
+    { key: 'cineGrao', label: 'Granulação de filme (3ª pessoa)', type: 'bool', hint: 'Grão fino de película, opcional.' },
+    { key: 'cineNitidez', label: 'Nitidez (3ª pessoa)', type: 'bool', hint: 'Realça os detalhes depois do antisserrilhado.' },
     { key: 'texHD', label: 'Texturas dos modelos', type: 'choice', values: [0, 1, 2], names: ['Padrão (1K)', 'Alta (2K)', 'Máxima (4K)'],
       hint: 'Os prédios e objetos mais perto usam a textura original do GLB (2048 ou 4096 px); os de longe ficam na versão leve. Precisa abrir o jogo por http. Em celular, use Padrão.' },
     { key: 'vegQ', label: 'Vegetação (grama e flores)', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Baixa', 'Média', 'Alta', 'Ultra', 'Cinematográfica'],
@@ -59,6 +66,7 @@ const SETTINGS_TABS = [
     { key: 'fpsLimit', label: 'Limite de FPS', type: 'choice', values: [0, 60, 30], names: ['Sem limite', '60', '30'] },
     { key: 'postfx', label: 'Pós-processamento', type: 'choice', values: [0, 1, 2], names: ['Desligado', 'Reduzido', 'Completo'], hint: 'Vinheta, clarões e interferência digital na tela.' },
     { key: 'brightness', label: 'Brilho', type: 'range', min: -30, max: 30, step: 5, unit: '' },
+    { key: 'medidor', label: 'Medidor de desempenho', type: 'bool', hint: 'FPS, tempo do quadro, CPU, placa de vídeo, memória e triângulos no canto da tela (F4 liga e desliga).' },
   ] },
   { id: 'audio', name: 'ÁUDIO', icon: 'speaker', opts: [
     { key: 'sound', label: 'Som', type: 'bool', hint: 'Também liga e desliga com a tecla M.' },
@@ -112,6 +120,14 @@ const Settings = {
     g.particles.quality = QUALITY_KEEP[v.quality] ?? 1;
     g.input.deadzone = v.deadzone / 100; g.input.sensitivity = v.padSens / 100; g.input.vibration = v.vibration; g.input.invertY = v.invertY;
     g.canvas.style.filter = v.brightness ? `brightness(${(1 + v.brightness / 100).toFixed(2)})` : '';
+    // perfil gráfico (js/graficos.js): escolhido agora, aplica as opções dele; mexeu numa opção do perfil, vira Personalizado
+    if (typeof Graficos !== 'undefined' && !boot) {
+      const P = GRAFICOS_PERFIS[v.perfilGfx];
+      if (v.perfilGfx !== this._perfil && P) { for (const k in P) if (k !== 'nome' && k in v) v[k] = P[k]; this.save(); }
+      else if (v.perfilGfx === this._perfil && P && Object.keys(P).some((k) => k !== 'nome' && k in v && v[k] !== P[k])) { v.perfilGfx = 'custom'; this.save(); }
+      else if (v.perfilGfx === 'auto' && this._perfil !== 'auto' && !Graficos.bench) Graficos.iniciar();
+    }
+    this._perfil = v.perfilGfx;
     if (g.renderScale !== v.renderScale / 100) { g.renderScale = v.renderScale / 100; g.resize(); }
     // Ao abrir o jogo a tela cheia espera o primeiro clique ou tecla (exigência dos navegadores)
     if (!boot) this.applyDisplay();

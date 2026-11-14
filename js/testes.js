@@ -73,6 +73,7 @@ const EclipseTests = {
       await this.agua();
       await this.solSombras();
       await this.poderesDiario();
+      this.graficosPC();
       this.megacidades();
       this.mundoContinuo();
       this.metropoleSegura();
@@ -917,7 +918,7 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias', 'gm'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias', 'gm', 'bar_neon'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
     this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
@@ -1908,7 +1909,7 @@ const EclipseTests = {
     const fade = () => { if (g.fadeCb) { const cb = g.fadeCb; g.fadeCb = null; cb(); } };
     let erro = null;
     try {
-      const Z = WORLD_ZONES[BAIRRO_ID], ints = Object.keys(BAIRRO_INTERIORES);
+      const Z = WORLD_ZONES[BAIRRO_ID], ints = Object.keys(BAIRRO_INTERIORES).filter((id) => !BAIRRO_INTERIORES[id].saida);   // (o pub do Mercado Neon também é um interior, mas fica na Metrópole: js/mundo/pub_neon.js)
       this.ok('bairro: zona da cidade, fora da grade e do mapa', Z && Z.cidade && Z.distrito === 'bairro' && !worldZonesOf('nexus').includes(Z) && !World.mapTargets().includes(BAIRRO_ID));
       this.ok('bairro: 5 interiores (taverna, hospedaria, conselho, quartel e o viveiro)', ints.length === 5 && ints.every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].distrito === 'interior' && THEMES[WORLD_ZONES[id].theme]));
       this.ok('bairro: cada interior tem quem trabalhe nele (2+ moradores)', ints.every((id) => WORLD_ZONES[id].npcs.length >= 2));
@@ -3389,6 +3390,37 @@ const EclipseTests = {
   },
 
   // ---------------------------------------------------------------- poderes (js/heroes/poderes.js) e o diário redesenhado
+  // Perfis gráficos, benchmark, medidor de desempenho e o app de PC (js/graficos.js, desktop/)
+  graficosPC() {
+    if (typeof Graficos === 'undefined') { this.ok('gráficos: módulo carregado', false); return; }
+    const g = game, V0 = Object.assign({}, Settings.v), sv = Settings.save, ult = Graficos.ultimo;
+    let erro = null;
+    Settings.save = () => {};
+    try {
+      this.ok('gráficos: quatro perfis (Celular, Web, Desktop, Extreme PC) com as opções de vídeo', ['celular', 'web', 'desktop', 'extremo'].every((k) => GRAFICOS_PERFIS[k] && GRAFICOS_PERFIS[k].nome && 'sombras' in GRAFICOS_PERFIS[k]));
+      Graficos.aplicarPerfil('extremo', g);
+      this.ok('gráficos: Extreme PC liga o máximo (qualidade realista Extreme PC, sombras Ultra, 4K, vegetação cinematográfica, supersampling)', Settings.v.realQual === 5 && Settings.v.sombras === 4 && Settings.v.texHD === 2 && Settings.v.vegQ === 4 && Settings.v.renderScale > 100 && Settings.v.perfilGfx === 'extremo');
+      Graficos.aplicarPerfil('desktop', g); Settings.v.sombras = 1; Settings.apply(g);
+      this.ok('gráficos: mexer numa opção do perfil vira Personalizado', Settings.v.perfilGfx === 'custom', Settings.v.perfilGfx);
+      const hw = (o) => Object.assign({ gpu: 'x', maxTex: 16384, nucleos: 8, memoria: 8, toque: false, software: false, dedicada: false }, o);
+      this.ok('gráficos: o benchmark escolhe pelo aparelho e pelos quadros', Graficos.escolher(hw({ software: true }), 90) === 'web' && Graficos.escolher(hw({ toque: true, memoria: 4 }), 60) === 'celular'
+        && Graficos.escolher(hw({ dedicada: true, nucleos: 12, memoria: 16 }), 60) === 'extremo' && Graficos.escolher(hw({}), 60) === 'desktop' && Graficos.escolher(hw({}), 35) === 'web');
+      this.ok('gráficos: nos testes automáticos o benchmark não roda sozinho', !Graficos.precisa());
+      Graficos.iniciar(0.5); for (let i = 0; i < 90; i++) Graficos.quadro(1 / 60, g);
+      this.ok('gráficos: benchmark mede, escolhe, aplica e guarda o perfil', !Graficos.bench && Graficos.ultimo && GRAFICOS_PERFIS[Graficos.ultimo.perfil] && Graficos.ultimo.fps >= 55 && Settings.v.perfilGfx === Graficos.ultimo.perfil, JSON.stringify(Graficos.ultimo));
+      for (let i = 0; i < 30; i++) { Graficos.ini(); Graficos.fim(1 / 50); }
+      const E = Graficos.estatisticas();
+      Settings.v.medidor = true; Graficos.desenhar(g.ctx, g); Settings.v.medidor = false;
+      this.ok('gráficos: medidor com FPS, tempo do quadro (média e pior 1%) e CPU', E.fps >= 45 && E.fps <= 55 && E.pior >= E.ms * 0.9 && E.cpu >= 0, JSON.stringify(E));
+      this.ok('gráficos: a placa de vídeo é identificada', !!Graficos.hardware().gpu && Graficos.hardware().gpu !== '?', Graficos.hardware().gpu);
+      this.ok('gráficos: resolução interna até 200% e a opção do medidor (F4)', SETTINGS_TABS.find((t) => t.id === 'video').opts.find((o) => o.key === 'renderScale').values.includes(200) && SETTINGS_TABS.find((t) => t.id === 'video').opts.some((o) => o.key === 'medidor') && KEYMAP.medidor);
+      if (typeof Realista3D !== 'undefined') this.ok('gráficos: o realista tem o perfil Extreme PC (150%, 8 amostras) e o passe de cinema', Realista3D.QUAL.length === 6 && Realista3D.QUAL[5].escala === 1.5 && Realista3D.QUAL[5].amostras === 8);
+      this.ok('gráficos: no navegador automático não aparece BAIXAR PARA PC (só no computador, fora do app)', !MENU_PC() && /releases\/latest$/.test(PC_DOWNLOAD));
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Object.assign(Settings.v, V0); Settings.save = sv; Graficos.ultimo = ult; Graficos.bench = null; Settings._perfil = V0.perfilGfx; Settings.apply(g, true);
+    this.ok('gráficos: sem exceção', !erro, erro);
+  },
+
   async poderesDiario() {
     const g = game, p = g.player;
     let erro = null;

@@ -8,7 +8,7 @@ const KEYMAP = {
   left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
   light: ['KeyJ'], heavy: ['KeyK'], dash: ['KeyL', 'Space'], special: ['KeyI'],
   pause: ['Escape'], confirm: ['Enter', 'NumpadEnter', 'KeyJ', 'Space'],
-  debug: ['F1'], debugKill: ['F2'], debugFury: ['F3'], mute: ['KeyM'], gfx: ['KeyG'],
+  debug: ['F1'], debugKill: ['F2'], debugFury: ['F3'], medidor: ['F4'], mute: ['KeyM'], gfx: ['KeyG'],
   reroll: ['KeyR'], buyHeal: ['KeyC'], restart: ['KeyR'], toTitle: ['KeyT'],
   one: ['Digit1', 'Numpad1'], two: ['Digit2', 'Numpad2'], three: ['Digit3', 'Numpad3'],
   ab1: ['Digit1', 'KeyU'], ab2: ['Digit2', 'KeyO'], ab3: ['Digit3', 'KeyP'], ab4: ['Digit4', 'Semicolon'],

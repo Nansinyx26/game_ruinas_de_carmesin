@@ -185,9 +185,12 @@ class Game {
     this.fpsAcc += raw; this.fpsFrames++;
     if (this.fpsAcc >= 0.5) { this.fps = Math.round(this.fpsFrames / this.fpsAcc); this.fpsAcc = 0; this.fpsFrames = 0; }
     const dt = Math.min(raw, MAX_DT);
+    const GF = typeof Graficos !== 'undefined' ? Graficos : null;   // medidor de desempenho e benchmark (js/graficos.js)
+    if (GF) GF.ini();
     try {
       this.update(dt);
       this.render(dt);
+      if (GF) { GF.fim(raw); GF.quadro(raw, this); }
     } catch (e) {
       // Um erro inesperado nunca deve congelar o jogo; registra uma única vez
       const key = String(e && e.message);
@@ -213,6 +216,7 @@ class Game {
       if (this.state === 'playing') this.hud.message(R3D.enabled ? 'GRÁFICOS 3D' : 'GRÁFICOS 2D', '', 1.2, true);
     }
     if (inp.pressed.debug) this.debug = !this.debug;
+    if (inp.pressed.medidor) this.medidor = !this.medidor;   // F4: medidor de desempenho (js/graficos.js)
     // fadeTo com a tela já escura também chama o retorno (ex.: sem evoluções para escolher
     // num novo ciclo, a troca de setor pedia outro escurecimento e a tela ficava preta)
     if (this.dissolve && (this.dissolve.t -= dt) <= 0) this.dissolve = null;
@@ -1274,6 +1278,7 @@ class Game {
       else if (this.state === 'victory') this.screens.drawEnd(ctx, true, this.realTime);
     }
     if (this.debug) this.drawDebugInfo(ctx);
+    if (typeof Graficos !== 'undefined') Graficos.desenhar(ctx, this);
     if (this.dissolve) { ctx.save(); ctx.globalAlpha = clamp(this.dissolve.t / this.dissolve.T, 0, 1); ctx.drawImage(this.dissolve.canvas, 0, 0, VIEW_W, VIEW_H); ctx.restore(); }
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade.toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     DevTools.draw(ctx);

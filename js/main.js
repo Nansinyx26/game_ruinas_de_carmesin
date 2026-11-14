@@ -7,6 +7,8 @@ function boot() {
   game = new Game();
   window.__game = game;   // acesso pelo console para depuração
   ThirdView.load();       // a última câmera usada (isométrica ou 3ª pessoa)
+  // primeira vez (ou perfil Automático): benchmark de alguns segundos no menu e o perfil gráfico escolhido sozinho (js/graficos.js)
+  if (typeof Graficos !== 'undefined' && Graficos.precisa()) setTimeout(() => Graficos.iniciar(4), 2500);
 }
 boot();
 

@@ -10,6 +10,10 @@
 // A seleção de personagem (página 'char': personagens, armaduras e armas) é
 // desenhada por RosterScreen, em js/rosterscreen.js.
 // ---------------------------------------------------------------------------
+// Versão de PC (desktop/, workflow "Versão de PC"): a última Release com o instalador; o botão só aparece
+// no computador, fora do app de PC e fora do app instalado (PWA)
+const PC_DOWNLOAD = 'https://github.com/Nansinyx26/game_ruinas_de_carmesin/releases/latest';
+const MENU_PC = () => typeof navigator !== 'undefined' && !/Electron/.test(navigator.userAgent) && !navigator.webdriver && typeof matchMedia === 'function' && !matchMedia('(pointer: coarse)').matches && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches && /^https?:$/.test(location.protocol);
 const GAME_VERSION = '1.0.0';
 
 // Créditos (edite aqui)
@@ -830,6 +834,8 @@ class Menus {
       ['quit', 'SAIR', 'power']
     ];
     if (game.installPrompt) items.splice(items.length - 1, 0, ['install', 'INSTALAR APP', 'play']);   // PWA (js/main.js)
+    // no computador, pelo navegador: o app de PC (desktop/, a mesma versão da web numa janela própria)
+    else if (MENU_PC()) items.splice(items.length - 1, 0, ['baixarPC', 'BAIXAR PARA PC', 'play']);
     const { h, gap, y0 } = this.fitList(items.length, 42, 10, VIEW_H * 0.38, VIEW_H - 46, 70);
     return { artW, rects: items.map(([id, label, icon], i) => ({ id, label, icon, x, y: y0 + i * (h + gap), w, h })) };
   }
@@ -846,6 +852,7 @@ class Menus {
       else if (id === 'settings') this.open('settings');
       else if (id === 'credits') this.open('credits');
       else if (id === 'install') this.installApp();
+      else if (id === 'baixarPC') { try { window.open(PC_DOWNLOAD, '_blank', 'noopener'); } catch (e) { /* nada */ } game.audio.play('uiSelect'); }
       else this.askQuit();
     });
   }

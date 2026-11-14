@@ -23,6 +23,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // Perfis de qualidade (Configurações → Vídeo → Qualidade realista)
@@ -32,7 +33,35 @@ const QUAL = [
   { nome: 'Alto', sombra: 2048, ao: true, bloom: true, escala: 1, amostras: 4 },
   { nome: 'Ultra', sombra: 4096, ao: true, bloom: true, escala: 1, amostras: 4 },
   { nome: 'Cinematográfico', sombra: 4096, ao: true, bloom: true, escala: 1.25, amostras: 8 },
+  { nome: 'Extreme PC', sombra: 4096, ao: true, bloom: true, escala: 1.5, amostras: 8, aoAmostras: 16 },
 ];
+// Pós-processamento de cinema (depois do tone mapping, Configurações → Vídeo): gradação de cor (contraste,
+// saturação, sombras frias e luzes quentes), vinheta, grão de filme e nitidez (realce de 5 pontos). Cada um
+// liga sozinho; com todos desligados o passe nem entra.
+const CINEMA = {
+  uniforms: { tDiffuse: { value: null }, uPasso: { value: [1 / 1280, 1 / 720] }, uT: { value: 0 }, uCor: { value: 1 }, uVin: { value: 1 }, uGrao: { value: 0 }, uNit: { value: 1 }, uQuente: { value: 0 } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uPasso; uniform float uT, uCor, uVin, uGrao, uNit, uQuente; varying vec2 vUv;
+    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec4 t = texture2D(tDiffuse, vUv); vec3 c = t.rgb;
+      if (uNit > 0.0) {
+        vec3 v = texture2D(tDiffuse, vUv + vec2(uPasso.x, 0.0)).rgb + texture2D(tDiffuse, vUv - vec2(uPasso.x, 0.0)).rgb + texture2D(tDiffuse, vUv + vec2(0.0, uPasso.y)).rgb + texture2D(tDiffuse, vUv - vec2(0.0, uPasso.y)).rgb;
+        c = clamp(c + (c - v * 0.25) * 0.45 * uNit, 0.0, 1.0);
+      }
+      if (uCor > 0.0) {
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        vec3 g = mix(vec3(l), c, 1.08);                                   // saturação
+        g = (g - 0.5) * 1.06 + 0.5;                                       // contraste
+        g += mix(vec3(-0.012, 0.0, 0.02), vec3(0.025 + 0.02 * uQuente, 0.008, -0.02), smoothstep(0.15, 0.85, l));   // sombras frias, luzes quentes
+        c = mix(c, clamp(g, 0.0, 1.0), uCor);
+      }
+      if (uVin > 0.0) { vec2 d = vUv - 0.5; c *= mix(1.0, smoothstep(0.85, 0.25, length(d * vec2(1.0, 0.8))), 0.42 * uVin); }
+      if (uGrao > 0.0) c += (h(vUv * 1000.0 + uT) - 0.5) * 0.045 * uGrao;
+      gl_FragColor = vec4(c, t.a);
+    }`,
+};
+
 const DEG = 180 / Math.PI;
 
 // ------------------------------------------------------------ materiais
@@ -285,7 +314,12 @@ const R = {
     const vo = R3D.poseAll(n, 4);
     const Q = this.qualidade(), rd = this.renderer;
     const w = Math.max(2, Math.round(W * Q.escala)), h = Math.max(2, Math.round(H * Q.escala));
-    if (w !== this.w || h !== this.h || this.qualAtual !== Q) this.montarPos(w, h, Q);
+    const V = typeof Settings !== 'undefined' ? Settings.v : {}, cine = `${+!!V.cineCor}${+!!V.cineVinheta}${+!!V.cineGrao}${+!!V.cineNitidez}`;
+    if (w !== this.w || h !== this.h || this.qualAtual !== Q || this.cineAtual !== cine) this.montarPos(w, h, Q, cine);
+    if (this.cinema) {   // o grão muda a cada quadro; o calor da gradação acompanha a hora dourada
+      const u = this.cinema.uniforms; u.uT.value = (u.uT.value + 0.37) % 100;
+      u.uQuente.value = typeof Ambiente3P !== 'undefined' && typeof WorldTime !== 'undefined' && game.world ? Ambiente3P.dourado(WorldTime.hora()) : 0;
+    }
     // geometria e grupos (um por item e por trecho com/sem textura)
     const ib = this.buffer(), D = R3D.data, g = this.geo, sombra = tv._sombra;
     ib.clearUpdateRanges(); ib.addUpdateRange(0, vo); ib.needsUpdate = true;
@@ -376,7 +410,7 @@ const R = {
       this.cena.fog.near = f[3]; this.cena.fog.far = f[3] * 3.5;
     }
   },
-  montarPos(w, h, Q) {
+  montarPos(w, h, Q, cine = '0000') {
     const rd = this.renderer;
     rd.setPixelRatio(1);
     rd.setSize(w, h, false);
@@ -392,14 +426,20 @@ const R = {
     cp.addPass(new RenderPass(this.cena, this.camera));
     if (Q.ao) {
       const ao = new GTAOPass(this.cena, this.camera, w, h);
-      ao.updateGtaoMaterial({ radius: 14, distanceExponent: 1.4, thickness: 6, scale: 1.0, samples: 12 });
+      ao.updateGtaoMaterial({ radius: 14, distanceExponent: 1.4, thickness: 6, scale: 1.0, samples: Q.aoAmostras || 12 });
       ao.blendIntensity = 0.85;
       cp.addPass(ao);
     }
     if (Q.bloom) cp.addPass(new UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.45, 0.92));
     cp.addPass(new OutputPass());
+    this.cinema = null;
+    if (cine !== '0000') {
+      const cs = new ShaderPass(CINEMA), u = cs.uniforms;
+      u.uCor.value = +cine[0]; u.uVin.value = +cine[1]; u.uGrao.value = +cine[2]; u.uNit.value = +cine[3]; u.uPasso.value = [1 / w, 1 / h];
+      cp.addPass(cs); this.cinema = cs;
+    }
     this.composer = cp;
-    this.w = w; this.h = h; this.qualAtual = Q;
+    this.w = w; this.h = h; this.qualAtual = Q; this.cineAtual = cine;
   },
   // Para os testes: quantos triângulos e grupos foram ao último quadro
   info() { const r = this.renderer && this.renderer.info.render; return { ok: this.ok, erro: this.erro, gpu: this.gpu, grupos: this.geo ? this.geo.groups.length : 0, tris: r ? r.triangles : 0, chamadas: r ? r.calls : 0, materiais: this.mats.length }; },

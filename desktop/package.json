@@ -1,0 +1,26 @@
+{
+  "name": "eclipse-zero-desktop",
+  "productName": "ECLIPSE ZERO",
+  "version": "1.0.0",
+  "description": "ECLIPSE ZERO para PC: a mesma versão do jogo da web, numa janela própria, com tela cheia e a placa de vídeo dedicada.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pacote": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "io.github.eclipsezero.jogo",
+    "productName": "ECLIPSE ZERO",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "config.json", "offline.html"],
+    "win": { "target": ["nsis", "portable"], "artifactName": "EclipseZero-${version}-${arch}-${target}.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "ECLIPSE ZERO" },
+    "linux": { "target": ["AppImage"], "category": "Game", "artifactName": "EclipseZero-${version}-${arch}.${ext}" },
+    "mac": { "target": ["dmg"], "category": "public.app-category.action-games", "artifactName": "EclipseZero-${version}-${arch}.${ext}" }
+  }
+}
