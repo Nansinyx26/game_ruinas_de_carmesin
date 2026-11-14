@@ -17,7 +17,8 @@
    "rumores": [
     "Um carregador jura que achou uma escada descendo debaixo das Fendas Rubras. Disse que o ar sobe quente lá de baixo.",
     "Debaixo do letreiro caído dos Portões Partidos tem um cofre de pedágio. Ninguém levou porque ninguém lembra do código. Cofre velho abre no tranco."
-   ]
+   ],
+   "extras": []
   },
   {
    "id": "ancia",
@@ -36,6 +37,17 @@
    ],
    "rumores": [
     "Dizem que o Laboratório Esquecido ainda tem uma voz. Uma gravação que não sabe que o mundo acabou."
+   ],
+   "extras": [
+    "Leve isto à Guarda-Floresta, na Clareira dos Sinais. E não abra. Algumas coisas são só nossas.",
+    "\"As raízes lembram.\" Então ela me perdoou. Obrigada, menino. Você não sabe o peso que tirou de mim.",
+    "As máquinas tomaram as ruas. Derrube doze delas e as pessoas voltam a sair.",
+    "Ouvi passos na avenida hoje. Passos de gente. Obrigada.",
+    "Os terminais ainda guardam o que a cidade viu. Leia todos: eu preciso saber o que aconteceu.",
+    "\"Não olhem para o céu\"... Então era isso.",
+    "O guardião do Coração não dorme. Enquanto ele estiver lá, a fenda fica aberta.",
+    "A luz vermelha diminuiu. Pela primeira vez em anos. Siga o mapa: Velmora abriu.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
    ]
   },
   {
@@ -54,6 +66,9 @@
    ],
    "rumores": [
     "Os forjadores da cratera fazem um selo que vale mais que esta oficina inteira. Só vendem para quem eles respeitam. Ganhe a confiança deles."
+   ],
+   "extras": [
+    "VANDA. Ferreira. Rabugenta e direta; respeita quem trabalha."
    ]
   },
   {
@@ -72,6 +87,11 @@
    ],
    "rumores": [
     "Ouvi um sinal fraco vindo das Galerias de Serviço. Parece um rádio de criança. Alguém devia olhar isso."
+   ],
+   "extras": [
+    "TOMÁS. Artesão e engenheiro. Curioso e acelerado; sempre com uma peça na mão.",
+    "Sucata! Seis peças, das boas. As máquinas que você derruba soltam, e os montes de ferro-velho também.",
+    "Ouviu isso? É o gerador ronronando. Isto é seu. E presta atenção: eu te ensino a montar uma cápsula."
    ]
   },
   {
@@ -90,6 +110,10 @@
    ],
    "rumores": [
     "A Marta, lá da Praça, não dorme há dois dias. O menino dela sumiu. Se puder, fale com ela."
+   ],
+   "extras": [
+    "HELENA. Curandeira. Gentil e cansada; cuida de todos sem perguntar nada.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
    ]
   },
   {
@@ -108,6 +132,12 @@
    ],
    "rumores": [
     "Na Praça Carmesim os sacerdotes se juntam ao anoitecer. Não vá sozinho, e não vá cansado."
+   ],
+   "extras": [
+    "CAPITÃO RUI. Treinador. Ex-oficial da Legião; disciplinado e de poucas palavras.",
+    "Quando vir o aviso de evento nas ruínas, vá. Segure a posição até o fim. Depois volte aqui.",
+    "Segurou. Bom. A maioria corre. Isto é para quem não corre.",
+    "Bom. Suou, aprendeu. Volte amanhã."
    ]
   },
   {
@@ -123,7 +153,14 @@
    "temas": [
     "A Vila da Praça. Uns vinte de nós. A gente planta nas latas e reza para os sacerdotes não descerem a escadaria."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "MARTA. Moradora da Praça. Aflita; não tira os olhos da avenida.",
+    "As Galerias… ele sempre quis ver os túneis. Por favor. Traga meu filho.",
+    "Ele está vivo. Está VIVO. Eu… nem sei como agradecer.",
+    "Que ele te proteja como protegia a gente.",
+    "Você… é uma pessoa boa. A vila inteira vai saber disso."
+   ]
   },
   {
    "id": "nina",
@@ -140,6 +177,9 @@
    ],
    "rumores": [
     "Atrás do altar da Praça tem uma pedra solta. Meu avô escondia as economias ali. Ele não volta para buscar."
+   ],
+   "extras": [
+    "NINA. Florista. Sonhadora; planta flores em latas de munição."
    ]
   },
   {
@@ -156,7 +196,12 @@
     "Um homem sem conexão, capaz de desligar o que tocasse. Construímos o protótipo. Depois o NEXUS percebeu o que construímos.",
     "Pergunta interessante. Eu respondo, eu lembro, eu sinto falta de café. Faça você a conta."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "DR. IVO. Gravação do Projeto ZERO. Educado e meticuloso; preso nas 03:12 do Dia Zero.",
+    "O Experimento 7. Ele sumiu da contenção às 03:12. Os registros da ala C devem dizer para onde. Pode verificar?",
+    "Então era isso. Nós criamos um eco de você… e ele se perdeu sozinho no escuro. Obrigado. Arquivo encerrado."
+   ]
   },
   {
    "id": "guarda",
@@ -174,6 +219,15 @@
    ],
    "rumores": [
     "O Túnel das Raízes tem uma fenda que desce muito. O Ítalo jura que ouviu uma batida lá dentro, como um coração."
+   ],
+   "extras": [
+    "Os lobos de raiz caçam em bando e o veneno deles não sai fácil. Dez a menos já ajudam a floresta.",
+    "As árvores pararam de gemer à noite. Você ouviu?",
+    "A cidade velha deixou caixas por toda parte. Abra quatro antes que as raízes fechem tudo.",
+    "Isso aqui era de uma escola. Vou guardar.",
+    "No coração da floresta mora a guardiã. Ela já foi uma de nós.",
+    "Ela descansa agora. Velmora vai crescer em paz.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
    ]
   },
   {
@@ -190,7 +244,13 @@
     "De longe, se puder. Eles vêm em bando e mordem com veneno. Mate o primeiro rápido e os outros perdem a coragem.",
     "Um lobo alfa. Cinza, enorme, cicatriz no focinho. Chamamos de Presa-Cinzenta. Ele aparece quando quer."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "BENTO. Caçador e treinador. Bem-humorado, conta vantagem, mas é o melhor rastreador da floresta.",
+    "Presa-Cinzenta. Cicatriz no focinho, olho de vidro. Ele mora no lado norte da trilha. Vá com veneno no bolso e paciência.",
+    "Você… pegou o Presa-Cinzenta? Sozinho? Tá, agora EU vou contar essa história. Toma, fiz um colar com a presa dele.",
+    "Bom. Suou, aprendeu. Volte amanhã."
+   ]
   },
   {
    "id": "maira",
@@ -208,6 +268,12 @@
    ],
    "rumores": [
     "Nas Ruínas Engolidas tem uma cúpula de vidro coberta de musgo. Um observatório. Ninguém achou a porta."
+   ],
+   "extras": [
+    "MAÍRA. Curandeira do lago. Tranquila, fala devagar; sabe o nome de cada planta.",
+    "Cinco ramos de erva luminosa. Colha com cuidado: a raiz fica, a erva volta.",
+    "Perfeitas. Com isso eu curo o vilarejo inteiro por um mês. Leve uma cápsula; eu fiz com a erva da semana passada.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
    ]
   },
   {
@@ -226,6 +292,11 @@
    "rumores": [
     "Embaixo do salgueiro torto, na margem leste do lago, enterraram uma caixa. Eu vi. Não era minha.",
     "O Túnel das Raízes desce. Ouvi batidas lá embaixo."
+   ],
+   "extras": [
+    "ÍTALO. Lenhador e artesão. Calado e prático; responde com o mínimo de palavras.",
+    "Cúpula de vidro. Canto nordeste das ruínas. Vai lá. Me conta.",
+    "Um sinal de dentro da cidade. Hm. Isso muda coisa. Toma. Achei no lago, não é meu."
    ]
   },
   {
@@ -242,7 +313,16 @@
     "Brilha à noite desde o Dia Zero. Os velhos dizem que é a sentinela lá embaixo, chamando quem olha demais.",
     "Medusas elétricas no ar, carangueijos de casco de aço na margem. As medusas explodem quando caem — derrube de longe."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "As medusas elétricas explodem quando caem. Derrube dez de longe e a lagoa respira.",
+    "O céu ficou quieto. Dá para pescar de novo.",
+    "Ninguém mapeou a lagoa depois do Dia Zero. Pise em cada canto dela por mim.",
+    "Um mapa inteiro. Meu avô ia gostar de ver.",
+    "A luz embaixo d'água é a sentinela. Ela chama quem chega perto da borda.",
+    "A água apagou. Só a lua brilha nela agora.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "ze",
@@ -260,6 +340,11 @@
    "rumores": [
     "Tem uma gruta debaixo das Ruínas Submersas. Na maré baixa dá para ver a entrada, um arco de pedra com luz azul.",
     "No Recife de Vidro, um barco afundou com carga do Nexus. A caixa ficou presa no recife. Pesada. Eu sou velho para isso."
+   ],
+   "extras": [
+    "VELHO ZÉ. Pescador. Ranzinza, mas não resiste a uma boa conversa.",
+    "Oito carangueijos de aço. Depois três cristais, para a rede brilhar e os peixes voltarem. É ciência. Mais ou menos.",
+    "Rede nova, lagoa limpa. Amanhã tem peixe. Se não tiver, a culpa é sua."
    ]
   },
   {
@@ -275,7 +360,13 @@
    "temas": [
     "A Vila dos Pescadores. O que sobrou dela. Os cristais crescem na nossa porta e a gente não sabe se é bênção."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "IARA. Curandeira da ilha. Mística e direta; vê coisas na água.",
+    "A luz tem um olho. Eu vi. Procure as marcas no recife e depois desça às Ruínas Submersas.",
+    "A água está escura de novo. Escura e limpa. Os pescadores vão poder sonhar outra vez.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "decio",
@@ -290,7 +381,12 @@
    "temas": [
     "Porque os barcos de suprimentos não acham o cais no escuro. Uma luz e a lagoa volta a ter comércio."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "DÉCIO. Técnico do farol. Nervoso e otimista; acredita que dá para religar tudo.",
+    "Eu ando, você protege. Fala comigo quando estiver pronto e a gente vai. Fica perto de mim, por favor.",
+    "Chegamos! Daqui eu vejo o farol. Esta noite ele acende. Prometo!"
+   ]
   },
   {
    "id": "desertor",
@@ -308,6 +404,15 @@
    ],
    "rumores": [
     "O laboratório corporativo tem um cofre no subsolo. Onde a diretoria guardava os protótipos. Fechado por três portas de segurança."
+   ],
+   "extras": [
+    "A Legião patrulha as avenidas. Derrube seis e a cúpula vai perceber que alguém resiste.",
+    "Eles mudaram a rota da patrulha. Estão com medo.",
+    "As unidades de elite guardam as chaves da cúpula. Três delas e o caminho abre.",
+    "Três chaves. A cúpula está ao seu alcance.",
+    "O Arauto fala com a cidade inteira. Cale essa voz.",
+    "Silêncio na cidade. Ouço as pessoas pensando de novo.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
    ]
   },
   {
@@ -325,6 +430,15 @@
    ],
    "rumores": [
     "Debaixo da escadaria rolante do Mercado Vertical tem um esconderijo nosso esquecido. Pode ficar com o que achar."
+   ],
+   "extras": [
+    "KIRA. Líder da Resistência. Firme, carismática; não admite desistência.",
+    "Teca na Avenida Central, Moura no metrô, Bruno no Mercado Vertical. Não abra os pacotes, não pare para ler. Vá.",
+    "Amanhã a cidade inteira vai ler o que o Arauto esconde. Isso vale mais que mil tiros.",
+    "Dois relés na Avenida, um no metrô. Desligue os três e o Arauto fica cego por uma semana.",
+    "Uma semana de olhos fechados. A Resistência não esquece isso.",
+    "Justo. Você arriscou o pescoço.",
+    "Você é dos nossos. De verdade."
    ]
   },
   {
@@ -338,7 +452,10 @@
     "Não me olha assim. Olha para a avenida e finge que está passeando."
    ],
    "temas": [],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "TECA. Contato da Resistência. Desconfiada e rápida; nunca fica parada no mesmo lugar."
+   ]
   },
   {
    "id": "moura",
@@ -353,7 +470,10 @@
    "temas": [
     "Quatrocentas pessoas entraram no trem às 03:11. Ninguém desceu. O trem ainda está lá no fundo. Eu não vou."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "MOURA. Contrabandista. Ironia em tudo; ganha a vida nos túneis."
+   ]
   },
   {
    "id": "otto",
@@ -368,7 +488,12 @@
    "temas": [
     "O Arauto não olha para cá: aqui não tem câmera, só gente gritando preço. É o barulho que protege a gente."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "OTTO. Ferreiro do Mercado Vertical. Grandalhão gentil; trata cada relíquia como uma joia.",
+    "Ele é teimoso e jovem, que é o mesmo que burro e jovem. Traga o menino de volta, por favor.",
+    "Vivo e com as peças! Burro, mas competente. Leve estes núcleos, eu tinha guardado para ele."
+   ]
   },
   {
    "id": "luz",
@@ -381,7 +506,10 @@
     "Se trouxer núcleo de elite, eu faço mágica. Sem núcleo, faço cápsula."
    ],
    "temas": [],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "LUZ. Artesã de circuitos. Perfeccionista, sarcástica, generosa com quem aprende."
+   ]
   },
   {
    "id": "bruno",
@@ -394,7 +522,10 @@
     "Psiu. Você é da Kira? Diga que sim."
    ],
    "temas": [],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "BRUNO. Vendedor de rádios. Falante e medroso; vende rádios que só pegam uma estação."
+   ]
   },
   {
    "id": "nomade",
@@ -410,7 +541,16 @@
     "Areia sobre uma cidade que ninguém lembra. O templo é mais velho que o NEXUS. Os sacerdotes vinham rezar aqui antes de terem a quem rezar.",
     "Escorpiões de sucata embaixo da areia. Tempestades que apagam o caminho. E a sede, que mata mais que os dois."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "Os escorpiões de sucata andam debaixo da areia e saem embaixo das caravanas. Dez a menos e passamos.",
+    "A caravana chegou inteira. Primeira vez neste ano.",
+    "A areia esconde caixas antigas. Abra cinco e veremos o que o deserto engoliu.",
+    "Equipamento de antes de NEXUS. Isso muda tudo.",
+    "Na tumba vive o Faraó de Sucata, feito do que o deserto não quis.",
+    "O vento mudou. Seraph é de quem atravessa agora.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "salma",
@@ -427,6 +567,13 @@
    ],
    "rumores": [
     "Os escorpiões têm um rei. Mora no Cânion Rubro. O ferrão dele é do tamanho de um homem."
+   ],
+   "extras": [
+    "SALMA. Caravaneira. Destemida e prática; já atravessou o deserto vinte vezes.",
+    "A caravana espera no lado oeste das dunas. Fale com o guia e ande junto. Se ela cair, o oásis fica sem remédio.",
+    "Inteira? A caravana inteira? Hoje o oásis bebe à sua saúde.",
+    "O ferrão dele é do tamanho de um homem. Leve antídoto. Leve coragem. Traga o ferrão.",
+    "O ferrão! As caravanas vão cantar isso por gerações. E eu vou cantar mais alto."
    ]
   },
   {
@@ -445,6 +592,12 @@
    "rumores": [
     "A tumba esquecida fica na Cidade Engolida, sob uma estátua sem rosto.",
     "Uma caravana enterrou o pagamento no Mar de Dunas, ao lado de três pedras em fila. Eles morreram na tempestade. O pagamento não."
+   ],
+   "extras": [
+    "ABEL. Curandeiro do oásis. Erudito e paciente; coleciona histórias antigas.",
+    "Desça à tumba esquecida, na Cidade Engolida, e volte com o que encontrar. Se voltar.",
+    "O primeiro código foi escrito à mão… por alguém que tinha medo. Guarde isto: é a cópia que ele deixou.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
    ]
   },
   {
@@ -461,7 +614,16 @@
     "Picos, cavernas de gelo e a Fortaleza da Vigília, que guarda o passo. E o pico, onde algo transmite um sinal sem origem.",
     "Golens de gelo, que deixam o chão escorregadio, lobos da neve e a Legião, que adora frio."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "Os golens de gelo fecham o caminho e deixam o chão congelado por onde passam. Cinco a menos e subimos.",
+    "A trilha está livre até a fortaleza.",
+    "Quero saber o que há em cada passo da montanha. Vá a todos os lugares de Asterion.",
+    "Você viu o pico de perto. Como é lá em cima?",
+    "O titã no pico repete seu nome no rádio. Vá responder.",
+    "O rádio parou. Só o vento agora.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "bram",
@@ -476,7 +638,13 @@
    "temas": [
     "Os que guardam o passo desde antes do Dia Zero. A gente não deixa a Legião descer. Nem subir."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "SARGENTO BRAM. Treinador da Vigília. Rígido e justo; acredita em disciplina e sopa quente.",
+    "Seis minérios de gelo e quatro sucatas. Sem desculpas, sem atraso.",
+    "Portão reforçado. Você trabalha bem. Para um civil.",
+    "Bom. Suou, aprendeu. Volte amanhã."
+   ]
   },
   {
    "id": "sofia",
@@ -489,7 +657,12 @@
     "Você vai subir? Então olha a geleira por mim."
    ],
    "temas": [],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "SOFIA. Irmã de um alpinista. Teimosa e esperançosa.",
+    "Ele usa um casaco azul. Se estiver ferido, diga que eu estou esperando. Ele vai levantar.",
+    "Eu disse! Ele sempre volta. Obrigada. Leve isto; protege do frio e de coisa pior."
+   ]
   },
   {
    "id": "gunnar",
@@ -504,6 +677,9 @@
    "temas": [],
    "rumores": [
     "Na Geleira Partida, debaixo do gelo azul, tem uma caixa da Vigília que caiu da carroça. Brilha quando o sol bate."
+   ],
+   "extras": [
+    "GUNNAR. Ferreiro da guarnição. Barulhento e leal; canta enquanto martela."
    ]
   },
   {
@@ -521,6 +697,12 @@
    ],
    "rumores": [
     "As Cavernas de Gelo ecoam demais. Um eco que responde antes de você gritar. Tem algo lá embaixo."
+   ],
+   "extras": [
+    "NEVA. Artesã e curandeira. Silenciosa e observadora; costura feridas e casacos com a mesma calma.",
+    "Examine as três antenas. Depois desça onde o eco nasce. E feche bem a porta quando voltar.",
+    "Então o pico chama você pelo nome. Isso não é coincidência, é convite. Tome cuidado lá em cima.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
    ]
   },
   {
@@ -537,7 +719,16 @@
     "Os que fundiam as armaduras da Legião e se recusaram a continuar. Agora fundimos para quem luta contra ela.",
     "Elementais de magma, diabretes e a Legião de Ferro. Tudo aqui quer te queimar. Inclusive o chão."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "Tudo aqui quer te queimar. Derrube vinte e a forja volta a ser nossa.",
+    "A forja esquentou com fogo nosso. Dá para trabalhar.",
+    "As elites guardam o caminho para o núcleo. Quatro delas.",
+    "O caminho está aberto. Não vou mentir: o que vem é pior.",
+    "O núcleo alimenta metade das máquinas do mundo. Apague-o.",
+    "As máquinas do mundo inteiro piscaram. Você sentiu?",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "ignea",
@@ -555,6 +746,15 @@
    "rumores": [
     "A câmara do Primeiro Fogo fica sob a Forja Antiga. A entrada tem a marca de um martelo.",
     "Nas Fendas Ardentes um forjador escondeu as ferramentas antes de morrer. Ferramenta boa não queima."
+   ],
+   "extras": [
+    "MESTRA ÍGNEA. Mestra ferreira. Exigente e lendária; só elogia o que merece.",
+    "Seis obsidianas brutas e dois núcleos de elite. Fogo de verdade come caro.",
+    "Ouviu? A forja respira de novo. Primeira coisa que ela fez: isto. É seu.",
+    "Desça à câmara do Primeiro Fogo. Se a chama ainda queima, traga uma brasa. Se não queima, traga a verdade.",
+    "A brasa… ainda quente. Depois de tudo.",
+    "Então os forjadores vão lembrar seu nome toda vez que o martelo bater.",
+    "Levar o fogo para o coração das ruínas… Ousado. Os Desconectados vão precisar dele."
    ]
   },
   {
@@ -570,7 +770,13 @@
    "temas": [
     "Erupções, chuva de brasas, incursões da Legião. Todo dia tem um evento novo. Quem ajuda, a gente lembra."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "CINZA. Curandeira e alquimista. Debochada e sábia; perdeu as sobrancelhas para a alquimia.",
+    "Dois eventos na cratera. Ajude em dois e eu te dou do meu estoque bom. O que não explode.",
+    "Dois! E com as duas sobrancelhas. Melhor que eu. Toma, tônicos do bom.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "aur_brasa",
@@ -586,7 +792,10 @@
     "Você traz o material, eu dou forma. Cada peça vai num lugar do corpo: capacete, peitoral, ombreiras, luvas, calças, botas, capa. Troque uma de cada vez, combine conjuntos. E se gostar de uma peça, eu aprimoro.",
     "Ferro dos montes de sucata, couro das feras, tecido dos baús e do mercado. O raro… o raro vem de quem você derruba. Chefes guardam planos que eu não sei fazer sozinha."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "MESTRA BRASA. Ferreira-chefe. Direta, orgulhosa do ofício; fala alto por causa da forja."
+   ]
   },
   {
    "id": "aur_dante",
@@ -602,7 +811,10 @@
     "Afino as armas que vocês carregam: cada aprimoramento rende mais dano. E vendo planos e peças que o pessoal da Guilda traz das expedições.",
     "Desenhos de conjuntos inteiros: Inverno, Deserto, Placas… Com o plano, a Mestra Brasa forja a família toda."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "DANTE. Armeiro. Calmo e meticuloso; trata cada arma pelo nome."
+   ]
   },
   {
    "id": "aur_iris",
@@ -618,7 +830,10 @@
     "Acessórios: módulos, amuletos, núcleos. E relíquias forjadas, se você trouxer núcleo e essência. A bancada de engenharia ali do lado faz ferramentas de coleta e fogueiras portáteis — sim, fogueira portátil, não ri.",
     "Porque a gente acende uma luz todo amanhecer no alto da torre. Se a luz apaga, todo mundo sabe que alguma coisa entrou."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "ÍRIS. Engenheira. Rápida, curiosa, termina as frases dos outros."
+   ]
   },
   {
    "id": "aur_otto",
@@ -633,7 +848,10 @@
    "temas": [
     "Materiais raros. Me dê essência, núcleos e tecnologia antiga e eu reconstruo os planos que o NEXUS apagou. As amostras desconhecidas eu identifico por uma ninharia."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "PROFESSOR OTTO. Pesquisador. Distraído, apaixonado por qualquer pedra que brilhe."
+   ]
   },
   {
    "id": "aur_veridiana",
@@ -648,7 +866,10 @@
    "temas": [
     "Juntamos os contratos de todas as regiões abertas: caçadas, coletas. Você escolhe a região aqui e cumpre lá fora. O pagamento vem com reputação."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "VERIDIANA. Mestra da Guilda. Aventureira aposentada; mede as pessoas pelas cicatrizes."
+   ]
   },
   {
    "id": "aur_caio",
@@ -663,7 +884,10 @@
    "temas": [
     "No painel aqui e no seu diário (Y). Tudo que está disponível nas regiões aparece lá, com quem dá e onde fica."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "CAIO. Coordenador de missões. Organizado ao extremo; tem uma lista para tudo."
+   ]
   },
   {
    "id": "aur_berta",
@@ -678,7 +902,10 @@
    "temas": [
     "Materiais e peças que não cabem ou que você não quer carregar ficam aqui. Ninguém mexe. Nem eu. Bom, eu conto."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "BERTA. Armazenista. Desconfiada, anota cada parafuso."
+   ]
   },
   {
    "id": "aur_lia",
@@ -693,7 +920,10 @@
    "temas": [
     "Uma cama para descansar até de manhã — vida e energia de volta — e um armário para organizar o equipamento e esconder o capacete, se quiser."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "LIA. Estalajadeira. Maternal e risonha; sabe o nome de todo mundo."
+   ]
   },
   {
    "id": "aur_salvio",
@@ -708,7 +938,10 @@
    "temas": [
     "Material de oficina — ferro, tecido, couro, componentes —, cápsulas, tônicos e relíquias. E compro o que você trouxer."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "SÁLVIO. Mercador. Falante; conta vantagem de tudo que vende."
+   ]
   },
   {
    "id": "aur_mae_ana",
@@ -723,7 +956,11 @@
    "temas": [
     "Ervas, cristais e paciência: cápsulas, elixires, tônicos, chá quente e refresco. Quem anda nas montanhas sem chá volta azul. Quem anda no deserto sem refresco não volta."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "MÃE ANA. Alquimista. Sábia e brincalhona; cheira a ervas.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "aur_teo",
@@ -738,7 +975,10 @@
    "temas": [
     "Desde sempre! A Aurora é o único lugar onde os drones não chegam. Minha mãe diz que é porque a cidade fica atrás de um espelho."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "TEO. Morador. Menino curioso; quer ser explorador."
+   ]
   },
   {
    "id": "met_vega",
@@ -755,6 +995,11 @@
    ],
    "rumores": [
     "Debaixo dos Subníveis tem um cofre da corporação. A porta abre para quem tem a credencial certa — ou um martelo grande."
+   ],
+   "extras": [
+    "VEGA. Ferreira de liga. Precisa, impaciente, fala em especificações.",
+    "Desça ao Cofre Ômega e volte inteiro. Se trouxer um protótipo, eu desmonto e aprendo.",
+    "Isso… é liga Eclipse. Primitiva, mas é. A corporação estava perto."
    ]
   },
   {
@@ -770,7 +1015,11 @@
    "temas": [
     "Cada esquina tem câmera, cada câmera tem uma sentinela. A gente vive na praça porque aqui o sinal falha."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "DRA. LIA. Médica de campo. Calma no caos, cansada fora dele.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "met_kai",
@@ -787,6 +1036,11 @@
    ],
    "rumores": [
     "No Mercado Neon, atrás da banca de peixe sintético, alguém enterrou o próprio cofre antes de fugir."
+   ],
+   "extras": [
+    "KAI. Hacker e artesão. Rápido, irônico, nunca olha nos olhos — olha para a tela.",
+    "Oito circuitos e quatro engrenagens. Rápido, antes que o Supervisor perceba a praça.",
+    "Firewall de pé. A praça sumiu do mapa deles. Toma, você merece."
    ]
   },
   {
@@ -802,7 +1056,11 @@
    "temas": [
     "Nunca de frente: a carapaça deles absorve tudo. Rodeie, bata nas costas, saia."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "BRUTUS. Treinador. Ex-segurança da corporação; ri alto, bate mais alto.",
+    "Bom. Suou, aprendeu. Volte amanhã."
+   ]
   },
   {
    "id": "met_ines",
@@ -817,7 +1075,11 @@
    "temas": [
     "Peças, remédios e informação. A informação é a mais cara."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "INÊS. Comerciante do mercado. Sabe o preço de tudo e o segredo de todos.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "ruc_tor",
@@ -834,6 +1096,11 @@
    ],
    "rumores": [
     "A cripta da catedral guarda o primeiro cavaleiro que jurou a coroa. Ele ainda está de vigia."
+   ],
+   "extras": [
+    "TOR. Ferreiro da cidadela. Silencioso; fala pelo martelo.",
+    "Desça à cripta. Liberte o cavaleiro. Ele merece descansar mais do que eu.",
+    "…Obrigado. Meu avô forjou o elmo dele também."
    ]
   },
   {
@@ -849,7 +1116,13 @@
    "temas": [
     "O que sobrou do coração da capital quando o Rei virou máquina. Ela cura e mata. Na mesma medida."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "SABÁ. Curandeira. Velha, mordaz, nunca perdeu um paciente que a escutou.",
+    "Seis amostras desconhecidas e dois núcleos. Se eu entender essa energia, paro de perder gente.",
+    "Agora eu sei o que ela é. Saber dói menos que não saber.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "ruc_milo",
@@ -866,6 +1139,11 @@
    ],
    "rumores": [
     "Nos Jardins de Sangue, sob a estátua sem cabeça, os nobres enterraram o tesouro da capital."
+   ],
+   "extras": [
+    "MILO. Escriba e artesão. Jovem, curioso, coleciona livros que ninguém mais lê.",
+    "Procure três registros na Biblioteca Afundada. Quero contar a história certa antes que ela acabe.",
+    "Ele não quis a coroa. Ele quis salvar a cidade. Vou escrever isso primeiro."
    ]
   },
   {
@@ -881,7 +1159,11 @@
    "temas": [
     "Eles somem e aparecem do seu lado. Não corra: gire e golpeie onde vão estar."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "CAPITÃ YARA. Treinadora da Guarda. Firme e justa; perdeu a tropa inteira e não perdeu a fé.",
+    "Bom. Suou, aprendeu. Volte amanhã."
+   ]
   },
   {
    "id": "nz_ada",
@@ -898,6 +1180,11 @@
    ],
    "rumores": [
     "Na Fenda de Dados existe uma descida até a raiz do código. O que guarda a raiz compila quem chega perto."
+   ],
+   "extras": [
+    "ADA. Forjadora de código. Fala de metal como se fosse programa, e de programa como se fosse metal.",
+    "Desça até a raiz. Se o compilador cair, a cidade para de se reescrever. Por um tempo.",
+    "A cidade parou de mudar. Agora dá para mapear. Agora dá para vencer."
    ]
   },
   {
@@ -913,7 +1200,13 @@
    "temas": [
     "Uma das pessoas conectadas no Dia Zero. Voltei do Arquivo. Quase inteira."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "ECO. Curandeira da memória. Fala com frases dos outros; diz que guardou todas.",
+    "No Arquivo há três terminais com listas de nomes. Leia para mim. Talvez eu me lembre de alguém.",
+    "O seu nome também estava lá. Então você também pode voltar de lá. Todos podem.",
+    "Pronto. Inteiro de novo. Tente voltar assim da próxima vez."
+   ]
   },
   {
    "id": "nz_bit",
@@ -930,6 +1223,11 @@
    ],
    "rumores": [
     "No Mar do Vazio flutua um cofre que ninguém compilou. Dá para abrir com as mãos."
+   ],
+   "extras": [
+    "BIT. Artesão de núcleos. Criança prodígio; trata o fim do mundo como um quebra-cabeça.",
+    "Seis núcleos e duas essências. Eu monto, você protege. Combinado?",
+    "Escudo no máximo! O código lá fora nem enxerga a gente agora."
    ]
   },
   {
@@ -945,7 +1243,11 @@
    "temas": [
     "Maestria. Cada batalha ainda ensina; o corpo não sobe de nível, mas aprende. Equipamento, conjuntos, aprimoramento: é aí que você cresce."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "OREN. Mestre de armas. O último soldado da primeira resistência; não sorri, mas ensina.",
+    "Bom. Suou, aprendeu. Volte amanhã."
+   ]
   },
   {
    "id": "met_raia",
@@ -960,7 +1262,18 @@
    "temas": [
     "Sentinelas neon que somem e reaparecem, executores com carapaça, agentes que atiram de longe. E o Supervisor, que vê tudo."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "Examine os três painéis dos elevadores das torres. Se alguém chama esses elevadores, eu quero o nome.",
+    "Todo dia uma pessoa. Durante anos. Agora a gente sabe por quem lutar.",
+    "As sentinelas neon saem do Cofre Ômega, sob os Subníveis, e marcam cada pessoa da cidade. Desça e derrube quatorze delas.",
+    "O painel da praça apagou três setores. Três! Gente saiu de casa hoje.",
+    "Os terminais das torres e do distrito industrial guardam as ordens do Supervisor. Leia todos.",
+    "\"Destino: Ômega.\" Então as sentinelas não vigiam a cidade. Elas a esvaziam.",
+    "O Supervisor fugiu da cidade e se trancou no fundo do Cofre Ômega, sob os Subníveis. Desligue-o e a Metrópole volta a ser nossa.",
+    "A cidade inteira piscou e ficou em silêncio. Pela primeira vez, silêncio bom. As Ruínas Carmesins esperam quem chegar ao nível 50.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "ruc_guardia",
@@ -975,7 +1288,16 @@
    "temas": [
     "Cavaleiros rubros que se curam quando você para de bater, espectros que atravessam paredes, enxames. E o Rei, no trono."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "Os cavaleiros rubros ainda patrulham a capital, fiéis a um rei que não morre. Doze a menos e a cidadela respira.",
+    "As patrulhas mudaram de rota. Estão com medo de você.",
+    "Ninguém atravessa a capital inteira desde a queda. Pise em cada distrito e me traga o mapa.",
+    "A capital inteira num papel. Meu pai desenhou a primeira versão. Você terminou.",
+    "O Rei se senta no Salão do Trono. A coroa o mantém vivo; tire a coroa dele.",
+    "A energia vermelha baixou na capital inteira. Nexus Zero agora te chama — vá quando chegar ao nível 75.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "nz_engenheiro",
@@ -990,7 +1312,16 @@
    "temas": [
     "Fragmentos que se dividem e explodem, arautos que somem e se curam, golens de dados que congelam. Tudo nível alto: venha preparado."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "Os fragmentos se dividem quando caem. Derrube dezesseis e o código daqui fica estável o bastante para a gente pensar.",
+    "O chão parou de piscar. Por enquanto.",
+    "O NEXUS guardou o que tirou das pessoas em cofres pela cidade. Abra cinco e devolva o que der.",
+    "Fotos, cartas, uma música. Tudo isso era de alguém.",
+    "No Núcleo Zero mora a decisão que ninguém desfez. Desfaça.",
+    "Acabou. Ou começou. Daqui para a frente, o nível não sobe mais: o que cresce é a sua maestria.",
+    "Quando quiser. O trabalho não vai a lugar nenhum."
+   ]
   },
   {
    "id": "aur_tobias",
@@ -1006,7 +1337,10 @@
     "Cavalo não aguenta o Nexus: se assusta com neon, empaca na neve. Lobo grande vai a qualquer lugar. Os cavalos que restam estão nas fazendas do sul, e eu não vendo o que não tenho.",
     "Não. Montado você corre; para lutar, desce. O lobo se afasta e espera."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "TOBIAS. Domador da Estrebaria da Guarda. Grandalhão de voz mansa; trata os lobos de montaria como filhos."
+   ]
   },
   {
    "id": "aur_cora",
@@ -1022,7 +1356,10 @@
     "O Viveiro dos Alves. Meu avô criava os lobos da guarda; eu cuido de quem chega: lobos, aves, o gato da janela que não é de ninguém.",
     "Petisco quando tiver fome, brincadeira quando estiver abatido, carinho sempre. Com fome e sozinho, ele murcha. E não leve para a briga: eles não são soldados."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "CORA ALVES. Tratadora de animais. Calma e direta; fala com os bichos antes de falar com gente."
+   ]
   },
   {
    "id": "aur_davi",
@@ -1037,7 +1374,10 @@
    "temas": [
     "Troco a palha, dou comida e escovo os lobos. A Cora diz que um dia eu fico com o viveiro. Se eu não esquecer o portão aberto de novo."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "DAVI ALVES. Aprendiz do viveiro. Menino curioso; jura que entende o que os lobos dizem."
+   ]
   },
   {
    "id": "aur_rui",
@@ -1054,7 +1394,10 @@
     "A Capitã Irene treina qualquer um que aguente o boneco de palha. Lá dentro, no quartel.",
     "Durmo. Das nove às cinco e meia, no beliche do quartel. A Marta fica com a noite; a gente troca na porta, às seis e às dezoito."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "GUARDA RUI. Guarda da muralha. Sério e cansado; conta os passos da ronda."
+   ]
   },
   {
    "id": "aur_marta",
@@ -1070,7 +1413,10 @@
     "Porque à noite a rua é honesta: quem anda nela tem motivo. Troco com o Rui na porta do quartel, às seis e às dezoito.",
     "A taverna enche, a hospedaria apaga as luzes, o Jorge some para a carroça. E eu conto lampiões."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "GUARDA MARTA. Guarda da muralha (turno da noite). Calada e atenta; prefere a noite porque \"ninguém pergunta nada\"."
+   ]
   },
   {
    "id": "aur_nina",
@@ -1087,6 +1433,9 @@
    ],
    "rumores": [
     "Meu primo jura que viu luz debaixo da praça de Carmesin. Diz que tem um cofre do tempo do pedágio enterrado lá."
+   ],
+   "extras": [
+    "NINA. Moradora. Falante, conhece a vida de todo mundo do bairro."
    ]
   },
   {
@@ -1104,6 +1453,9 @@
    ],
    "rumores": [
     "Na estrada eu passei por uma raiz enorme que descia para o escuro. Os lobos não chegam perto dela."
+   ],
+   "extras": [
+    "JORGE. Carroceiro. Desconfiado com estranhos, generoso com quem ajuda a descarregar."
    ]
   },
   {
@@ -1122,6 +1474,11 @@
    "rumores": [
     "Um cliente bêbado falou de túneis de manutenção em Carmesin que viraram ossário de máquinas. Disse que a entrada fica nas fendas.",
     "Dizem que um avô escondeu as economias na praça velha, antes do Dia Zero. Ninguém achou."
+   ],
+   "extras": [
+    "BENTO. Taverneiro. Barrigudo e risonho; serve primeiro e pergunta depois.",
+    "Três couros com carne ainda presa e quatro ervas luminosas. Traz isso e o ensopado sai — e o seu prato fica pela metade do preço. Palavra de taverneiro.",
+    "Isso! Cheiro de ensopado de verdade. A partir de hoje o seu prato sai pela metade do preço. E leva um chá para a estrada."
    ]
   },
   {
@@ -1140,7 +1497,10 @@
     "Feito de carvalho antigo e cordas de liga flexível. Sobreviveu ao Dia Zero e a duas brigas de taberna. O Bento tentou usar como remo uma vez, mas eu não deixei.",
     "Fui programador de elevadores. Acredite: a balada paga melhor."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "COSME. Bardo. Dramático; transforma qualquer conversa em balada."
+   ]
   },
   {
    "id": "aur_rosa",
@@ -1155,7 +1515,14 @@
    "temas": [
     "Da minha mãe, e da mãe dela. A Chama nunca fechou, nem no Dia Zero. A gente só apagou as luzes de fora."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "ROSA. Estalajadeira. Prática e gentil; troca os lençóis antes de você pedir.",
+    "Não quero confusão na Chama. Converse com ele, descubra o que carrega. Se for perigo, quero saber antes do conselho.",
+    "Os nomes estão aqui. Todos. Obrigado — a Aurora vai lembrar deles.",
+    "Você tem razão. A Conselheira Helena vai guardar melhor do que eu.",
+    "Então eu levo comigo. E isto aqui é seu: foi o que sobrou do meu pagamento."
+   ]
   },
   {
    "id": "aur_viajante",
@@ -1172,6 +1539,9 @@
    ],
    "rumores": [
     "Debaixo da lagoa há um arco de pedra com luz azul. Quem desce ouve o mar falando."
+   ],
+   "extras": [
+    "VIAJANTE ENCAPUZADO. Viajante. Reservado; fala baixo e olha para a porta."
    ]
   },
   {
@@ -1188,7 +1558,12 @@
     "Decide quem entra, quem sai, onde vai a comida e quando a Chama acende. E distribui o trabalho: missões e contratos das regiões abertas.",
     "Ninguém e todos. O conselho tem sete cadeiras; uma está sempre vazia, para quem ainda não voltou."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "CONSELHEIRA HELENA. Conselheira da Aurora. Firme e paciente; mede cada palavra.",
+    "Leve o selo à Mestra Veridiana, na Guilda, e depois à Capitã Irene, no quartel. Sem as duas, é só cera bonita.",
+    "Guilda e guarda de acordo. É assim que uma cidade funciona: devagar, mas junta."
+   ]
   },
   {
    "id": "aur_didimo",
@@ -1204,7 +1579,10 @@
     "A história da Aurora desde o Dia Zero. Nomes, datas, quem voltou e quem não. O NEXUS apaga; nós escrevemos de novo.",
     "Às 03:12 a rede inteira obedeceu a uma voz só. Quem estava conectado parou. Quem não estava… fundou esta cidade."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "ESCRIBA DÍDIMO. Escriba. Minucioso; corrige a gramática de quem fala com ele."
+   ]
   },
   {
    "id": "aur_irene",
@@ -1219,7 +1597,13 @@
    "temas": [
     "Ronda na muralha, escolta das caravanas e treino de quem quer sair pelos portões e voltar inteiro."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "CAPITÃ IRENE. Capitã da Guarda. Dura nos treinos, leal fora deles.",
+    "Dez máquinas abatidas nas Ruínas de Carmesin. Depois conte ao Pedro como foi — ele precisa ouvir de alguém que voltou.",
+    "O Pedro treinou o dobro hoje. Isso vale mais que as dez máquinas. Bem-vindo à muralha.",
+    "Bom. Suou, aprendeu. Volte amanhã."
+   ]
   },
   {
    "id": "aur_pedro",
@@ -1234,7 +1618,53 @@
    "temas": [
     "Duas semanas. Antes eu vendia pão. Sinto falta do pão."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "SOLDADO PEDRO. Soldado. Novato animado; ainda acha que a armadura é bonita."
+   ]
+  },
+  {
+   "id": "cm_mendes",
+   "nome": "CABO MENDES",
+   "zona": "cm_barricada",
+   "papel": "Vigia da barricada",
+   "pers": "Cansado e atento; conta os dias pela munição que sobra.",
+   "ola": [
+    "Devagar. Daqui para dentro, barulho é convite.",
+    "Ainda de pé? Então a barricada também está."
+   ],
+   "temas": [
+    "Começou no São Lázaro. Um paciente sem pulso pediu água. Em uma semana a cidade inteira andava daquele jeito.",
+    "Os comuns escutam mal e andam devagar. As corredoras, não. E os brutos… não troque golpe com um bruto: saia do caminho."
+   ],
+   "rumores": [],
+   "extras": [
+    "CABO MENDES. Vigia da barricada. Cansado e atento; conta os dias pela munição que sobra.",
+    "Dez corredoras. Elas vêm em linha reta e não cansam: espere chegarem e não dê as costas.",
+    "Dez. Pelos dois que não voltaram. Obrigado.",
+    "Desça ao subsolo do hospital e acabe com o que estiver operando lá. Se achar remédio, melhor ainda.",
+    "Então era um cirurgião. Operando até hoje. Deus me livre. Toma: você fez por merecer."
+   ]
+  },
+  {
+   "id": "cm_tonho",
+   "nome": "TONHÃO",
+   "zona": "cm_barricada",
+   "papel": "Mecânico da barricada",
+   "pers": "Falador e prático; conserta qualquer coisa com o que acha nos carros parados.",
+   "ola": [
+    "Se tem roda, eu faço andar. Se não tem, eu ponho roda.",
+    "Trouxe peça? Diz que trouxe peça."
+   ],
+   "temas": [
+    "Engrenagem e circuito. O portão é segurado por um motor de elevador e por reza. O motor eu sei consertar."
+   ],
+   "rumores": [],
+   "extras": [
+    "TONHÃO. Mecânico da barricada. Falador e prático; conserta qualquer coisa com o que acha nos carros parados.",
+    "Seis engrenagens e três circuitos. Com isso o portão fecha sozinho e ninguém mais precisa empurrar no escuro.",
+    "Escuta só. Fechou sozinho. Faz anos que eu não ouvia esse barulho bonito."
+   ]
   },
   {
    "id": "mes_ferreiro",
@@ -1249,7 +1679,10 @@
    "temas": [
     "Onde precisarem. Hoje, nas portas do bairro: metade das dobradiças desta rua fui eu que fiz."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "OSVALDO. Ferreiro ambulante. Fala pouco e mostra muito: tudo o que diz cabe numa martelada."
+   ]
   },
   {
    "id": "mes_camponesa",
@@ -1264,7 +1697,10 @@
    "temas": [
     "Do campo para a praça: trigo, lã e ervas. O ferreiro troca dobradiça por queijo, e todo mundo sai ganhando."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "LÚCIA. Camponesa da feira. Prática e risonha; sabe o preço de tudo e o nome de todo mundo."
+   ]
   },
   {
    "id": "mes_guarda",
@@ -1279,7 +1715,10 @@
    "temas": [
     "Na praça, não. Passando os portões, cada região tem o seu. Pergunte no quadro de missões antes de sair."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "BRUNO. Guarda da praça. Sério no turno, piadista fora dele."
+   ]
   },
   {
    "id": "mes_hacker",
@@ -1294,7 +1733,10 @@
    "temas": [
     "Escondo a cidade das câmeras do Supervisor. Ele vê um parque vazio. Nós vemos a feira."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "NOVA. Hacker de rua. Rápida, irônica, sempre com um olho no visor."
+   ]
   },
   {
    "id": "mes_operario",
@@ -1309,7 +1751,10 @@
    "temas": [
     "Mantenho o ar circulando. Sem os exaustores, a Metrópole vira uma garrafa fechada."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "BRAGA. Operário do subsolo. Cansado, honesto, cheira a óleo e a café."
+   ]
   },
   {
    "id": "mes_comerciante",
@@ -1324,7 +1769,10 @@
    "temas": [
     "Luz. Em fios, em placas, em casacos. Aqui embaixo, luz é o que mais vende."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "SILAS. Comerciante neon. Sorriso largo, preço mais largo ainda."
+   ]
   },
   {
    "id": "mes_gm",
@@ -1340,7 +1788,137 @@
     "Vigio. Cuido para que quem luta por este lugar não lute sozinho.",
     "Força emprestada: experiência em dobro, golpes mais fortes, pele mais dura, pés mais leves. Cada uma dura um tempo do relógio de verdade — e acaba mesmo se você for dormir."
    ],
-   "rumores": []
+   "rumores": [],
+   "extras": [
+    "GUARDIÃO DO MUNDO. Guardião do Mundo · GM. Calmo, direto e justo: fala como quem cuida do mundo inteiro e ainda tem tempo para você."
+   ]
+  },
+  {
+   "id": "pub_kira",
+   "nome": "KIRA",
+   "zona": "metro_pub",
+   "papel": "Bartender do Pulso Neon",
+   "pers": "Rápida no shaker e na resposta; conhece cada freguês pelo drinque.",
+   "ola": [
+    "O de sempre ou vai arriscar o Pulso Azul hoje?",
+    "Senta, pede, dança. Nessa ordem ou não.",
+    "Aqui ninguém pergunta de onde você veio. Só o que vai beber."
+   ],
+   "temas": [
+    "Das dez da noite às três da manhã o VOLTA assume a cabine. A pista acende, a casa lota e o Supervisor que se dane.",
+    "Era técnico de som das torres corporativas. Roubou os próprios equipamentos na saída. Melhor demissão da Metrópole.",
+    "O Pulso Azul: energia na veia e um brilho que dura uns minutos. Não pergunta o que vai dentro."
+   ],
+   "rumores": [],
+   "extras": [
+    "KIRA. Bartender do Pulso Neon. Rápida no shaker e na resposta; conhece cada freguês pelo drinque."
+   ]
   }
+ ],
+ "perguntas": [
+  "Quem é você?",
+  "Alguma novidade? Ouviu algum rumor?",
+  "Até logo.",
+  "O que você vende?",
+  "Como anda o comércio?",
+  "Quem são os Desconectados?",
+  "O que aconteceu com a cidade?",
+  "E os monstros?",
+  "Como funciona o aprimoramento?",
+  "De onde você veio?",
+  "O que você sabe fazer?",
+  "Onde acho material?",
+  "O que você usa nos remédios?",
+  "Tem muita gente ferida?",
+  "Você era da Legião?",
+  "Como fico mais forte?",
+  "Que lugar é este?",
+  "Por que flores?",
+  "O que é o Projeto ZERO?",
+  "Você está vivo?",
+  "O que é Velmora?",
+  "Quais os perigos?",
+  "Como se caça um lobo de raiz?",
+  "O que tem na Trilha dos Galhos Mortos?",
+  "Que vilarejo é este?",
+  "Para que serve a erva luminosa?",
+  "Você sempre foi lenhador?",
+  "O que há com a água?",
+  "Por que os peixes sumiram?",
+  "Que vila é esta?",
+  "Por que religar o farol?",
+  "O que é Nexus?",
+  "Como entro na cúpula?",
+  "O que a Resistência faz?",
+  "O que houve com o metrô?",
+  "O Mercado é seguro?",
+  "O que é Seraph?",
+  "O que a caravana leva?",
+  "O que há na Cidade Engolida?",
+  "O que há em Asterion?",
+  "O que é a Vigília?",
+  "O que é este lugar?",
+  "Quem são os forjadores?",
+  "O que é o Primeiro Fogo?",
+  "O que acontece na cratera?",
+  "Como funciona a forja?",
+  "De onde vem o material?",
+  "O que você faz aqui?",
+  "Planos?",
+  "O que o laboratório faz?",
+  "Por que \"Aurora\"?",
+  "O que você pesquisa?",
+  "O que a Guilda faz?",
+  "Onde vejo as missões?",
+  "Como funciona o armazém?",
+  "O que tem no alojamento?",
+  "O que é alquimia aqui?",
+  "Você mora aqui?",
+  "O que você forja aqui?",
+  "Como é viver aqui?",
+  "O que é o Supervisor Ômega?",
+  "Como lutar contra os executores?",
+  "O que se vende aqui?",
+  "Por que você ficou na capital?",
+  "O que é a energia vermelha?",
+  "Quem era o Rei Carmesim?",
+  "Como enfrentar os espectros?",
+  "Como se forja num lugar de dados?",
+  "O que é o Nexus Zero?",
+  "O que vem depois do nível 100?",
+  "Por que lobos e não cavalos?",
+  "Posso lutar montado?",
+  "Como cuido de um companheiro?",
+  "Que bairro é este?",
+  "O quartel aceita voluntários?",
+  "Você nunca dorme?",
+  "Por que o turno da noite?",
+  "O que acontece à noite no bairro?",
+  "O que tem para fazer aqui?",
+  "De onde você vem?",
+  "Por que \"Javali Dourado\"?",
+  "Cante a cantiga da taverna!",
+  "Cante mais uma estrofe.",
+  "E esse alaúde?",
+  "Você sempre foi bardo?",
+  "A hospedaria é sua?",
+  "Para onde você vai?",
+  "O que o conselho faz?",
+  "Quem governa a Aurora?",
+  "O que você escreve?",
+  "O que aconteceu no Dia Zero?",
+  "O que a guarda faz?",
+  "Há quanto tempo você é soldado?",
+  "O que aconteceu aqui?",
+  "Como eu passo por eles?",
+  "Do que a barricada precisa?",
+  "Trabalha onde?",
+  "Tem perigo por aqui?",
+  "O que você faz?",
+  "Como é o trabalho?",
+  "O que são as bênçãos?",
+  "O que é a Cyber Night?",
+  "Quem é o DJ VOLTA?",
+  "O que tem de bom aqui?"
  ]
 }

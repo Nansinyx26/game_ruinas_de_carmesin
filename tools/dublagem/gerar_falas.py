@@ -87,6 +87,8 @@ ELENCO = {
     # Moradores com o corpo dos GLB enviados
     'mes_ferreiro': ('chris', 0.96, 0.55, 0.2), 'mes_camponesa': ('jessica', 1.0, 0.45, 0.35), 'mes_guarda': ('harry', 0.98, 0.55, 0.25), 'mes_hacker': ('laura', 1.06, 0.4, 0.45),
     'mes_operario': ('roger', 0.98, 0.5, 0.25), 'mes_comerciante': ('eric', 1.05, 0.45, 0.35), 'mes_gm': ('brian', 0.94, 0.65, 0.2),
+    # Cidade Morta (barricada) e o Pulso Neon
+    'cm_mendes': ('harry', 0.94, 0.6, 0.2), 'cm_tonho': ('chris', 1.06, 0.4, 0.4), 'pub_kira': ('laura', 1.06, 0.4, 0.4),
 }
 
 
@@ -108,14 +110,17 @@ def para_voz(txt):
 
 def fila(povo, so):
     F = []
-    for tipo in ('ola', 'temas', 'rumores'):   # cumprimentos de todos primeiro
+    for tipo in ('ola', 'temas', 'rumores', 'extras'):   # cumprimentos de todos primeiro
         for P in povo:
             if so and P['id'] not in so:
                 continue
             for txt in P.get(tipo) or []:
                 if isinstance(txt, str) and txt.strip():
                     F.append((P['id'], tipo, txt))
-    return F
+    # as falas fixas (Quem é você?, serviços, missões): das mais curtas para as mais longas, de todos os
+    # moradores — com pouca cota, sai primeiro o que mais aparece por crédito gasto
+    n = next((i for i, q in enumerate(F) if q[1] == 'extras'), len(F))
+    return F[:n] + sorted(F[n:], key=lambda q: len(q[2]))
 
 
 def gerar(pid, txt, destino, chave):
@@ -150,18 +155,23 @@ def manifesto(povo):
         pasta = os.path.join(SAIDA, P['id'])
         if not os.path.isdir(pasta) or P['id'] not in ELENCO:
             continue
-        validos = {codigo(t) for tipo in ('ola', 'temas', 'rumores') for t in (P.get(tipo) or []) if isinstance(t, str)}
-        falas = {}
+        ficha = {codigo(t) for tipo in ('ola', 'temas', 'rumores') for t in (P.get(tipo) or []) if isinstance(t, str)}
+        fixas = {codigo(t) for t in (P.get('extras') or []) if isinstance(t, str)} - ficha
+        falas, extras = {}, {}
         for arq in sorted(os.listdir(pasta)):
             c = arq[:-4]
-            if arq.endswith('.mp3') and c in validos:
-                falas[c] = round(duracao(os.path.join(pasta, arq)), 2)
-        if falas:
+            if not arq.endswith('.mp3'):
+                continue
+            if c in ficha: falas[c] = round(duracao(os.path.join(pasta, arq)), 2)
+            elif c in fixas: extras[c] = round(duracao(os.path.join(pasta, arq)), 2)
+            else: os.remove(os.path.join(pasta, arq))   # fala que mudou ou saiu do jogo: a gravação antiga sai junto
+        if falas or extras:
             M[P['id']] = {'voz': ELENCO[P['id']][0], 'falas': falas}
-    n = sum(len(v['falas']) for v in M.values())
+            if extras: M[P['id']]['extras'] = extras   # (Quem é você?, missões e serviços: o jogo acha pelo parágrafo)
+    n = sum(len(v['falas']) + len(v.get('extras', {})) for v in M.values())
     with open(MANIFESTO, 'w', encoding='utf-8') as f:
         f.write("'use strict';\n// ECLIPSE ZERO · Manifesto da dublagem dos moradores (GERADO por tools/dublagem/gerar_falas.py — não editar)\n"
-                "// morador → { voz, falas: { código da fala (FNV-1a do texto): duração em segundos } }; os áudios ficam em\n"
+                "// morador → { voz, falas: { código da fala (FNV-1a do texto): duração em segundos }, extras: { as falas fixas fora da ficha } }; os áudios ficam em\n"
                 "// dublagem/npcs/<morador>/<código>.mp3 e quem toca é o js/mundo/vozes.js\n"
                 f"const VOZES_NPC = {json.dumps(M, ensure_ascii=False, separators=(',', ':'), sort_keys=True)};\n")
     return len(M), n

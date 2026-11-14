@@ -40,7 +40,7 @@ const Dialogo = {
     if (this.npc) this.npc.talkT = 1.5;
     this.npc = null;
     VozSintetica.parar();
-    if (typeof Vozes !== 'undefined') Vozes.parar();
+    if (typeof Vozes !== 'undefined') Vozes.parar(true);   // (a despedida do herói termina)
     if (typeof game !== 'undefined' && game.audio && game.audio.narration) game.audio.narration.stop({ fade: 0.5 });
     if (game.state === 'worlddlg') game.state = 'playing';
     World.save();
@@ -50,6 +50,7 @@ const Dialogo = {
     if (!o) return;
     if (o.off) { game.audio.play('uiDeny'); return; }
     game.audio.play('uiSelect');
+    if (typeof Vozes !== 'undefined') Vozes.perguntar(o.txt);   // a voz do herói fazendo a pergunta (js/mundo/vozes.js)
     o.fn();
   },
   // Escolhe a opção pelo id (atalhos e testes); devolve se ela existia

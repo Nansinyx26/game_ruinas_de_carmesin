@@ -114,6 +114,27 @@ const SFX_GERADOS = {
   ],
   "vol": 0.7
  },
+ "hitMetal": {
+  "src": [
+   "assets/sfx/gerados/hitMetal.mp3",
+   "assets/sfx/gerados/hitMetal_2.mp3"
+  ],
+  "vol": 0.85
+ },
+ "hitCarne": {
+  "src": [
+   "assets/sfx/gerados/hitCarne.mp3",
+   "assets/sfx/gerados/hitCarne_2.mp3"
+  ],
+  "vol": 0.85
+ },
+ "playerHurt": {
+  "src": [
+   "assets/sfx/gerados/playerHurt.mp3",
+   "assets/sfx/gerados/playerHurt_2.mp3"
+  ],
+  "vol": 0.8
+ },
  "arrow": {
   "src": [
    "assets/sfx/gerados/arrow.mp3",

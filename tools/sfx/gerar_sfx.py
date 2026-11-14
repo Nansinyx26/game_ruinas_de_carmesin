@@ -42,6 +42,10 @@ EFEITOS = {
     'special': ['ultimate power release, huge cosmic energy blast with bass impact and shimmering tail, game sound effect, no music', 2.0, 0.95, 1],
     'specialCharge': ['powerful energy charging up, rising synth hum and crackling electricity, game sound effect, no music', 1.6, 0.75, 1],
     'chargeTier': ['short magical power-up chime with energy pulse, game sound effect, no music', 0.6, 0.7, 1],
+    # impacto por material (js/audio.js, impacto): máquinas e criaturas; e o herói levando o golpe
+    'hitMetal': ['energy blade striking a metal robot chassis, sharp metallic clang with electric spark crackle, punchy and short, game hit sound effect, no music', 0.5, 0.85, 2],
+    'hitCarne': ['heavy sword slash hitting a creature, meaty flesh impact with wet thud and deep punch, short, game hit sound effect, no music', 0.5, 0.85, 2],
+    'playerHurt': ['armored hero takes a heavy hit, body blow thud with armor rattle and energy shield crackle, short, game damage sound effect, no voice, no music', 0.6, 0.8, 2],
     'arrow': ['bow string release and arrow whoosh, crisp, game sound effect, no music', 0.6, 0.8, 2],
 }
 

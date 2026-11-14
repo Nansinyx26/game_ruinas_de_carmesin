@@ -579,16 +579,50 @@ class AudioSys {
       for (const src of E.src) fetch(src).then((r) => (r.ok ? r.arrayBuffer() : null)).then((b) => b && this.ctx.decodeAudioData(b)).then((buf) => { if (buf) L.bufs.push(buf); }).catch(() => {});
     }
   }
-  gravado(name, p) {
+  // rate: velocidade de reprodução pedida (golpe mais forte, mais grave); sem ela, uma pequena variação
+  gravado(name, p, rate) {
     const L = this._grav && this._grav[name];
     if (!L || !L.bufs.length) return false;
     if (!this.throttle('g_' + name, 0.03)) return true;
     const c = this.ctx, s = c.createBufferSource(), g = c.createGain();
-    s.buffer = L.bufs[Math.floor(Math.random() * L.bufs.length)];
-    s.playbackRate.value = 0.95 + Math.random() * 0.1;   // (um pouco diferente a cada golpe)
+    // nunca a mesma gravação duas vezes seguidas (o ouvido percebe a repetição nos combos)
+    let k = Math.floor(Math.random() * L.bufs.length);
+    if (L.bufs.length > 1 && k === L.ult) k = (k + 1) % L.bufs.length;
+    L.ult = k;
+    s.buffer = L.bufs[k];
+    s.playbackRate.value = (rate || 1) * (0.95 + Math.random() * 0.1);   // (um pouco diferente a cada golpe)
     g.gain.value = L.vol * p;
     s.connect(g); g.connect(this.sfx); s.start();
     return true;
+  }
+  temGravado(name) { const L = this._grav && this._grav[name]; return !!(L && L.bufs.length); }
+
+  // Impacto de um golpe que acertou (js/game.js, onHit): a gravação do material (metal nas máquinas,
+  // carne nas criaturas; sem ela, o impacto geral) mais as camadas sintetizadas que dão o peso — o
+  // baque grave sob o golpe, o estalo do contato e o brilho do crítico. A força (o dano contra a vida
+  // do alvo, de 0 a 1) deixa o golpe mais alto e mais grave.
+  impacto(o = {}) {
+    if (!this.ctx || this.muted) return;
+    if (!this._grav) this.carregarGravados();
+    if (!this.throttle('impacto', 0.03)) return;
+    const f = clamp(o.forca || 0, 0, 1), heavy = !!o.heavy, crit = !!o.crit;
+    const p = (o.p || 1) * (0.82 + f * 0.35), rate = 1.06 - f * 0.16 - (heavy ? 0.06 : 0);
+    const mat = o.mech ? 'hitMetal' : o.carne ? 'hitCarne' : null;
+    const base = heavy ? 'hitHeavy' : 'hit';
+    const tocou = mat && this.temGravado(mat) ? this.gravado(mat, p * (heavy ? 1 : 0.92), rate) : false;
+    // com o material gravado, o impacto geral entra mais baixo, só para encorpar
+    if (!this.gravado(base, tocou ? p * 0.55 : p, rate)) this.play(base, p);
+    try {
+      // baque grave: o "peso" do golpe que o alto-falante pequeno perde na gravação
+      this.osc('sine', heavy ? 120 : 150, heavy ? 34 : 44, heavy ? 0.24 : 0.14, (heavy ? 0.5 : 0.32) * p);
+      // estalo do contato (curtíssimo): o golpe "pega" em vez de só soar
+      this.noise(0.025, (heavy ? 0.3 : 0.22) * p, 'highpass', 2600, 1400, 0.7);
+      if (o.mech) this.osc('triangle', 1650 + Math.random() * 500, 1100, 0.09, 0.05 * p, 0.005);   // retinir da carcaça
+      if (crit) {
+        if (!this.gravado('crit', 0.9 * p)) this.play('crit', p);
+        this.osc('sine', 60, 28, 0.32, 0.45 * p, 0.012);   // o crítico afunda mais
+      }
+    } catch (e) { /* sem áudio: segue */ }
   }
   play(name, p = 1) {
     if (!this.ctx || this.muted) return;
