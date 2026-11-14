@@ -9,11 +9,13 @@
 //   node servidor.mjs                          (porta 8787)
 //   PORTA=9000 EZ_OWNER=SeuNome EZ_OWNER_CHAVE=segredo node servidor.mjs
 //
-// Variáveis: PORTA · EZ_DADOS (pasta dos dados, padrão ./dados) · EZ_OWNER (nome da conta dona:
+// Variáveis: PORT ou PORTA · EZ_DADOS (pasta dos dados, padrão ./dados) · EZ_OWNER (nome da conta dona:
 // só ela é OWNER) · EZ_OWNER_CHAVE (segredo pedido para CRIAR a conta dona; sem ele ninguém cria)
 // · EZ_ORIGENS (origens do navegador aceitas, separadas por vírgula; vazio = qualquer).
-// Dados em JSON na pasta de dados: contas, sessões, histórico do chat, estado do mundo, registro
-// dos comandos (log_gm.jsonl) e denúncias. Senhas com scrypt e sal por conta.
+// · MONGODB_URI (se definida, os dados vão para o MongoDB; EZ_MONGO_BANCO escolhe o banco, padrão
+// eclipse_zero) · sem ela, dados em JSON na pasta de dados: contas, sessões, histórico do chat, estado
+// do mundo, registro dos comandos (log_gm) e denúncias. Senhas com scrypt e sal por conta.
+// A URI e as chaves só vêm do ambiente: nunca no código nem no repositório.
 // ---------------------------------------------------------------------------
 import http from 'node:http';
 import fs from 'node:fs';
@@ -21,6 +23,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
+import { abrirArmazem } from './armazem.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const VERSAO = '1.0.0';
@@ -100,23 +103,19 @@ const COMANDOS = {
   status_servidor: { p: 'moderador', a: '', d: 'Estado do servidor', cat: 'consulta' },
 };
 
-export function iniciar(op = {}) {
-  const PORTA = op.porta ?? Number(process.env.PORTA || 8787);
+export async function iniciar(op = {}) {
+  const PORTA = op.porta ?? Number(process.env.PORT || process.env.PORTA || 8787);   // (PORT: a que o Render escolhe)
   const DADOS = op.dados || process.env.EZ_DADOS || path.join(AQUI, 'dados');
   const OWNER = (op.owner ?? process.env.EZ_OWNER ?? '').toLowerCase();
   const OWNER_CHAVE = op.ownerChave ?? process.env.EZ_OWNER_CHAVE ?? '';
   const ORIGENS = (op.origens ?? process.env.EZ_ORIGENS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  fs.mkdirSync(DADOS, { recursive: true });
   const inicio = agora();
 
-  // ------------------------------------------------------------ dados em disco
-  const ler = (nome, padrao) => { try { return JSON.parse(fs.readFileSync(path.join(DADOS, nome), 'utf8')); } catch { return padrao; } };
-  const pend = new Map();
-  const gravar = (nome, v) => {   // grava logo depois (junta várias mudanças) e por troca de arquivo
-    if (pend.has(nome)) return;
-    pend.set(nome, setTimeout(() => { pend.delete(nome); const f = path.join(DADOS, nome); try { fs.writeFileSync(f + '.tmp', JSON.stringify(v())); fs.renameSync(f + '.tmp', f); } catch (e) { console.error('gravar', nome, e.message); } }, 150));
-  };
-  const anexar = (nome, obj) => { try { fs.appendFileSync(path.join(DADOS, nome), JSON.stringify(obj) + '\n'); } catch (e) { console.error('anexar', nome, e.message); } };
+  // ------------------------------------------------------------ dados (arquivos JSON ou MongoDB: armazem.mjs)
+  const arm = await abrirArmazem(op, DADOS);
+  const ler = (nome, padrao) => arm.carregar(nome, padrao);
+  const gravar = (nome, v) => arm.gravar(nome, v);
+  const anexar = (nome, obj) => arm.anexar(nome, obj);
   const contas = ler('contas.json', {});            // chave: nome em minúsculas
   const sessoes = ler('sessoes.json', {});          // token → { conta, ate }
   const historico = ler('historico.json', { global: [], sistema: [], guildas: {} });
@@ -328,7 +327,7 @@ export function iniciar(op = {}) {
         return fim(`${ct.nome} · ${papelDe(ct)} · ${d ? 'online' : 'offline'}${E ? ` · nível ${E.nivel || 1} · vida ${E.hp || '?'}/${E.hpMax || '?'} · ${E.zonaNome || '?'} · células ${E.celulas ?? '?'}` : ''} · guilda ${ct.guilda || '—'} · conta de ${new Date(ct.criado).toLocaleDateString('pt-BR')}${ct.banido ? ' · BANIDO: ' + ct.banido.motivo : ''}${ct.mudo > agora() ? ' · silenciado' : ''}`, true, ct.nome, { dados: E });
       }
       case 'limpar_chat': { const canal = args[0] === 'sistema' ? 'sistema' : 'global'; historico[canal] = []; salvarHist(); todos({ t: 'limpar', canal }); return fim(`Histórico do canal ${canal} apagado.`); }
-      case 'denuncias': { let L = []; try { L = fs.readFileSync(path.join(DADOS, 'denuncias.jsonl'), 'utf8').trim().split('\n').slice(-8).map((l) => JSON.parse(l)); } catch { /* nenhuma */ } return R(L.length ? L.map((d) => `${new Date(d.quando).toLocaleString('pt-BR')} · ${d.de} → ${d.alvo}: ${d.motivo}`).join('\n') : 'Nenhuma denúncia.'); }
+      case 'denuncias': { const L = arm.ultimos('denuncias.jsonl', 8); return R(L.length ? L.map((d) => `${new Date(d.quando).toLocaleString('pt-BR')} · ${d.de} → ${d.alvo}: ${d.motivo}`).join('\n') : 'Nenhuma denúncia.'); }
       case 'desfazer': { const inv = cx.desfazer.pop(); if (!inv) return R('Nada para desfazer.', false); return executar(cx, inv[0], inv[1], `/${inv[0]} ${inv[1].join(' ')} (desfazer)`, R); }
       case 'online': return R(listaOnline(cx).map((j) => `${j.nome} (nv ${j.nivel}${j.papel !== 'jogador' ? ', ' + j.papel.toUpperCase() : ''}${j.invisivel ? ', invisível' : ''})${j.zona ? ' · ' + j.zona : ''}`).join('\n') || 'Ninguém online.');
       case 'status_servidor': { const m = process.memoryUsage(); return R(`Servidor ${VERSAO} · no ar há ${Math.round((agora() - inicio) / 60000)} min · ${logadas().length} online · ${Object.keys(contas).length} contas · memória ${Math.round(m.rss / 1048576)} MB · evento: ${mundo.evento ? mundo.evento.nome : 'nenhum'} · clima: ${mundo.clima || 'auto'} · hora: ${mundo.hora ?? 'auto'} · dificuldade ${mundo.dificuldade}`); }
@@ -377,7 +376,7 @@ export function iniciar(op = {}) {
 
   // ------------------------------------------------------------ rede
   const http_ = http.createServer((req, res) => {
-    if (req.url === '/saude') { res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ ok: true, versao: VERSAO, online: logadas().length })); return; }
+    if (req.url === '/saude') { res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ ok: true, versao: VERSAO, online: logadas().length, dados: arm.tipo })); return; }
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Eclipse Zero · servidor de chat e GM\n');
   });
   const wss = new WebSocketServer({ server: http_, maxPayload: 16 * 1024 });
@@ -432,9 +431,14 @@ export function iniciar(op = {}) {
   }, 20000);
   return new Promise((ok) => http_.listen(PORTA, () => {
     const porta = http_.address().port;
-    if (!op.quieto) console.log(`Eclipse Zero · servidor de chat e GM na porta ${porta}${OWNER ? ` · dono: ${OWNER}` : ' · sem dono definido (EZ_OWNER)'}`);
-    ok({ porta, fechar: () => new Promise((f) => { clearInterval(pulso); for (const [, t] of pend) clearTimeout(t); for (const cx of conexoes) { try { cx.ws.terminate(); } catch { /* nada */ } } wss.close(() => http_.close(() => f())); }), COMANDOS, contas, mundo });
+    if (!op.quieto) console.log(`Eclipse Zero · servidor de chat e GM na porta ${porta} · dados: ${arm.tipo === 'mongodb' ? 'MongoDB' : 'arquivos JSON'}${OWNER ? ` · dono: ${OWNER}` : ' · sem dono definido (EZ_OWNER)'}`);
+    ok({ porta, fechar: () => new Promise((f) => { clearInterval(pulso); for (const cx of conexoes) { try { cx.ws.terminate(); } catch { /* nada */ } } wss.close(() => http_.close(() => { arm.fechar().then(f, f); })); }), COMANDOS, contas, mundo, armazem: arm.tipo });
   }));
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) iniciar();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  iniciar().then((S) => {
+    const sair = () => S.fechar().then(() => process.exit(0));   // grava o que estiver pendente antes de sair (o Render manda SIGTERM)
+    process.once('SIGTERM', sair); process.once('SIGINT', sair);
+  }, (e) => { console.error('Eclipse Zero · o servidor não subiu:', e.message); process.exit(1); });
+}

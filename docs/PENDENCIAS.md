@@ -24,7 +24,7 @@ começado. Ao terminar algo, mova o item e registre o commit.
 | Estações da cidade em GLB (não canvas) | Forja, armaria, laboratório, engenharia, guilda, missões, armazém e as 3 bancas do mercado usam GLB do projeto | `js/mundo/cidade.js` (CIDADE_GLB) |
 | Texturas na qualidade máxima | Opção "Texturas": Padrão (1K), Alta (2K), Máxima (4K). 104 estruturas com a textura original do GLB (2048/4096) nas peças mais perto, com orçamento de memória de vídeo | `js/mundo/texturas_hd.js`, `tools/texturas_hd.py`, `assets/tex_hd/` |
 | Dublagem dos NPCs (ElevenLabs) — base | Gerador com elenco de vozes por sexo/idade/temperamento, manifesto, tocador no jogo, sem painel para o jogador | `tools/dublagem/`, `js/mundo/vozes.js` |
-| Chat global + Game Master | Servidor WebSocket (contas, OWNER/GM/MODERADOR decididos no servidor, 50 comandos, confirmação, desfazer, registro), janela de chat com 5 abas, painel GM com autocompletar e Modo Deus do Mundo; 60 testes do servidor + 13 com dois navegadores | `servidor/`, `js/rede/chat.js`, `tools/teste_chat.mjs` |
+| Chat global + Game Master | Servidor WebSocket (contas, OWNER/GM/MODERADOR decididos no servidor, 50 comandos, confirmação, desfazer, registro), janela de chat com 5 abas, painel GM com autocompletar e Modo Deus do Mundo; 68 testes do servidor (arquivos e MongoDB) + 13 com dois navegadores; dados no MongoDB com `MONGODB_URI` | `servidor/`, `render.yaml`, `js/rede/chat.js`, `tools/teste_chat.mjs` |
 | Paisagens procedurais por semente | Biomas por altitude/umidade/temperatura, espécies com regras, Poisson, trilhas por A*, pontos de interesse, validação com correção; mesma semente = mesmo mapa | `js/mundo/paisagem.js` |
 | Relevo (altura real do chão) | Colinas, dunas, encostas e picos com altura na geometria; contínuo entre zonas vizinhas; água no baixo; patamar sob construções; todos os corpos, objetos e a câmera seguem o chão | `js/mundo/relevo.js` |
 | Árvores novas | `Arvore_1.glb` (28 mil triângulos, na topologia enviada) no lugar da antiga (backup em `assets/_backup/arvores/`) e `Arvore_9.glb` nova, ambas com textura HD; vento a partir do pé da árvore (no relevo, o tronco fica firme) e tremor próprio da folhagem nas pontas | `tools/blender/cenario/estruturas.py`, `js/engine3d.js` |
@@ -71,7 +71,8 @@ começado. Ao terminar algo, mova o item e registre o commit.
 - [ ] Interiores dos prédios abandonados.
 
 ### 2.4 Chat e GM
-- [ ] **Hospedar o servidor** (`servidor/`) num serviço com Node (o GitHub Pages só serve arquivos) e pôr o endereço em `js/rede/config.js`.
+- [x] **Dados no MongoDB**: com `MONGODB_URI` no ambiente, contas, sessões, histórico e mundo vão para o MongoDB (coleção `estado`) e o registro de GM e as denúncias para `log_gm` e `denuncias`; sem ela, arquivos JSON como antes. 8 testes novos com banco falso (68 no total). `servidor/armazem.mjs`, `render.yaml`, `docs/SERVIDOR_RENDER.md`.
+- [ ] **Subir no Render** (usuário): Blueprint pelo `render.yaml`, preencher `MONGODB_URI`, `EZ_OWNER`, `EZ_OWNER_CHAVE` no painel, liberar o IP no Atlas (Network Access `0.0.0.0/0`) e pôr o endereço `wss://…onrender.com` em `js/rede/config.js`. Passo a passo em `docs/SERVIDOR_RENDER.md`.
 - [ ] Sincronizar a posição dos outros jogadores no mundo (hoje o servidor conhece mapa/nível de cada um, mas o jogo não desenha os outros heróis).
 
 ### 2.5 Paisagem / mundo

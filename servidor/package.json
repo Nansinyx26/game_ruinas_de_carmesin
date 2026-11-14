@@ -9,6 +9,11 @@
     "start": "node servidor.mjs",
     "test": "node teste.mjs"
   },
-  "engines": { "node": ">=20" },
-  "dependencies": { "ws": "^8.18.0" }
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "mongodb": "7.7.0",
+    "ws": "^8.18.0"
+  }
 }

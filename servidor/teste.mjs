@@ -7,9 +7,10 @@ import os from 'node:os';
 import path from 'node:path';
 import WebSocket from 'ws';
 import { iniciar } from './servidor.mjs';
+import { armazemMongo } from './armazem.mjs';
 
 const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'ez-srv-'));
-let S = await iniciar({ porta: 0, dados, owner: 'Dono', ownerChave: 'chave-do-dono', quieto: true });
+let S = await iniciar({ porta: 0, dados, mongoUri: '', owner: 'Dono', ownerChave: 'chave-do-dono', quieto: true });
 let ok = 0, falhas = 0;
 const teste = (nome, cond, info = '') => { if (cond) ok++; else { falhas++; console.log(`  FALHOU ${nome} ${info}`); } };
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -143,10 +144,49 @@ teste('registro com GM, comando, alvo, data e resultado', log.length > 15 && log
 teste('tentativas negadas também ficam no registro', log.some((l) => !l.ok && /permissão/.test(l.resultado)));
 const tokenDono = dono.sessao.token;
 await S.fechar();
-S = await iniciar({ porta: 0, dados, owner: 'Dono', ownerChave: 'chave-do-dono', quieto: true });
+S = await iniciar({ porta: 0, dados, mongoUri: '', owner: 'Dono', ownerChave: 'chave-do-dono', quieto: true });
 const d2 = await cliente(); d2.manda({ t: 'entrar', token: tokenDono }); const s2 = await d2.ate((m) => m.t === 'sessao' || m.t === 'erro');
 teste('depois de reiniciar: sessão, papel, histórico e mundo continuam', s2 && s2.t === 'sessao' && s2.papel === 'owner' && s2.historico.global.some((m) => m.texto === 'Olá a todos!') && s2.mundo.clima === 'tempestade' && S.contas.mestre.papel === 'gm' && !!S.contas.lyra.banido);
 await S.fechar();
 fs.rmSync(dados, { recursive: true, force: true });
+
+// MongoDB: o mesmo servidor com o armazém do MongoDB sobre um banco falso na memória (os testes nunca
+// usam o banco de verdade nem leem MONGODB_URI)
+function bancoFalso() {
+  const cols = new Map();
+  const col = (nome) => {
+    if (!cols.has(nome)) cols.set(nome, []);
+    const D = cols.get(nome); let seq = 0;
+    return {
+      find: () => { let L = D.slice(); const c = { sort: (o) => { if (o._id === -1) L.reverse(); return c; }, limit: (n) => { L = L.slice(0, n); return c; }, toArray: async () => L.map((d) => ({ ...d })) }; return c; },
+      replaceOne: async (f, doc, o) => { const i = D.findIndex((d) => d._id === f._id); if (i >= 0) D[i] = { ...doc }; else if (o && o.upsert) D.push({ ...doc }); },
+      insertOne: async (doc) => { D.push({ _id: `${Date.now()}-${seq++}`, ...doc }); },
+    };
+  };
+  return { collection: col, cols };
+}
+const banco = bancoFalso();
+const dadosM = fs.mkdtempSync(path.join(os.tmpdir(), 'ez-srv-m-'));
+S = await iniciar({ porta: 0, dados: dadosM, armazem: await armazemMongo(banco), owner: 'Dono', ownerChave: 'chave-do-dono', quieto: true });
+teste('MongoDB: o servidor usa o armazém do MongoDB', S.armazem === 'mongodb');
+const dm = await conta('Dono', 'senha-do-dono', 'chave-do-dono'), jm = await conta('Bia_Souza', 'senha123');
+teste('MongoDB: contas novas', !!dm.sessao && !!jm.sessao);
+dm.manda({ t: 'chat', canal: 'global', texto: 'Olá do Mongo' }); await dm.ate((m) => m.t === 'chat' && m.texto === 'Olá do Mongo');
+await dm.cmd('/clima neve'); await jm.cmd('/denunciar Dono teste do mongo'); await espera(300);
+const rDen = await dm.cmd('/denuncias');
+teste('MongoDB: denúncias aparecem no comando', rDen && rDen.ok && /teste do mongo/.test(rDen.texto || rDen.msg || JSON.stringify(rDen)));
+const tokM = dm.sessao.token;
+await S.fechar();
+const est = banco.cols.get('estado') || [];
+teste('MongoDB: estado gravado em documentos (contas, sessões, histórico, mundo)', ['contas.json', 'sessoes.json', 'historico.json', 'mundo.json'].every((n) => est.some((d) => d._id === n && typeof d.json === 'string')));
+teste('MongoDB: registro dos comandos e denúncias em coleções', (banco.cols.get('log_gm') || []).some((l) => /\/clima neve/.test(l.comando)) && (banco.cols.get('denuncias') || []).length === 1);
+teste('MongoDB: nada foi gravado na pasta de arquivos', fs.readdirSync(dadosM).length === 0);
+S = await iniciar({ porta: 0, dados: dadosM, armazem: await armazemMongo(banco), owner: 'Dono', ownerChave: 'chave-do-dono', quieto: true });
+const dm2 = await cliente(); dm2.manda({ t: 'entrar', token: tokM }); const sm2 = await dm2.ate((m) => m.t === 'sessao' || m.t === 'erro');
+teste('MongoDB: depois de reiniciar, sessão, papel, histórico e mundo continuam', sm2 && sm2.t === 'sessao' && sm2.papel === 'owner' && sm2.historico.global.some((m) => m.texto === 'Olá do Mongo') && sm2.mundo.clima === 'neve' && !!S.contas.bia_souza);
+const rDen2 = await dm2.cmd('/denuncias');
+teste('MongoDB: denúncias continuam depois de reiniciar', rDen2 && /teste do mongo/.test(JSON.stringify(rDen2)));
+await S.fechar();
+fs.rmSync(dadosM, { recursive: true, force: true });
 console.log(`SERVIDOR: ${ok}/${ok + falhas} ok, ${falhas} falhas`);
 process.exit(falhas ? 1 : 0);

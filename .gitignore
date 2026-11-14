@@ -25,3 +25,6 @@ testes.png
 tools/blender/_saida/
 assets/_backup/
 assets/models/estruturas/.trava
+
+# Dados do servidor de chat (contas, sessões, senhas com hash): nunca no repositório
+servidor/dados/
