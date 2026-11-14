@@ -512,7 +512,10 @@ def dar_material(obj, mat):
 def aplicar_modificadores(obj):
     ativar(obj)
     for mod in list(obj.modifiers):
-        bpy.ops.object.modifier_apply(modifier=mod.name)
+        try:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        except RuntimeError:   # desligado (a armadura de um GLB que já veio com esqueleto): sai sem aplicar
+            obj.modifiers.remove(mod)
 
 
 def juntar(objs, nome):

@@ -34,7 +34,7 @@ const Vegetacao = (() => {
   ];
   // por tema: TUFOS por 1000 u² no prado cheio (cada tufo tem de 4 a 9 lâminas), altura (u), largura, paleta (base → ponta) e flores
   const TEMAS = {
-    floresta: { dens: 4.6, alt: [7, 17], larg: [0.7, 1.3], cor: [[0.12, 0.24, 0.07], [0.42, 0.62, 0.2]], seca: [[0.3, 0.27, 0.1], [0.72, 0.62, 0.3]], flores: 1 },
+    floresta: { dens: 4.6, alt: [7, 17], larg: [0.7, 1.3], cor: [[0.12, 0.24, 0.07], [0.42, 0.62, 0.2]], seca: [[0.3, 0.27, 0.1], [0.72, 0.62, 0.3]], flores: 1, juncos: 0.7 },
     lagoa: { dens: 5, alt: [8, 20], larg: [0.7, 1.35], cor: [[0.08, 0.22, 0.08], [0.36, 0.6, 0.24]], seca: [[0.22, 0.26, 0.1], [0.55, 0.58, 0.28]], flores: 0.8, juncos: 1 },
     deserto: { dens: 0.5, alt: [6, 14], larg: [0.6, 1.1], cor: [[0.32, 0.28, 0.12], [0.78, 0.68, 0.36]], seca: [[0.34, 0.28, 0.12], [0.82, 0.7, 0.38]], flores: 0.1, so: ['oasis', 'planalto', 'beira'] },
     abandonada: { dens: 0.8, alt: [6, 16], larg: [0.7, 1.2], cor: [[0.14, 0.2, 0.08], [0.46, 0.5, 0.2]], seca: [[0.3, 0.26, 0.12], [0.64, 0.56, 0.3]], flores: 0.15 },
@@ -72,8 +72,8 @@ const Vegetacao = (() => {
     }
     if (g) for (const n of g.npcs) {
       if (n.kind === 'gate' || n.kind === 'portal' || n.kind === 'chest' || n.kind === 'terminal' || n.kind === 'entrada' || n.kind === 'tesouro' || n.kind === 'quadro' || n.kind === 'evento' || n.kind === 'campanha' || n.kind === 'missao' || n.kind === 'coleta')
-        E.push({ x: n.x, y: n.y, r: (n.radius || 20) + 34 });
-      else if (n.P) E.push({ x: n.x, y: n.y, r: 26 });   // (moradores: a grama não cobre os pés)
+        E.push({ x: n.x, y: n.y, r: (n.radius || 20) + 34, t: n.kind === 'chest' || n.kind === 'evento' || n.kind === 'coleta' });   // (t: muda de lugar a cada visita)
+      else if (n.P) E.push({ x: n.x, y: n.y, r: 26, t: true });   // (moradores: a grama não cobre os pés)
     }
     return E;
   }
@@ -126,7 +126,7 @@ const Vegetacao = (() => {
       if (x < -60 || y < -60 || x > R.w + 60 || y > R.h + 60) { rej.fora++; continue; }
       const fundo = agua(x, y);
       let tipo = 0;
-      if (fundo > 0) { if (!T.juncos || fundo > 0.3 || a > 0.5) { rej.agua++; continue; } tipo = 1; }   // margem rasa: juncos
+      if (fundo > 0) { if (!T.juncos || fundo > 0.3 || a > 0.5 * T.juncos) { rej.agua++; continue; } tipo = 1; }   // margem rasa: juncos
       let fora = false;
       for (const q of exc) if ((x - q.x) * (x - q.x) + (y - q.y) * (y - q.y) < q.r * q.r) { fora = true; break; }
       if (fora) { rej.exc++; continue; }
@@ -154,12 +154,14 @@ const Vegetacao = (() => {
         if (u >= F.umid[0] - 0.1 && u <= F.umid[1] + 0.1) { tipo = 2 + qual; h = mixf(F.alt[0], F.alt[1], b); }
       }
       // o tufo: várias lâminas em volta do ponto, abertas para fora, com alturas e tons diferentes
-      const nl = tipo >= 2 ? 1 : tipo === 1 ? 3 + Math.floor(rnd() * 3) : 4 + Math.floor(rnd() * 6), raioT = tipo === 1 ? 5 : 2.5 + mancha * 4;
+      // (cada tufo com o próprio sorteio: um tufo recusado por um baú ou um morador não muda os outros)
+      const rt = sorteio(mist(mist(Z.sem, mist(S.i, S.j)), k + 1));
+      const nl = tipo >= 2 ? 1 : tipo === 1 ? 3 + Math.floor(rt() * 3) : 4 + Math.floor(rt() * 6), raioT = tipo === 1 ? 5 : 2.5 + mancha * 4;
       for (let l = 0; l < nl; l++) {
-        const ang = rnd() * Math.PI * 2, rr = l === 0 ? 0 : Math.sqrt(rnd()) * raioT, bx = x + Math.cos(ang) * rr, by = y + Math.sin(ang) * rr, tom = 0.88 + rnd() * 0.24;
-        if (l) { const f = agua(bx, by); if ((f > 0 && tipo !== 1) || f > 0.3) continue; }   // (o tufo não entra na água; os juncos, só no raso)
-        L.push(bx, by, alt(bx, by) - 0.4, l === 0 ? d * Math.PI * 2 : ang + Math.PI / 2 + (rnd() - 0.5) * 0.8, h * (l === 0 ? 1 : 0.6 + rnd() * 0.5), mixf(T.larg[0], T.larg[1], c) * (tipo === 1 ? 1.3 : 1),
-          l === 0 ? (e - 0.5) * 0.9 + 0.25 : 0.35 + rnd() * 0.5, cr * tom, cg * tom, cb * tom, tipo);
+        const ang = rt() * Math.PI * 2, rr = l === 0 ? 0 : Math.sqrt(rt()) * raioT, bx = x + Math.cos(ang) * rr, by = y + Math.sin(ang) * rr, tom = 0.88 + rt() * 0.24;
+        { const f = agua(bx, by); if ((f > 0 && tipo !== 1) || f > 0.3) continue; }   // (o tufo não entra na água; os juncos, só no raso)
+        L.push(bx, by, alt(bx, by) - 0.4, l === 0 ? d * Math.PI * 2 : ang + Math.PI / 2 + (rt() - 0.5) * 0.8, h * (l === 0 ? 1 : 0.6 + rt() * 0.5), mixf(T.larg[0], T.larg[1], c) * (tipo === 1 ? 1.3 : 1),
+          l === 0 ? (e - 0.5) * 0.9 + 0.25 : 0.35 + rt() * 0.5, cr * tom, cg * tom, cb * tom, tipo);
       }
     }
     S.dados = new Float32Array(L); S.n = L.length / 11;

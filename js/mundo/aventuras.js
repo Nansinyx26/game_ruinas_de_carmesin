@@ -829,110 +829,215 @@ const Aventuras = {
       else { World.state.rastreada = q.id; WorldInv.aviso(`Rastreando: ${q.nome}`, true); }
     }
   },
+  // ---- desenho do DIÁRIO ----
+  // À esquerda, a lista: cada missão com o ícone do TIPO (secundária, contrato do dia, missão da região,
+  // campanha) na cor da região, o nome, de quem é e o estado à direita (nível, rastreada, bloqueada com o
+  // motivo). À direita, a ficha: tipo e nível em etiquetas, título, quem pede e onde, a descrição, os
+  // OBJETIVOS (os feitos riscados, o atual com barra de progresso), as RECOMPENSAS em cartões (uma coisa por
+  // cartão: experiência, células, reputação, itens) e o histórico; os botões ficam no rodapé da ficha.
+  TIPOS_DIARIO: { sec: ['SECUNDÁRIA', '255,196,96'], con: ['CONTRATO DO DIA', '120,220,170'], reg: ['MISSÃO DA REGIÃO', '130,190,255'], camp: ['CAMPANHA', '255,150,90'] },
+  tipoEntrada(e) { return e.camp ? 'camp' : e.wq ? 'reg' : this.def(e.av).contrato ? 'con' : 'sec'; },
+  // ícones de traço (o mesmo desenho em qualquer tamanho)
+  iconeDiario(ctx, k, x, y, s, cor) {
+    ctx.save(); ctx.translate(x, y); ctx.strokeStyle = cor; ctx.fillStyle = cor; ctx.lineWidth = Math.max(1.4, s * 0.11); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const h = s / 2;
+    ctx.beginPath();
+    if (k === 'sec') { ctx.moveTo(0, -h); ctx.lineTo(h, 0); ctx.lineTo(0, h); ctx.lineTo(-h, 0); ctx.closePath(); ctx.stroke(); ctx.fillRect(-s * 0.06, -h * 0.5, s * 0.12, h * 0.6); ctx.fillRect(-s * 0.06, h * 0.26, s * 0.12, s * 0.12); }
+    else if (k === 'con') { ctx.rect(-h * 0.7, -h * 0.9, h * 1.4, h * 1.8); ctx.stroke(); ctx.beginPath(); for (const yy of [-0.45, 0, 0.45]) { ctx.moveTo(-h * 0.4, h * yy); ctx.lineTo(h * 0.4, h * yy); } ctx.stroke(); }
+    else if (k === 'reg') { ctx.arc(0, -h * 0.25, h * 0.6, Math.PI * 0.85, Math.PI * 2.15); ctx.lineTo(0, h); ctx.closePath(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, -h * 0.25, h * 0.2, 0, TAU); ctx.fill(); }
+    else if (k === 'camp' || k === 'xp') { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? h * 0.45 : h; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); if (k === 'xp') ctx.fill(); else ctx.stroke(); }
+    else if (k === 'cadeado') { ctx.rect(-h * 0.6, -h * 0.1, h * 1.2, h); ctx.fill(); ctx.beginPath(); ctx.arc(0, -h * 0.1, h * 0.42, Math.PI, 0); ctx.stroke(); }
+    else if (k === 'feito') { ctx.moveTo(-h * 0.7, 0); ctx.lineTo(-h * 0.15, h * 0.55); ctx.lineTo(h * 0.75, -h * 0.55); ctx.stroke(); }
+    else if (k === 'cel') { ctx.moveTo(0, -h); ctx.lineTo(h * 0.7, 0); ctx.lineTo(0, h); ctx.lineTo(-h * 0.7, 0); ctx.closePath(); ctx.fill(); }
+    else if (k === 'rep') { ctx.moveTo(-h * 0.6, h); ctx.lineTo(-h * 0.6, -h); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-h * 0.6, -h); ctx.lineTo(h * 0.8, -h * 0.55); ctx.lineTo(-h * 0.6, -h * 0.05); ctx.closePath(); ctx.fill(); }
+    else if (k === 'alvo') { ctx.arc(0, 0, h * 0.85, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, h * 0.3, 0, TAU); ctx.fill(); }
+    else { ctx.moveTo(0, -h); ctx.lineTo(h * 0.9, -h * 0.45); ctx.lineTo(h * 0.9, h * 0.45); ctx.lineTo(0, h); ctx.lineTo(-h * 0.9, h * 0.45); ctx.lineTo(-h * 0.9, -h * 0.45); ctx.closePath(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-h * 0.9, -h * 0.45); ctx.lineTo(0, 0); ctx.lineTo(h * 0.9, -h * 0.45); ctx.moveTo(0, 0); ctx.lineTo(0, h); ctx.stroke(); }   // item: caixa
+    ctx.restore();
+  },
+  // Recompensas da missão em cartões: [ícone, valor, rótulo, cor]
+  cartoesRec(e) {
+    const o = [];
+    if (e.wq) { const q = WorldQuests.lista(e.reg).find((a) => a.id === e.wq); o.push(['xp', `${q.rec.xp}`, 'experiência', '190,150,255'], ['cel', `${q.rec.cells}`, 'células', '130,200,255'], ['item', 'Relíquia', 'da região', '255,205,120'], ['rep', 'Reputação', worldRegion(e.reg).name, '120,220,170']); return o; }
+    if (!e.av) return o;
+    const q = this.def(e.av), R = q.rec || {};
+    if (R.xp) o.push(['xp', `${R.xp}`, 'experiência', '190,150,255']);
+    if (R.cel) o.push(['cel', `${R.cel}`, 'células', '130,200,255']);
+    if (R.rep) o.push(['rep', `+${R.rep}`, WORLD_FACCOES[q.reg] ? WORLD_FACCOES[q.reg].nome : 'reputação', '120,220,170']);
+    if (R.rel) o.push(['item', 'Relíquia', `${WORLD_RARIDADES[R.rel.min || 0].name.toLowerCase()} ou melhor`, '255,205,120']);
+    if (R.unico) o.push(['item', R.unico.unico, 'peça única', '255,170,90']);
+    for (const k in R.cons || {}) o.push(['item', WORLD_CONSUMIVEIS[k].nome, R.cons[k] > 1 ? `× ${R.cons[k]}` : 'consumível', '235,240,250']);
+    for (const k in R.mat || {}) o.push(['item', WORLD_MATERIAIS[k].nome, `× ${R.mat[k]}`, '235,240,250']);
+    if (R.capsulas) o.push(['item', 'Cápsula de reparo', 'consumível', '235,240,250']);
+    return o;
+  },
   drawDiario(ctx, Ly, L, sel, t) {
-    const U = WorldInv.ui, cat = U.cat || 'ativas', x0 = Ly.lx, top = Ly.top, lw = Math.min(420, (VIEW_W - 72) * 0.42), rx = x0 + lw + 20, rw = VIEW_W - 36 - rx;
+    const U = WorldInv.ui, cat = U.cat || 'ativas', x0 = Ly.lx, top = Ly.top, lw = Math.min(430, (VIEW_W - 72) * 0.4), rx = x0 + lw + 22, rw = VIEW_W - 36 - rx;
+    const fundo = Ly.det + 132 - 8, mouse = typeof game !== 'undefined' && game.input && game.input.mouse ? game.input.mouse : null;
+    const sobre = (r) => mouse && mouse.x >= r.x && mouse.x < r.x + r.w && mouse.y >= r.y && mouse.y < r.y + r.h;
+    const caixa = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); };
+    const corta = (txt, w) => { if (ctx.measureText(txt).width <= w) return txt; while (txt.length > 4 && ctx.measureText(txt + '…').width > w) txt = txt.slice(0, -1); return txt.trimEnd() + '…'; };
     ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    // categorias
+    // ---- categorias: um seletor só, com a contagem de cada uma
     let x = x0;
-    ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+    const NOMES = { ativas: 'ATIVAS', disponiveis: 'DISPONÍVEIS', concluidas: 'CONCLUÍDAS' };
     for (const c of this.CATS) {
-      const label = `${{ ativas: 'ATIVAS', disponiveis: 'DISPONÍVEIS', concluidas: 'CONCLUÍDAS' }[c]} ${this.diarioLista(c).length}`, w = ctx.measureText(label).width + 22, on = c === cat;
-      ctx.fillStyle = on ? 'rgba(255,212,122,0.18)' : 'rgba(20,30,50,0.6)'; ctx.fillRect(x, top - 26, w, 24);
-      ctx.strokeStyle = on ? 'rgba(255,212,122,0.85)' : 'rgba(90,120,170,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, top - 25.5, w - 1, 23);
-      ctx.fillStyle = on ? '#ffe6b0' : 'rgba(200,214,235,0.7)'; ctx.fillText(label, x + 11, top - 13);
-      U.rects.push({ cat: c, x, y: top - 26, w, h: 24 });
+      const n = this.diarioLista(c).length, on = c === cat;
+      ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
+      const tw = ctx.measureText(NOMES[c]).width, w = tw + 54, r = { cat: c, x, y: top - 30, w, h: 30 }, hv = sobre(r);
+      caixa(x, top - 30, w, 30, 6); ctx.fillStyle = on ? 'rgba(255,205,120,0.2)' : hv ? 'rgba(60,90,150,0.45)' : 'rgba(16,24,42,0.8)'; ctx.fill();
+      ctx.strokeStyle = on ? 'rgba(255,212,122,0.9)' : 'rgba(90,120,170,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = on ? '#ffe6b0' : 'rgba(205,218,238,0.8)'; ctx.fillText(NOMES[c], x + 12, top - 15);
+      ctx.letterSpacing = '0px';
+      caixa(x + tw + 22, top - 24, 24, 18, 9); ctx.fillStyle = on ? 'rgba(255,212,122,0.9)' : 'rgba(90,120,170,0.5)'; ctx.fill();
+      ctx.font = `bold 11px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.fillStyle = on ? '#1a1206' : '#e6eefb'; ctx.fillText(String(n), x + tw + 34, top - 15); ctx.textAlign = 'left';
+      U.rects.push(r);
       x += w + 8;
     }
-    ctx.letterSpacing = '0px';
-    // lista
-    const rh = 40, maxN = Math.max(1, Math.floor((Ly.det + 120 - top - 10) / (rh + 4)));
+    // ---- lista
+    const rh = 52, vao = 6, maxN = Math.max(1, Math.floor((fundo - top - 8) / (rh + vao)));
     const ini = clamp(sel - maxN + 2, 0, Math.max(0, L.length - maxN));
-    if (!L.length) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,175,200,0.75)'; ctx.fillText(cat === 'ativas' ? 'Nenhuma missão ativa. Procure quem tem ! sobre a cabeça.' : cat === 'disponiveis' ? 'Nada disponível agora.' : 'Nenhuma concluída ainda.', x0, top + 18); }
+    if (!L.length) {
+      caixa(x0, top + 8, lw, 92, 8); ctx.fillStyle = 'rgba(12,20,36,0.7)'; ctx.fill(); ctx.strokeStyle = 'rgba(90,120,170,0.3)'; ctx.stroke();
+      this.iconeDiario(ctx, cat === 'concluidas' ? 'feito' : 'sec', x0 + 34, top + 54, 24, 'rgba(160,180,210,0.7)');
+      ctx.font = `bold 13px ${FONT_UI}`; ctx.fillStyle = '#dbe6f7'; ctx.fillText(cat === 'ativas' ? 'Nenhuma missão ativa' : cat === 'disponiveis' ? 'Nada disponível agora' : 'Nenhuma concluída ainda', x0 + 62, top + 44);
+      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(170,186,212,0.8)'; ctx.fillText(cat === 'ativas' ? 'Fale com quem tem ! sobre a cabeça ou veja DISPONÍVEIS.' : cat === 'disponiveis' ? 'Novas missões aparecem ao abrir regiões e subir de nível.' : 'As missões terminadas ficam guardadas aqui.', x0 + 62, top + 64);
+    }
     L.slice(ini, ini + maxN).forEach((e, j) => {
-      const i = ini + j, y = top + 8 + j * (rh + 4), on = i === sel, R = worldRegion(e.reg || (e.av && this.def(e.av).reg) || 'carmesin');
-      ctx.fillStyle = on ? 'rgba(40,70,130,0.6)' : 'rgba(12,20,36,0.85)'; ctx.fillRect(x0, y, lw, rh);
-      ctx.strokeStyle = on ? '#ffffff' : 'rgba(90,120,170,0.35)'; ctx.lineWidth = on ? 2 : 1; ctx.strokeRect(x0 + 0.5, y + 0.5, lw - 1, rh - 1);
-      ctx.fillStyle = rgba(R.rgb, 0.9); ctx.fillRect(x0, y, 3, rh);
-      U.rects.push({ idx: i, x: x0, y, w: lw, h: rh });
-      const q = e.av && this.def(e.av), tr = q && World.state.rastreada === q.id;
-      ctx.font = `bold 13px ${FONT_UI}`; ctx.fillStyle = e.bloq ? 'rgba(160,175,200,0.6)' : '#ffffff';
-      ctx.fillText(`${tr ? '◆ ' : ''}${this.nomeEntrada(e)}`, x0 + 12, y + 14);
-      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.7)';
-      const cat2 = e.camp ? 'Campanha do herói' : e.wq ? 'Missão da região' : q.contrato ? 'Contrato do dia' : 'Secundária';
-      let sub = `${cat2} · ${R.name}${e.bloq ? ` · ${e.bloq}` : q && cat === 'ativas' ? ` · ${this.textoPasso(q)}` : ''}`;
-      if (ctx.measureText(sub).width > lw - 22) { while (sub.length > 4 && ctx.measureText(sub + '…').width > lw - 22) sub = sub.slice(0, -1); sub = sub.trimEnd() + '…'; }
-      ctx.fillText(sub, x0 + 12, y + 30);
+      const i = ini + j, y = top + 8 + j * (rh + vao), on = i === sel, tipo = this.tipoEntrada(e), TD = this.TIPOS_DIARIO[tipo];
+      const q = e.av && this.def(e.av), R = worldRegion(e.reg || (q && q.reg) || 'carmesin'), tr = q && World.state.rastreada === q.id, r = { idx: i, x: x0, y, w: lw, h: rh }, hv = sobre(r);
+      caixa(x0, y, lw, rh, 7); ctx.fillStyle = on ? 'rgba(46,78,140,0.72)' : hv ? 'rgba(28,44,80,0.85)' : 'rgba(12,20,36,0.86)'; ctx.fill();
+      ctx.strokeStyle = on ? 'rgba(170,215,255,0.95)' : 'rgba(90,120,170,0.3)'; ctx.lineWidth = on ? 1.6 : 1; ctx.stroke();
+      U.rects.push(r);
+      // ícone do tipo num quadro na cor da região
+      caixa(x0 + 8, y + 8, 36, 36, 6); ctx.fillStyle = rgba(R.rgb, e.bloq ? 0.1 : 0.2); ctx.fill(); ctx.strokeStyle = rgba(R.rgb, e.bloq ? 0.3 : 0.75); ctx.lineWidth = 1; ctx.stroke();
+      this.iconeDiario(ctx, e.bloq ? 'cadeado' : cat === 'concluidas' ? 'feito' : tipo, x0 + 26, y + 26, 18, e.bloq ? 'rgba(170,180,200,0.7)' : cat === 'concluidas' ? 'rgba(140,225,170,0.95)' : rgba(TD[1], 1));
+      // estado à direita: nível, rastreada
+      let dx = x0 + lw - 10;
+      ctx.textAlign = 'right';
+      if (q && q.nivel) { ctx.font = `bold 10px ${FONT_TITLE}`; const tw2 = ctx.measureText(`NV ${q.nivel}`).width + 12; caixa(dx - tw2, y + 9, tw2, 16, 4); ctx.fillStyle = 'rgba(8,14,26,0.8)'; ctx.fill(); ctx.strokeStyle = 'rgba(120,150,200,0.4)'; ctx.stroke(); ctx.fillStyle = e.bloq ? 'rgba(170,180,200,0.7)' : '#cfe0fa'; ctx.fillText(`NV ${q.nivel}`, dx - 6, y + 17.5); dx -= tw2 + 6; }
+      if (tr) { ctx.font = `bold 10px ${FONT_TITLE}`; const tw2 = ctx.measureText('◆ RASTREADA').width + 12; caixa(dx - tw2, y + 9, tw2, 16, 4); ctx.fillStyle = 'rgba(255,205,120,0.2)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,212,122,0.8)'; ctx.stroke(); ctx.fillStyle = '#ffe2a0'; ctx.fillText('◆ RASTREADA', dx - 6, y + 17.5); dx -= tw2 + 6; }
+      ctx.textAlign = 'left';
+      ctx.font = `bold 14px ${FONT_UI}`; ctx.fillStyle = e.bloq ? 'rgba(170,182,205,0.7)' : '#ffffff';
+      ctx.fillText(corta(this.nomeEntrada(e), dx - (x0 + 54) - 6), x0 + 54, y + 18);
+      ctx.font = `11px ${FONT_UI}`;
+      if (e.bloq) { ctx.fillStyle = 'rgba(255,170,150,0.85)'; ctx.fillText(corta(`Bloqueada · ${e.bloq}`, lw - 66), x0 + 54, y + 37); }
+      else { ctx.fillStyle = rgba(TD[1], 0.9); const tt = TD[0].charAt(0) + TD[0].slice(1).toLowerCase(); ctx.fillText(tt, x0 + 54, y + 37); const twt = ctx.measureText(tt).width;
+        ctx.fillStyle = 'rgba(190,205,228,0.75)'; ctx.fillText(corta(` · ${R.name}${q && cat === 'ativas' ? ` · ${this.textoPasso(q)}` : ''}`, lw - 66 - twt), x0 + 54 + twt, y + 37); }
     });
-    // detalhes
-    const e = L[sel];
-    ctx.fillStyle = 'rgba(8,14,28,0.92)'; ctx.fillRect(rx, top - 26, rw, Ly.det + 132 - top + 26 - 8);
-    ctx.strokeStyle = 'rgba(255,212,122,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(rx + 0.5, top - 25.5, rw - 1, Ly.det + 132 - top + 26 - 9);
-    if (!e) return;
-    const wrap = (txt, x, y, w, lh, max = 6) => {
+    if (L.length > maxN) {   // barra de rolagem
+      const bh = fundo - top - 12, k = maxN / L.length;
+      ctx.fillStyle = 'rgba(90,120,170,0.25)'; ctx.fillRect(x0 + lw + 6, top + 8, 3, bh);
+      ctx.fillStyle = 'rgba(170,215,255,0.8)'; ctx.fillRect(x0 + lw + 6, top + 8 + bh * (ini / L.length), 3, Math.max(18, bh * k));
+    }
+    // ---- ficha
+    const e = L[sel], py = top - 30, ph = fundo - py;
+    const tipo = e ? this.tipoEntrada(e) : 'sec', TD = this.TIPOS_DIARIO[tipo], q = e && e.av ? this.def(e.av) : null, wq = e && e.wq ? WorldQuests.lista(e.reg).find((a) => a.id === e.wq) : null;
+    const Rg = worldRegion((e && (e.reg || (q && q.reg))) || 'carmesin');
+    caixa(rx, py, rw, ph, 10);
+    const gf = ctx.createLinearGradient(0, py, 0, py + ph); gf.addColorStop(0, 'rgba(14,22,42,0.96)'); gf.addColorStop(1, 'rgba(6,10,20,0.96)');
+    ctx.fillStyle = gf; ctx.fill(); ctx.strokeStyle = 'rgba(110,140,190,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+    if (!e) { ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,178,205,0.7)'; ctx.textAlign = 'center'; ctx.fillText('Escolha uma missão na lista para ver os detalhes.', rx + rw / 2, py + ph / 2); ctx.textAlign = 'left'; return; }
+    // faixa do topo na cor da região
+    ctx.save(); caixa(rx, py, rw, ph, 10); ctx.clip();
+    const gt = ctx.createLinearGradient(rx, 0, rx + rw, 0); gt.addColorStop(0, rgba(Rg.rgb, 0.3)); gt.addColorStop(1, rgba(Rg.rgb, 0));
+    ctx.fillStyle = gt; ctx.fillRect(rx, py, rw, 92); ctx.fillStyle = rgba(Rg.rgb, 0.95); ctx.fillRect(rx, py, rw, 3);
+    ctx.restore();
+    const px = rx + 22, pw = rw - 44;
+    const wrap = (txt, xx, yy, w, lh, max = 6) => {
       let cur = '', n = 0;
-      for (const p of String(txt).split(' ')) { const tt = cur ? `${cur} ${p}` : p; if (cur && ctx.measureText(tt).width > w) { if (n < max) ctx.fillText(cur, x, y + n * lh); n++; cur = p; } else cur = tt; }
-      if (cur && n < max) { ctx.fillText(cur, x, y + n * lh); n++; }
+      for (const p of String(txt).split(' ')) { const tt = cur ? `${cur} ${p}` : p; if (cur && ctx.measureText(tt).width > w) { if (n < max) ctx.fillText(cur, xx, yy + n * lh); n++; cur = p; } else cur = tt; }
+      if (cur && n < max) { ctx.fillText(cur, xx, yy + n * lh); n++; }
       return Math.min(n, max) * lh;
     };
-    let y = top - 4;
-    const px = rx + 16, pw = rw - 32;
-    if (e.camp) {
-      const c = Campanhas.cap();
-      ctx.font = `bold 17px ${FONT_TITLE}`; ctx.fillStyle = '#ffb860'; ctx.fillText(c ? c.nome.toUpperCase() : 'CAMPANHA', px, y + 8);
-      ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = '#eef3fa'; y += 30;
-      wrap(`${Campanhas.linha() || 'Campanha do herói em andamento.'} Veja a aba CAMPANHAS para os capítulos.`, px, y, pw, 18);
-      return;
+    const etiqueta = (txt, xx, yy, rgb, cheio) => { ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '1.5px'; const w = ctx.measureText(txt).width + 16; caixa(xx, yy, w, 20, 4); ctx.fillStyle = rgba(rgb, cheio ? 0.9 : 0.16); ctx.fill(); ctx.strokeStyle = rgba(rgb, 0.8); ctx.stroke(); ctx.fillStyle = cheio ? '#0c1220' : rgba(rgb, 1); ctx.fillText(txt, xx + 8, yy + 10.5); ctx.letterSpacing = '0px'; return w + 6; };
+    const secao = (txt, yy) => { ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2.5px'; ctx.fillStyle = 'rgba(150,205,255,0.9)'; ctx.fillText(txt, px, yy); const w = ctx.measureText(txt).width; ctx.letterSpacing = '0px'; ctx.fillStyle = 'rgba(110,140,190,0.3)'; ctx.fillRect(px + w + 12, yy, pw - w - 12, 1); };
+    let y = py + 18;
+    // etiquetas: tipo, nível, região, estado
+    let ex = px;
+    const s = q ? this.S[q.id] : null, stq = wq ? WorldQuests.S[wq.id] : null, feita = (s && s.st === 'feita') || (stq && stq.st === 'feita'), ativa = (s && s.st === 'ativa') || (stq && stq.st === 'ativa') || e.camp;
+    ex += etiqueta(TD[0], ex, y, TD[1], true);
+    if (q && q.nivel) ex += etiqueta(`NÍVEL ${q.nivel}`, ex, y, '205,220,245');
+    ex += etiqueta(Rg.name.toUpperCase(), ex, y, Rg.rgb);
+    if (feita) ex += etiqueta('CONCLUÍDA', ex, y, '140,225,170'); else if (e.bloq) ex += etiqueta('BLOQUEADA', ex, y, '255,150,130'); else if (ativa) ex += etiqueta('EM ANDAMENTO', ex, y, '255,212,122');
+    y += 44;
+    const camp = e.camp ? Campanhas.cap() : null, titulo = e.camp ? (camp ? camp.nome : 'Campanha') : wq ? wq.name : q.nome;
+    ctx.font = `bold 23px ${FONT_TITLE}`; ctx.fillStyle = '#ffffff'; ctx.fillText(corta(titulo.toUpperCase(), pw), px, y); y += 26;
+    // quem pede e onde
+    const O = q && q.doador && Povo.onde(q.doador), D = wq ? WorldQuests.doador(e.reg) : null;
+    const quem = e.camp ? 'Campanha do herói · aba CAMPANHAS para os capítulos' : D ? `${D.nome} · ${D.zona}` : O ? `${O.nome} · ${WORLD_ZONES[O.zona].name}` : 'Quadro de contratos';
+    this.iconeDiario(ctx, 'alvo', px + 7, y, 12, rgba(Rg.rgb, 0.95));
+    ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = rgba(Rg.rgb, 0.98); ctx.fillText(corta(quem, pw - 22), px + 22, y); y += 28;
+    if (e.bloq) { caixa(px, y - 12, pw, 26, 5); ctx.fillStyle = 'rgba(120,40,40,0.35)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,150,130,0.55)'; ctx.stroke(); this.iconeDiario(ctx, 'cadeado', px + 14, y + 1, 12, '#ffb4a0'); ctx.font = `bold 12px ${FONT_UI}`; ctx.fillStyle = '#ffd2c6'; ctx.fillText(`Para liberar: ${e.bloq}`, px + 30, y + 1); y += 30; }
+    // descrição
+    ctx.font = `14px ${FONT_UI}`; ctx.fillStyle = 'rgba(228,236,248,0.92)';
+    y += wrap(e.camp ? (Campanhas.linha() || 'Campanha do herói em andamento.') : wq ? wq.ini : q.desc, px, y, pw, 21, 4) + 16;
+    // objetivos
+    const limite = fundo - 60;
+    if (!e.camp && y < limite - 40) {
+      secao('OBJETIVOS', y); y += 22;
+      const linha = (txt, feito, atual) => {
+        const m = /\((\d+)\s*\/\s*(\d+)\)\s*$/.exec(txt), limpo = m ? txt.slice(0, m.index).trimEnd() : txt;
+        caixa(px, y - 13, pw, m && atual ? 38 : 26, 5); ctx.fillStyle = atual ? 'rgba(255,205,120,0.09)' : 'rgba(20,30,52,0.5)'; ctx.fill(); if (atual) { ctx.strokeStyle = 'rgba(255,212,122,0.4)'; ctx.stroke(); }
+        if (feito) this.iconeDiario(ctx, 'feito', px + 14, y, 11, 'rgba(140,225,170,0.95)'); else { ctx.beginPath(); ctx.arc(px + 14, y, 4.5, 0, TAU); ctx.strokeStyle = atual ? '#ffd47a' : 'rgba(170,186,212,0.7)'; ctx.lineWidth = 1.6; ctx.stroke(); }
+        ctx.font = `${atual ? 'bold ' : ''}13px ${FONT_UI}`; ctx.fillStyle = feito ? 'rgba(160,195,175,0.8)' : atual ? '#ffe2a0' : 'rgba(220,230,245,0.9)';
+        ctx.fillText(corta(limpo, pw - (m ? 96 : 40)), px + 30, y);
+        if (feito) { const w = Math.min(ctx.measureText(limpo).width, pw - 40); ctx.fillStyle = 'rgba(160,195,175,0.6)'; ctx.fillRect(px + 30, y, w, 1); }
+        if (m) { ctx.textAlign = 'right'; ctx.font = `bold 13px ${FONT_NUM}`; ctx.fillStyle = atual ? '#ffe2a0' : 'rgba(200,214,235,0.8)'; ctx.fillText(`${m[1]} / ${m[2]}`, px + pw - 12, y); ctx.textAlign = 'left';
+          if (atual) { const k = clamp(+m[1] / Math.max(1, +m[2]), 0, 1); ctx.fillStyle = 'rgba(8,12,22,0.9)'; ctx.fillRect(px + 30, y + 13, pw - 42, 5); ctx.fillStyle = '#ffc860'; ctx.fillRect(px + 30, y + 13, (pw - 42) * k, 5); y += 12; } }
+        y += 30;
+      };
+      if (wq) linha(`${WorldQuests.texto(wq)}${stq && stq.st === 'ativa' ? ` (${Math.min(WorldQuests.prog(wq), WorldQuests.meta(wq))}/${WorldQuests.meta(wq)})` : ''}`, !!(stq && stq.st === 'feita'), !(stq && stq.st === 'feita'));
+      else {
+        const ate = s ? (s.st === 'feita' ? q.passos.length : s.p + 1) : 1;
+        q.passos.slice(0, ate).forEach((P, k) => { if (y > limite - 60) return; const fe = !!(s && (s.st === 'feita' || k < s.p)); linha(fe || !s ? P.txt : this.textoPasso(q), fe, !fe); });
+        if (!s && q.passos.length > 1 && y < limite - 50) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(170,186,212,0.7)'; ctx.fillText(`+ ${q.passos.length - 1} ${q.passos.length - 1 > 1 ? 'etapas' : 'etapa'} depois desta`, px + 30, y - 6); y += 14; }
+        if (s && s.leva && y < limite - 40) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.8)'; ctx.fillText(`Levando: ${s.leva}`, px + 30, y - 4); y += 18; }
+      }
+      y += 6;
     }
-    if (e.wq) {
-      const q = WorldQuests.lista(e.reg).find((a) => a.id === e.wq), D = WorldQuests.doador(e.reg), st = WorldQuests.S[q.id];
-      ctx.font = `bold 17px ${FONT_TITLE}`; ctx.fillStyle = '#ffffff'; ctx.fillText(q.name.toUpperCase(), px, y + 8);
-      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = rgba(worldRegion(e.reg).rgb, 0.95); ctx.fillText(`Missão da região · ${worldRegion(e.reg).name} · com ${D.nome} (${D.zona})`, px, y + 30);
-      ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(225,235,248,0.9)'; y += 54;
-      y += wrap(q.ini, px, y, pw, 18, 4) + 10;
-      ctx.fillStyle = '#ffd47a'; ctx.font = `bold 13px ${FONT_UI}`;
-      ctx.fillText(`${st && st.st === 'feita' ? '✓' : '▸'} ${WorldQuests.texto(q)}${st && st.st === 'ativa' ? ` (${Math.min(WorldQuests.prog(q), WorldQuests.meta(q))}/${WorldQuests.meta(q)})` : ''}`, px, y); y += 26;
-      ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#9fd0ff'; ctx.fillText(`Recompensa: ${q.rec.cells} células · ${q.rec.xp} XP · relíquia · reputação`, px, y);
-      return;
+    // recompensas em cartões
+    const recs = this.cartoesRec(e);
+    if (recs.length && y < limite - 50) {
+      secao('RECOMPENSAS', y); y += 18;
+      const cw = Math.min(168, (pw - 8 * 3) / 4), ch = 46;
+      let cx = px, cy = y;
+      for (const [ic, valor, rot, rgb] of recs) {
+        if (cx + cw > px + pw + 1) { cx = px; cy += ch + 8; }
+        if (cy + ch > limite) break;
+        caixa(cx, cy, cw, ch, 6); ctx.fillStyle = 'rgba(18,28,50,0.85)'; ctx.fill(); ctx.strokeStyle = rgba(rgb, 0.4); ctx.stroke();
+        caixa(cx + 7, cy + 8, 30, 30, 5); ctx.fillStyle = rgba(rgb, 0.16); ctx.fill();
+        this.iconeDiario(ctx, ic, cx + 22, cy + 23, 15, rgba(rgb, 1));
+        ctx.font = `bold 13px ${FONT_UI}`; ctx.fillStyle = '#ffffff'; ctx.fillText(corta(valor, cw - 52), cx + 44, cy + 16);
+        ctx.font = `10.5px ${FONT_UI}`; ctx.fillStyle = 'rgba(185,200,225,0.8)'; ctx.fillText(corta(rot, cw - 52), cx + 44, cy + 32);
+        cx += cw + 8;
+      }
+      y = cy + ch + 16;
     }
-    const q = this.def(e.av), s = this.S[q.id], R = worldRegion(q.reg), O = q.doador && Povo.onde(q.doador);
-    ctx.font = `bold 17px ${FONT_TITLE}`; ctx.fillStyle = '#ffffff'; ctx.fillText(q.nome.toUpperCase(), px, y + 8);
-    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = rgba(R.rgb, 0.95);
-    ctx.fillText(`${q.contrato ? 'Contrato do dia' : 'Secundária'} · ${R.name} · nível ${q.nivel}${O ? ` · ${O.nome} (${WORLD_ZONES[O.zona].name})` : ' · quadro de contratos'}`, px, y + 30);
-    ctx.font = `13px ${FONT_UI}`; ctx.fillStyle = 'rgba(225,235,248,0.9)'; y += 54;
-    y += wrap(q.desc, px, y, pw, 18, 3) + 8;
-    // objetivos: os feitos e o atual
-    ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(150,205,255,0.9)'; ctx.fillText('OBJETIVOS', px, y); ctx.letterSpacing = '0px'; y += 20;
-    const ate = s ? (s.st === 'feita' ? q.passos.length : s.p + 1) : 1;
-    q.passos.slice(0, ate).forEach((P, k) => {
-      const feito = s && (s.st === 'feita' || k < s.p);
-      ctx.font = `${feito ? '' : 'bold '}13px ${FONT_UI}`; ctx.fillStyle = feito ? 'rgba(160,190,170,0.85)' : '#ffd47a';
-      ctx.fillText(`${feito ? '✓' : '▸'} ${feito || !s ? P.txt : this.textoPasso(q)}`, px, y); y += 19;
-    });
-    if (s && s.leva) { ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.8)'; ctx.fillText(`Levando: ${s.leva}`, px, y); y += 19; }
-    y += 6;
-    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = '#9fd0ff'; y += wrap(`Recompensa: ${this.resumoRec(q)}`, px, y, pw, 17, 2) + 8;
-    // histórico
-    if (s && s.hist.length) {
-      ctx.font = `bold 11px ${FONT_TITLE}`; ctx.letterSpacing = '2px'; ctx.fillStyle = 'rgba(150,205,255,0.9)'; ctx.fillText('HISTÓRICO', px, y); ctx.letterSpacing = '0px'; y += 18;
-      ctx.font = `11px ${FONT_UI}`; ctx.fillStyle = 'rgba(200,214,235,0.75)';
-      for (const h of s.hist.slice(-4).reverse()) { if (y > Ly.det + 70) break; ctx.fillText(`Dia ${h.d}, ${String(h.h).padStart(2, '0')}h · ${h.txt}`, px, y); y += 16; }
+    // histórico (se couber)
+    if (s && s.hist && s.hist.length && y < limite - 40) {
+      secao('HISTÓRICO', y); y += 20;
+      ctx.font = `11.5px ${FONT_UI}`;
+      for (const h of s.hist.slice(-4).reverse()) { if (y > limite - 8) break; ctx.fillStyle = 'rgba(150,170,200,0.75)'; ctx.fillText(`Dia ${h.d}, ${String(h.h).padStart(2, '0')}h`, px, y); ctx.fillStyle = 'rgba(210,222,240,0.85)'; ctx.fillText(corta(h.txt, pw - 90), px + 84, y); y += 17; }
     }
-    // botões
+    // botões no rodapé da ficha
     const acoes = [];
-    if (s && s.st === 'ativa') { acoes.push(['main', World.state.rastreada === q.id ? 'NÃO RASTREAR' : 'RASTREAR']); acoes.push(['alt', U.confirma === q.id ? 'CONFIRMAR ABANDONO' : 'ABANDONAR']); }
-    else if (!s) acoes.push(['main', World.state.rastreada === q.id ? 'DESMARCAR' : 'MARCAR NO MAPA']);
-    let bx = rx + rw - 16;
-    const by = Ly.det + 132 - 26 - 34 - 8;
+    if (q && s && s.st === 'ativa') { acoes.push(['main', World.state.rastreada === q.id ? 'PARAR DE RASTREAR' : 'RASTREAR']); acoes.push(['alt', U.confirma === q.id ? 'CONFIRMAR ABANDONO' : 'ABANDONAR']); }
+    else if (q && !s) acoes.push(['main', World.state.rastreada === q.id ? 'DESMARCAR' : 'MARCAR NO MAPA']);
+    ctx.fillStyle = 'rgba(110,140,190,0.25)'; ctx.fillRect(rx + 1, fundo - 52, rw - 2, 1);
+    let bx = rx + rw - 18;
+    const by = fundo - 42;
     for (const [id, label] of acoes.slice().reverse()) {
-      ctx.font = `bold 12px ${FONT_TITLE}`;
-      const bw = ctx.measureText(label).width + 28;
+      ctx.font = `bold 12px ${FONT_TITLE}`; ctx.letterSpacing = '1.5px';
+      const bw = ctx.measureText(label).width + 34, r = { btn: id, x: bx - bw, y: by, w: bw, h: 32 }, hv = sobre(r);
       bx -= bw;
-      ctx.fillStyle = id === 'alt' ? 'rgba(80,30,40,0.85)' : 'rgba(30,70,140,0.85)'; ctx.fillRect(bx, by, bw, 32);
-      ctx.strokeStyle = id === 'alt' ? 'rgba(255,120,140,0.8)' : 'rgba(150,205,255,0.85)'; ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, 31);
-      ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText(label, bx + bw / 2, by + 16);
-      U.rects.push({ btn: id, x: bx, y: by, w: bw, h: 32 });
+      caixa(bx, by, bw, 32, 6);
+      ctx.fillStyle = id === 'alt' ? (hv ? 'rgba(130,40,54,0.95)' : 'rgba(80,30,40,0.85)') : (hv ? 'rgba(54,110,210,0.95)' : 'rgba(34,78,156,0.9)'); ctx.fill();
+      ctx.strokeStyle = id === 'alt' ? 'rgba(255,120,140,0.8)' : 'rgba(160,210,255,0.9)'; ctx.stroke();
+      ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText(label, bx + bw / 2, by + 16.5); ctx.letterSpacing = '0px';
+      U.rects.push(r);
       bx -= 10;
     }
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'left'; ctx.font = `11.5px ${FONT_UI}`; ctx.fillStyle = 'rgba(160,178,205,0.75)';
+    ctx.fillText(q && !s ? (e.bloq ? 'Ainda não dá para aceitar esta missão.' : `Aceite falando com ${O ? O.nome : 'o quadro de contratos'}.`) : ativa && q ? 'A missão rastreada aparece com ◆ no mapa e na zona.' : '', px, by + 16);
   },
 };

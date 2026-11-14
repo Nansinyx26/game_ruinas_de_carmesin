@@ -200,11 +200,11 @@ const Criaturas3D = {
   },
 
   // ------------------------------------------------------------------ peças da espécie
-  // id da criatura (ou da base dela) → peças que a malha remodelada não tem: chifres (cabra) e bico
+  // id da criatura (ou da base dela) → peças que a malha remodelada não tem: bico
   // chato (pato, ganso). Medidas na fatia da malha no espaço de cada osso, como as coleiras. (A
   // galinha enviada já traz crista e barbela modeladas; a 'crista' continua aqui para quem precisar.)
   ACESSORIOS: {
-    cabra: [['chifres', 'cabeca']],
+    // (a cabra real, assets/Creatures/DomesticAnimals/cabra, já traz os chifres na malha)
     pato: [['bico_chato', 'cabeca']],
     ganso: [['bico_chato', 'cabeca']],
   },

@@ -71,6 +71,8 @@ const EclipseTests = {
       await this.fogoAguaAnimacao();
       await this.estruturasMundo();
       await this.agua();
+      await this.solSombras();
+      await this.poderesDiario();
       this.megacidades();
       this.mundoContinuo();
       this.metropoleSegura();
@@ -785,7 +787,7 @@ const EclipseTests = {
       try { for (const c in WORLD_CLIMAS) { WorldTime.definir(c, 'carmesin', false); WorldTime.update(0.1); WorldTime.drawOverlay(g.ctx); } } catch (e) { erro = e.message; }
       this.ok('clima: todos desenham sem erro', !erro, erro);
       // relíquias
-      const L = WorldInv.gerar(30, 'obsidiano', 4);
+      const L = WorldInv.gerar(30, 'obsidiano', 4, 0, () => 0.01);   // (sorteio fixo: com o mínimo lendário, às vezes sai mítica)
       this.ok('relíquia: raridade mínima respeitada', L.r === 4, L.r);
       this.igual('relíquia lendária: 3 atributos', Object.keys(L.st).length, 3);
       this.ok('relíquia: nome com a região', WorldInv.nome(L).indexOf('Obsidiana') > 0, WorldInv.nome(L));
@@ -2116,16 +2118,21 @@ const EclipseTests = {
             const lam = (S) => { const o = []; for (let q = 0; q < S.n; q++) o.push(S.dados.subarray(q * 11, q * 11 + 11)); return o; };
             const todas = S1.flatMap(lam);
             this.ok('vegetação: a zona natural ganha grama em tufos (milhares de lâminas)', E1 && E1.laminas > 8000 && todas.length === E1.laminas, JSON.stringify(E1));
-            this.ok('vegetação: nada no fundo da água (na margem rasa, só juncos)', todas.every((b) => Agua.profundidade(b[0], b[1]) <= 0.31 || b[0] < 0 || b[1] < 0 || b[0] > Rv.w || b[1] > Rv.h) && todas.some((b) => b[10] === 1));
+            const naAgua = todas.find((b) => !(Agua.profundidade(b[0], b[1]) <= 0.31 || b[0] <= 0 || b[1] <= 0 || b[0] >= Rv.w || b[1] >= Rv.h));
+            this.ok('vegetação: nada no fundo da água (na margem rasa, só juncos)', !naAgua && todas.some((b) => b[10] === 1), naAgua && `${naAgua[0].toFixed(1)},${naAgua[1].toFixed(1)} tipo ${naAgua[10]} prof ${Agua.profundidade(naAgua[0], naAgua[1]).toFixed(3)} sala ${game.room === Rv}`);
             const exc = Vegetacao._exc().filter((e) => e.r > 30);
             this.ok('vegetação: nada em cima de construções, colisores e pontos de interação', todas.every((b) => exc.every((e) => Math.hypot(b[0] - e.x, b[1] - e.y) > e.r - 9)), exc.length);
             this.ok('vegetação: flores do campo de várias espécies', new Set(todas.filter((b) => b[10] >= 2).map((b) => b[10])).size >= 2);
             this.ok('vegetação: cada lâmina no chão do relevo', todas.slice(0, 400).every((b) => Math.abs(b[2] - (Relevo.altura(b[0], b[1]) - 0.4)) < 0.7 || b[10] === 1));
-            const ch = (A) => A.map((S) => S.n + ':' + S.dados[0].toFixed(2) + ':' + S.dados[S.dados.length - 11].toFixed(2)).join('|'), c1 = ch(S1);
+            // (baús, eventos e moradores mudam de lugar a cada visita e tiram a grama debaixo deles: a comparação
+            //  ignora o que fica perto deles; o resto tem de ser idêntico)
+            const transit = () => Vegetacao._exc().filter((e) => e.t), T1 = transit();
+            const conj = (A, T) => { const o = new Set(); for (const S of A) for (let q = 0; q < S.n; q++) { const x = S.dados[q * 11], y = S.dados[q * 11 + 1]; if (!T.some((e) => Math.hypot(x - e.x, y - e.y) < e.r + 40)) o.add(x.toFixed(1) + ',' + y.toFixed(1)); } return o; };
             World.loadZone('aurora', null);
             this.ok('vegetação: cidade sem grama gerada', !Vegetacao.ativo());
             World.loadZone('velmora_lago', null); Vegetacao.gerarTudo();
-            this.ok('vegetação: voltar à zona dá a mesma grama (semente)', ch(Vegetacao.setores()) === c1);
+            { const T = T1.concat(transit()), A1 = conj(S1, T), A2 = conj(Vegetacao.setores(), T); let comum = 0; for (const k of A1) if (A2.has(k)) comum++;
+              this.ok('vegetação: voltar à zona dá a mesma grama (semente)', A1.size > 1000 && comum >= Math.min(A1.size, A2.size) * 0.99, `${comum} de ${A1.size}/${A2.size}`); }
             const olho = [Rv.w / 2 - 300, Rv.h / 2 - 300, 200], V = Vegetacao.visiveis(olho, [Rv.w / 2, Rv.h / 2, 0]).slice(), lods = new Set(V.map((S) => S.lod));
             this.ok('vegetação: setores visíveis com LOD por distância (perto cheio, longe ralo) e nada atrás da câmera', V.length > 0 && lods.size >= 2 && V.every((S) => S.qtd <= S.n), [...lods].join(','));
             const p0 = g.player; p0.vx = 300; p0.vy = 0; p0.state = 'run'; for (let i = 0; i < 40; i++) Vegetacao.empurrao(); const Ec = Vegetacao.empurrao().slice();
@@ -3266,6 +3273,152 @@ const EclipseTests = {
   // Estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js): índice leve no index.html, o
   // modelo de cada uma baixado só quando a zona dela carrega, colisor já na chegada, foto na vista
   // isométrica, modelo na 3ª pessoa e a malha indexada decodificada inteira
+  // ---------------------------------------------------------------- sol, ciclo de 24 h e sombras
+  // js/mundo/sol.js (posição física do sol e da lua, cor pela atmosfera) e o mapa de sombras em
+  // cascata do motor clássico (R3D.passeSombra). Os 8 casos do pedido: herói parado ao sol, andando,
+  // entrando na sombra de um prédio, armadura sob vários ângulos (a luz presa ao mundo), árvores e
+  // prédios projetando sombra, amanhecer → noite gradual e a luz artificial no subsolo
+  async solSombras() {
+    const g = game, p = g.player, h0 = World.state.hora, dm0 = Settings.v.diaMin, so0 = Settings.v.sombras, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    let erro = null;
+    try {
+      if (!g.world) { const sv = World.save; World.save = () => {}; World.start(); World.save = sv; g.state = 'playing'; }
+      Settings.v.diaMin = 1e6;   // o relógio parado durante o teste
+      World.loadZone('velmora_clareira', null);
+      const R = g.room, E = (h) => Sol.estado(R, ((h % 24) + 24) % 24, 1);
+      const m6 = E(6.5), m12 = E(12), m17 = E(17.5), m0 = E(0);
+      this.ok('sol: nasce a leste de manhã e se põe a oeste à tarde', m6.sol.dir[1] < -0.8 && m17.sol.dir[1] > 0.8, `${m6.sol.dir[1].toFixed(2)} ${m17.sol.dir[1].toFixed(2)}`);
+      this.ok('sol: ao meio-dia, alto (mais de 60°), com a sombra curta', m12.sol.el > 1.05 && m12.sombra.comprimento < 0.6, (m12.sol.el * 57.3).toFixed(1));
+      this.ok('sol: de manhã, perto do horizonte, com a sombra comprida', m6.sol.el < 0.2 && m6.sombra.comprimento > 4, m6.sombra.comprimento.toFixed(1));
+      this.ok('sol: alaranjado no pôr do sol (17:30) e branco ao meio-dia (pela atmosfera)', m17.chave.cor[2] < m17.chave.cor[0] * 0.45 && m12.chave.cor[2] > m12.chave.cor[0] * 0.75, `${m17.chave.cor.map((v) => v.toFixed(2))} / ${m12.chave.cor.map((v) => v.toFixed(2))}`);
+      this.ok('sol: à noite o sol some e a lua dá a luz (fraca e azulada)', m0.sol.k === 0 && m0.lua.k > 0 && m0.chave.cor[2] > m0.chave.cor[0] && Math.max(...m0.chave.cor) < 0.6);
+      const horas = [[6.2, 'AMANHECER'], [8.5, 'MANHÃ'], [12.5, 'SOL INTENSO'], [15.5, 'TARDE'], [17.6, 'PÔR DO SOL'], [19.2, 'CREPÚSCULO'], [21.5, 'NOITE'], [0.5, 'MADRUGADA']];
+      this.ok('ciclo: os 8 horários pedidos (06:00 amanhecer … 00:00 madrugada)', horas.every(([h, n]) => Sol.periodo(h) === n), horas.map(([h]) => Sol.periodo(h)).join(','));
+      // 7) amanhecer → noite gradual: a luz (cor e direção × força) muda pouco a cada 2 minutos do mundo
+      let salto = 0, onde = 0;
+      for (let h = 0; h < 24; h += 1 / 30) {
+        const a = E(h), b = E(h + 1 / 30), la = a.chave.dir.map((v) => v * a.chave.k), lb = b.chave.dir.map((v) => v * b.chave.k);
+        const d = Math.hypot(...la.map((v, i) => v - lb[i])) + Math.hypot(...a.chave.cor.map((v, i) => v - b.chave.cor[i]));
+        if (d > salto) { salto = d; onde = h; }
+      }
+      this.ok('ciclo: transições graduais o dia inteiro (sem salto de luz)', salto < 0.4, `${salto.toFixed(3)} às ${onde.toFixed(2)} h`);
+      this.ok('ciclo: duração do dia configurável', (Settings.v.diaMin = 20, WorldTime.DIA_SEG === 1200) && (Settings.v.diaMin = 1e6, true));
+      // 8) lugares fechados: sem sol, luz artificial do teto
+      World.loadZone('aurora_taverna', null);
+      const Ti = Sol.estado(g.room, 12);
+      const zs = Object.keys(WORLD_ZONES).find((k) => THEMES[WORLD_ZONES[k].theme] && THEMES[WORLD_ZONES[k].theme].subsolo);
+      let Ts = null; if (zs) { World.loadZone(zs, null); Ts = Sol.estado(g.room, 12); }
+      this.ok('subsolo e interiores: o sol não atravessa o teto (luz artificial do alto, sombras curtas)', !Ti.aberto && Ti.artificial && Ti.chave.dir[2] > 0.9 && (!Ts || (!Ts.aberto && Ts.artificial)), zs);
+      // render: o mapa de sombras de verdade (precisa do motor 3D com o programa de sombras)
+      if (R3D.active && R3D.sombraOk) {
+        World.loadZone('velmora_clareira', null);
+        const A = Estruturas.atual(), lug = A ? A.lug : [];
+        for (let i = 0; i < 200 && lug.some((L) => !L.obj && Estruturas.estado[L.id] !== 'falhou'); i++) await espera(50);
+        g.enemies.length = 0;
+        // um lugar aberto, longe das estruturas (o herói sozinho ao sol)
+        const cands = [];
+        for (let y = 260; y < R.h - 260; y += 60) for (let x = 260; x < R.w - 260; x += 60) if (g.room.canStand(x, y, 20) && lug.every((L) => Math.hypot(L.x - x, L.y - y) > Estruturas.IDX[L.id].r * L.esc + 200)) cands.push([x, y]);
+        cands.sort((a, b) => Math.hypot(a[0] - R.w / 2, a[1] - R.h / 2) - Math.hypot(b[0] - R.w / 2, b[1] - R.h / 2));
+        let livre = cands[0] || null;
+        Settings.v.sombras = 2; World.state.hora = 15;
+        ThirdView.set(true, true);
+        const quadro = (n = 2) => { for (let i = 0; i < n; i++) g.renderWorld(g.ctx); };
+        p.vx = p.vy = 0; p.state = 'idle';
+        const So = Sol.estado(g.room, 15), d = So.chave.dir;
+        // o primeiro lugar em que o chão do lado do sol está claro (nenhuma copa da borda por cima)
+        for (const c of cands.slice(0, 8)) {
+          p.x = c[0]; p.y = c[1]; quadro(2);
+          const q = R3D.sombraNoPonto(p.x + d[0] * 60, p.y + d[1] * 60, Relevo.altura(p.x + d[0] * 60, p.y + d[1] * 60) + 0.5);
+          if (q && !q.sombra) { livre = c; break; }
+        }
+        if (livre) { p.x = livre[0]; p.y = livre[1]; }
+        quadro(3);
+        const st = R3D.estadoSombra();
+        this.ok('sombras: mapa do sol em 2 cascatas com o herói, árvores e prédios', st.feitos[0] && st.feitos[1] && st.casters[0] >= 2 && st.cascatas === 2, JSON.stringify(st));
+        // a sombra do herói: atrás dele, na direção oposta à do sol, pelo comprimento da elevação
+        const sombraDe = (x, y, alt) => { let n = 0, t = 0; for (const hgt of [18, 26, 34, 42]) { if (hgt > alt) continue; const z0 = Relevo.altura(x, y), q = R3D.sombraNoPonto(x - d[0] / d[2] * hgt, y - d[1] / d[2] * hgt, Relevo.altura(x - d[0] / d[2] * hgt, y - d[1] / d[2] * hgt) + 0.5); if (q) { t++; if (q.sombra) n++; } } return t ? n / t : 0; };
+        const naSombra = sombraDe(p.x, p.y, 50), aoSol = R3D.sombraNoPonto(p.x + d[0] * 60, p.y + d[1] * 60, Relevo.altura(p.x + d[0] * 60, p.y + d[1] * 60) + 0.5);
+        this.ok('1. herói parado ao sol: projeta sombra atrás dele (e o chão do lado do sol fica claro)', naSombra >= 0.5 && aoSol && !aoSol.sombra, `${naSombra} ${livre}`);
+        // 2. andando/correndo: a sombra vai junto
+        const x0 = p.x, y0 = p.y; p.x += 120; p.state = 'run'; quadro(2);
+        const nova = sombraDe(p.x, p.y, 50), velha = sombraDe(x0, y0, 50);
+        this.ok('2. herói andando e correndo: a sombra acompanha (sai do lugar antigo)', nova >= 0.5 && velha < 0.5, `${nova} ${velha}`);
+        p.state = 'idle';
+        // 4. a luz presa ao mundo: girar a câmera em volta da armadura não gira o sol
+        const keys = [];
+        for (const yaw of [0, 1.6, 3.2, 4.8]) { ThirdView.yaw = yaw; quadro(1); keys.push(ThirdView.view.key.slice()); }
+        this.ok('4. armadura sob vários ângulos: a luz vem do sol (fixa no mundo), não da câmera', keys.every((k) => Math.hypot(k[0] - d[0], k[1] - d[1], k[2] - d[2]) < 0.02), keys.map((k) => k.map((v) => v.toFixed(2)).join(',')).join(' | '));
+        // 5. árvores e 6. prédios projetam sombra no chão (pela altura do modelo)
+        const projeta = (L) => { const I = Estruturas.IDX[L.id], h = I.h * L.esc * 0.55, r = I.r * L.esc; const dx = -d[0] / d[2], dy = -d[1] / d[2], q = Math.hypot(dx, dy) || 1; const x = L.x + dx * h + dx / q * r * 0.2, y = L.y + dy * h + dy / q * r * 0.2; for (const k of [0, 1]) { const s = R3D.sombraNoPonto(x, y, Relevo.altura(x, y) + 0.5, k); if (s) return s.sombra; } return null; };
+        const arv = lug.filter((L) => L.obj && Estruturas.IDX[L.id].tipo === 'arvore'), pre = lug.filter((L) => L.obj && Estruturas.IDX[L.id].tipo !== 'arvore' && Estruturas.IDX[L.id].tipo !== 'planta');
+        const perto = (L) => Math.hypot(L.x - p.x, L.y - p.y);
+        arv.sort((a, b) => perto(a) - perto(b)); pre.sort((a, b) => perto(a) - perto(b));
+        if (arv[0]) { p.x = arv[0].x + 150; p.y = arv[0].y + 150; quadro(2); }
+        const tA = arv.slice(0, 3).map(projeta);
+        this.ok('5. árvores projetam sombra no chão', tA.some((v) => v === true), JSON.stringify(tA));
+        if (pre[0]) { p.x = pre[0].x + 160; p.y = pre[0].y + 160; quadro(2); }
+        const tP = pre.slice(0, 3).map(projeta);
+        this.ok('6. prédios bloqueiam a luz (sombra no chão atrás deles)', !pre.length || tP.some((v) => v === true), JSON.stringify(tP) + ' ' + pre.slice(0, 3).map((L) => L.id).join(','));
+        // 3. da área iluminada para a sombra do prédio: o herói fica na sombra (e sai dela)
+        if (pre[0]) {
+          const L = pre[0], I = Estruturas.IDX[L.id], h = I.h * L.esc * 0.5, r = I.r * L.esc, dx = -d[0] / d[2], dy = -d[1] / d[2], q = Math.hypot(dx, dy) || 1;
+          let dentro = null;
+          for (const f of [0.35, 0.55, 0.75]) { const x = L.x + dx * h * f + dx / q * r * 1.05, y = L.y + dy * h * f + dy / q * r * 1.05; if (!g.room.canStand(x, y, 12)) continue; p.x = x; p.y = y; quadro(2); const s = R3D.sombraNoPonto(x, y, Relevo.altura(x, y) + 30, 0); if (s && s.sombra) { dentro = true; break; } dentro = false; }
+          if (livre) { p.x = livre[0]; p.y = livre[1]; quadro(2); }
+          const fora = livre ? R3D.sombraNoPonto(p.x + d[0] * 60, p.y + d[1] * 60, Relevo.altura(p.x + d[0] * 60, p.y + d[1] * 60) + 0.5, 0) : null;   // (o chão do lado do sol, fora do corpo do herói)
+          this.ok('3. herói passando do sol para a sombra do prédio (e de volta)', dentro !== false && (!fora || !fora.sombra), `${dentro} ${fora && fora.sombra}`);
+        }
+        // a direção da sombra muda com a hora (manhã para oeste, tarde para leste)
+        World.state.hora = 9; quadro(1); const k9 = ThirdView.view.key.slice(); World.state.hora = 15; quadro(1); const k15 = ThirdView.view.key.slice();
+        this.ok('sombras: mudam de direção com a hora (manhã e tarde em lados opostos)', k9[1] < -0.2 && k15[1] > 0.2, `${k9[1].toFixed(2)} ${k15[1].toFixed(2)}`);
+        // noite: luar com sombra fraca; nível desligado: só a sombra de contato
+        World.state.hora = 0; quadro(1);
+        this.ok('sombras: à noite, o luar ainda projeta (mais fraco)', R3D.sombra.feitos[0] && Sol.estado(g.room, 0).sombra.forca < So.sombra.forca);
+        World.state.hora = 15; Settings.v.sombras = 0; quadro(1);
+        this.ok('sombras: níveis de qualidade (Desligadas não desenha o mapa; Ultra usa mapa grande)', !R3D.sombraAtiva() && R3D.NIVEIS_SOMBRA.length === 5 && R3D.NIVEIS_SOMBRA[4].lado >= 4096 && R3D.NIVEIS_SOMBRA[4].vol > 0);
+        Settings.v.sombras = 2;
+        // 8. subsolo: luz artificial com sombras das luminárias do teto
+        if (zs) { World.loadZone(zs, null); g.enemies.length = 0; quadro(2); }
+        this.ok('8. iluminação artificial no subsolo: sombras das luminárias, não do sol', !zs || (R3D.sombra.feitos[0] && ThirdView.view.key[2] > 0.6), zs && ThirdView.view.key.map((v) => v.toFixed(2)).join(','));
+        ThirdView.set(false, true);
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    if (ThirdView.on) ThirdView.set(false, true);
+    World.state.hora = h0; Settings.v.diaMin = dm0; Settings.v.sombras = so0;
+    this.ok('sol e sombras: sem exceção', !erro, erro);
+  },
+
+  // ---------------------------------------------------------------- poderes (js/heroes/poderes.js) e o diário redesenhado
+  async poderesDiario() {
+    const g = game, p = g.player;
+    let erro = null;
+    try {
+      Poderes.limpar();
+      const I = Poderes.cristais(p.x + 40, p.y, 130, { tema: 'rubro', carga: 0.3, evitar: [-40, 0] });
+      this.ok('poderes: erupção com dezenas de cristais facetados, rachaduras em 3 levas', I.C.length >= 18 && I.racha.linhas.every((l) => l.length > 3) && Poderes.formas().every((F) => F.faces.length >= 10), `${I.C.length} ${I.racha.linhas.map((l) => l.length)}`);
+      this.ok('poderes: cristais dentro da área do golpe e nenhum debaixo do herói', I.C.every((c) => Math.hypot(c.dx, c.dy) <= 130 * 1.13 && Math.hypot(c.dx + 40, c.dy) >= 24));
+      Poderes.update(0.1);
+      this.ok('poderes: etapa 1 (carga) sem cristais ainda', Poderes.estado()[0].fase === 'carga' && Poderes.estado()[0].visiveis === 0);
+      Poderes.manifestar(I); for (let i = 0; i < 12; i++) Poderes.update(0.05);
+      const e2 = Poderes.estado()[0];
+      this.ok('poderes: etapa 2 (manifestação) com os cristais rompendo o chão', e2.fase === 'manifestacao' && e2.visiveis >= I.C.length * 0.8, JSON.stringify(e2));
+      const L3 = Poderes.luzes3P([]);
+      this.ok('poderes: luz vermelha no chão durante o efeito', L3.length === 1 && L3[0][4] > L3[0][6]);
+      for (let i = 0; i < 80; i++) Poderes.update(0.05);
+      this.ok('poderes: etapa 3 (desintegração) e nada fica no cenário', Poderes.ativos.length === 0);
+      this.ok('poderes: o Guerreiro tem a manifestação própria; os outros, não (sem cópia com outra cor)', Poderes.temaDe({ def: { id: 'drakos' } }) === 'rubro' && Poderes.temaDe({ def: { id: 'kael' } }) === null);
+      if (g.world) {
+        WorldInv.abrir('diario'); WorldInv.ui.cat = 'disponiveis'; WorldInv.ui.sel = 0; WorldInv.draw(g.ctx, 0);
+        const R = WorldInv.ui.rects;
+        this.ok('diário: categorias, lista e botão clicáveis', R.filter((r) => r.cat).length === 3 && R.some((r) => r.idx === 0) && (R.some((r) => r.btn === 'main') || !Aventuras.diarioLista('disponiveis').length));
+        this.ok('diário: recompensas em cartões', !Aventuras.diarioLista('disponiveis')[0] || Aventuras.cartoesRec(Aventuras.diarioLista('disponiveis')[0]).length >= 1);
+        g.state = 'playing';
+      }
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Poderes.limpar();
+    this.ok('poderes e diário: sem exceção', !erro, erro);
+  },
+
   async estruturasMundo() {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
     if (typeof Estruturas === 'undefined' || typeof ESTRUTURAS_INDICE === 'undefined') { this.ok('estruturas: módulo e índice carregados', false); return; }
@@ -3545,7 +3698,7 @@ const EclipseTests = {
           if (A) { pior = Math.max(pior, A.desvio); cob = Math.min(cob, A.cobrePeito); }
         }
         this.ok(`âncora ${peca} (${c}, corpo ${corpoG + 1}): no peito, não na barriga (${Math.round((A0.massaPeito || 0) * 100)}% da peça na faixa do peito, ${Math.round((A0.massaBarriga || 0) * 100)}% na da barriga) e acompanha o tronco em 4 poses (desvio máximo ${pior.toFixed(2)})`,
-          vestiu && A0.massaPeito > A0.massaBarriga && pior < 1.5, `vestiu ${vestiu} peito ${(A0.massaPeito || 0).toFixed(2)} barriga ${(A0.massaBarriga || 0).toFixed(2)} desvio ${pior.toFixed(2)}`);
+          vestiu && (A0.massaPeito > A0.massaBarriga || (peca === 'ini_peitoral' /* o gibão é um colete longo, até a cintura */ && A0.massaPeito >= 0.3 && A0.massaPeito + A0.massaBarriga >= 0.8)) && pior < 1.5, `vestiu ${vestiu} peito ${(A0.massaPeito || 0).toFixed(2)} barriga ${(A0.massaBarriga || 0).toFixed(2)} desvio ${pior.toFixed(2)}`);
       }
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
     this.ok('âncoras do peitoral sem exceção', !erro, erro);

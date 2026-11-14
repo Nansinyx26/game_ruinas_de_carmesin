@@ -41,9 +41,11 @@ const ANIMAIS_TIPOS = {
     frases: ['arruma a cauda como quem se prepara para um retrato', 'solta um grito que não combina com a beleza'] },
   pombo: { nome: 'Pombo', especie: 'pombo', tipo: 'pombo', adota: false, escala: 0.26,
     frases: ['arrulha e anda em círculos', 'olha para a sua mão procurando migalha'] },
-  cabra: { nome: 'Cabra', especie: 'cabra', tipo: 'pasto', adota: false, escala: 0.62, dono: 'os pastores',
+  // cabra e ovelha REAIS (os GLB enviados, assets/Creatures/DomesticAnimals; a malha mede ~59 unidades de altura):
+  // ~0,9 m com a cabeça, perto do herói de 1,8 m
+  cabra: { nome: 'Cabra', especie: 'cabra', tipo: 'pasto', adota: false, escala: 0.51, dono: 'os pastores',
     frases: ['mastiga a ponta da sua capa', 'bale e volta a pastar'] },
-  ovelha: { nome: 'Ovelha', especie: 'ovelha', tipo: 'pasto', adota: false, escala: 0.62, dono: 'os pastores da encosta',
+  ovelha: { nome: 'Ovelha', especie: 'ovelha', tipo: 'pasto', adota: false, escala: 0.55, dono: 'os pastores da encosta',
     frases: ['a lã é quente e cheira a fumaça de lareira', 'bale para o rebanho e vem atrás de você'] },
   ave_neon: { nome: 'Asa Noturna', especie: 'asa_noturna', tipo: 'ave', adota: false, escala: 0.5,
     frases: ['inclina a cabeça e as penas acendem', 'bica a sua manga e levanta voo de volta ao telhado'] },

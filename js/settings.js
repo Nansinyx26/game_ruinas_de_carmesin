@@ -11,7 +11,7 @@ const SETTINGS_DEFAULT = {
   // Jogo
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
-  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, texHD: 2, vegQ: 2, fpsLimit: 0, postfx: 2, brightness: 0,
+  display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, texHD: 2, vegQ: 2, sombras: 3, diaMin: 10, fpsLimit: 0, postfx: 2, brightness: 0,
   render3d: 'realista', realQual: 2,
   // Áudio
   master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
@@ -50,6 +50,10 @@ const SETTINGS_TABS = [
       hint: 'Os prédios e objetos mais perto usam a textura original do GLB (2048 ou 4096 px); os de longe ficam na versão leve. Precisa abrir o jogo por http. Em celular, use Padrão.' },
     { key: 'vegQ', label: 'Vegetação (grama e flores)', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Baixa', 'Média', 'Alta', 'Ultra', 'Cinematográfica'],
       hint: 'Quantidade de lâminas de grama e flores e até onde elas aparecem. A grama dobra com o vento e quando o herói passa.' },
+    { key: 'sombras', label: 'Sombras do sol', type: 'choice', values: [0, 1, 2, 3, 4], names: ['Desligadas', 'Baixa', 'Média', 'Alta', 'Ultra'],
+      hint: 'Sombras projetadas pelo sol (e pela lua) em tudo: heróis, moradores, inimigos, árvores, prédios, armas e objetos. Média em diante: duas cascatas (perto com mais detalhe); Alta e Ultra: raios de sol no ar. Desligadas: só a sombra de contato sob os pés.' },
+    { key: 'diaMin', label: 'Duração do dia', type: 'choice', values: [10, 20, 30, 60], names: ['10 min', '20 min', '30 min', '60 min'],
+      hint: 'Quanto tempo real dura um dia inteiro do mundo (amanhecer 6h, pôr do sol 17h30, noite 21h). O sol e as sombras andam com o relógio.' },
     { key: 'quality', label: 'Qualidade dos efeitos', type: 'choice', values: [0, 1, 2], names: ['Baixa', 'Média', 'Alta'], hint: 'Quantidade de partículas, faíscas e fumaça.' },
     { key: 'clima', label: 'Efeitos de clima', type: 'choice', values: [0, 1, 2], names: ['Leves', 'Médios', 'Completos'], hint: 'Poças, pegadas, neve e bancos de neblina desenhados, gotas no chão e o ar tremendo no calor. O efeito no jogo (frio, calor, roupa molhada) é o mesmo em todos.' },
     { key: 'fpsLimit', label: 'Limite de FPS', type: 'choice', values: [0, 60, 30], names: ['Sem limite', '60', '30'] },
@@ -93,6 +97,8 @@ const Settings = {
       const fraco = (typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory < 8) || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
       if ((!salvo || salvo.texHD === undefined) && fraco) this.v.texHD = 0;
       if ((!salvo || salvo.vegQ === undefined) && fraco) this.v.vegQ = 1;
+      // sombras: celular e pouca memória na Baixa; navegador automatizado (testes) na Média
+      if ((!salvo || salvo.sombras === undefined) && (fraco || (typeof navigator !== 'undefined' && navigator.webdriver))) this.v.sombras = fraco ? 1 : 2;
     } catch (e) { /* nada */ }
     return this.v;
   },

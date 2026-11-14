@@ -97,10 +97,18 @@ const Relevo = (() => {
     if (typeof Estruturas !== 'undefined' && Estruturas.atual) { const E = Estruturas.atual(); if (E && E.room === R) for (const L of E.lug) { const I = Estruturas.IDX[L.id]; if (I && I.tipo !== 'arvore' && I.tipo !== 'planta') pat.push({ x: L.x, y: L.y, r: I.r * L.esc + 14 }); } }
     if (g) for (const n of g.npcs) if (n.kind === 'gate' || n.kind === 'portal' || n.kind === 'chest' || n.kind === 'terminal' || n.kind === 'entrada' || n.kind === 'quadro' || n.kind === 'monumento' || n.kind === 'estacao' || n.kind === 'banca') pat.push({ x: n.x, y: n.y, r: (n.radius || 20) + 26 });
     const amostra = (x, y) => { const fx = cl((x - x0) / CEL, 0, nx - 1.001), fy = cl((y - y0) / CEL, 0, ny - 1.001), i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j, q = j * nx + i; return (G[q] * (1 - tx) + G[q + 1] * tx) * (1 - ty) + (G[q + nx] * (1 - tx) + G[q + nx + 1] * tx) * ty; };
+    // os maiores primeiro; o miolo de cada patamar fica travado (um baú ou uma passagem ao lado não
+    // entorta o chão de uma construção já aplainada)
+    pat.sort((a, b) => b.r - a.r);
+    const trava = new Float32Array(nx * ny);
     for (const P of pat) {
       const hc = amostra(P.x, P.y), R2 = P.r + 150;
       const i0 = Math.max(0, Math.floor((P.x - R2 - x0) / CEL)), i1 = Math.min(nx - 1, Math.ceil((P.x + R2 - x0) / CEL)), j0 = Math.max(0, Math.floor((P.y - R2 - y0) / CEL)), j1 = Math.min(ny - 1, Math.ceil((P.y + R2 - y0) / CEL));
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const d = Math.hypot(x0 + i * CEL - P.x, y0 + j * CEL - P.y), k = 1 - passo(P.r, R2, d); if (k > 0) { const q = j * nx + i; G[q] = G[q] * (1 - k) + hc * k; } }
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const d = Math.hypot(x0 + i * CEL - P.x, y0 + j * CEL - P.y), q = j * nx + i, k = (1 - passo(P.r, R2, d)) * (1 - trava[q]);
+        if (k > 0) G[q] = G[q] * (1 - k) + hc * k;
+      }
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const d = Math.hypot(x0 + i * CEL - P.x, y0 + j * CEL - P.y), q = j * nx + i; trava[q] = Math.max(trava[q], 1 - passo(P.r * 0.85, P.r + CEL, d)); }
     }
     A.grade = G; A.nx = nx; A.ny = ny; A.x0 = x0; A.y0 = y0; A.patamares = pat.length;
     return A;

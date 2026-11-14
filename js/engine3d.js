@@ -206,6 +206,12 @@ uniform mat4 uMVP; uniform mediump vec4 uAgua; uniform mediump vec4 uAgua2;   //
 uniform vec4 uVento; uniform vec4 uVentoO;   // uVentoO: base do objeto no mundo (x, y, z) e escala (w)
 uniform vec4 uEmpurra;   // grama (js/mundo/vegetacao.js): o herói abre a grama em volta [x, y, raio, força]
 varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
+#ifdef SOMBRA
+// sombras do sol (R3D.passeSombra): posição no mapa de cada cascata (0..1), deslocada um pouco pela
+// normal (uSomN = quanto em cada cascata: o texel da de longe é maior) para não sombrear a si mesma
+uniform mat4 uSomM0; uniform mat4 uSomM1; uniform vec2 uSomN;
+varying vec4 vS0; varying vec4 vS1;
+#endif
 void main() {
   vec3 P = aPos;
   if (uAgua.x > 0.5) {
@@ -243,7 +249,88 @@ void main() {
   }
   gl_Position = uMVP * vec4(P, 1.0);
   vNor = aNor; vCol = aCol; vPos = P;
+#ifdef SOMBRA
+  float ln = length(aNor);
+  vec3 nn = ln > 0.001 ? aNor / ln : vec3(0.0, 0.0, 1.0);
+  vS0 = uSomM0 * vec4(P + nn * uSomN.x, 1.0); vS1 = uSomM1 * vec4(P + nn * uSomN.y, 1.0);
+#endif
 }`;
+// Mapa de sombras: só a profundidade vista do sol, guardada em RGBA (WebGL 1 sem textura de profundidade)
+const R3D_FS_PROF = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+void main() {
+  vec4 e = fract(vec4(1.0, 255.0, 65025.0, 16581375.0) * gl_FragCoord.z);
+  e -= e.yzww * vec4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
+  gl_FragColor = e;
+}`;
+// Sombras do sol nos dois programas da perspectiva (#define SOMBRA): duas cascatas (perto, com mais
+// detalhe; longe, maior), penumbra por amostras em disco de Vogel girado por pixel (sem faixas),
+// passagem suave de uma cascata para a outra e para "sem sombra" no fim da de longe. uSomV: luz
+// volumétrica (raios de sol no ar atravessando árvores e prédios), marchando do olho ao ponto na
+// cascata de longe (a posição no mapa é linear no mundo: basta interpolar do olho, uSomOlho, ao ponto).
+const R3D_SOMBRA_FS = `
+#ifdef SOMBRA
+uniform sampler2D uSom0; uniform sampler2D uSom1;
+uniform vec4 uSomP;   // x força, y penumbra na cascata 0 (texels), z 1/lado, w nº de cascatas (0 = desligadas)
+uniform vec4 uSomQ;   // x viés da cascata 0, y viés da 1, z amostras, w penumbra na cascata 1 (texels)
+uniform vec4 uSomV;   // x força da luz volumétrica, y passos, z densidade do ar, w —
+uniform vec3 uSomOlho;
+varying vec4 vS0; varying vec4 vS1;
+float somProf(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }
+float somRuido() { return fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+float somPCF(sampler2D t, vec3 c, float raio, float vies) {
+  float ang = somRuido() * 6.2832, s = 0.0, n = 0.0;
+  for (int i = 0; i < 16; i++) {
+    if (float(i) >= uSomQ.z) break;
+    float r = sqrt((float(i) + 0.5) / uSomQ.z) * raio, a = float(i) * 2.39996 + ang;
+    s += step(c.z - vies, somProf(texture2D(t, c.xy + vec2(cos(a), sin(a)) * r * uSomP.z)));
+    n += 1.0;
+  }
+  return s / max(n, 1.0);
+}
+float sombraSol(float nl) {
+  if (uSomP.w < 0.5 || uSomP.x <= 0.0) return 1.0;
+  // viés maior nas faces de lado para o sol (sem "acne" nas encostas e paredes)
+  float inc = 1.0 + clamp(sqrt(max(1.0 - nl * nl, 0.0)) / max(abs(nl), 0.15), 0.0, 5.0);
+  vec3 c = vS0.xyz;
+  float b0 = max(abs(c.x - 0.5), abs(c.y - 0.5)) * 2.0;
+  if (b0 < 0.97 && c.z < 1.0) {
+    float s0 = somPCF(uSom0, c, uSomP.y, uSomQ.x * inc);
+    if (uSomP.w > 1.5 && b0 > 0.8) s0 = mix(s0, somPCF(uSom1, vS1.xyz, uSomQ.w, uSomQ.y * inc), smoothstep(0.8, 0.97, b0));
+    return mix(1.0, s0, uSomP.x);
+  }
+  if (uSomP.w > 1.5) {
+    vec3 c1 = vS1.xyz;
+    float b1 = max(abs(c1.x - 0.5), abs(c1.y - 0.5)) * 2.0;
+    if (b1 < 1.0 && c1.z < 1.0) return mix(1.0, somPCF(uSom1, c1, uSomQ.w, uSomQ.y * inc), uSomP.x * (1.0 - smoothstep(0.75, 1.0, b1)));
+  }
+  return 1.0;
+}
+// fração do caminho do olho até o ponto que está ao sol (0 a 1)
+float somVolume() {
+  float j = somRuido(), s = 0.0;
+  for (int i = 0; i < 24; i++) {
+    if (float(i) >= uSomV.y) break;
+    vec3 c = mix(uSomOlho, vS1.xyz, (float(i) + j) / uSomV.y);
+    if (c.x < 0.0 || c.x > 1.0 || c.y < 0.0 || c.y > 1.0 || c.z >= 1.0) { s += 1.0; continue; }
+    s += step(c.z - uSomQ.y, somProf(texture2D(uSom1, c.xy)));
+  }
+  return s / max(uSomV.y, 1.0);
+}
+// raios de sol no ar: mais fortes olhando na direção do sol (espalhamento para a frente) e com mais ar
+// entre o olho e o ponto; só o que está ao sol no caminho brilha (as sombras das copas viram feixes)
+vec3 raiosSol() {
+  if (uSomV.x <= 0.0 || uPersp < 0.5) return vec3(0.0);
+  vec3 d = vPos - uView; float dist = length(d);
+  float mie = pow(max(dot(d / max(dist, 0.001), uKeyDir), 0.0), 6.0) * 0.85 + 0.15;
+  return uKeyCol * somVolume() * mie * (1.0 - exp(-dist * uSomV.z)) * uSomV.x;
+}
+#endif
+`;
 const R3D_FS = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
@@ -254,6 +341,8 @@ varying vec3 vNor; varying vec4 vCol; varying vec3 vPos;
 uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uEmi;
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
 uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform vec4 uVar; uniform vec4 uWet; uniform mediump vec4 uAgua; uniform mediump vec4 uAgua2;
+uniform float uFolha;   // folhagem e grama: a luz atravessa as folhas (contraluz)
+uniform float uContato;   // sombra de contato sob os pés (oclusão onde o corpo toca o chão): vCol.r = 0 no centro, 1 na borda
 // ondulações na água (quem nada, entra, cai ou é atingido): x, y, instante, força
 uniform vec4 uOnda[4];
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
@@ -280,7 +369,9 @@ vec3 pontuais(vec3 n, vec3 V, float shin, out vec3 spec) {
   return s;
 }
 #endif
+${R3D_SOMBRA_FS}
 void main() {
+  if (uContato > 0.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, (1.0 - vCol.r) * (1.0 - vCol.r) * uContato); return; }
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
   if (dot(n, V) < 0.0) n = -n;
@@ -375,11 +466,18 @@ void main() {
     col = mix(col, vec3(0.93, 0.95, 1.0), uWet.y * smoothstep(0.3, 0.75, n.z));
     col = mix(col, vec3(0.78, 0.88, 1.0), uWet.z * (0.15 + 0.6 * fres));
   }
-  float key = max(dot(n, uKeyDir), 0.0);
-  float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
+  // sol: a sombra tira a luz direta (a do céu, uAmb, continua: a sombra fica azulada de dia)
+  float sh = 1.0, nl = dot(n, uKeyDir);
+#ifdef SOMBRA
+  if (uPersp > 0.5) sh = sombraSol(nl);
+#endif
+  float key = max(nl, 0.0) * sh;
+  float wrap = max(nl * 0.5 + 0.5, 0.0) * mix(0.45, 1.0, sh);
   float rim = max(dot(n, uRimDir), 0.0);
   float up = n.z * 0.5 + 0.5;
   vec3 light = uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2);
+  // grama e folhas: com o sol atrás delas, a luz atravessa (verde aceso), mais forte olhando para o sol
+  if (uFolha > 0.0) light += uKeyCol * (max(-nl, 0.0) * 0.3 + pow(max(-dot(V, uKeyDir), 0.0), 4.0) * 0.55) * sh * uFolha;
 #ifdef LUZES
   vec3 spP; light += pontuais(n, V, 40.0, spP);   // o fogo e as explosões iluminam o corpo e o cenário
 #endif
@@ -391,6 +489,9 @@ void main() {
   lit += col * e * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
   lit = mix(lit, uFog.rgb, fogK());
+#ifdef SOMBRA
+  lit += raiosSol();
+#endif
   gl_FragColor = vec4(lit, 1.0);
 }`;
 
@@ -422,6 +523,7 @@ uniform float uPass; uniform float uFlash; uniform vec4 uGhost; uniform float uE
 uniform vec3 uAmb; uniform vec3 uKeyDir; uniform vec3 uKeyCol; uniform vec3 uRimDir; uniform vec3 uRimCol; uniform float uHolo;
 uniform vec4 uGlow; uniform vec4 uTint; uniform vec4 uWet;
 uniform vec3 uView; uniform float uPersp; uniform vec4 uFog; uniform float uMolhado;
+uniform float uFolha;   // árvores e plantas: a luz atravessa as folhas (contraluz)
 // névoa da câmera em perspectiva (cor do tema; uFog.w = distância onde começa)
 float fogK() {
   if (uPersp < 0.5) return 0.0;
@@ -446,6 +548,7 @@ vec3 pontuais(vec3 n, vec3 V, float shin, out vec3 spec) {
   return s;
 }
 #endif
+${R3D_SOMBRA_FS}
 void main() {
   vec3 V = uPersp > 0.5 ? normalize(uView - vPos) : vec3(0.57735);
   vec3 n = normalize(vNor);
@@ -556,15 +659,32 @@ void main() {
     col = mix(col, vec3(0.93, 0.95, 1.0), uWet.y * smoothstep(0.3, 0.75, n.z));
     col = mix(col, vec3(0.78, 0.88, 1.0), uWet.z * (0.12 + 0.55 * fres));
   }
-  float key = max(dot(n, uKeyDir), 0.0);
-  float wrap = max(dot(n, uKeyDir) * 0.5 + 0.5, 0.0);
+  // sol: a sombra tira só a luz direta; cada material responde à luz do seu jeito
+  float sh = 1.0, nl = dot(n, uKeyDir);
+#ifdef SOMBRA
+  if (uPersp > 0.5) sh = sombraSol(nl);
+#endif
+  float key = max(nl, 0.0) * sh;
+  float wrap = max(nl * 0.5 + 0.5, 0.0) * mix(0.45, 1.0, sh);
   float rim = max(dot(n, uRimDir), 0.0);
   float up = n.z * 0.5 + 0.5;
+  if (mat > 4.5) {
+    // PELE: luz que entra um pouco na pele (envolve mais) e o tom quente na transição luz → sombra
+    key = max((nl + 0.3) / 1.3, 0.0) * sh;
+    wrap += smoothstep(-0.3, 0.15, nl) * (1.0 - smoothstep(0.15, 0.55, nl)) * 0.35 * sh;
+  } else if (mat > 2.5 && mat < 3.5) {
+    // TECIDO: dobras mais macias (envolve a luz) e o brilho aveludado de lado
+    wrap = max(nl * 0.5 + 0.5, 0.0) * mix(0.5, 1.0, sh) * 1.4;
+  }
   if (uDetP.x > 0.0 && uMolhado > 0.0) {
     // chão na chuva: escurece e fica liso (reflete mais o ambiente e as luzes)
     col *= 1.0 - 0.28 * uMolhado; rough = mix(rough, 0.1, uMolhado * 0.75); specK = max(specK, uMolhado);
   }
   vec3 light = uAmb * (0.55 + 0.45 * up) + uKeyCol * (key * 0.85 + wrap * 0.2);
+  if (mat > 4.5) light += uKeyCol * vec3(0.16, 0.045, 0.02) * smoothstep(-0.35, 0.1, nl) * (1.0 - smoothstep(0.1, 0.5, nl)) * sh;   // (o vermelho sob a pele)
+  // árvores e plantas: as folhas deixam passar a luz do sol que está atrás delas (verde aceso)
+  float verde = smoothstep(0.02, 0.12, col.g - max(col.r, col.b) * 0.85);
+  if (uFolha > 0.0) light += uKeyCol * (max(-nl, 0.0) * 0.3 + pow(max(-dot(V, uKeyDir), 0.0), 4.0) * 0.6) * sh * uFolha * verde;
 #ifdef LUZES
   vec3 spP; light += pontuais(n, V, mix(96.0, 6.0, rough), spP);   // fogo e explosões: luz no corpo, no chão e nas paredes
 #endif
@@ -580,8 +700,23 @@ void main() {
     float shin = mix(96.0, 6.0, rough);
     float sp = pow(max(dot(n, H), 0.0), shin) * (shin + 2.0) * 0.045 * key;
     vec3 sc = mix(vec3(0.05), col * 1.6 + 0.12, metal);
-    if (mat > 3.5 && mat < 4.5) sc = vec3(0.07, 0.09, 0.14);         // cabelo: reflexo azulado
+    if (mat > 3.5 && mat < 4.5) {
+      // CABELO: dois reflexos entre os fios (um branco e estreito, outro largo na cor do cabelo e
+      // deslocado), nunca uniforme; a sombra do sol também apaga o brilho
+      sc = vec3(0.07, 0.09, 0.14);
+      lit += uKeyCol * col * pow(max(dot(n, normalize(uKeyDir * 0.6 + V + vec3(0.0, 0.0, 0.25))), 0.0), 14.0) * 0.45 * key * specK;
+    }
     lit += (uKeyCol * sc * sp + uRimCol * metal * fres * 0.25) * specK;
+    // METAL e ARMADURAS: as bordas voltadas para o sol acendem (mais de lado), o brilho do sol no
+    // reflexo e o céu refletido; VIDRO e superfícies lisas: reflexo do ambiente pelo Fresnel
+    vec3 Rf = reflect(-V, n);
+    vec3 ceuR = mix(uFog.rgb * 0.7, uAmb * 1.35 + uKeyCol * 0.2, smoothstep(-0.25, 0.6, Rf.z));
+    float liso = (1.0 - rough) * (1.0 - rough), frR = 0.04 + 0.96 * pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 5.0);
+    lit += ceuR * (metal * mix(col, vec3(1.0), 0.25) * 0.4 + (1.0 - metal) * frR * 0.6) * liso * specK;
+    lit += uKeyCol * mix(col, vec3(1.0), 0.35) * fres * key * 0.55 * metal * specK;
+    lit += uKeyCol * pow(max(dot(Rf, uKeyDir), 0.0), mix(900.0, 60.0, rough)) * (metal * 1.2 + frR) * liso * sh * specK;
+    // TECIDO: brilho aveludado de lado (o fio pega a luz rasante)
+    if (mat > 2.5 && mat < 3.5) lit += uKeyCol * col * fres * key * 0.4;
   }
 #ifdef LUZES
   // o brilho do fogo no metal, no vidro e no chão molhado
@@ -597,6 +732,9 @@ void main() {
   lit += (col * e + emc) * uEmi;
   lit = mix(lit, vec3(1.0), uFlash);
   lit = mix(lit, uFog.rgb, fogK());
+#ifdef SOMBRA
+  lit += raiosSol();
+#endif
   gl_FragColor = vec4(lit, 1.0);
 }`;
 
@@ -623,12 +761,13 @@ const R3D = {
         // relevo do mapa de material: precisa das derivadas de tela (WebGL 1: extensão)
         if (fs === R3D_FS_TEX) fs = (gl.getExtension('OES_standard_derivatives') ? '#extension GL_OES_standard_derivatives : enable\n#define BUMP 1\n' : '') + defs + fs;
         else fs = defs + fs;
+        vs = defs + vs;   // (as sombras também mudam o vértice: posição no mapa do sol)
         gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
         gl.linkProgram(p);
         if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
         const loc = {};
         for (const a of ['aPos', 'aNor', 'aCol']) loc[a] = gl.getAttribLocation(p, a);
-        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP', 'uAgua2', 'uOnda', 'uVento', 'uVentoO', 'uEmpurra', 'uLuzP', 'uLuzC', 'uMolhado']) loc[u] = gl.getUniformLocation(p, u);
+        for (const u of ['uRect', 'uDepth', 'uPass', 'uFlash', 'uGhost', 'uEmi', 'uAmb', 'uKeyDir', 'uKeyCol', 'uRimDir', 'uRimCol', 'uHolo', 'uTex', 'uGlow', 'uTint', 'uVar', 'uMat', 'uMatOn', 'uBump', 'uNrm', 'uNrmOn', 'uPbr', 'uEmiB', 'uMVP', 'uView', 'uPersp', 'uFog', 'uWet', 'uAgua', 'uEmiT', 'uEmiOn', 'uDet', 'uDetP', 'uAgua2', 'uOnda', 'uVento', 'uVentoO', 'uEmpurra', 'uLuzP', 'uLuzC', 'uMolhado', 'uFolha', 'uSomM0', 'uSomM1', 'uSomN', 'uSom0', 'uSom1', 'uSomP', 'uSomQ', 'uSomV', 'uSomOlho', 'uContato']) loc[u] = gl.getUniformLocation(p, u);
         return { p, loc };
       };
       const P0 = link(R3D_FS);
@@ -639,10 +778,18 @@ const R3D = {
       // os mesmos materiais com a câmera em perspectiva (terceira pessoa)
       // luzes pontuais (fogo, explosões): se o aparelho não ligar o programa com elas (poucos
       // registros de uniform), a perspectiva segue sem elas
-      try { this.progsP = [link(R3D_FS, R3D_VS_P, '#define LUZES 1\n')]; this.progsP.push(link(R3D_FS_TEX, R3D_VS_P, '#define LUZES 1\n')); this.luzesOk = true; }
-      catch (e0) {
-        console.warn('Luzes pontuais indisponíveis:', e0); this.luzesOk = false;
-        try { this.progsP = [link(R3D_FS, R3D_VS_P)]; this.progsP.push(link(R3D_FS_TEX, R3D_VS_P)); } catch (e) { console.warn('Perspectiva 3D indisponível:', e); }
+      // sombras do sol (mapa de profundidade em RGBA): precisam de precisão alta no fragmento, de 7
+      // unidades de textura e de registros de uniform; sem elas, a perspectiva segue com as manchas
+      const alta = gl.getShaderPrecisionFormat && gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+      const podeSombra = !!(alta && alta.precision >= 16) && gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) >= 7;
+      const tenta = (defs) => { const A = link(R3D_FS, R3D_VS_P, defs); return [A, link(R3D_FS_TEX, R3D_VS_P, defs)]; };
+      for (const [defs, luzes, som] of [['#define LUZES 1\n#define SOMBRA 1\n', true, true], ['#define LUZES 1\n', true, false], ['', false, false]]) {
+        if (som && !podeSombra) continue;
+        try { this.progsP = tenta(defs); this.luzesOk = luzes; this.sombraOk = som; break; }
+        catch (e) { console.warn(som ? 'Sombras do sol indisponíveis:' : luzes ? 'Luzes pontuais indisponíveis:' : 'Perspectiva 3D indisponível:', e); this.progsP = null; }
+      }
+      if (this.sombraOk) {
+        try { this.progProf = link(R3D_FS_PROF, R3D_VS_P); } catch (e) { console.warn('Mapa de sombras indisponível:', e); this.sombraOk = false; }
       }
       this.buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
@@ -978,6 +1125,8 @@ const R3D = {
     if (L.uVento) { const v = this.vento; gl.uniform4f(L.uVento, o.vento || 0, (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 1000, v[2] * (0.4 + v[0]), v[3] * (0.4 + v[0])); }
     if (L.uVentoO) { const m = o.m; if (m && o.vento) gl.uniform4f(L.uVentoO, m[3], m[7], m[11], Math.hypot(m[0], m[4], m[8]) || 1); else gl.uniform4f(L.uVentoO, 0, 0, 0, 1); }   // (o pé e a escala do objeto: M3 em linhas, translação em 3, 7 e 11)
     if (L.uMolhado) gl.uniform1f(L.uMolhado, tex && tex.detP ? this.molhado : 0);
+    if (L.uFolha) gl.uniform1f(L.uFolha, o.vento ? 1 : 0);
+    if (L.uContato) gl.uniform1f(L.uContato, o.contato || 0);   // árvores, plantas e grama (o.vento): contraluz nas folhas
     // água (js/mundo/agua.js): material com ondas, reflexo e espuma; o tempo anda sozinho
     if (L.uAgua) { const c = o.agua && o.aguaC; gl.uniform4f(L.uAgua, o.agua ? 1 : 0, o.agua ? (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 62.832 : 0, c ? c[0] : 0, c ? c[1] : 0); }
   },
@@ -1010,6 +1159,8 @@ const R3D = {
     if (this.data.byteLength > this.bufBytes || !this.bufBytes) { gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW); this.bufBytes = this.data.byteLength; }
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data.subarray(0, vo));
     gl.disable(gl.SCISSOR_TEST);
+    // sombras do sol: o mapa de profundidade de cada cascata, visto do sol (antes da cor)
+    const SO = this.sombra, somOn = this.passeSombra(n, view);
     gl.viewport(0, 0, this.W, this.H);
     gl.clearColor(0, 0, 0, 0); gl.clearDepth(1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -1039,6 +1190,22 @@ const R3D = {
       if (L.uNrm) gl.uniform1i(L.uNrm, 2);
       if (L.uEmiT) gl.uniform1i(L.uEmiT, 3);
       if (L.uDet) gl.uniform1i(L.uDet, 4);
+      if (L.uSomP) {
+        if (somOn) {
+          const Q = SO.Q, c = SO.cfg;
+          gl.uniformMatrix4fv(L.uSomM0, false, SO.Mb[0]); gl.uniformMatrix4fv(L.uSomM1, false, SO.Mb[1]);
+          gl.uniform2f(L.uSomN, SO.texel[0] * 1.6, SO.texel[1] * 1.6);
+          gl.uniform1i(L.uSom0, 5); gl.uniform1i(L.uSom1, 6);
+          gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, SO.tex[0]);
+          gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, SO.tex[Q.cascatas > 1 ? 1 : 0]);
+          gl.activeTexture(gl.TEXTURE0);
+          const pen = Q.pen * (c.suave || 1);
+          gl.uniform4f(L.uSomP, Math.min(1, c.forca), pen, 1 / SO.lado, Q.cascatas);
+          gl.uniform4f(L.uSomQ, SO.vies[0], SO.vies[1], Q.amostras, Math.max(0.75, pen * SO.texel[0] / SO.texel[1]));
+          gl.uniform4f(L.uSomV, Q.vol && c.vol ? c.vol : 0, Q.vol, 0.0011, 0);
+          const o = SO.olho; gl.uniform3f(L.uSomOlho, o[0], o[1], o[2]);
+        } else gl.uniform4f(L.uSomP, 0, 0, 0, 0);
+      }
       return L;
     };
     for (let pass = 0; pass < 2; pass++) {
@@ -1058,12 +1225,12 @@ const R3D = {
       for (let i = 0; i < n; i++) {
         const it = this.items[i];
         if (!it.vn) continue;
-        if (!pass && it.o && it.o.agua) { agua.push(it); continue; }
+        if (it.o && (it.o.agua || it.o.contato)) { if (!pass) agua.push(it); continue; }   // (o contato só existe na cor)
         desenha(it);
       }
       // grama, flores e juncos (js/mundo/vegetacao.js): buffers estáticos por setor, só na passada de cor
       if (!pass && typeof Vegetacao !== 'undefined' && Vegetacao.ativo()) { if (cur !== 0) { cur = 0; L = use(0, pass); } Vegetacao.desenharClassico(this, gl, L, view); }
-      // Água por último, misturada com o que já está embaixo (o fundo aparece na margem rasa); o
+      // Sombras de contato e água por último, misturadas com o que já está embaixo (o fundo aparece na margem rasa); o
       // alfa do destino continua 1 (a imagem 3D é composta por cima do céu desenhado no 2D)
       if (agua.length) {
         gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -1072,8 +1239,152 @@ const R3D = {
       }
       if (!pass) gl.clear(gl.DEPTH_BUFFER_BIT);
     }
+    SO.cfg = null;   // a luz do quadro seguinte vem de novo de Ambiente3P.luzes
     return { w, h, ey: h, ew, eh };
   },
+
+  // ------------------------------------------------------------------ sombras do sol
+  // Níveis (Configurações › Vídeo › Sombras): cascatas, lado do mapa (px), meia-largura de cada cascata
+  // (unidades do mundo), amostras da penumbra, penumbra base (texels), a de longe refeita um quadro
+  // sim, outro não (alterna) e passos da luz volumétrica (0 = sem raios de sol no ar)
+  NIVEIS_SOMBRA: [
+    { nome: 'Desligadas', cascatas: 0 },
+    { nome: 'Baixa', cascatas: 1, lado: 1024, raio: [400], amostras: 4, pen: 1.1, alterna: false, vol: 0 },
+    { nome: 'Média', cascatas: 2, lado: 1024, raio: [380, 1300], amostras: 6, pen: 1.4, alterna: true, vol: 0 },
+    { nome: 'Alta', cascatas: 2, lado: 2048, raio: [420, 1400], amostras: 9, pen: 1.8, alterna: true, vol: 10 },
+    { nome: 'Ultra', cascatas: 2, lado: 4096, raio: [460, 1500], amostras: 16, pen: 2.2, alterna: false, vol: 18 },
+  ],
+  sombra: { cfg: null, Q: null, lado: 0, fb: [], tex: [], rb: [], M: [new Float32Array(16), new Float32Array(16)], Mb: [new Float32Array(16), new Float32Array(16)], texel: [1, 1], vies: [0, 0], olho: [0, 0, 0], quadro: 0, feitos: [false, false], casters: [0, 0], ms: 0 },
+  nivelSombra() { const v = typeof Settings !== 'undefined' && Settings.v && Settings.v.sombras !== undefined ? Settings.v.sombras : 3; return this.NIVEIS_SOMBRA[v] ? v : 3; },
+  // A luz do quadro (chamada pela ambientação da 3ª pessoa, js/terceira_ambiente.js):
+  // { dir: de onde vem a luz, forca 0..1, suave (multiplica a penumbra), alvo [x, y, z] (o herói),
+  //   frente [fx, fy] (para onde a câmera olha), vol (força dos raios de sol no ar) }
+  sombraQuadro(cfg) { this.sombra.cfg = cfg; },
+  sombraAtiva() { const S = this.sombra; return !!(this.active && this.sombraOk && this.progProf && S.cfg && S.cfg.forca > 0.02 && this.NIVEIS_SOMBRA[this.nivelSombra()].cascatas); },
+  // (re)cria as texturas e os framebuffers no lado pedido
+  alvosSombra(lado) {
+    const gl = this.gl, S = this.sombra;
+    if (S.lado === lado && S.fb.length === 2) return true;
+    for (const t of S.tex) gl.deleteTexture(t);
+    for (const b of S.fb) gl.deleteFramebuffer(b);
+    for (const b of S.rb) gl.deleteRenderbuffer(b);
+    S.tex = []; S.fb = []; S.rb = []; S.feitos = [false, false]; S.lado = 0;
+    for (let i = 0; i < 2; i++) {
+      const t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, lado, lado, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const rb = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, lado, lado);
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+      const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      S.tex.push(t); S.rb.push(rb); S.fb.push(fb);
+      if (!ok) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); console.warn('Mapa de sombras: framebuffer incompleto'); this.sombraOk = false; return false; }
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    S.lado = lado;
+    return true;
+  },
+  // Desenha a profundidade vista do sol em cada cascata (com o mesmo vento dos vértices: a sombra da
+  // copa balança junto). Devolve true se as sombras valem neste quadro
+  passeSombra(n, view) {
+    const S = this.sombra, c = S.cfg;
+    if (!this.sombraAtiva()) return false;
+    const gl = this.gl, Q = this.NIVEIS_SOMBRA[this.nivelSombra()];
+    const maxT = this._maxTex || (this._maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048);
+    const lado = Math.min(Q.lado, maxT, this.limite() >= 4096 ? 4096 : 2048);
+    if (!this.alvosSombra(lado)) return false;
+    if (S.Q !== Q) { S.Q = Q; S.feitos = [false, false]; }
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+    // base da luz: f = para onde a luz anda (do sol para o chão); r e u = os eixos do mapa
+    const d = c.dir, f = [-d[0], -d[1], -d[2]];
+    const ref = Math.abs(d[2]) > 0.98 ? [1, 0, 0] : [0, 0, 1];
+    let rx = f[1] * ref[2] - f[2] * ref[1], ry = f[2] * ref[0] - f[0] * ref[2], rz = f[0] * ref[1] - f[1] * ref[0];
+    const rl = Math.hypot(rx, ry, rz) || 1; rx /= rl; ry /= rl; rz /= rl;
+    const ux = ry * f[2] - rz * f[1], uy = rz * f[0] - rx * f[2], uz = rx * f[1] - ry * f[0];
+    const P = this.progProf, L = P.loc;
+    gl.useProgram(P.p);
+    gl.enableVertexAttribArray(L.aPos); gl.vertexAttribPointer(L.aPos, 3, gl.FLOAT, false, 40, 0);
+    if (L.aNor >= 0) { gl.enableVertexAttribArray(L.aNor); gl.vertexAttribPointer(L.aNor, 3, gl.FLOAT, false, 40, 12); }
+    if (L.aCol >= 0) { gl.enableVertexAttribArray(L.aCol); gl.vertexAttribPointer(L.aCol, 4, gl.FLOAT, false, 40, 24); }
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
+    S.quadro++;
+    const tempo = (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) % 1000, V = this.vento;
+    for (let k = 0; k < Q.cascatas; k++) {
+      // a de longe, nos níveis que alternam, é refeita um quadro sim, outro não (a luz anda devagar)
+      if (k === 1 && Q.alterna && S.feitos[1] && (S.quadro & 1)) continue;
+      const R = Q.raio[k], D = Math.max(R * 1.6, 1600), tx = (2 * R) / lado;
+      // centro: o herói (a de longe vai para a frente da câmera, onde o olhar alcança)
+      const C = k ? [c.alvo[0] + c.frente[0] * R * 0.45, c.alvo[1] + c.frente[1] * R * 0.45, c.alvo[2]] : c.alvo;
+      // centro preso à grade de texels: a sombra não "ferve" quando a câmera anda
+      const cx = Math.round((rx * C[0] + ry * C[1] + rz * C[2]) / tx) * tx, cy = Math.round((ux * C[0] + uy * C[1] + uz * C[2]) / tx) * tx;
+      const cz = f[0] * C[0] + f[1] * C[1] + f[2] * C[2];
+      const M = S.M[k], B = S.Mb[k];
+      M[0] = rx / R; M[4] = ry / R; M[8] = rz / R; M[12] = -cx / R;
+      M[1] = ux / R; M[5] = uy / R; M[9] = uz / R; M[13] = -cy / R;
+      M[2] = f[0] / D; M[6] = f[1] / D; M[10] = f[2] / D; M[14] = -cz / D;
+      M[3] = 0; M[7] = 0; M[11] = 0; M[15] = 1;
+      // (de −1..1 para 0..1: linha i ← 0,5 · linha i + 0,5 · linha 3; em colunas, M[c·4 + i])
+      for (let col = 0; col < 4; col++) for (let i = 0; i < 3; i++) B[col * 4 + i] = M[col * 4 + i] * 0.5 + M[col * 4 + 3] * 0.5;
+      for (let col = 0; col < 4; col++) B[col * 4 + 3] = M[col * 4 + 3];
+      S.texel[k] = tx; S.vies[k] = (tx * 0.9) / (2 * D);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, S.fb[k]);
+      gl.viewport(0, 0, lado, lado);
+      gl.clearColor(1, 1, 1, 1); gl.clearDepth(1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.uniformMatrix4fv(L.uMVP, false, M);
+      if (L.uAgua) gl.uniform4f(L.uAgua, 0, 0, 0, 0);
+      let quantos = 0;
+      for (let i = 0; i < n; i++) {
+        const it = this.items[i], o = it.o;
+        if (!it.vn || !o || o.agua || o.holo || o.ghost || o.contato || o.semSombra || it.model.semSombra) continue;
+        // fora da cascata (com folga pelo tamanho): não entra
+        const m = o.m, raio = o.raio || (it.ent ? 90 : 0);
+        if (m && raio) {
+          const px = rx * m[3] + ry * m[7] + rz * m[11] - cx, py = ux * m[3] + uy * m[7] + uz * m[11] - cy;
+          if (Math.abs(px) > R + raio || Math.abs(py) > R + raio) continue;
+        }
+        // o vento mexe a sombra junto com a copa
+        if (L.uVento) gl.uniform4f(L.uVento, o.vento > 0 ? o.vento : 0, tempo, V[2] * (0.4 + V[0]), V[3] * (0.4 + V[0]));
+        if (L.uVentoO) { if (m && o.vento) gl.uniform4f(L.uVentoO, m[3], m[7], m[11], Math.hypot(m[0], m[4], m[8]) || 1); else gl.uniform4f(L.uVentoO, 0, 0, 0, 1); }
+        gl.drawArrays(gl.TRIANGLES, it.v0, it.vn);
+        quantos++;
+      }
+      S.casters[k] = quantos; S.feitos[k] = true;
+    }
+    if (Q.cascatas < 2) { S.Mb[1].set(S.Mb[0]); S.texel[1] = S.texel[0]; S.vies[1] = S.vies[0]; }
+    // o olho no mapa da cascata de longe (início da marcha dos raios de sol)
+    const B1 = S.Mb[1], E = view.eye;
+    S.olho[0] = B1[0] * E[0] + B1[4] * E[1] + B1[8] * E[2] + B1[12];
+    S.olho[1] = B1[1] * E[0] + B1[5] * E[1] + B1[9] * E[2] + B1[13];
+    S.olho[2] = B1[2] * E[0] + B1[6] * E[1] + B1[10] * E[2] + B1[14];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.depthFunc(gl.LEQUAL);
+    S.ms = (typeof performance !== 'undefined' ? performance.now() : 0) - t0;
+    return true;
+  },
+  // Para os testes: o ponto do mundo está na sombra do sol? Lê um pixel do mapa da cascata k (lento:
+  // só para testes). null = fora do mapa ou sem sombras
+  sombraNoPonto(x, y, z, k = 0) {
+    const S = this.sombra, gl = this.gl;
+    if (!S.feitos[k] || !S.fb[k]) return null;
+    const B = S.Mb[k], u = B[0] * x + B[4] * y + B[8] * z + B[12], v = B[1] * x + B[5] * y + B[9] * z + B[13], w = B[2] * x + B[6] * y + B[10] * z + B[14];
+    if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+    const px = new Uint8Array(4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, S.fb[k]);
+    gl.readPixels(Math.floor(u * S.lado), Math.floor(v * S.lado), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const prof = px[0] / 255 + px[1] / 65025 + px[2] / 16581375 + px[3] / 4228250625;
+    return { sombra: w - S.vies[k] * 4 > prof, prof, ponto: w };
+  },
+  estadoSombra() { const S = this.sombra, Q = this.NIVEIS_SOMBRA[this.nivelSombra()]; return { ok: !!this.sombraOk, nivel: Q.nome, cascatas: Q.cascatas, lado: S.lado, casters: S.casters.slice(), ms: +S.ms.toFixed(2), feitos: S.feitos.slice() }; },
+
 
   // Pele (skinning linear na CPU). sk = { bones: [N3], inv: Float32Array(12·ossos) (inversa da
   // matriz de ligação: espaço da malha → espaço do osso), pos/nor: Float32Array(3·v), att:

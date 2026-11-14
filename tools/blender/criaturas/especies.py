@@ -84,6 +84,8 @@ ESPECIES = {
         tosa=dict(ossos=TOSA_LOBO, pct=50, folga=1.0, mole=0.15, alisar=4),
         pelagens={'buldogue': ((0.36, 0.22, 0.12), (0.8, 0.6, 0.4), (0.98, 0.94, 0.88), (0.26, 0.15, 0.08), 0),
                   'buldogue_tigrado': ((0.12, 0.08, 0.05), (0.4, 0.28, 0.18), (0.92, 0.88, 0.82), (0.08, 0.05, 0.03), 0)}),
+    # (cabra e ovelha: SUBSTITUÍDAS pelos GLB reais em tools/blender/criaturas/meshy.py; rodar estas de novo
+    #  sobrescreveria assets/Creatures/DomesticAnimals/<id>/<id>.glb com a versão feita da malha do lobo)
     'cabra': dict(base='lobo', pasta='DomesticAnimals', ossos=d(
         {'cabeca': (0.78, 1.18, 0.88), 'pescoco1': (0.8, 1.05, 0.8), 'pescoco2': (0.8, 1.05, 0.8), 'peito': (0.88, 1.0, 0.95),
          'coluna1': (0.88, 1.0, 0.95), 'coluna2': (0.88, 1.0, 0.95), 'quadril': (0.88, 1.0, 0.95),
@@ -375,6 +377,6 @@ if __name__ == '__main__':
     erradas = [a for a in args if a not in ESPECIES]
     if erradas:   # nome errado não pode virar "refaz todas"
         sys.exit(f'espécies desconhecidas: {erradas} (existem: {sorted(ESPECIES)})')
-    pedidas = args or list(ESPECIES)
+    pedidas = args or [e for e in ESPECIES if e not in ('cabra', 'ovelha')]   # (as duas reais vêm de meshy.py)
     for esp in pedidas:
         construir(esp)

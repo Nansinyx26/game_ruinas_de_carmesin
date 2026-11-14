@@ -1,0 +1,144 @@
+{
+ "id": "ovelha",
+ "fonte": "assets/Creatures/DomesticAnimals/ovelha/fonte/ovelha_de_verdade.glb",
+ "antes": {
+  "vertices": 35313,
+  "faces": 31394,
+  "triangulos": 31394,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 30726,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 4253,
+  "finos_pct": 0.4
+ },
+ "limpeza": {
+  "soldados": 19613,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 15700,
+  "faces": 31394,
+  "triangulos": 31394,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 7,
+  "bordas": 12,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.4
+ },
+ "retopologia": {
+  "voxel_m": 0.0096,
+  "volume_faces": 95908,
+  "pedacos_removidos": 0,
+  "soldados_voxel": 4,
+  "metodo": "voxel + QuadriFlow (quads)",
+  "vertices": 9013,
+  "faces": 9011,
+  "triangulos": 18022,
+  "quads": 9011,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 0,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 0.0
+ },
+ "ajuste_esqueleto": {
+  "escala_z": 2.019,
+  "cabeca_dz": -0.391,
+  "comprimento": 2.212,
+  "altura": 1.7,
+  "patas": {
+   "FL": [
+    0.13,
+    -0.257,
+    0.033
+   ],
+   "HL": [
+    0.145,
+    0.781,
+    0.038
+   ],
+   "FR": [
+    -0.131,
+    -0.256,
+    0.033
+   ],
+   "HR": [
+    -0.145,
+    0.778,
+    0.036
+   ]
+  }
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 18022,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 9010,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 4504,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 1802,
+   "sem_osso": 0
+  }
+ ],
+ "escala_deslocamentos": 2.019,
+ "pelagens": [],
+ "glb": "assets/Creatures/DomesticAnimals/ovelha/ovelha.glb",
+ "blend": "assets/Creatures/DomesticAnimals/ovelha/ovelha.blend",
+ "previa": "assets/Creatures/DomesticAnimals/ovelha/ovelha.png",
+ "folha": [
+  ".cache_criacao/ovelha/ovelha_andar.png",
+  ".cache_criacao/ovelha/ovelha_trotar.png",
+  ".cache_criacao/ovelha/ovelha_correr.png",
+  ".cache_criacao/ovelha/ovelha_comer.png",
+  ".cache_criacao/ovelha/ovelha_sentar.png",
+  ".cache_criacao/ovelha/ovelha_dormir.png",
+  ".cache_criacao/ovelha/ovelha_uivar.png",
+  ".cache_criacao/ovelha/ovelha_brincar.png"
+ ],
+ "ossos": 31,
+ "animacoes": [
+  "andar",
+  "atacar",
+  "atordoado",
+  "brincar",
+  "carinho",
+  "comer",
+  "correr",
+  "dano",
+  "dormir",
+  "idle",
+  "morte",
+  "saltar",
+  "sentar",
+  "trotar",
+  "uivar"
+ ],
+ "segundos": 54
+}

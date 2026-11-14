@@ -160,8 +160,8 @@
   "ok": true
  },
  "ini_peitoral@corpo_af": {
-  "topo": 49.9,
-  "base": 29.83,
+  "topo": 49.44,
+  "base": 32.25,
   "axila": 44.45,
   "ombro": 47.9,
   "pescoco": 49.87,
@@ -170,8 +170,8 @@
   "ok": true
  },
  "ini_peitoral@corpo_am": {
-  "topo": 53.61,
-  "base": 34.64,
+  "topo": 52.9,
+  "base": 33.57,
   "axila": 46.5,
   "ombro": 50.16,
   "pescoco": 53.0,
@@ -180,8 +180,8 @@
   "ok": true
  },
  "ini_peitoral@corpo_f": {
-  "topo": 48.72,
-  "base": 29.57,
+  "topo": 48.08,
+  "base": 31.23,
   "axila": 40.8,
   "ombro": 43.1,
   "pescoco": 49.7,
@@ -190,8 +190,8 @@
   "ok": true
  },
  "ini_peitoral@corpo_m": {
-  "topo": 52.69,
-  "base": 33.75,
+  "topo": 51.69,
+  "base": 32.95,
   "axila": 43.16,
   "ombro": 45.6,
   "pescoco": 54.06,

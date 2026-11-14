@@ -1,0 +1,140 @@
+{
+ "id": "cabra",
+ "fonte": "assets/Creatures/DomesticAnimals/cabra/fonte/cabra_de_verdade.glb",
+ "antes": {
+  "vertices": 8246,
+  "faces": 10000,
+  "triangulos": 10000,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 5802,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 345,
+  "finos_pct": 0.0
+ },
+ "limpeza": {
+  "soldados": 3235,
+  "soltos_removidos": 0
+ },
+ "fonte_limpa": {
+  "vertices": 5011,
+  "faces": 10000,
+  "triangulos": 10000,
+  "quads": 0,
+  "quads_pct": 0.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 28,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "retopologia": {
+  "metodo": "QuadriFlow na fonte limpa (quads)",
+  "vertices": 9589,
+  "faces": 9586,
+  "triangulos": 19172,
+  "quads": 9586,
+  "quads_pct": 100.0,
+  "ngonos": 0,
+  "nao_manifold": 0,
+  "bordas": 6,
+  "soltos": 0,
+  "degeneradas": 0,
+  "cascas": 1,
+  "finos_pct": 0.0
+ },
+ "assado": {
+  "lado": 2048,
+  "emissao_pct": 0.0
+ },
+ "ajuste_esqueleto": {
+  "escala_z": 2.243,
+  "cabeca_dz": -0.424,
+  "comprimento": 2.002,
+  "altura": 1.739,
+  "patas": {
+   "FL": [
+    0.133,
+    -0.502,
+    0.04
+   ],
+   "HL": [
+    0.154,
+    0.623,
+    0.044
+   ],
+   "FR": [
+    -0.132,
+    -0.334,
+    0.032
+   ],
+   "HR": [
+    -0.155,
+    0.635,
+    0.05
+   ]
+  }
+ },
+ "sem_osso_lod0": 0,
+ "lods": [
+  {
+   "nome": "corpo",
+   "triangulos": 19172,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD1",
+   "triangulos": 9586,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD2",
+   "triangulos": 4792,
+   "sem_osso": 0
+  },
+  {
+   "nome": "corpo_LOD3",
+   "triangulos": 1916,
+   "sem_osso": 0
+  }
+ ],
+ "escala_deslocamentos": 2.243,
+ "pelagens": [],
+ "glb": "assets/Creatures/DomesticAnimals/cabra/cabra.glb",
+ "blend": "assets/Creatures/DomesticAnimals/cabra/cabra.blend",
+ "previa": "assets/Creatures/DomesticAnimals/cabra/cabra.png",
+ "folha": [
+  ".cache_criacao/cabra/cabra_andar.png",
+  ".cache_criacao/cabra/cabra_trotar.png",
+  ".cache_criacao/cabra/cabra_correr.png",
+  ".cache_criacao/cabra/cabra_comer.png",
+  ".cache_criacao/cabra/cabra_sentar.png",
+  ".cache_criacao/cabra/cabra_dormir.png",
+  ".cache_criacao/cabra/cabra_uivar.png",
+  ".cache_criacao/cabra/cabra_brincar.png"
+ ],
+ "ossos": 31,
+ "animacoes": [
+  "andar",
+  "atacar",
+  "atordoado",
+  "brincar",
+  "carinho",
+  "comer",
+  "correr",
+  "dano",
+  "dormir",
+  "idle",
+  "morte",
+  "saltar",
+  "sentar",
+  "trotar",
+  "uivar"
+ ],
+ "segundos": 34
+}

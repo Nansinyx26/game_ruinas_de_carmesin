@@ -395,13 +395,18 @@ const ThirdView = {
       Q.push(it);
       return it;
     };
+    // Sombra de contato (oclusão onde o corpo toca o chão, suave e translúcida): com as sombras do sol
+    // ligadas ela é pequena (só o "pé no chão"); a sombra projetada vem do mapa de sombras
+    const solReal = R3D.sombraAtiva && R3D.sombraAtiva();
     const sombra = (e, r) => {
-      const o = e._sh3 || (e._sh3 = { m: M3.make() });
+      const o = e._sh3 || (e._sh3 = { m: M3.make(), contato: 0.6 });
       const k = 1 - Math.min(0.5, (e.z || 0) / 160);   // no ar (pulo, lançado), a sombra encolhe
+      const rr = solReal ? r * 0.7 : r * 1.05;
+      o.contato = (solReal ? 0.55 : 0.82) * (0.45 + 0.55 * k);
       // (no relevo, a sombra deita na ladeira: inclina pela normal do chão)
       const nz = relevo ? Relevo.normal(e.x, e.y, this._nz || (this._nz = [0, 0, 1])) : null;
-      M3.trs(o.m, [e.x, e.y, (relevo ? Relevo.altura(e.x, e.y) : 0) + 0.6], nz ? [Math.atan2(nz[1], nz[2]) * -1, Math.atan2(nz[0], nz[2]), 0] : [0, 0, 0], [r * k, r * k, 1]);
-      const si = R3D.queue(this.shadowModel(), null, null, o);
+      M3.trs(o.m, [e.x, e.y, (relevo ? Relevo.altura(e.x, e.y) : 0) + 0.6], nz ? [Math.atan2(nz[1], nz[2]) * -1, Math.atan2(nz[0], nz[2]), 0] : [0, 0, 0], [rr * k, rr * k, 1]);
+      const si = R3D.queue(this.contatoModel(), null, null, o);
       si.ent = null; Q.push(si);
     };
     const mk = heroModelKey(p.def);
@@ -424,6 +429,7 @@ const ThirdView = {
       n.spr = place(g.queue3(n.key, n, g.opts3(n, 0)), n);
     }
     if (g.world && World.zone) Clima.fila3P(Q);
+    if (typeof Poderes !== 'undefined') Poderes.fila3P(Q);   // manifestações das habilidades: cristais, anéis e rachaduras (js/heroes/poderes.js)
     if (typeof Agua !== 'undefined') Agua.fila3P(Q);   // rios e lagos (js/mundo/agua.js)   // poças, neve no chão e fogueiras (js/mundo/clima.js)
     let cells = 0;
     for (let i = 0; i < g.pickups.count; i++) {
@@ -441,7 +447,7 @@ const ThirdView = {
       if (typeof Fogo !== 'undefined') {
         const V = Fogo.VENTO, ag = typeof Agua !== 'undefined' && Agua.estado3P ? Agua.estado3P() : [0, 0, 0, 0];
         const molhado = g.world && typeof Clima !== 'undefined' ? Math.min(1, Clima.chuva() * 1.2 + (Clima.chao ? Clima.chao().agua || 0 : 0) * 0.6) : 0;
-        R3D.quadro3P(Fogo.luzes3P([], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
+        R3D.quadro3P(Fogo.luzes3P(typeof Poderes !== 'undefined' ? Poderes.luzes3P([]) : [], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
       }
       try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
     }
@@ -542,6 +548,18 @@ const ThirdView = {
       else g.box(-9, 0, 26, 4, 20, 18, '#2a2018', 0);
     }
     return (C[kind] = new Model3(new N3('prop', g)));
+  },
+  // Disco da sombra de contato: centro escuro (cor 0) e borda clara (cor 1); o motor transforma a cor em
+  // transparência (uContato), do centro para a borda
+  contatoModel() {
+    if (this._contato) return this._contato;
+    const g = new G3(), N = 20, d = g.d;
+    for (let i = 0; i < N; i++) {
+      const a0 = (i / N) * TAU, a1 = ((i + 1) / N) * TAU;
+      for (const [x, y, c] of [[0, 0, 0], [Math.cos(a0), Math.sin(a0), 1], [Math.cos(a1), Math.sin(a1), 1]]) d.push(x, y, 0, 0, 0, 1, c, c, c, 0);
+    }
+    const m = new Model3(new N3('contato', g)); m.semSombra = true;
+    return (this._contato = m);
   },
   shadowModel() {
     if (this._sombra) return this._sombra;

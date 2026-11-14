@@ -295,7 +295,7 @@ const R = {
       const it = R3D.items[i], m = it.model, o = it.o;
       if (!it.vn) continue;
       it.ok = true;
-      if (sombra && m === sombra) continue;                // a sombra de mancha: agora há sombra de verdade
+      if ((sombra && m === sombra) || o.contato) continue;   // a sombra de mancha e a de contato: aqui há sombra de verdade e oclusão (GTAO)
       if (o.ghost || o.holo) { g.addGroup(it.v0, it.vn, this.indice(this.fantasma(o.ghost || [0.5, 0.8, 1]))); continue; }
       if (m.tex) {
         const mt = this.indice(this.materialTex(m)), mc = this.indice(this.matCor);
@@ -354,11 +354,20 @@ const R = {
   // Sol, céu e névoa a partir da luz da cena do jogo (Ambiente3P: bioma, hora, clima)
   luz(tv) {
     const L = R3D.light, k = tv.view.key, T = tv.tgt;
-    const sol = this.sol, d = 1400;
+    // a direção é a do sol ou da lua no céu (js/mundo/sol.js, via Ambiente3P.luzes); nos lugares fechados,
+    // a das luminárias do teto. A sombra acompanha o herói no chão do relevo, com a penumbra mais larga
+    // com o sol baixo, à noite e com o céu fechado, e mais fraca quando a luz direta é pouca
+    const sol = this.sol, d = 1400, So = typeof Ambiente3P !== 'undefined' ? Ambiente3P.sol : null;
+    const chao = typeof Relevo !== 'undefined' && Relevo.ativo && typeof game !== 'undefined' && Relevo.ativo(game.room) ? Relevo.altura(T[0], T[1]) : 0;
     sol.color.setRGB(L.key[0], L.key[1], L.key[2], THREE.SRGBColorSpace);
     sol.intensity = 2.8;
-    sol.target.position.set(T[0], T[1], 0);
-    sol.position.set(T[0] + k[0] * d, T[1] + k[1] * d, Math.max(80, k[2] * d));
+    sol.target.position.set(T[0], T[1], chao);
+    sol.position.set(T[0] + k[0] * d, T[1] + k[1] * d, chao + Math.max(80, k[2] * d));
+    if (So) {
+      sol.shadow.radius = Math.min(8, 1.5 * So.sombra.suave);
+      sol.shadow.intensity = Math.min(1, 0.35 + 0.65 * So.sombra.forca);
+      sol.castShadow = So.sombra.forca > 0.03 && (typeof Settings === 'undefined' || Settings.v.sombras !== 0);
+    }
     this.hemi.color.setRGB(Math.min(1, L.amb[0] * 1.1), Math.min(1, L.amb[1] * 1.1), Math.min(1, L.amb[2] * 1.1), THREE.SRGBColorSpace);
     const f = tv.view.fog;
     if (f) {

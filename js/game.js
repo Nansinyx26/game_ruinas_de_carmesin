@@ -416,6 +416,7 @@ class Game {
     this.pickups.update(sdt);
     this.particles.update(sdt);
     if (typeof Fogo !== 'undefined') Fogo.update(sdt);   // fogo, fumaça e explosões (js/fogo.js)
+    if (typeof Poderes !== 'undefined') Poderes.update(sdt);   // manifestações das habilidades (js/heroes/poderes.js)
     this.texts.update(sdt);
     this.trails.update(sdt);
     this.arcs.update(sdt);
@@ -1456,6 +1457,7 @@ class Game {
     room.drawDoor(ctx);
     if (typeof Agua !== 'undefined') Agua.desenhar(ctx);   // rios e lagos por cima do chão
     if (this.world) Clima.desenharChao(ctx);   // poças, neve acumulada, pegadas e respingos (js/mundo/clima.js)
+    if (typeof Poderes !== 'undefined') Poderes.desenharChao(ctx);   // anéis e rachaduras das habilidades, rente ao chão
     p.drawShadow(ctx);
     for (const e of this.enemies) if (e.state !== 'spawn') e.drawShadow(ctx);
     for (const n of this.npcs) if (!n.holo) n.drawShadow(ctx);
@@ -1466,6 +1468,7 @@ class Game {
     for (const e of this.enemies) list.push(e);
     for (const n of this.npcs) list.push(n);
     for (const pl of room.pillars) if (!pl.cenario) list.push(pl);   // (cenario: só o colisor de um objeto do Blender, js/mundo/cenario.js)
+    if (typeof Poderes !== 'undefined') Poderes.listaIso(list);   // cristais das habilidades, na ordem de profundidade
     list.sort((a, b) => (a.x + a.y) - (b.x + b.y));
     for (const o of list) {
       if (o.sprite !== undefined) drawPillar(ctx, o, p);

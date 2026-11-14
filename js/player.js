@@ -539,6 +539,17 @@ class Player extends Entity {
       if (Math.random() < 0.4) game.arcs.crackle(this.x, this.y, 30, 1, 60, '150,205,255', 0.1);
     }
 
+    // Golpe no chão com a manifestação da classe (js/heroes/poderes.js): a carga começa no preparo e
+    // acompanha o avanço do herói; no impacto (slamEffects) os cristais rompem o solo
+    if (d.slamRing && typeof Poderes !== 'undefined' && a.t < tW) {
+      const off = d.shape.offset || 0, cx = this.x + Math.cos(a.dir) * off, cy = this.y + Math.sin(a.dir) * off;
+      if (a.poderS !== a.serial) {
+        a.poderS = a.serial; a.poder = null;
+        const tema = Poderes.temaDe(this);
+        if (tema) a.poder = Poderes.cristais(cx, cy, d.shape.radius || 120, { tema, carga: Math.max(0.12, tW - a.t), dono: a, evitar: [-Math.cos(a.dir) * off, -Math.sin(a.dir) * off] });
+      } else if (a.poder) Poderes.mover(a.poder, cx, cy);
+    }
+
     // Pesado segurado: ao fim da preparação, entra no estado de carga
     if (d.chargeable && prevT < tW && a.t >= tW && input.held.heavy) { this.enterCharge(); return; }
 
@@ -568,7 +579,7 @@ class Player extends Entity {
       else if (d.projectile === 'blade' || d.projectile === 'phantom_blade') this.firePhantomBlade(a.dir, d.dmg);
       else if (/^bullet/.test(d.projectile)) { /* tiros: disparados abaixo (um ou uma rajada) */ }
       else if (d.projectile) this.fireCrescent(a.dir);
-      if (d.slamRing) this.slamEffects(a.dir);
+      if (d.slamRing) this.slamEffects(a.dir, d, a);
       if (d.plasma) this.plasmaEffects();
       if (d.onStart) d.onStart(this, a);   // técnicas das árvores dos aliados (js/heroes/aliados.js)
     }
@@ -758,8 +769,20 @@ class Player extends Entity {
   }
 
   // Técnica "Colapso Magnético": a lâmina crava no chão e libera raios em volta
-  slamEffects(dir) {
-    const x = this.x + Math.cos(dir) * 46, y = this.y + Math.sin(dir) * 46;
+  slamEffects(dir, d = null, a = null) {
+    const off = d && d.shape && d.shape.offset ? d.shape.offset : 46, x = this.x + Math.cos(dir) * off, y = this.y + Math.sin(dir) * off;
+    // Classe com manifestação própria (Guerreiro: erupção de cristais rubros, js/heroes/poderes.js): no
+    // lugar dos anéis e dos raios azuis de sempre
+    const tema = typeof Poderes !== 'undefined' ? Poderes.temaDe(this) : null;
+    if (tema) {
+      const I = a && a.poder && a.poderS === a.serial && Poderes.ativos.includes(a.poder) ? a.poder : Poderes.cristais(x, y, (d && d.shape && d.shape.radius) || 120, { tema, evitar: [-Math.cos(dir) * off, -Math.sin(dir) * off] });
+      Poderes.manifestar(I, x, y);
+      if (a) a.poder = null;
+      game.camera.shake(0.4);
+      game.audio.play('stomp');
+      game.audio.play('thunder', 0.35);
+      return;
+    }
     game.particles.ring(x, y, 130, '60,130,255', 0.45, 12);
     game.particles.ring(x, y, 80, '200,230,255', 0.3, 6);
     game.particles.debris(x, y, 16);

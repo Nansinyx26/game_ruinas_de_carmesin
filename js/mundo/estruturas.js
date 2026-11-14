@@ -277,7 +277,7 @@ const Estruturas = (() => {
       if (!m) continue;
       let o = L.o3;
       if (!o) {
-        o = L.o3 = { m: M3.make(), fixo: true, flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0,
+        o = L.o3 = { m: M3.make(), fixo: true, flash: 0, emi: 1, holo: false, ghost: null, tint: null, scale: 1, lift: 0, roll: 0, pitch: 0, yaw: 0, raio: r * 3 + 80,   // (raio: folga do recorte do mapa de sombras, js/engine3d.js)
           vento: IDX[L.id] && IDX[L.id].tipo === 'arvore' ? 0.6 : IDX[L.id] && IDX[L.id].tipo === 'planta' ? 1 : /^item_ambiente_md_[567]$/.test(L.id) ? 1.8 : 0 };   // árvores, plantas e estandartes ao vento
         M3.trs(o.m, [L.x, L.y, typeof Relevo !== 'undefined' ? Relevo.altura(L.x, L.y) - (IDX[L.id] && (IDX[L.id].tipo === 'arvore' || IDX[L.id].tipo === 'planta') ? Relevo.inclinacao(L.x, L.y) * Math.min(IDX[L.id].r * L.esc, 40) * 0.6 : 0) : 0], [0, 0, L.giro], [L.esc, L.esc, L.esc]);   // (no relevo: o pé no chão; árvore em ladeira entra um pouco na terra do lado de cima)
       }

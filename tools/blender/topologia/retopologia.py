@@ -51,11 +51,19 @@ def importar(caminho, nome='Fonte'):
     antes = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=caminho)
     novos = [o for o in bpy.data.objects if o not in antes]
-    malhas = [o for o in novos if o.type == 'MESH']
+    # (GLB com esqueleto: o importador cria malhas auxiliares das formas dos ossos na coleção
+    # glTF_not_exported; elas não são o modelo)
+    aux = lambda o: any(c.name.startswith('glTF_not_exported') for c in o.users_collection)
+    malhas = [o for o in novos if o.type == 'MESH' and not aux(o)]
     for o in novos:
-        if o.type != 'MESH':
+        if o.type != 'MESH' or aux(o):
             bpy.data.objects.remove(o, do_unlink=True)
     ob = U.juntar(malhas, nome) if len(malhas) > 1 else malhas[0]
+    if len(malhas) == 1:
+        U.aplicar_modificadores(ob)   # (GLB com esqueleto: a armadura sem o objeto dela sai da malha)
+    for v in ob.vertex_groups[:]:
+        if v.name.startswith('Bone'):
+            ob.vertex_groups.remove(v)
     ob.name = nome
     ob.parent = None
     U.ativar(ob)
@@ -256,7 +264,9 @@ def uv(ob, margem=0.004, angulo=62):
 # ------------------------------------------------------------------ 5. assar da fonte
 def _imagens_fonte(fonte):
     """Imagens do material glTF da fonte: cor, metal/aspereza (canais B/G), normais."""
-    m = fonte.active_material
+    m = fonte.active_material or next((sl.material for sl in fonte.material_slots if sl.material), None)
+    if m is None:   # (GLB com esqueleto: o material pode vir só na malha de dados)
+        m = next((mt for mt in fonte.data.materials if mt), None) or next((mt for mt in bpy.data.materials if mt.use_nodes and any(nd.type == 'TEX_IMAGE' for nd in mt.node_tree.nodes)), None)
     nt = m.node_tree
     P = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
     def img_de(sock):

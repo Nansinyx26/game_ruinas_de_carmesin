@@ -42,7 +42,8 @@ const WORLD_CLIMA_REG = {
 const WORLD_CLIMA_TROCA = 8;   // segundos para um clima sumir (e outro tanto para o próximo crescer)
 
 const WorldTime = {
-  DIA_SEG: 600,        // um dia do mundo em segundos reais (10 min)
+  // um dia do mundo em segundos reais (Configurações › Duração do dia: 10 min por padrão)
+  get DIA_SEG() { const m = typeof Settings !== 'undefined' && Settings.v && Settings.v.diaMin; return (m > 0 ? m : 10) * 60; },
   parts: [],           // partículas do clima (em pixels da tela)
   boltT: 0,
 
@@ -56,6 +57,9 @@ const WorldTime = {
   fase(h = this.hora()) {
     return h < 5 ? 'MADRUGADA' : h < 8 ? 'AMANHECER' : h < 17.5 ? 'DIA' : h < 19.5 ? 'ENTARDECER' : 'NOITE';
   },
+  // Os horários do ciclo pedidos (06:00 amanhecer, 08:00 manhã, 12:00 sol intenso, 15:00 tarde, 17:30
+  // pôr do sol, 19:00 crepúsculo, 21:00 noite, 00:00 madrugada): js/mundo/sol.js
+  periodo(h = this.hora()) { return typeof Sol !== 'undefined' ? Sol.periodo(h) : this.fase(h); },
   noite() { return this.luz() < 0.25; },
   clima() { const c = this.S && this.S.clima; return (c && WORLD_CLIMAS[c.tipo]) ? c.tipo : 'limpo'; },
   C() { return WORLD_CLIMAS[this.clima()]; },
@@ -217,7 +221,7 @@ const WorldTime = {
     ctx.fillStyle = dia ? '#fff1d0' : '#cfe0ff'; ctx.fillText(txt, x, y);
     ctx.font = `bold 10px ${FONT_TITLE}`; ctx.letterSpacing = '2px';
     ctx.fillStyle = dia ? 'rgba(255,200,110,0.95)' : 'rgba(140,170,255,0.95)';
-    ctx.fillText(`${dia ? '☀' : '☾'} ${this.fase()} · ${this.nome()}`, x - tw - 10, y - 2);
+    ctx.fillText(`${dia ? '☀' : '☾'} ${this.periodo()} · ${this.nome()}`, x - tw - 10, y - 2);
     ctx.letterSpacing = '0px';
     ctx.restore();
   },

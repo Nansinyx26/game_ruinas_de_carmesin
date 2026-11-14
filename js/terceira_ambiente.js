@@ -61,7 +61,11 @@ const Ambiente3P = {
   // Quanto o céu está fechado (chuva, tempestade, neblina, areia, nevasca, cinzas)
   fechado() { return { chuva: 0.55, tempestade: 0.85, neblina: 0.6, areia: 0.65, nevasca: 0.7, cinzas: 0.6, neve: 0.4 }[this.clima()] || 0; },
   // Hora dourada (amanhecer e entardecer)
-  dourado(h) { const b = (c) => Math.exp(-Math.pow((h - c) / 0.9, 2)); return Math.max(b(6.6), b(18.4)); },
+  // (com o Sol: pela elevação real dele — o sol baixo doura o céu, e o crepúsculo depois do pôr)
+  dourado(h) {
+    if (typeof Sol !== 'undefined') { const v = Sol.estado(typeof game !== 'undefined' ? game.room : null, h); return Math.max(v.dourado, v.crepusculo * 0.85); }
+    const b = (c) => Math.exp(-Math.pow((h - c) / 0.9, 2)); return Math.max(b(6.6), b(18.4));
+  },
   // Cores do céu agora: zênite, horizonte, terra distante (a névoa)
   cores(tipo) {
     const P = AMB3P[tipo];
@@ -113,11 +117,18 @@ const Ambiente3P = {
       }
       ctx.globalAlpha = 1;
     }
-    // sol e lua: nascem num lado e se põem no outro com a hora
+    // sol e lua: na posição real do céu (js/mundo/sol.js), a MESMA de onde vem a luz e as sombras;
+    // a lua com a fase do dia do mundo
     if (tipo !== 'cidade') {
-      const k = (h - 6) / 12, elS = Math.sin(k * Math.PI) * 1.05, azS = -Math.PI * 0.5 + k * Math.PI;
-      if (elS > -0.05) this.astro(ctx, this.dir(azS, Math.max(elS, 0.02)), true, C, yh);
-      else this.astro(ctx, this.dir(azS + Math.PI, Math.min(1, -elS) * 0.9 + 0.1), false, C, yh);
+      const So = typeof Sol !== 'undefined' ? Sol.estado(R, h) : null;
+      if (So) {
+        if (So.lua.el > -0.03 && So.sol.el < 0.2) this.astro(ctx, this.dir(So.lua.az, Math.max(So.lua.el, 0.02)), false, C, yh, So.lua);
+        if (So.sol.el > -0.05) this.astro(ctx, this.dir(So.sol.az, Math.max(So.sol.el, 0.02)), true, C, yh);
+      } else {
+        const k = (h - 6) / 12, elS = Math.sin(k * Math.PI) * 1.05, azS = -Math.PI * 0.5 + k * Math.PI;
+        if (elS > -0.05) this.astro(ctx, this.dir(azS, Math.max(elS, 0.02)), true, C, yh);
+        else this.astro(ctx, this.dir(azS + Math.PI, Math.min(1, -elS) * 0.9 + 0.1), false, C, yh);
+      }
     }
     // nuvens que derivam
     this.desenharNuvens(ctx, C, t, yh, tipo);
@@ -131,7 +142,7 @@ const Ambiente3P = {
     ctx.fillStyle = bm; ctx.fillRect(0, yh - 40, VIEW_W, 70);
     return C;
   },
-  astro(ctx, P, sol, C, yh) {
+  astro(ctx, P, sol, C, yh, lua = null) {
     if (!P.vis || P.y > yh + 10) return;
     const x = P.x, y = P.y, ouro = C.G;
     const cor = sol ? this.mix([255, 244, 214], [255, 170, 90], ouro) : [214, 226, 255];
@@ -142,7 +153,11 @@ const Ambiente3P = {
     ctx.globalAlpha = 1 - C.F * 0.8;
     ctx.fillStyle = this.css(this.mix(cor, [255, 255, 255], 0.4));
     ctx.beginPath(); ctx.arc(x, y, raio, 0, TAU); ctx.fill();
-    if (!sol) { ctx.fillStyle = this.css(this.mix(C.z, C.h, 0.3), 0.9); ctx.beginPath(); ctx.arc(x + raio * 0.45, y - raio * 0.2, raio * 0.85, 0, TAU); ctx.fill(); }
+    if (!sol) {
+      // fase: a parte escura cobre o disco (lua nova) ou some (cheia); crescente de um lado, minguante do outro
+      const luz = lua ? lua.luz : 0.35, lado = lua && lua.fase > 0.5 ? -1 : 1;
+      if (luz < 0.97) { ctx.fillStyle = this.css(this.mix(C.z, C.h, 0.3), 0.92); ctx.beginPath(); ctx.arc(x + lado * raio * 2.1 * luz, y - raio * 0.08, raio * 0.98, 0, TAU); ctx.fill(); }
+    }
     ctx.globalAlpha = 1;
   },
   desenharNuvens(ctx, C, t, yh, tipo) {
@@ -283,15 +298,36 @@ const Ambiente3P = {
 
   // ------------------------------------------------------------ luz e névoa
   // Ajusta a luz do motor 3D para esta passada (restaurada em fim()); devolve a névoa
+  // A LUZ DIRECIONAL vem do Sol (js/mundo/sol.js): a direção é a do sol (ou da lua) no céu, a mesma
+  // do disco desenhado, e as sombras saem dela; nos lugares fechados, a das luminárias do teto
   luzes(R, C, view) {
     const th = R.theme, L = R3D.light, tipo = this.tipo(R), P = AMB3P[tipo];
     this.salva = this.salva || { key: L.key.slice(), rim: L.rim.slice() };
     L.rim = this.salva.rim.slice();
+    const So = typeof Sol !== 'undefined' ? Sol.estado(R, this.hora()) : null;
+    this.sol = So;
     if (!C || !P.amb) {
       const lc = th.lamp.split(',').map((v) => v / 255), dia = game.world && typeof WorldTime !== 'undefined' ? WorldTime.ambiente(th) : 1;
       L.amb = th.amb3p ? th.amb3p.map((v) => v * dia) : [(0.34 + lc[0] * 0.16) * dia, (0.38 + lc[1] * 0.16) * dia, (0.5 + lc[2] * 0.16) * dia];   // (amb3p: luz própria do tema, js/mundo/bairro.js)
       if (th.amb3p) { L.key = [1.0, 0.86, 0.68]; L.rim = [0.62, 0.42, 0.26]; }   // luz de lareira e lampião: contorno quente no lugar do azul
       const dk = th.dark.split(',').map((v) => v / 255);
+      if (So) {
+        const key = view.key;
+        if (So.artificial || !C) {
+          // FECHADO (interior, masmorra, subsolo): o sol não atravessa o teto; a chave e as sombras são
+          // das luminárias do alto (um pouco puxadas para a câmera, para o rosto não ficar no escuro)
+          const a = So.chave.dir;
+          for (let i = 0; i < 3; i++) key[i] = a[i] * 0.72 + key[i] * 0.28;
+          this.norm(key);
+          this.sombras(view, So, key, 0.75 * So.sombra.forca, So.sombra.suave, 0);
+        } else {
+          // cidade a céu aberto (céu sempre escuro de fumaça e neon): o sol ou a lua dão a direção e um
+          // pouco da cor; as sombras são as dele, mais fracas
+          const kk = Math.min(1, So.chave.k * 1.2);
+          for (let i = 0; i < 3; i++) { key[i] = So.chave.dir[i]; L.key[i] = L.key[i] * (1 - 0.55 * kk) + So.chave.cor[i] * 0.55 * kk; }
+          this.sombras(view, So, key, So.sombra.forca * 0.7, So.sombra.suave, 0);
+        }
+      }
       return C ? [C.chao[0] / 255, C.chao[1] / 255, C.chao[2] / 255, 330] : [dk[0] * 1.4 + 0.01, dk[1] * 1.4 + 0.01, dk[2] * 1.4 + 0.015, 300];
     }
     const k = C.L, F = C.F;
@@ -299,16 +335,35 @@ const Ambiente3P = {
     let amb = this.mix(noite, dia, k);
     amb = this.mix(amb, [amb[0] * 1.15 + 0.04, amb[1] * 0.92, amb[2] * 0.78], C.G);
     L.amb = amb.map((v) => v * (1 - F * 0.25));
-    const sol = this.mix(this.mix([0.34, 0.42, 0.66], [0.92, 0.88, 0.8], k), [1.05, 0.72, 0.48], C.G);
-    L.key = sol.map((v) => v * (1 - F * 0.45));
-    // direção: metade o sol (quando de dia), metade a luz de câmera de sempre
-    const h = this.hora(), kk = (h - 6) / 12, elS = Math.max(0.25, Math.sin(kk * Math.PI) * 1.05), azS = -Math.PI * 0.5 + kk * Math.PI;
-    const sd = k > 0.2 ? [Math.cos(azS) * Math.cos(elS), Math.sin(azS) * Math.cos(elS), Math.sin(elS)] : [0, 0, 1];
-    const key = view.key, w = 0.5 * Math.min(1, k * 2);
-    for (let i = 0; i < 3; i++) key[i] = key[i] * (1 - w) + sd[i] * w;
-    const q = Math.hypot(key[0], key[1], key[2]) || 1; key[0] /= q; key[1] /= q; key[2] /= q;
-    // névoa: a cor da terra distante; começa mais perto com o céu fechado
+    const key = view.key;
+    if (So) {
+      // CÉU ABERTO: a direção da luz é a do sol (ou da lua) — a câmera não entra mais na conta —
+      // e a cor é a da luz depois de atravessar a atmosfera (branca ao meio-dia, laranja no pôr do sol)
+      const c = So.chave;
+      for (let i = 0; i < 3; i++) { key[i] = c.dir[i]; L.key[i] = c.cor[i]; }
+      // o céu enche as sombras: a luz ambiente esfria de dia e esquenta no fim de tarde
+      L.amb = L.amb.map((v, i) => v * (0.92 + 0.12 * So.sol.k) + [0.0, 0.006, 0.02][i] * So.sol.k);
+      // contraluz: olhando para o sol, as bordas acendem na cor dele (cabelo, ombros, armadura, folhas)
+      const E = ThirdView.eye, T = ThirdView.tgt, fx = T[0] - E[0], fy = T[1] - E[1], fl = Math.hypot(fx, fy) || 1;
+      const contra = Math.max(0, (fx * c.dir[0] + fy * c.dir[1]) / fl) * Math.min(1, c.k * 1.4) * (1 - So.nuvens * 0.7);
+      L.rim = L.rim.map((v, i) => v * (1 - 0.5 * contra) + c.cor[i] * 0.9 * contra);
+      // raios de sol no ar: mais com o sol baixo, na neblina e no fim da tarde; pouco ao meio-dia
+      const vol = So.sol.k * (0.08 + 0.32 * (1 - Sol.sm(0.15, 0.9, So.sol.el)) + 0.25 * So.nuvens * (typeof WorldTime !== 'undefined' && WorldTime.clima() === 'neblina' ? 1 : 0.2));
+      this.sombras(view, So, key, So.sombra.forca, So.sombra.suave, vol);
+    } else {
+      const sol = this.mix(this.mix([0.34, 0.42, 0.66], [0.92, 0.88, 0.8], k), [1.05, 0.72, 0.48], C.G);
+      L.key = sol.map((v) => v * (1 - F * 0.45));
+    }
+    // névoa: a cor da terra distante; começa mais perto com o céu fechado (e esquenta virada para o sol)
     return [C.chao[0] / 255, C.chao[1] / 255, C.chao[2] / 255, (tipo === 'cidade' ? 300 : 360) * (1 - F * 0.45)];
+  },
+  norm(v) { const q = Math.hypot(v[0], v[1], v[2]) || 1; v[0] /= q; v[1] /= q; v[2] /= q; return v; },
+  // Pede ao motor as sombras do quadro: a luz, a força, a penumbra, o herói e para onde a câmera olha
+  sombras(view, So, dir, forca, suave, vol) {
+    if (typeof R3D === 'undefined' || !R3D.sombraQuadro) return;
+    const E = ThirdView.eye, T = ThirdView.tgt, fx = T[0] - E[0], fy = T[1] - E[1], fl = Math.hypot(fx, fy) || 1;
+    const chao = typeof Relevo !== 'undefined' && Relevo.ativo && Relevo.ativo(game.room) ? Relevo.altura(T[0], T[1]) : 0;
+    R3D.sombraQuadro({ dir: dir.slice(), forca, suave, alvo: [T[0], T[1], chao + 20], frente: [fx / fl, fy / fl], vol, artificial: !!So.artificial });
   },
   fim() { if (this.salva) { R3D.light.key = this.salva.key.slice(); R3D.light.rim = this.salva.rim.slice(); } },
 

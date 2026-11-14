@@ -52,6 +52,10 @@ CRIATURAS = {
     'gato_malhado': dict(fonte='Pets/Cats/gato_malhado/fonte/gato.glb', pasta='Pets/Cats', molde='lobo',
                          pelagens={'gato_cinza': ('sem_olhos', (0.17, 0.18, 0.21), (0.46, 0.48, 0.53), (0.9, 0.9, 0.92)),
                                    'gato_sombra': ('sem_olhos', (0.025, 0.025, 0.04), (0.09, 0.08, 0.12), (0.34, 0.31, 0.42), ((0.66, 0.36, 1.0), 1.6))}),
+    # cabra e ovelha REAIS (enviadas): substituem as feitas a partir da malha do lobo (especies.py); a cabra
+    # traz os chifres na própria malha
+    'cabra': dict(fonte='DomesticAnimals/cabra/fonte/cabra_de_verdade.glb', pasta='DomesticAnimals', molde='lobo', pelagens={}),
+    'ovelha': dict(fonte='DomesticAnimals/ovelha/fonte/ovelha_de_verdade.glb', pasta='DomesticAnimals', molde='lobo', pelagens={}),
     'galinha': dict(fonte='DomesticAnimals/galinha/fonte/Galinha.glb', pasta='DomesticAnimals', molde='ave',
                     pelagens={'galinha_ruiva': ('penas_claras', (0.32, 0.12, 0.04), (0.64, 0.3, 0.1), (0.9, 0.6, 0.34)),
                               'galinha_preta': ('penas_claras', (0.025, 0.025, 0.03), (0.09, 0.09, 0.11), (0.3, 0.3, 0.34))}),
