@@ -316,13 +316,40 @@ const Paisagem = (() => {
     Z[z.id] = base[z.id].concat(escolhidos.map((o) => [o.id, o.x / R.w, o.y / R.h, o.giro, o.esc]));
     return G;
   }
+  // A paisagem de uma zona VIZINHA, vista além da borda (js/mundo/vizinhos.js), sem carregar a zona: a
+  // lista já montada se o herói já esteve lá; senão, gerada com o que se sabe dela sem entrar (a água,
+  // o relevo, as passagens, o portal e os baús da definição), guardada à parte (a carga de verdade gera
+  // a dela, com tudo o que estiver na zona). [id, fx, fy, giro, esc] como em Estruturas.ZONAS
+  const fant = {};
+  function fantasma(z, R, campo) {
+    if (typeof Estruturas === 'undefined' || !z || !R) return [];
+    const Z = Estruturas.ZONAS, tema = (R.def && R.def.theme) || z.theme, lista = base[z.id] !== undefined ? base[z.id] : (Z[z.id] || []);
+    if (cache[z.id] && Z[z.id]) return Z[z.id];
+    if (!R.aberto || !TEMAS[tema] || z.instancia || z.cidade || z.distrito) return lista;
+    const sem = sementeDe(z.id), chave = `${z.id}:${sem}:${Math.round(R.w)}x${Math.round(R.h)}`;
+    let G = fant[z.id];
+    if (!G || G.chave !== chave) {
+      const I = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {}, fr = (at, r) => ({ x: R.w * at[0], y: R.h * at[1], r });
+      const prof = typeof Agua !== 'undefined' && Agua.formas ? Agua.formas(z.id, R) : null;
+      const pass = [], m = 64;
+      for (const [dir, [dr, dc]] of Object.entries(typeof WORLD_DIRS !== 'undefined' ? WORLD_DIRS : {})) if (typeof worldZoneAt === 'function' && worldZoneAt(z.r + dr, z.c + dc, z.region)) pass.push({ N: { x: R.w / 2, y: m }, S: { x: R.w / 2, y: R.h - m }, W: { x: m, y: R.h / 2 }, E: { x: R.w - m, y: R.h / 2 } }[dir]);
+      const fixos = lista.filter((L) => I[L[0]]).map((L) => fr([L[1], L[2]], I[L[0]].r * (L[4] || 1)))
+        .concat((z.chests || []).map((c) => fr(c.at, 60)), z.portal ? [fr([0.5, 0.5], 60)] : [], z.secret ? [fr(z.secret.at, 60)] : [], z.terminal ? [fr(z.terminal.at, 60)] : []);
+      G = gerar({ id: z.id, w: R.w, h: R.h, tema, hub: !!(z.hub || z.seguro), agua: prof ? (x, y) => Math.max(0, prof(x, y)) : null, fixos, passagens: pass,
+        raio: (id) => (I[id] ? I[id].r : 40), temPeca: (id) => !!I[id], alt: campo && campo.amp ? (x, y) => cl(campo.bruta(x, y) / campo.amp, 0, 1) : null });
+      G.chave = chave; fant[z.id] = G;
+    }
+    const q = typeof Clima !== 'undefined' && Clima.qual ? cl(Clima.qual().part, 0.45, 1) : 1, conta = {};
+    const escolhidos = G.itens.slice().sort((a, b) => a.ordem - b.ordem).filter((o) => { if (o.tipo === 'poi') return true; conta[o.tipo] = (conta[o.tipo] || 0) + 1; return conta[o.tipo] <= Math.round(TETO[o.tipo] * q); });
+    return lista.concat(escolhidos.map((o) => [o.id, o.x / R.w, o.y / R.h, o.giro, o.esc]));
+  }
   // Sementes: a do mundo (todas as zonas sem semente própria) e a de uma zona só
   function definirMundo(s) { const E = estado(); if (!E) return; (E.paisagem || (E.paisagem = {})).mundo = s >>> 0; for (const k in cache) delete cache[k]; if (World.save) World.save(); }
   function definirZona(zid, s) { const E = estado(); if (!E) return; const P = E.paisagem || (E.paisagem = {}); (P.zonas || (P.zonas = {}))[zid] = s >>> 0; delete cache[zid]; if (World.save) World.save(); }
   function configuracao() { const E = estado(), P = (E && E.paisagem) || {}; return { mundo: P.mundo === undefined ? SEMENTE_PADRAO : P.mundo, zonas: Object.assign({}, P.zonas) }; }
   function carregarConfiguracao(c) { const E = estado(); if (!E || !c) return; E.paisagem = { mundo: c.mundo >>> 0, zonas: Object.assign({}, c.zonas) }; for (const k in cache) delete cache[k]; if (World.save) World.save(); }
 
-  return { ESPECIES, POIS, TEMAS, TETO, SISTEMAS, SEMENTE_PADRAO, gerar, validar, campos, rotas, poisson, sementes, sementeDe, aoCarregar, definirMundo, definirZona, configuracao, carregarConfiguracao, relatorio, _cache: cache, _base: base, fbm, ruido };
+  return { ESPECIES, POIS, TEMAS, TETO, SISTEMAS, SEMENTE_PADRAO, gerar, validar, campos, rotas, poisson, sementes, sementeDe, aoCarregar, fantasma, definirMundo, definirZona, configuracao, carregarConfiguracao, relatorio, _cache: cache, _base: base, fbm, ruido };
 })();
 if (typeof window !== 'undefined') window.Paisagem = Paisagem;
 if (typeof module !== 'undefined') module.exports = Paisagem;

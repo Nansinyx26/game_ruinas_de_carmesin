@@ -342,6 +342,7 @@ const World = {
     HeroObjects.clear();
     g.boss = null; g.eclipse = null; g.skyFlash = 0;
     g.counter.reset(true);
+    const salaAntes = g.room;   // (a zona de onde se veio: vira vizinha visível sem custo, js/mundo/vizinhos.js)
     g.room = new Room(0, z);
     g.room.render(g.roomScale());
     g.director.reset(Math.min(5, z.lv - 1));
@@ -461,6 +462,7 @@ const World = {
     if (typeof Vegetacao !== 'undefined') Vegetacao.aoCarregar(z);   // grama 3D, flores e juncos por setor, com a semente da zona (js/mundo/vegetacao.js)   // a grade do relevo com os ajustes do lugar: água no baixo, patamar sob as construções
     if (typeof Agua !== 'undefined') Agua.depois();   // quem nasceu dentro d'água vai para a margem   // estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js)
     Bairro.aoCarregar(z);       // Bairro da Muralha, interiores e a passagem da praça (js/mundo/bairro.js)
+    if (typeof Vizinhos !== 'undefined') Vizinhos.aoCarregar(z, salaAntes);   // território contínuo: as zonas vizinhas vistas além da borda (js/mundo/vizinhos.js)
     if (typeof PubNeon !== 'undefined') PubNeon.aoCarregar(z);   // o pub do Mercado Neon: a porta, os fregueses, o DJ e a música (js/mundo/pub_neon.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
     Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
@@ -482,7 +484,7 @@ const World = {
     // cima (0,28 s). Os modelos da vizinha já vinham carregando (preCarregar). Portais e passagens
     // das cidades continuam com o escurecer (são outra coisa: teletransporte e portas)
     if (dir && along !== null && game.world) {
-      game.dissolver();
+      game.dissolver(typeof Vizinhos !== 'undefined' && Vizinhos.pronta(id) ? 0.12 : 0.28);   // (a vizinha já estava à vista: a troca quase não aparece)
       const vx = game.player.vx, vy = game.player.vy, f = game.player.facing;
       this.loadZone(id, dir, along, chegada, true);
       const p = game.player; p.vx = vx; p.vy = vy; p.facing = p.viewFacing = f;

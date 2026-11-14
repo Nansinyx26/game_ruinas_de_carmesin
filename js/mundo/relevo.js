@@ -53,6 +53,14 @@ const Relevo = (() => {
   // Prepara o campo da zona (antes de quem põe coisas no chão): a altura "bruta", sem os ajustes do lugar
   function iniciar(z, R) {
     A = null;
+    const C = campo(z, R);
+    if (!C) return null;
+    A = C;
+    return A;
+  }
+  // O campo "bruto" de uma zona qualquer, sem mexer na zona atual (as zonas vizinhas vistas além da
+  // borda, js/mundo/vizinhos.js): { bruta(x, y) } nas coordenadas da própria zona
+  function campo(z, R) {
     if (!z || !R || typeof worldZoneAt !== 'function') return null;
     const f0 = forcaZona(Object.assign({ aberto: R.aberto }, z, { theme: (R.def && R.def.theme) || z.theme }));
     if (!f0) return null;
@@ -69,8 +77,7 @@ const Relevo = (() => {
       return (g(0, 0) * (1 - tx) + g(1, 0) * tx) * (1 - ty) + (g(0, 1) * (1 - tx) + g(1, 1) * tx) * ty;
     };
     const bruta = (x, y) => { const u = x / R.w, v = y / R.h; return forca(cl(u, -0.5, 1.5), cl(v, -0.5, 1.5)) * forma((z.c + u) * LADO, (z.r + v) * LADO); };
-    A = { sala: R, z, tema, amp: f0, forma, forca, bruta, grade: null };
-    return A;
+    return { sala: R, z, tema, amp: f0, forma, forca, bruta, grade: null };
   }
   // Monta a grade da zona com os ajustes do lugar (depois que tudo foi posto): água, patamares
   function preparar() {
@@ -143,6 +150,6 @@ const Relevo = (() => {
   }
   const estado = () => (A ? { zona: A.z.id, tema: A.tema, amp: A.amp, grade: !!A.grade, nx: A.nx, ny: A.ny, agua: !!A.agua, patamares: A.patamares } : null);
   const bruta = (x, y) => (A ? A.bruta(x, y) : 0);
-  return { CEL, LADO, AMP, bruta, iniciar, preparar, ativo, altura, declive, inclinacao, normal, subida, ritmo, alt01, malha, forcaZona, estado, descartar() { A = null; } };
+  return { CEL, LADO, AMP, bruta, iniciar, campo, preparar, ativo, altura, declive, inclinacao, normal, subida, ritmo, alt01, malha, forcaZona, estado, descartar() { A = null; } };
 })();
 if (typeof window !== 'undefined') window.Relevo = Relevo;

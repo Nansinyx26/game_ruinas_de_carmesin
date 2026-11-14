@@ -87,6 +87,14 @@ const Montarias = {
     if (!game.world || !World.state) return;
     if (z && z.distrito === 'interior') { if (game.player) game.player.montado = null; return; }   // a montaria espera do lado de fora
     this.porNaZona();
+    if (z && typeof BAIRRO_ID !== 'undefined' && z.id === BAIRRO_ID) this.cercado();
+  },
+  // O cercado da Estrebaria (Bairro da Muralha, ao lado do Tobias): os cavalos à venda pastando e o
+  // lobo de montaria do lado de fora; [E] mostra o preço e o nível
+  CERCADO: [['cavalo', 0.255, 0.592, 0.4, 'comer'], ['cavalo_tordilho', 0.302, 0.6, 2.6, 'parado'], ['cavalo_negro', 0.27, 0.638, 5.4, 'comer'], ['lobo_montaria', 0.355, 0.5, 2.2, 'sentar']],
+  cercado() {
+    const R = game.room;
+    for (const [t, fx, fy, giro, pose] of this.CERCADO) game.npcs.push(new VitrineMontaria(t, R.w * fx, R.h * fy, giro, pose));
   },
   // ------------------------------------------------------------------ montar
   montar(m) {
@@ -216,3 +224,30 @@ class MontariaEnt extends NPC {
     return [n, S.fi % d(n)];
   }
 }
+
+// As montarias à venda no cercado da Estrebaria (3D, numa pose; [E] mostra o preço)
+class VitrineMontaria extends NPC {
+  constructor(tipo, x, y, giro, pose) {
+    super({ model: 'civil', name: MONTARIAS_TIPOS[tipo].nome, lines: ['…'] }, x, y);
+    this.tipo = tipo; this.T = MONTARIAS_TIPOS[tipo];
+    this.E = { modelo: this.T.modelo, clipes: Object.assign({}, MONTARIA_CLIPES, this.T.clipes || {}), voa: false };
+    this.pose = pose; this.key = null; this.escala = this.T.escala; this.height = 46; this.radius = 16;
+    this.papel = 'À venda na Estrebaria'; this.verb = 'Ver'; this.alt = 0; this.vx = 0; this.vy = 0; this.facing = this.viewFacing = giro;
+  }
+  canTalk() { return true; }
+  talk() {
+    const T = this.T, nv = game.activeProgress().level;
+    game.hud.say(T.nome, `${T.desc} Velocidade ×${T.vel.toFixed(2)} · nível ${T.nivel}${nv < T.nivel ? ' (ainda não)' : ''} · ${T.preco} células — fale com o Tobias.`, 5, 0, true);
+  }
+  update(dt) {
+    this.animTime += dt;
+    const id = this.T.modelo;
+    if (Criaturas3D.pronto(id)) this.key = 'cri_' + id; else Criaturas3D.carregar(id);
+  }
+  petClipe(S, C, dt) {
+    const want = this.E.clipes[this.pose], n = want && C.clipes[want] ? want : 'idle', c = C.clipes[n];
+    S.fi += dt;
+    return [n, c ? S.fi % c.d : 0];
+  }
+}
+if (typeof window !== 'undefined') window.VitrineMontaria = VitrineMontaria;

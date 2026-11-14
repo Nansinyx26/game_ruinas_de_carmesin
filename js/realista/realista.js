@@ -350,7 +350,8 @@ const R = {
     // câmera da 3ª pessoa no espaço espelhado
     const E = tv.eye, T = tv.tgt, cam = this.camera;
     cam.position.set(E[0], -E[1], E[2]);
-    cam.fov = (tv.fov + tv.fovK * 0.12) * DEG;
+    cam.fov = (tv.fovAtual || tv.fov + tv.fovK * 0.12) * DEG;   // (a mesma lente da câmera do jogo: a isométrica 3D fecha a lente)
+    if (tv.far && (cam.far !== tv.far || cam.near !== tv.near)) { cam.far = tv.far; cam.near = tv.near; }   // distância de visão
     cam.aspect = VIEW_W / VIEW_H;
     cam.lookAt(T[0], -T[1], T[2]);
     cam.updateProjectionMatrix();

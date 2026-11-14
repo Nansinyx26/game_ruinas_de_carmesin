@@ -54,6 +54,10 @@ const BAIRRO_RUA = [
   ['estandarte_rubro', 0.22, 0.2, 0, 1], ['boneco_treino', 0.3, 0.24, 2.2, 1], ['armeiro', 0.4, 0.27, 1.57, 1],
   ['barril', 0.5, 0.2, 0, 1], ['barril', 0.53, 0.205, 0.7, 1], ['caixote', 0.66, 0.205, 0.3, 1], ['caixote', 0.215, 0.5, 1.1, 1],
   ['estandarte_rubro', 0.92, 0.25, 0, 1],
+  // o cercado da Estrebaria da Guarda, ao lado do Tobias (os cavalos à venda pastam dentro: js/mundo/montarias.js);
+  // a entrada fica do lado do Tobias
+  ['cerca', 0.297, 0.545, Math.PI / 2, 1], ['cerca', 0.243, 0.655, Math.PI / 2, 1], ['cerca', 0.297, 0.655, Math.PI / 2, 1],
+  ['cerca', 0.215, 0.6, 0, 1], ['cerca', 0.325, 0.573, 0, 1], ['cerca', 0.325, 0.627, 0, 1], ['fardo_feno', 0.232, 0.565, 0.5, 0.9],
 ];
 // Interiores: o prédio de onde se entra, o tamanho da sala e a mobília ([id, x, y, giro, escala])
 const P2 = Math.PI / 2;
@@ -91,10 +95,11 @@ const BAIRRO_INTERIORES = {
 // Quem mora e trabalha no bairro e nos prédios
 const BAIRRO_POVO = [
   { id: 'aur_tobias', nome: 'TOBIAS', zona: BAIRRO_ID, at: [0.2, 0.42], model: 'civil', variant: 0, facing: 0.2, papel: 'Domador da Estrebaria da Guarda', servicos: ['montarias'],
-    personalidade: 'Grandalhão de voz mansa; trata os lobos de montaria como filhos.',
-    ola: ['Devagar perto do cercado. Eles sentem pressa.', 'Montaria boa é a que volta sozinha para casa.'],
-    temas: [['Por que lobos e não cavalos?', 'Cavalo não aguenta o Nexus: se assusta com neon, empaca na neve. Lobo grande vai a qualquer lugar. Os cavalos que restam estão nas fazendas do sul, e eu não vendo o que não tenho.'],
-      ['Posso lutar montado?', 'Não. Montado você corre; para lutar, desce. O lobo se afasta e espera.']] },
+    personalidade: 'Grandalhão de voz mansa; trata cavalos e lobos de montaria como filhos.',
+    ola: ['Devagar perto do cercado. Eles sentem pressa.', 'Montaria boa é a que volta sozinha para casa.', 'Os cavalos chegaram das fazendas do sul. Dá uma olhada no cercado.'],
+    temas: [['Vende cavalos?', 'Vendo. Os do cercado aqui do lado vieram das fazendas do sul: o castanho é manso para quem está começando, o tordilho não refuga ponte nem rio e o negro só aceita quem já provou o seu valor. Na estrada, cavalo é o mais rápido.'],
+      ['Cavalo ou lobo?', 'Cavalo corre mais na estrada e no campo. Lobo grande aguenta neve, neon e trilha fechada. Escolha pelo caminho que você faz.'],
+      ['Posso lutar montado?', 'Não. Montado você corre; para lutar, desce. A montaria se afasta e espera.']] },
   { id: 'aur_cora', nome: 'CORA ALVES', zona: 'aurora_animais', at: [0.2, 0.7], model: 'civil', variant: 3, facing: 4.7, papel: 'Tratadora de animais', servicos: ['animais'],
     personalidade: 'Calma e direta; fala com os bichos antes de falar com gente.',
     ola: ['Devagar ao entrar: a Asa Noturna estranha gente nova.', 'Veio adotar ou só matar a saudade de bicho?'],
