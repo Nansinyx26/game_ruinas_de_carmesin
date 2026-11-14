@@ -60,7 +60,9 @@ try {
     if (r.falhas || !r.total) codigo = 1;
   }
   if (excecoes.length) { console.log(`Exceções na página (${excecoes.length}):\n  ${[...new Set(excecoes)].join('\n  ')}`); codigo = 1; }
-  if (imagem) await pagina.screenshot({ path: imagem });
+  // (a imagem é só um registro: no SwiftShader, um quadro da zona com grama pode passar do tempo da
+  //  captura; isso não reprova a suíte, que já deu o resultado)
+  if (imagem) try { await pagina.screenshot({ path: imagem, timeout: 120000 }); } catch (e) { console.log(`Sem imagem da suíte: ${e.message.split('\n')[0]}`); }
 } catch (e) {
   console.log(`Erro ao rodar a suíte: ${e.message}`); codigo = 1;
 } finally {
