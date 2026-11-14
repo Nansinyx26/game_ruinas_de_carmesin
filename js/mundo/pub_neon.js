@@ -157,6 +157,11 @@ const PubNeon = Object.assign(Object.create(TavernaViva), {
       x = L.x + Math.cos(a) * r; y = L.y + Math.sin(a) * r;
       for (let k = 0; k < 12 && !R.canStand(x, y, 14); k++) { x += Math.cos(a) * 12; y += Math.sin(a) * 12; }
     }
+    // ainda em cima de algo (pilar, quiosque): o lugar livre mais perto, em anéis
+    if (!R.canStand(x, y, 14)) {
+      const x0 = x, y0 = y;
+      busca: for (let d = 20; d <= 260; d += 20) for (let j = 0; j < 16; j++) { const b = j * Math.PI / 8, nx = x0 + Math.cos(b) * d, ny = y0 + Math.sin(b) * d; if (R.canStand(nx, ny, 14)) { x = nx; y = ny; break busca; } }
+    }
     this.porta = new PortaPub(x, y);
     game.npcs.push(this.porta);
     BAIRRO_INTERIORES[PUB_ID].saida.chegada = [x / R.w, Math.min(0.95, (y + 40) / R.h)];
