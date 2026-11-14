@@ -12,7 +12,7 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(new URL(q.u
   if (!f.startsWith(raiz + path.sep) || !fs.existsSync(f) || !fs.statSync(f).isFile()) { r.writeHead(404); r.end(); return; } r.writeHead(200); fs.createReadStream(f).pipe(r); });
 await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
 const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const pg = await nav.newPage(); await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await pg.waitForTimeout(2500);
+const pg = await nav.newPage(); await pg.goto(`http://127.0.0.1:${srv.address().port}/jogar.html`); await pg.waitForTimeout(2500);
 const d = await pg.evaluate(() => ({
   povo: WORLD_POVO.map((P) => ({ id: P.id, nome: P.nome || P.chave, zona: P.zona, papel: P.papel, pers: P.personalidade, ola: P.ola || [], temas: (P.temas || []).map((t) => t[1]), rumores: (P.rumores || []).map((r) => (r && r.txt) || r) })),
 }));

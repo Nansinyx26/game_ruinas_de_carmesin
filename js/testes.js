@@ -1,5 +1,5 @@
 'use strict';
-// ECLIPSE ZERO · Testes automatizados (sem bibliotecas): abra index.html?testes=1
+// ECLIPSE ZERO · Testes automatizados (sem bibliotecas): abra jogar.html?testes=1
 // ---------------------------------------------------------------------------
 // Roda dentro do jogo de verdade (mesmos scripts, mesmo motor) e mostra o resultado na tela
 // e no console; window.__testes guarda { ok, falhas, total, lista } para automação
@@ -755,7 +755,7 @@ const EclipseTests = {
   mundo() {
     // regiões: 7, cada uma com chegada (mercador e missões), chefe e zonas ligadas pela grade
     this.igual('mundo: 11 regiões (com a Cidade Morta)', WORLD_REGIONS.length, 11);
-    this.igual('mundo: 81 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9 + 9 da Cidade Morta)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 81);
+    this.igual('mundo: 100 zonas das regiões no mapa (9 de Carmesin + 6 × 6 + 3 cidades × 9 + 9 da Cidade Morta + 19 do Território de Velmora)', Object.values(WORLD_ZONES).filter((z) => !z.instancia && !z.cidade).length, 81 + (typeof Territorio !== 'undefined' ? Territorio.ZONAS.length : 0));
     for (const R of WORLD_REGIONS) {
       const zs = worldZonesOf(R.id), hub = WORLD_ZONES[R.hub];
       this.ok(`${R.id}: zona de chegada com portal, mercador e missões`, hub && hub.region === R.id && hub.portal && hub.npcs.some((n) => n.merchant) && hub.npcs.some((n) => n.quest), R.hub);
@@ -3071,7 +3071,7 @@ const EclipseTests = {
       World.loadZone('velmora_lago', null);
       const R = g.room, C = Agua.corpos(), L = C[0];
       this.ok('motor 3D: os programas de perspectiva (cores e textura) ligam (a água tem precisão igual nos dois shaders)', !R3D.active || (R3D.progsP && R3D.progsP.length === 2 && R3D.progs.length === 2), R3D.progsP && R3D.progsP.length);
-      this.ok('água: o Lago Escuro tem o lago e o rio que deságua nele (e as zonas da lista têm rios e lagos)', C.length === 2 && L.lago && !!C[1].rio && Object.keys(Agua.AGUA_ZONAS).length >= 10, C.length);
+      this.ok('água: o Lago Escuro tem o lago, o rio que deságua nele e a vazão para o sul (e as zonas da lista têm rios e lagos)', C.length === 3 && L.lago && !!C[1].rio && !!C[2].rio && Object.keys(Agua.AGUA_ZONAS).length >= 10, C.length);
       // margem natural: anda do centro para fora em 12 direções até secar; a margem fica perto da
       // elipse (±15%), mas não é a elipse lisa (o raio relativo varia)
       const margem = (a) => { const c = Math.cos(a), s = Math.sin(a); let d = 0; while (d < 4 * L.rx && Agua.profundidade(L.x + c * d, L.y + s * d) > 0) d += 2; return d; };
@@ -3079,8 +3079,8 @@ const EclipseTests = {
       const rel = [...Array(12)].map((_, i) => margem(i * Math.PI / 6) / elipse(i * Math.PI / 6)), m0 = margem(0);
       const pr = (dx) => Agua.profundidade(L.x + dx, L.y);
       this.ok('água: fundo no meio, raso na margem, seco fora', pr(0) === 1 && pr(m0 - 10) > 0 && pr(m0 - 10) < 1 && pr(m0 + 30) === 0, m0);
-      const relM = rel.filter((r) => r > 0.85 && r < 1.15);   // (uma das 12 direções é a foz do rio, onde a água continua)
-      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', relM.length >= 11 && Math.max(...relM) / Math.min(...relM) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
+      const relM = rel.filter((r) => r > 0.85 && r < 1.15);   // (duas das 12 direções são a foz do rio e a vazão para o sul, onde a água continua)
+      this.ok('água: margem irregular (não é uma elipse lisa), perto do tamanho pedido', relM.length >= 10 && Math.max(...relM) / Math.min(...relM) > 1.05, rel.map((r) => r.toFixed(2)).join(' '));
       this.ok("água: nenhuma árvore, pedra, morador ou estrutura dentro d'água", !R.pillars.some((q) => !q.cenario && Agua.funda(q.x, q.y)) && !g.npcs.some((n) => Agua.profundidade(n.x, n.y) > 0));
       const p = g.player; p.x = L.x; p.y = L.y; p.air = false; p.state = 'idle'; p.vx = p.vy = 0;
       Agua.update(1 / 60);

@@ -7,7 +7,7 @@ Verifica, para todo .glb versionado no git:
   1. se é mesmo um GLB (cabeçalho 'glTF'): arquivos .glb que são PNG/JPEG renomeados não abrem;
      ponteiros do Git LFS ainda não baixados aparecem como 'lfs' (rode git lfs pull);
   2. duplicatas exatas (mesmo conteúdo);
-  3. se o nome aparece no código do jogo (js/, index.html) ou num manifesto/ferramenta do pipeline
+  3. se o nome aparece no código do jogo (js/, jogar.html) ou num manifesto/ferramenta do pipeline
      que gera o arquivo do motor (estruturas.json, lote.json do retopo, *_topologia.json das
      criaturas, tools/**/*.json e *.py);
   4. estruturas e plantas (assets/estruturas_ambiente, assets/Composição_de_Plantas, assets/extra,
@@ -61,9 +61,9 @@ BASE64 = re.compile(r'[A-Za-z0-9+/=]{120,}')
 
 
 def referencias():
-    """nome do arquivo (minúsculo) → onde aparece; 'jogo' (js/, index.html) ou 'pipeline' (manifestos e ferramentas)"""
+    """nome do arquivo (minúsculo) → onde aparece; 'jogo' (js/, jogar.html) ou 'pipeline' (manifestos e ferramentas)"""
     refs = collections.defaultdict(set)
-    alvos = [('js', 'jogo'), ('index.html', 'jogo'), ('assets', 'pipeline'), ('tools', 'pipeline')]
+    alvos = [('js', 'jogo'), ('jogar.html', 'jogo'), ('assets', 'pipeline'), ('tools', 'pipeline')]
     for raiz, tipo in alvos:
         arquivos = [(raiz, '')] if os.path.isfile(raiz) else [(dp, f) for dp, _, fs in os.walk(raiz) for f in fs]
         for dp, f in arquivos:

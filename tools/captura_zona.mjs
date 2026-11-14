@@ -40,7 +40,7 @@ const erros = [];
 pg.on('pageerror', (e) => erros.push(e.message));
 pg.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) erros.push('console: ' + m.text().slice(0, 200)); });
 pg.setDefaultTimeout(90000);
-await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html`);
+await pg.goto(`http://127.0.0.1:${srv.address().port}/jogar.html`);
 await pg.waitForTimeout(2500);
 
 const entrar = () => { const g = game; if (!g.world) { g.slot = 2; g.saveGame = () => {}; World.save = () => {}; World.start(); } g.state = 'playing'; };

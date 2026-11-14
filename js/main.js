@@ -13,7 +13,7 @@ function boot() {
 }
 boot();
 
-// Testes automatizados (js/testes.js): index.html?testes=1 roda a suíte e mostra o resultado
+// Testes automatizados (js/testes.js): jogar.html?testes=1 roda a suíte e mostra o resultado
 if (/[?&]testes=1(&|$)/.test(location.search)) {
   const sc = document.createElement('script');
   sc.src = 'js/testes.js';

@@ -1,7 +1,7 @@
 'use strict';
 // ECLIPSE ZERO · Console de desenvolvimento do elenco (só em modo dev)
 // ---------------------------------------------------------------------------
-// MODO DEV: abra o index.html com ?dev=1 no endereço (ex.: .../index.html?dev=1) ou
+// MODO DEV: abra o jogar.html com ?dev=1 no endereço (ex.: .../jogar.html?dev=1) ou
 // rode localStorage.setItem('eclipse_zero_dev', '1') no console e recarregue.
 // Fora do modo dev nada disto existe (sem painel, sem window.dev).
 //   Tecla ` (crase): abre e fecha o painel; o jogo espera enquanto ele está aberto.

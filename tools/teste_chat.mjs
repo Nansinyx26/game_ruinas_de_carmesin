@@ -21,7 +21,7 @@ const teste = (n, c, i = '') => { if (c) ok++; else { falhas++; console.log('  F
 async function jogador(nome, chave) {
   const pg = await nav.newPage({ viewport: { width: 1280, height: 720 } });
   pg.on('pageerror', (e) => erros.push(`${nome}: ${e.message}`));
-  await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html?servidor=ws://127.0.0.1:${S.porta}`);
+  await pg.goto(`http://127.0.0.1:${srv.address().port}/jogar.html?servidor=ws://127.0.0.1:${S.porta}`);
   await pg.waitForTimeout(2500);
   await pg.evaluate(() => { const g = game; g.slot = 2; g.saveGame = () => {}; World.save = () => {}; World.start(); g.state = 'playing'; World.loadZone('aurora', null); g.fade = g.fadeTarget = 0; g.hud.msg = null; });
   await pg.evaluate(([n, c]) => { Chat.abrir(true); Rede.entrar(n, 'senha123', true, c); }, [nome, chave]);

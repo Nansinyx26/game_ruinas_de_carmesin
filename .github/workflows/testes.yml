@@ -1,5 +1,5 @@
 # ECLIPSE ZERO · Testes automáticos a cada push e pull request
-# Confere a sintaxe dos scripts, roda a suíte do jogo (index.html?testes=1) num Chromium sem
+# Confere a sintaxe dos scripts, roda a suíte do jogo (jogar.html?testes=1) num Chromium sem
 # janela (tools/testes_navegador.mjs) e as botas dos modelos 3D (tools/conferir_botas.js).
 # O Playwright é instalado só aqui, para os testes; o jogo continua sem bibliotecas.
 name: Testes
@@ -36,7 +36,7 @@ jobs:
           npm install --no-save --no-package-lock playwright@1.56.1
           npx playwright install --with-deps chromium
 
-      - name: Suíte do jogo (index.html?testes=1)
+      - name: Suíte do jogo (jogar.html?testes=1)
         run: node tools/testes_navegador.mjs --imagem testes.png
 
       - name: Botas presas às pernas (modelos 3D)

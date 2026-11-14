@@ -22,7 +22,7 @@ app.commandLine.appendSwitch('force_high_performance_gpu');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 
 function dentro(url) {
-  try { const u = new URL(url); return u.origin === ORIGEM.origin && u.pathname.startsWith(ORIGEM.pathname); } catch (e) { return false; }
+  try { const u = new URL(url); return u.origin === ORIGEM.origin && u.pathname.startsWith(ORIGEM.pathname.replace(/[^/]*$/, '')); } catch (e) { return false; }   // (a pasta do site: o jogo e a página inicial)
 }
 
 function abrir() {

@@ -3,7 +3,7 @@
   "short_name": "Eclipse Zero",
   "description": "RPG de ação sci-fi: Kael, a Unidade Zero, contra NEXUS.",
   "lang": "pt-BR",
-  "start_url": "./index.html",
+  "start_url": "./jogar.html",
   "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
