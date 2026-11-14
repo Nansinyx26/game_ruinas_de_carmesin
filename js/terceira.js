@@ -19,6 +19,12 @@
 // névoa; chão com textura e relevo no campo aberto (js/texturas.js); detalhes e partículas.
 // ---------------------------------------------------------------------------
 const THIRD_KEY = 'eclipse_zero_camera';
+// Câmera ISOMÉTRICA 3D (Grandes Regiões, docs/REGIOES_CONTINUAS.md): o MESMO mundo 3D da 3ª pessoa visto do
+// alto e em ângulo, de longe e com a lente fechada (quase sem perspectiva, como a isométrica), com
+// rotação (Z/C, botão direito) e zoom (roda). Começa olhando como a isométrica clássica (para o noroeste).
+const ISO3D = { pitch: 0.9, dist: 820, fov: 30 * Math.PI / 180, yaw: -3 * Math.PI / 4, min: 420, max: 1700 };
+const CAM_MODOS = ['iso', 'iso3d', '3p'];
+const CAM_NOMES = { iso: 'ISOMÉTRICA', iso3d: 'ISOMÉTRICA 3D', '3p': '3ª PESSOA' };
 // HSL (0–1) → [r, g, b] (0–1): as cores dos temas das salas vêm em HSL
 function thirdHsl(h, s, l) {
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
@@ -28,6 +34,8 @@ function thirdHsl(h, s, l) {
 
 const ThirdView = {
   on: false,
+  modo: '3p',   // '3p' ou 'iso3d' (com on); a isométrica clássica é on = false
+  cam3p: null,  // distância e inclinação guardadas da 3ª pessoa enquanto a isométrica 3D está ligada
   yaw: 0, pitch: 0.33, dist: 210, tz: 44, fov: 58 * Math.PI / 180,
   curDist: 210, manualT: 9, mouseDX: 0, mouseDY: 0, drag: false, ready: false,
   eye: [0, 0, 0], tgt: [0, 0, 0], f: [1, 0, 0], s: [0, 1, 0], u: [0, 0, 1],
@@ -45,7 +53,8 @@ const ThirdView = {
   load() {
     let k = null, m = null;
     try { k = localStorage.getItem(THIRD_KEY); m = localStorage.getItem(THIRD_KEY + '_mov'); } catch (e) { /* sem armazenamento */ }
-    this.on = (k === null ? true : k === '3p') && R3D.active;
+    this.on = (k === null ? true : k === '3p' || k === 'iso3d') && R3D.active;
+    if (this.on && k === 'iso3d') this.entrarIso3d();
     this.movMundo = m === 'mundo';
     if (this.on) this.init();
   },
@@ -54,20 +63,37 @@ const ThirdView = {
     try { localStorage.setItem(THIRD_KEY + '_mov', this.movMundo ? 'mundo' : 'camera'); } catch (e) { /* vale só nesta sessão */ }
     if (!quiet && typeof game !== 'undefined' && game.hud) game.hud.toast(this.movMundo ? 'MOVIMENTO · RELATIVO AO MUNDO (W = norte do mapa)' : 'MOVIMENTO · RELATIVO À CÂMERA', '120,200,255');
   },
-  set(on, quiet) {
-    if (on && !R3D.active) { if (!quiet) game.hud.toast('Câmera em 3ª pessoa: precisa dos gráficos 3D (G)', '255,92,122'); on = false; }
+  // modo: '3p' (padrão) ou 'iso3d'; on = false é a isométrica clássica
+  set(on, quiet, modo = '3p') {
+    if (on && !R3D.active) { if (!quiet) game.hud.toast('Câmera 3D: precisa dos gráficos 3D (G)', '255,92,122'); on = false; }
+    const era = this.on && this.modo === 'iso3d';
     this.on = !!on;
-    try { localStorage.setItem(THIRD_KEY, this.on ? '3p' : 'iso'); } catch (e) { /* sem armazenamento: vale só nesta sessão */ }
+    if (this.on && modo === 'iso3d') { if (!era) this.entrarIso3d(); }
+    else if (era) this.sairIso3d();
+    try { localStorage.setItem(THIRD_KEY, this.qual()); } catch (e) { /* sem armazenamento: vale só nesta sessão */ }
+    if (typeof Settings !== 'undefined' && Settings.v.camModo !== this.qual()) { Settings.v.camModo = this.qual(); Settings.save(); }
     if (this.on) {
       this.init();
       const p = game.player;
-      if (p) this.yaw = typeof p.facing === 'number' ? p.facing : this.yaw;
+      if (p && this.modo === '3p') this.yaw = typeof p.facing === 'number' ? p.facing : this.yaw;
       this.curDist = this.dist;
       this.alvoOk = false;   // ligou agora: a câmera vai direto para o herói (sem a mola partir de onde parou da outra vez)
     }
-    if (!quiet) game.hud.toast(this.on ? 'CÂMERA · 3ª PESSOA  (V alterna · botão direito ou Z/C giram)' : 'CÂMERA · ISOMÉTRICA', '120,200,255');
+    if (!quiet) game.hud.toast(this.on ? (this.modo === 'iso3d' ? 'CÂMERA · ISOMÉTRICA 3D  (Z/C ou botão direito giram · roda: zoom · V alterna)' : 'CÂMERA · 3ª PESSOA  (V alterna · botão direito ou Z/C giram)') : 'CÂMERA · ISOMÉTRICA', '120,200,255');
   },
-  toggle() { this.set(!this.on); },
+  qual() { return this.on ? this.modo : 'iso'; },
+  // V: isométrica → isométrica 3D → 3ª pessoa → isométrica
+  toggle() { const q = CAM_MODOS[(CAM_MODOS.indexOf(this.qual()) + 1) % CAM_MODOS.length]; this.setModo(q); },
+  setModo(q, quiet) { if (q === 'iso') this.set(false, quiet); else this.set(true, quiet, q); },
+  entrarIso3d() {
+    this.cam3p = { dist: this.dist, pitch: this.pitch };
+    this.modo = 'iso3d'; this.dist = this.curDist = ISO3D.dist; this.pitch = ISO3D.pitch; this.yaw = ISO3D.yaw;
+  },
+  sairIso3d() {
+    this.modo = '3p';
+    if (this.cam3p) { this.dist = this.curDist = this.cam3p.dist; this.pitch = this.cam3p.pitch; this.cam3p = null; }
+  },
+  iso3d() { return this.on && this.modo === 'iso3d'; },
   // Mouse: arrastar com o botão direito gira; a roda aproxima e afasta
   init() {
     if (this.ready || typeof game === 'undefined' || !game.canvas) return;
@@ -79,7 +105,7 @@ const ThirdView = {
     c.addEventListener('contextmenu', (e) => { if (this.on) e.preventDefault(); });
     c.addEventListener('wheel', (e) => {
       if (!this.on || game.state !== 'playing') return;
-      this.dist = clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), 110, 380);
+      this.dist = this.modo === 'iso3d' ? clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), ISO3D.min, ISO3D.max) : clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), 110, 380);
       e.preventDefault();
     }, { passive: false });
   },
@@ -90,19 +116,19 @@ const ThirdView = {
     if (!this.active()) return;
     const p = game.player;
     let man = false;
-    const lk = inp.look;
+    const lk = inp.look, iso = this.modo === 'iso3d', pMin = iso ? 0.6 : 0.1, pMax = iso ? 1.25 : 0.95;   // (na isométrica 3D a câmera fica no alto)
     if (Math.abs(lk.x) > 0.2) { this.yaw += lk.x * 2.8 * dt; man = true; }
-    if (Math.abs(lk.y) > 0.2) { this.pitch = clamp(this.pitch + lk.y * 1.1 * dt, 0.1, 0.95); man = true; }
+    if (Math.abs(lk.y) > 0.2) { this.pitch = clamp(this.pitch + lk.y * 1.1 * dt, pMin, pMax); man = true; }
     if (inp.held.camLeft) { this.yaw -= 2.4 * dt; man = true; }
     if (inp.held.camRight) { this.yaw += 2.4 * dt; man = true; }
     if (this.mouseDX || this.mouseDY) {
-      this.yaw += this.mouseDX * 0.006; this.pitch = clamp(this.pitch + this.mouseDY * 0.003, 0.1, 0.95);
+      this.yaw += this.mouseDX * 0.006; this.pitch = clamp(this.pitch + this.mouseDY * 0.003, pMin, pMax);
       this.mouseDX = this.mouseDY = 0; man = true;
     }
     this.manualT = man ? 0 : this.manualT + dt;
     // sem girar à mão por um tempo, a câmera vai para trás do herói enquanto ele anda
     const sp = Math.hypot(p.vx || 0, p.vy || 0);
-    if (this.manualT > 1.2 && sp > 60 && p.state === 'run') {
+    if (!iso && this.manualT > 1.2 && sp > 60 && p.state === 'run') {   // (na isométrica 3D o giro é só do jogador)
       const d = angleDiff(this.yaw, Math.atan2(p.vy, p.vx));
       if (Math.abs(d) < 2.3) this.yaw += clamp(d, -1, 1) * Math.min(1, sp / 220) * 1.3 * dt;
     }
@@ -165,7 +191,7 @@ const ThirdView = {
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch), fx = Math.cos(this.yaw), fy = Math.sin(this.yaw);
     // não atravessa as paredes: aproxima até a câmera caber na sala
     let d = this.curDist;
-    for (let k = 0; k < 10; k++) {
+    for (let k = 0; k < 10 && this.modo !== 'iso3d'; k++) {   // (a isométrica 3D fica acima das paredes)
       const ex = T[0] - fx * d * cp, ey = T[1] - fy * d * cp;
       const M = (R.margem || 0) - 16;   // campo aberto: a câmera pode sair da borda (não há parede)
       if (ex > 16 - M && ex < R.w - 16 + M && ey > 16 - M && ey < R.h - 16 + M) break;
@@ -185,7 +211,7 @@ const ThirdView = {
     V[1] = u[0]; V[5] = u[1]; V[9] = u[2]; V[13] = -(u[0] * E[0] + u[1] * E[1] + u[2] * E[2]);
     V[2] = -f[0]; V[6] = -f[1]; V[10] = -f[2]; V[14] = f[0] * E[0] + f[1] * E[1] + f[2] * E[2];
     V[3] = 0; V[7] = 0; V[11] = 0; V[15] = 1;
-    const near = 6, far = 6000, F = 1 / Math.tan((this.fov + this.fovK * 0.12) / 2), asp = VIEW_W / VIEW_H, Pm = this.Pm;   // a esquiva abre ~7°
+    const near = this.modo === 'iso3d' ? 40 : 6, far = this.modo === 'iso3d' ? 9000 : 6000, F = 1 / Math.tan(((this.modo === 'iso3d' ? ISO3D.fov : this.fov) + this.fovK * 0.12) / 2), asp = VIEW_W / VIEW_H, Pm = this.Pm;   // a esquiva abre ~7°
     Pm.fill(0);
     Pm[0] = F / asp; Pm[5] = F; Pm[10] = (far + near) / (near - far); Pm[11] = -1; Pm[14] = (2 * far * near) / (near - far);
     this.focal = F;
@@ -355,6 +381,7 @@ const ThirdView = {
     const C = Ambiente3P.ceu(ctxCeu, R, g.realTime);
     this.view.fog = Ambiente3P.luzes(R, C, this.view);
     if (g.world && World.zone) Clima.nevoa3P(this.view.fog);   // neblina densa, nevasca e areia fecham a visão
+    if (this.modo === 'iso3d' && this.view.fog) this.view.fog[3] += Math.max(0, this.curDist - 260);   // isométrica 3D: a névoa começa depois do herói (a câmera está longe)
     g.use3D = true;
     const Q = this.queued;
     Q.length = 0;
@@ -381,6 +408,7 @@ const ThirdView = {
       const tt = g.realTime || 0; this.chaoO.emi = 1 + 0.05 * Math.sin(tt * 7.1) * Math.sin(tt * 2.3) + (Math.sin(tt * 31) > 0.985 ? -0.25 : 0);
       const fi = R3D.queue(this.chaoModel, null, null, this.chaoO); fi.ent = null; Q.push(fi);
     }
+    if (typeof Vizinhos !== 'undefined') Vizinhos.fila3P(R, Q, p);   // o território continua: o chão e a mata das zonas vizinhas além da borda
     if (typeof Natureza3D !== 'undefined') Natureza3D.fila3P(R, Q, E, T, p);   // árvores, rochas e enfeites da floresta (kit do Blender)
     if (typeof Bairro !== 'undefined') Bairro.fila3P(R, Q, E);   // prédios do Bairro da Muralha (kit de arquitetura do Blender)
     if (typeof Estruturas !== 'undefined') Estruturas.fila3P(R, Q, E);   // estruturas enviadas e geradas no Meshy (paradas)

@@ -1075,7 +1075,8 @@ const Terreno = (function () {
     if (R._terreno !== undefined) return R._terreno;
     const rec = receita(R);
     if (!rec) return (R._terreno = null);
-    const t0 = performance.now(), q = qual(), A = q >= 2 ? 2048 : 1024, m = R.margem || 0, L = Math.max(R.w, R.h) + 2 * m;
+    const t0 = performance.now(), q = qual(), A = R._atlas || (q >= 2 ? 2048 : 1024),   // (_atlas: as zonas vizinhas, js/mundo/vizinhos.js, em 1024)
+     m = R.margem || 0, L = Math.max(R.w, R.h) + 2 * m;
     const T = new Pintor(R, A, m, L, (R.seed || 1) * 131 + 7);
     rec.pintar(T, R);
     if (R.aberto && typeof AMB3P !== 'undefined') { const P = AMB3P[R.def.theme]; if (P && P.chao) T.bordaLonge(P.chao); }

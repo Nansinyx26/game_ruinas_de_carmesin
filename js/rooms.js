@@ -101,7 +101,9 @@ class Room {
     this.def = def || ROOM_DEFS[index];
     this.theme = THEMES[this.def.theme];
     this.w = this.h = this.def.tiles * TILE;
-    this.seed = 9973 * (index + 1) + Math.floor(Math.random() * 100000);
+    // zona do mundo: semente fixa pela zona e pelo mundo (o mesmo lugar sempre igual, e a zona vizinha
+    // pode ser montada de antemão igual a como vai ser: docs/REGIOES_CONTINUAS.md); salas da campanha: ao acaso
+    this.seed = this.def.id ? Room.semente(this.def.id) : 9973 * (index + 1) + Math.floor(Math.random() * 100000);
     // cidade principal (js/mundo/cidade.js): muralha alta atrás das fachadas dos distritos
     // (os distritos da cidade, js/mundo/bairro.js, são zonas da cidade com sala própria: o Bairro
     // da Muralha, com os prédios do Blender, e os interiores dos prédios)
@@ -123,6 +125,13 @@ class Room {
     this.canvas = null; this.scale = 0;
     this.generate();
     this.outlinePts = this.outline();
+  }
+
+  static semente(id) {
+    const s = typeof World !== 'undefined' && World.state && World.state.paisagem && World.state.paisagem.mundo !== undefined ? World.state.paisagem.mundo >>> 0 : 7411;
+    let h = 2166136261 ^ s;
+    for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return 1 + (h % 2000000000);
   }
 
   generate() {

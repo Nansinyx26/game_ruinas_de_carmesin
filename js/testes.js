@@ -74,6 +74,7 @@ const EclipseTests = {
       await this.solSombras();
       await this.poderesDiario();
       this.graficosPC();
+      this.regioesContinuas();
       this.megacidades();
       this.mundoContinuo();
       this.metropoleSegura();
@@ -3390,6 +3391,63 @@ const EclipseTests = {
   },
 
   // ---------------------------------------------------------------- poderes (js/heroes/poderes.js) e o diário redesenhado
+  // Grandes Regiões, 1ª etapa (docs/REGIOES_CONTINUAS.md): câmera isométrica 3D, semente fixa por zona e o
+  // território vizinho visível além da borda (js/terceira.js, js/rooms.js, js/mundo/vizinhos.js)
+  regioesContinuas() {
+    const g = game, sv = World.save, modo0 = ThirdView.qual(), viz0 = Settings.v.vizinhos;
+    let erro = null;
+    World.save = () => {};
+    try {
+      if (!g.world) { World.start(); g.state = 'playing'; }
+      // câmera: três modos no V e nas configurações; a isométrica 3D fica no alto, gira e aproxima
+      const vid = SETTINGS_TABS.find((t) => t.id === 'video').opts.find((o) => o.key === 'camModo');
+      this.ok('câmera: três modos (isométrica clássica, isométrica 3D, terceira pessoa) nas configurações', !!vid && vid.values.join(',') === 'iso,iso3d,3p');
+      if (R3D.active) {
+        ThirdView.setModo('iso', true); ThirdView.toggle();
+        const a = ThirdView.qual(), p0 = ThirdView.pitch, d0 = ThirdView.dist; ThirdView.toggle(); const b = ThirdView.qual(), pb = ThirdView.pitch; ThirdView.toggle();
+        this.ok('câmera: V passa por isométrica → isométrica 3D → 3ª pessoa → isométrica', a === 'iso3d' && b === '3p' && ThirdView.qual() === 'iso', `${a} ${b} ${ThirdView.qual()}`);
+        this.ok('câmera: a isométrica 3D fica no alto e longe; a 3ª pessoa volta com a distância e a inclinação dela', p0 >= 0.8 && d0 >= 600 && pb < 0.8, `${p0} ${d0} ${pb}`);
+        ThirdView.setModo('iso3d', true); World.loadZone('velmora_clareira', null);
+        const p = g.player, y0 = ThirdView.yaw; ThirdView.update(0.5, Object.assign(this.entrada(), { look: { x: 0, y: 0 }, held: { camRight: true } }));
+        this.ok('câmera: a isométrica 3D gira (Z/C) e não volta sozinha para trás do herói', Math.abs(ThirdView.yaw - y0) > 0.5);
+        g.render();
+        this.ok('câmera: a isométrica 3D desenha o mundo 3D (o mesmo da 3ª pessoa)', ThirdView.active() && Settings.v.camModo === 'iso3d');
+        p.x = 100;
+      }
+      // semente fixa: a mesma zona é igual a cada visita
+      World.loadZone('velmora_trilha', null); const s1 = g.room.seed, pil1 = g.room.pillars.map((q) => `${q.x | 0},${q.y | 0}`).join(';');
+      World.loadZone('velmora_clareira', null); World.loadZone('velmora_trilha', null);
+      this.ok('regiões: a mesma zona é igual a cada visita (semente fixa: árvores e pedras no mesmo lugar)', g.room.seed === s1 && g.room.pillars.map((q) => `${q.x | 0},${q.y | 0}`).join(';') === pil1);
+      // território vizinho: as zonas em volta montadas e mostradas além da borda
+      Settings.v.vizinhos = true; World.loadZone('velmora_clareira', null); Vizinhos.montarJa();
+      const E = Vizinhos.estado(), R = g.room;
+      this.ok('regiões: as zonas vizinhas da região aberta são montadas (chão pintado e relevo) para aparecer além da borda', E.vizinhas.length >= 2 && E.prontas === E.vizinhas.length, JSON.stringify(E));
+      const q = Vizinhos.de(World.zone).find((k) => k.dc === 1 && k.dr === 0), V = q && Vizinhos.cache.get(q.z.id);
+      if (V) {
+        const T = Vizinhos.xf(R, q, V), yk = R.h * 0.37;
+        const hAqui = Relevo.altura(R.w - 1, yk), hLa = V.campo ? V.campo.bruta(0.5, (yk / T.sy)) : 0;
+        this.ok('regiões: a vizinha fica na casa ao lado (mesma regra da travessia) e o relevo emenda na borda', T.ox === R.w && T.oy === 0 && Math.abs(T.sy - R.h / V.G.h) < 1e-6 && Math.abs(hAqui - hLa) < 12, `${hAqui.toFixed(1)} / ${hLa.toFixed(1)}`);
+        this.ok('regiões: a vizinha montada é a mesma zona que se encontra ao entrar nela (mesma semente e árvores)', V.G.seed === Room.semente(q.z.id) && V.G.pillars.length > 0);
+        this.ok('regiões: o chão vizinho recebe sombra mas não projeta (sem risco na emenda)', V.modelo.semSombra && V.modelo.terreno);
+        this.ok('regiões: a mata falsa da margem sai de cima da vizinha de verdade', Vizinhos.cobre(R, R.w + 50, R.h * 0.5) && !Vizinhos.cobre(R, R.w * 0.5, R.h * 0.5));
+      }
+      if (R3D.active) {
+        ThirdView.setModo('3p', true); g.render();
+        const Q = []; const n = Vizinhos.fila3P(R, Q, g.player);
+        this.ok('regiões: na 3ª pessoa e na isométrica 3D o chão e a mata das vizinhas entram na cena', n >= E.vizinhas.length, n);
+      }
+      // ao entrar na vizinha, a zona de onde se veio vira vizinha sem montar de novo
+      const anterior = g.room; World.loadZone(q ? q.z.id : 'velmora_trilha', 'E', 0.5);
+      const V2 = Vizinhos.cache.get('velmora_clareira');
+      this.ok('regiões: a zona de onde se veio vira vizinha na hora (a mesma sala, sem montar de novo)', !!V2 && V2.G === anterior && V2.pronto);
+      Settings.v.vizinhos = false; World.loadZone('velmora_clareira', null);
+      this.ok('regiões: desligado nas configurações, nada é montado', Vizinhos.estado().vizinhas.length === 0);
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Settings.v.vizinhos = viz0; ThirdView.setModo(modo0, true); World.save = sv;
+    try { World.loadZone('aurora', null); } catch (e) { /* nada */ }
+    this.ok('regiões: sem exceção', !erro, erro);
+  },
+
   // Perfis gráficos, benchmark, medidor de desempenho e o app de PC (js/graficos.js, desktop/)
   graficosPC() {
     if (typeof Graficos === 'undefined') { this.ok('gráficos: módulo carregado', false); return; }

@@ -122,6 +122,7 @@ const Natureza3D = (() => {
     for (const q of R.pillars) {
       const k = escolha(q, R.theme);
       if (!k) continue;
+      if (q.deco && typeof Vizinhos !== 'undefined' && Vizinhos.cobre(R, q.x, q.y)) continue;   // (a mata falsa da margem sai de cima da zona vizinha de verdade)
       const d2 = (q.x - P.x) ** 2 + (q.y - P.y) ** 2;
       if (d2 > 1300 * 1300) continue;
       if (((q.x - E[0]) * dx + (q.y - E[1]) * dy) / Lh < -(q.r + 80)) continue;   // atrás da câmera
