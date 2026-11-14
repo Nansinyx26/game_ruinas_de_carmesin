@@ -42,8 +42,7 @@ começado. Ao terminar algo, mova o item e registre o commit.
 ## 2. Parcial (falta terminar)
 
 ### 2.1 Dublagem dos NPCs
-- [x] Cumprimento de 69 moradores gravado (137 falas).
-- [ ] **174 falas restantes** (respostas e rumores): a cota gratuita da conta ElevenLabs acabou. Quando renovar (ou com plano pago), rodar `python3 tools/dublagem/gerar_falas.py` — continua de onde parou.
+- [x] Todas as 311 falas gravadas (cumprimentos, respostas e rumores de 84 moradores; 164 com voz masculina e 147 com feminina), em `dublagem/npcs/` e no manifesto `js/assets/vozes_npcs.js`.
 - [ ] Com plano pago: trocar as vozes padrão por vozes brasileiras da biblioteca (o elenco já está separado por sexo/idade).
 - [ ] Emoções/tags por fala e legendas sincronizadas.
 
