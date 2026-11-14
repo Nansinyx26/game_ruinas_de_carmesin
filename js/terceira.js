@@ -24,6 +24,15 @@ const THIRD_KEY = 'eclipse_zero_camera';
 // rotação (Z/C, botão direito) e zoom (roda). Começa olhando como a isométrica clássica (para o noroeste).
 const ISO3D = { pitch: 0.9, dist: 820, fov: 30 * Math.PI / 180, yaw: -3 * Math.PI / 4, min: 420, max: 1700 };
 const CAM_MODOS = ['iso', 'iso3d', '3p'];
+// Distância de visão (Configurações → Vídeo): até onde a névoa deixa ver, o plano de corte, o chão até
+// o horizonte e quantas casas de zonas vizinhas aparecem (js/mundo/vizinhos.js)
+const VISAO = [
+  { nome: 'Curta', nevoa: 0.8, longe: 5000, chao: 1, aneis: 1, estr: 1500 },
+  { nome: 'Média', nevoa: 1, longe: 6000, chao: 1, aneis: 1, estr: 2200 },
+  { nome: 'Longa', nevoa: 1.9, longe: 12000, chao: 2.6, aneis: 2, estr: 3600 },
+  { nome: 'Horizonte', nevoa: 3.2, longe: 20000, chao: 4.5, aneis: 2, estr: 5200 },
+];
+const visao = () => VISAO[typeof Settings !== 'undefined' && VISAO[Settings.v.visao] ? Settings.v.visao : 1];
 const CAM_NOMES = { iso: 'ISOMÉTRICA', iso3d: 'ISOMÉTRICA 3D', '3p': '3ª PESSOA' };
 // HSL (0–1) → [r, g, b] (0–1): as cores dos temas das salas vêm em HSL
 function thirdHsl(h, s, l) {
@@ -105,7 +114,7 @@ const ThirdView = {
     c.addEventListener('contextmenu', (e) => { if (this.on) e.preventDefault(); });
     c.addEventListener('wheel', (e) => {
       if (!this.on || game.state !== 'playing') return;
-      this.dist = this.modo === 'iso3d' ? clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), ISO3D.min, ISO3D.max) : clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), 110, 380);
+      this.dist = this.modo === 'iso3d' ? clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), ISO3D.min, ISO3D.max * (visao().aneis > 1 ? 1.6 : 1)) : clamp(this.dist * (e.deltaY > 0 ? 1.1 : 0.9), 110, 380);
       e.preventDefault();
     }, { passive: false });
   },
@@ -211,10 +220,10 @@ const ThirdView = {
     V[1] = u[0]; V[5] = u[1]; V[9] = u[2]; V[13] = -(u[0] * E[0] + u[1] * E[1] + u[2] * E[2]);
     V[2] = -f[0]; V[6] = -f[1]; V[10] = -f[2]; V[14] = f[0] * E[0] + f[1] * E[1] + f[2] * E[2];
     V[3] = 0; V[7] = 0; V[11] = 0; V[15] = 1;
-    const near = this.modo === 'iso3d' ? 40 : 6, far = this.modo === 'iso3d' ? 9000 : 6000, F = 1 / Math.tan(((this.modo === 'iso3d' ? ISO3D.fov : this.fov) + this.fovK * 0.12) / 2), asp = VIEW_W / VIEW_H, Pm = this.Pm;   // a esquiva abre ~7°
+    const VS = visao(), near = this.modo === 'iso3d' ? 40 : VS.longe > 6000 ? 8 : 6, far = Math.max(this.modo === 'iso3d' ? 9000 : 6000, VS.longe), fovA = (this.modo === 'iso3d' ? ISO3D.fov : this.fov) + this.fovK * 0.12, F = 1 / Math.tan(fovA / 2), asp = VIEW_W / VIEW_H, Pm = this.Pm;   // a esquiva abre ~7°
     Pm.fill(0);
     Pm[0] = F / asp; Pm[5] = F; Pm[10] = (far + near) / (near - far); Pm[11] = -1; Pm[14] = (2 * far * near) / (near - far);
-    this.focal = F;
+    this.focal = F; this.near = near; this.far = far; this.fovAtual = fovA;   // (o renderizador realista usa a mesma lente)
     const M = this.mvp;
     for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
       M[c * 4 + r] = Pm[r] * V[c * 4] + Pm[4 + r] * V[c * 4 + 1] + Pm[8 + r] * V[c * 4 + 2] + Pm[12 + r] * V[c * 4 + 3];
@@ -381,6 +390,7 @@ const ThirdView = {
     const C = Ambiente3P.ceu(ctxCeu, R, g.realTime);
     this.view.fog = Ambiente3P.luzes(R, C, this.view);
     if (g.world && World.zone) Clima.nevoa3P(this.view.fog);   // neblina densa, nevasca e areia fecham a visão
+    if (this.view.fog && Ambiente3P.tipo(R) !== 'interior') this.view.fog[3] *= visao().nevoa;   // distância de visão: a névoa recua até o horizonte
     if (this.modo === 'iso3d' && this.view.fog) this.view.fog[3] += Math.max(0, this.curDist - 260);   // isométrica 3D: a névoa começa depois do herói (a câmera está longe)
     g.use3D = true;
     const Q = this.queued;

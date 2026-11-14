@@ -14,10 +14,10 @@
 // triângulos e chamadas de desenho do 3D e a resolução interna.
 // ---------------------------------------------------------------------------
 const GRAFICOS_PERFIS = {
-  celular: { nome: 'Celular', vizinhos: false, renderScale: 75, render3d: 'classico', realQual: 0, texHD: 0, vegQ: 1, sombras: 1, quality: 1, clima: 1, postfx: 1, cineCor: false, cineVinheta: false, cineGrao: false, cineNitidez: false },
-  web: { vizinhos: true, nome: 'Web', renderScale: 100, render3d: 'realista', realQual: 1, texHD: 1, vegQ: 2, sombras: 2, quality: 2, clima: 2, postfx: 2, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: false },
-  desktop: { vizinhos: true, nome: 'Desktop', renderScale: 100, render3d: 'realista', realQual: 3, texHD: 2, vegQ: 3, sombras: 3, quality: 2, clima: 2, postfx: 2, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: true },
-  extremo: { vizinhos: true, nome: 'Extreme PC', renderScale: 125, render3d: 'realista', realQual: 5, texHD: 2, vegQ: 4, sombras: 4, quality: 2, clima: 2, postfx: 2, cineCor: true, cineVinheta: true, cineGrao: true, cineNitidez: true },
+  celular: { visao: 0, nome: 'Celular', vizinhos: false, renderScale: 75, render3d: 'classico', realQual: 0, texHD: 0, vegQ: 1, sombras: 1, quality: 1, clima: 1, postfx: 1, cineCor: false, cineVinheta: false, cineGrao: false, cineNitidez: false },
+  web: { visao: 1, vizinhos: true, nome: 'Web', renderScale: 100, render3d: 'realista', realQual: 1, texHD: 1, vegQ: 2, sombras: 2, quality: 2, clima: 2, postfx: 2, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: false },
+  desktop: { visao: 2, vizinhos: true, nome: 'Desktop', renderScale: 100, render3d: 'realista', realQual: 3, texHD: 2, vegQ: 3, sombras: 3, quality: 2, clima: 2, postfx: 2, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: true },
+  extremo: { visao: 3, vizinhos: true, nome: 'Extreme PC', renderScale: 125, render3d: 'realista', realQual: 5, texHD: 2, vegQ: 4, sombras: 4, quality: 2, clima: 2, postfx: 2, cineCor: true, cineVinheta: true, cineGrao: true, cineNitidez: true },
 };
 const Graficos = {
   CHAVE: 'eclipse_zero_benchmark_v1',

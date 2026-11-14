@@ -12,7 +12,7 @@ const SETTINGS_DEFAULT = {
   difficulty: 1, shake: 100, damageNumbers: true, textSpeed: 1,
   // Vídeo
   display: 'window', renderScale: 100, kaelLook: '3d', gfx3d: true, quality: 2, clima: 2, texHD: 2, vegQ: 2, sombras: 3, diaMin: 10, fpsLimit: 0, postfx: 2, brightness: 0,
-  camModo: '', vizinhos: true, perfilGfx: 'auto', medidor: false, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: true,
+  camModo: '', vizinhos: true, visao: 2, perfilGfx: 'auto', medidor: false, cineCor: true, cineVinheta: true, cineGrao: false, cineNitidez: true,
   render3d: 'realista', realQual: 2,
   // Áudio
   master: 80, music: 60, voice: 100, sfx: 100, ambient: 70, sound: true, synthVoice: false,
@@ -41,6 +41,8 @@ const SETTINGS_TABS = [
   { id: 'video', name: 'VÍDEO', icon: 'monitor', opts: [
     { key: 'camModo', label: 'Câmera', type: 'choice', values: ['iso', 'iso3d', '3p'], names: ['Isométrica clássica', 'Isométrica 3D', 'Terceira pessoa'],
       hint: 'O mesmo mundo, os mesmos heróis e o mesmo combate nas três. Isométrica 3D: o mundo em 3D visto do alto, com rotação (Z/C ou botão direito) e zoom (roda). Terceira pessoa: atrás do herói. V alterna durante o jogo.' },
+    { key: 'visao', label: 'Distância de visão', type: 'choice', values: [0, 1, 2, 3], names: ['Curta', 'Média', 'Longa', 'Horizonte'],
+      hint: 'Até onde se enxerga nas câmeras 3D: a névoa recua, o chão segue até o horizonte e, em Longa e Horizonte, aparecem também as zonas a duas casas de distância (com as estruturas grandes). Horizonte pede placa de vídeo forte.' },
     { key: 'vizinhos', label: 'Território vizinho visível', type: 'bool', hint: 'Nas regiões abertas, o chão, o relevo e a mata das zonas vizinhas aparecem além da borda nas câmeras 3D (o território continua). Desligue em aparelhos fracos.' },
     { key: 'perfilGfx', label: 'Perfil gráfico', type: 'choice', values: ['auto', 'celular', 'web', 'desktop', 'extremo', 'custom'], names: ['Automático (benchmark)', 'Celular', 'Web', 'Desktop', 'Extreme PC', 'Personalizado'],
       hint: 'Escolhe de uma vez todas as opções de vídeo abaixo (cada uma continua ajustável). Automático: mede o aparelho e os quadros por alguns segundos e escolhe sozinho (refaz o benchmark ao confirmar).' },
@@ -109,7 +111,8 @@ const Settings = {
       if ((!salvo || salvo.texHD === undefined) && fraco) this.v.texHD = 0;
       if ((!salvo || salvo.vegQ === undefined) && fraco) this.v.vegQ = 1;
       // sombras: celular e pouca memória na Baixa; navegador automatizado (testes) na Média
-      if ((!salvo || salvo.vizinhos === undefined) && fraco) this.v.vizinhos = false;   // (o território vizinho: só em aparelhos com folga)
+      if ((!salvo || salvo.vizinhos === undefined) && fraco) this.v.vizinhos = false;
+      if ((!salvo || salvo.visao === undefined) && fraco) this.v.visao = 1;   // (o território vizinho: só em aparelhos com folga)
       if ((!salvo || salvo.sombras === undefined) && (fraco || (typeof navigator !== 'undefined' && navigator.webdriver))) this.v.sombras = fraco ? 1 : 2;
     } catch (e) { /* nada */ }
     return this.v;

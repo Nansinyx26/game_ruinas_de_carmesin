@@ -374,7 +374,7 @@ const Ambiente3P = {
     const th = R.theme, w = R.w, h = R.h, m = R.margem || 0, P = AMB3P[tipo];
     // chão distante (campo aberto e cidade): um anel largo na cor do chão do bioma, sumindo na névoa
     if (R.aberto || tipo === 'cidade') {
-      const g = new G3(), far = 3600, c = P && P.chao ? P.chao : '#202028';
+      const g = new G3(), far = 3600 * (typeof VISAO !== 'undefined' && typeof Settings !== 'undefined' && VISAO[Settings.v.visao] ? VISAO[Settings.v.visao].chao : 1), c = P && P.chao ? P.chao : '#202028';   // (distância de visão: o chão vai até o horizonte)
       const x0 = -m, y0 = -m, x1 = w + m, y1 = h + m, z = -0.4;
       g.quad([-far, -far, z], [far + w, -far, z], [far + w, y0, z], [-far, y0, z], c, 0);
       g.quad([-far, y1, z], [far + w, y1, z], [far + w, far + h, z], [-far, far + h, z], c, 0);

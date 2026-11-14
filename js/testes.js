@@ -3429,6 +3429,10 @@ const EclipseTests = {
         this.ok('regiões: a vizinha fica na casa ao lado (mesma regra da travessia) e o relevo emenda na borda', T.ox === R.w && T.oy === 0 && Math.abs(T.sy - R.h / V.G.h) < 1e-6 && Math.abs(hAqui - hLa) < 12, `${hAqui.toFixed(1)} / ${hLa.toFixed(1)}`);
         this.ok('regiões: a vizinha montada é a mesma zona que se encontra ao entrar nela (mesma semente e árvores)', V.G.seed === Room.semente(q.z.id) && V.G.pillars.length > 0);
         this.ok('regiões: o chão vizinho recebe sombra mas não projeta (sem risco na emenda)', V.modelo.semSombra && V.modelo.terreno);
+        const ja = !!Paisagem._cache[q.z.id];
+        this.ok('regiões: a vizinha traz as estruturas GLB e a paisagem gerada pela semente dela (árvores grandes, rochas, ruínas)', V.estr.length >= 5 && V.estr.every((L) => Estruturas.IDX[L[0]] || !ESTRUTURAS_INDICE[L[0]]), V.estr.length);
+        this.ok('regiões: a paisagem vista de fora não toma o lugar da gerada ao entrar (a carga de verdade gera a dela)', ja || !Paisagem._cache[q.z.id]);
+        this.ok('regiões: a vizinha à vista deixa a travessia quase sem disfarce (dissolve curto)', Vizinhos.pronta(q.z.id) && !Vizinhos.pronta('aurora'));
         this.ok('regiões: a mata falsa da margem sai de cima da vizinha de verdade', Vizinhos.cobre(R, R.w + 50, R.h * 0.5) && !Vizinhos.cobre(R, R.w * 0.5, R.h * 0.5));
       }
       if (R3D.active) {
@@ -3440,6 +3444,18 @@ const EclipseTests = {
       const anterior = g.room; World.loadZone(q ? q.z.id : 'velmora_trilha', 'E', 0.5);
       const V2 = Vizinhos.cache.get('velmora_clareira');
       this.ok('regiões: a zona de onde se veio vira vizinha na hora (a mesma sala, sem montar de novo)', !!V2 && V2.G === anterior && V2.pronto);
+      // distância de visão: Longa e Horizonte mostram também o segundo anel de zonas e afastam a névoa e o corte
+      { const v0 = Settings.v.visao;
+        Settings.v.visao = 1; const a1 = Vizinhos.de(World.zone).length; Settings.v.visao = 3; const L3 = Vizinhos.de(World.zone);
+        this.ok('visão: quatro distâncias (Curta a Horizonte); Longa e Horizonte trazem as zonas a duas casas', VISAO.length === 4 && L3.length >= a1 && L3.every((q) => q.anel === 1 || Math.max(Math.abs(q.dr), Math.abs(q.dc)) === 2), `${a1} / ${L3.length}`);
+        if (R3D.active) { ThirdView.setModo('3p', true); g.render(); const f3 = ThirdView.far, n3 = ThirdView.view.fog ? ThirdView.view.fog[3] : 0; Settings.v.visao = 1; g.render(); const f1 = ThirdView.far, n1 = ThirdView.view.fog ? ThirdView.view.fog[3] : 0;
+          this.ok('visão: no Horizonte a névoa começa bem mais longe e o plano de corte vai a 20 mil', f3 >= 20000 && f1 <= 6000 && n3 > n1 * 2, `${f1}/${f3} névoa ${n1 | 0}/${n3 | 0}`); }
+        Settings.v.visao = v0; }
+      // grama 3D: a lâmina é dobrada na nervura (duas metades com a luz de lados diferentes), não uma fita chata
+      { const S = Vegetacao.setores().find((q) => q.n > 0);
+        if (S) { const d = Vegetacao._malha ? Vegetacao._malha(S) : null;
+          if (d) { const nL = [d[3], d[4]], nR = [d[6 * 10 + 3], d[6 * 10 + 4]];
+            this.ok('grama: cada lâmina tem volume (dobrada na nervura: as duas metades com normais para lados opostos)', Math.hypot(nL[0] - nR[0], nL[1] - nR[1]) > 0.8 * Math.hypot(nL[0], nL[1]), `${nL} / ${nR}`); } } }
       Settings.v.vizinhos = false; World.loadZone('velmora_clareira', null);
       this.ok('regiões: desligado nas configurações, nada é montado', Vizinhos.estado().vizinhas.length === 0);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }

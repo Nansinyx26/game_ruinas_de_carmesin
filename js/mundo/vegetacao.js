@@ -34,10 +34,10 @@ const Vegetacao = (() => {
   ];
   // por tema: TUFOS por 1000 u² no prado cheio (cada tufo tem de 4 a 9 lâminas), altura (u), largura, paleta (base → ponta) e flores
   const TEMAS = {
-    floresta: { dens: 4.6, alt: [7, 17], larg: [0.7, 1.3], cor: [[0.12, 0.24, 0.07], [0.42, 0.62, 0.2]], seca: [[0.3, 0.27, 0.1], [0.72, 0.62, 0.3]], flores: 1, juncos: 0.7 },
-    lagoa: { dens: 5, alt: [8, 20], larg: [0.7, 1.35], cor: [[0.08, 0.22, 0.08], [0.36, 0.6, 0.24]], seca: [[0.22, 0.26, 0.1], [0.55, 0.58, 0.28]], flores: 0.8, juncos: 1 },
+    floresta: { dens: 5.2, alt: [9, 22], larg: [0.95, 1.65], cor: [[0.12, 0.24, 0.07], [0.42, 0.62, 0.2]], seca: [[0.3, 0.27, 0.1], [0.72, 0.62, 0.3]], flores: 1, juncos: 0.7 },
+    lagoa: { dens: 5.4, alt: [10, 25], larg: [0.95, 1.7], cor: [[0.08, 0.22, 0.08], [0.36, 0.6, 0.24]], seca: [[0.22, 0.26, 0.1], [0.55, 0.58, 0.28]], flores: 0.8, juncos: 1 },
     deserto: { dens: 0.5, alt: [6, 14], larg: [0.6, 1.1], cor: [[0.32, 0.28, 0.12], [0.78, 0.68, 0.36]], seca: [[0.34, 0.28, 0.12], [0.82, 0.7, 0.38]], flores: 0.1, so: ['oasis', 'planalto', 'beira'] },
-    abandonada: { dens: 0.8, alt: [6, 16], larg: [0.7, 1.2], cor: [[0.14, 0.2, 0.08], [0.46, 0.5, 0.2]], seca: [[0.3, 0.26, 0.12], [0.64, 0.56, 0.3]], flores: 0.15 },
+    abandonada: { dens: 0.9, alt: [7, 18], larg: [0.85, 1.45], cor: [[0.14, 0.2, 0.08], [0.46, 0.5, 0.2]], seca: [[0.3, 0.26, 0.12], [0.64, 0.56, 0.3]], flores: 0.15 },
   };
   // flores: cor da cabeça, forma, altura (u), preferência de umidade
   const FLORES = [
@@ -168,10 +168,13 @@ const Vegetacao = (() => {
     return S;
   }
   // ------------------------------------------------------------ malha (motor clássico)
-  // Cada lâmina: 3 segmentos (6 triângulos), afinando até a ponta; a normal mistura a face da lâmina
-  // com o "para cima" (luz macia de campo) e carrega no comprimento o quanto o vértice está alto na
-  // lâmina (1 = base, 2 = ponta): o shader usa isso para dobrar só a parte de cima
-  const SEG = 3, VPL = SEG * 6;
+  // Cada lâmina: 3 segmentos, afinando até a ponta, DOBRADA na nervura do meio (corte em "V", como a
+  // folha de capim de verdade): cada segmento são duas metades (4 triângulos), cada metade com a sua
+  // normal virada para o seu lado — um lado pega a luz e o outro fica na sombra, e a lâmina tem volume
+  // (antes era uma fita chata, com a mesma luz dos dois lados: parecia papel). A normal carrega no
+  // comprimento o quanto o vértice está alto na lâmina (1 = base, 2 = ponta): o shader dobra só a parte
+  // de cima. Base escura (oclusão do campo), ponta mais clara e um pouco amarelada.
+  const SEG = 3, VPL = SEG * 12, DOBRA = 0.55;
   function malhaClassica(S) {
     const D = S.dados, n = S.n, out = new Float32Array(n * VPL * 10);
     let o = 0;
@@ -182,14 +185,26 @@ const Vegetacao = (() => {
       const nxF = -sn * 0.28, nyF = cs * 0.28;   // (normal quase para cima: luz macia de campo)
       let r = D[i + 7], g = D[i + 8], b = D[i + 9];
       if (tipo >= 2) { const F = FLORES[tipo - 2]; r = 0.2; g = 0.42; b = 0.14; void F; }   // (haste verde; a cabeça vai à parte)
+      // a face da lâmina olha para (-sn, cs); a nervura do meio fica para trás (as bordas vêm para a frente)
+      const ux = -sn, uy = cs;
       for (let s = 0; s < SEG; s++) {
         const t0 = s / SEG, t1 = (s + 1) / SEG, w0 = w * (1 - t0 * 0.92), w1 = w * (1 - t1 * 0.92);
         const z0 = z + h * t0, z1 = z + h * t1, c0 = t0 * t0, c1 = t1 * t1;
-        const ax = x + fx * h * c0 * 0.35, ay = y + fy * h * c0 * 0.35, bx = x + fx * h * c1 * 0.35, by = y + fy * h * c1 * 0.35;
-        const k0 = 0.45 + 0.55 * t0, k1 = 0.45 + 0.55 * t1;   // escurece na base (oclusão do campo)
-        const p = [[ax - cs * w0, ay - sn * w0, z0, t0, k0], [ax + cs * w0, ay + sn * w0, z0, t0, k0], [bx + cs * w1, by + sn * w1, z1, t1, k1], [bx - cs * w1, by - sn * w1, z1, t1, k1]];
-        for (const v of [p[0], p[1], p[2], p[0], p[2], p[3]]) put(v[0], v[1], v[2], nxF, nyF, 1, v[3], r * v[4], g * v[4], b * v[4]);
+        const ax = x + fx * h * c0 * 0.55, ay = y + fy * h * c0 * 0.55, bx = x + fx * h * c1 * 0.55, by = y + fy * h * c1 * 0.55;
+        const k0 = 0.35 + 0.65 * t0, k1 = 0.35 + 0.65 * t1;   // escurece na base (oclusão do campo)
+        const d0 = w0 * DOBRA, d1 = w1 * DOBRA;   // a dobra (a nervura recua)
+        const L0 = [ax - cs * w0, ay - sn * w0], R0 = [ax + cs * w0, ay + sn * w0], M0 = [ax - ux * d0, ay - uy * d0];
+        const L1 = [bx - cs * w1, by - sn * w1], R1 = [bx + cs * w1, by + sn * w1], M1 = [bx - ux * d1, by - uy * d1];
+        // cores: ponta mais clara e quente
+        const cor = (t, k) => { const q = 1 + 0.18 * t * t; return [r * k * q + 0.05 * t * t, g * k * q + 0.03 * t * t, b * k]; };
+        const C0 = cor(t0, k0), C1 = cor(t1, k1);
+        // metade esquerda: normal para a esquerda e para a frente; direita: para a direita e para a frente
+        const nL = [-cs * 0.75 + ux * 0.55, -sn * 0.75 + uy * 0.55, 0.55], nR = [cs * 0.75 + ux * 0.55, sn * 0.75 + uy * 0.55, 0.55];
+        const P = (q, zz, t, C, n) => put(q[0], q[1], zz, n[0], n[1], n[2], t, C[0], C[1], C[2]);
+        P(L0, z0, t0, C0, nL); P(M0, z0, t0, C0, nL); P(M1, z1, t1, C1, nL); P(L0, z0, t0, C0, nL); P(M1, z1, t1, C1, nL); P(L1, z1, t1, C1, nL);
+        P(M0, z0, t0, C0, nR); P(R0, z0, t0, C0, nR); P(R1, z1, t1, C1, nR); P(M0, z0, t0, C0, nR); P(R1, z1, t1, C1, nR); P(M1, z1, t1, C1, nR);
       }
+      void nxF; void nyF;
     }
     // cabeças das flores (cruz de dois discos de pétalas; espiga: três andares) — à parte, contadas no fim
     const extra = [];
@@ -289,11 +304,12 @@ const Vegetacao = (() => {
   function realista(R, THREE, raiz) {
     if (!Z) { if (RT && RT.grupo.parent) RT.grupo.parent.remove(RT.grupo); return; }
     if (!RT) {
+      // a lâmina-modelo dobrada na nervura (as duas metades com normais para os lados: ver malhaClassica)
       const geo = new THREE.BufferGeometry(), pos = [], hgt = [];
       for (let s = 0; s < SEG; s++) {
         const t0 = s / SEG, t1 = (s + 1) / SEG, w0 = 1 - t0 * 0.92, w1 = 1 - t1 * 0.92;
-        const q = [[-w0, t0], [w0, t0], [w1, t1], [-w1, t1]];
-        for (const v of [q[0], q[1], q[2], q[0], q[2], q[3]]) { pos.push(v[0], 0, v[1]); hgt.push(v[1]); }
+        const L0 = [-w0, 0, t0], M0 = [0, -w0 * DOBRA, t0], R0 = [w0, 0, t0], L1 = [-w1, 0, t1], M1 = [0, -w1 * DOBRA, t1], R1 = [w1, 0, t1];
+        for (const v of [L0, M0, M1, L0, M1, L1, M0, R0, R1, M0, R1, M1]) { pos.push(v[0], v[1], v[2]); hgt.push(v[2]); }
       }
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.setAttribute('aAlt', new THREE.Float32BufferAttribute(hgt, 1));
@@ -303,12 +319,12 @@ const Vegetacao = (() => {
       mat.onBeforeCompile = (sh) => {
         Object.assign(sh.uniforms, U);
         sh.vertexShader = 'attribute float aAlt; attribute vec4 aLam; uniform float uTempo; uniform vec3 uVento; uniform vec4 uEmp; varying float vAlt;\n' + sh.vertexShader
-          .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = normalize(vec3(0.0, 0.35, 1.0));')
+          .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = normalize(normal * vec3(1.0, 1.0, 0.6) + vec3(0.0, 0.0, 0.45)); float cgn = cos(aLam.w), sgn = sin(aLam.w); objectNormal.xy = vec2(objectNormal.x * cgn - objectNormal.y * sgn, objectNormal.x * sgn + objectNormal.y * cgn);')
           .replace('#include <begin_vertex>', `
   // aLam: altura, largura, curva, giro da lâmina
   vAlt = aAlt;
-  vec3 transformed = vec3(position.x * aLam.y, 0.0, aAlt * aLam.x);
-  transformed.y += aLam.z * aAlt * aAlt * aLam.x * 0.35;
+  vec3 transformed = vec3(position.x * aLam.y, position.y * aLam.y, aAlt * aLam.x);
+  transformed.y += aLam.z * aAlt * aAlt * aLam.x * 0.55;
   float cg = cos(aLam.w), sg = sin(aLam.w);
   transformed.xy = vec2(transformed.x * cg - transformed.y * sg, transformed.x * sg + transformed.y * cg);
   vec3 base = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
@@ -320,7 +336,7 @@ const Vegetacao = (() => {
   transformed.xy += (dl > 0.01 ? dd / dl : vec2(0.0)) * emp * dobra * aLam.x * 0.9;
   transformed.z -= emp * dobra * aLam.x * 0.45;`);
         sh.fragmentShader = 'varying float vAlt;\n' + sh.fragmentShader
-          .replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= 0.45 + 0.55 * vAlt;')
+          .replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= (0.35 + 0.65 * vAlt) * (1.0 + 0.18 * vAlt * vAlt); diffuseColor.rg += vec2(0.05, 0.03) * vAlt * vAlt;')
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += diffuseColor.rgb * 0.06 * vAlt;');   // (translucidez barata: a ponta "acende" contra o sol)
       };
       mat.customProgramCacheKey = () => 'eclipse-grama';
@@ -380,6 +396,6 @@ const Vegetacao = (() => {
   // gera tudo de uma vez (testes)
   function gerarTudo() { while (Z && Z.fila.length) { const S = Z.fila.shift(); gerarSetor(S); Z.setores.set(`${S.i},${S.j}`, S); } return estado(); }
   const setores = () => (Z ? [...Z.setores.values()] : []);
-  return { SETOR, NIVEIS, TEMAS, FLORES, aoCarregar, descartar, ativo, visiveis, desenharClassico, realista, empurrao, estado, gerarTudo, setores, _exc: () => (Z ? Z.exc : []) };
+  return { _malha: malhaClassica, SETOR, NIVEIS, TEMAS, FLORES, aoCarregar, descartar, ativo, visiveis, desenharClassico, realista, empurrao, estado, gerarTudo, setores, _exc: () => (Z ? Z.exc : []) };
 })();
 if (typeof window !== 'undefined') window.Vegetacao = Vegetacao;

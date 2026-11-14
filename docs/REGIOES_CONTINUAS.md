@@ -36,7 +36,7 @@ além da borda é exatamente o que se encontra ao entrar).
 | Etapa | O quê | Estado |
 |---|---|---|
 | 1 | Câmera **Isométrica 3D** (o mesmo mundo 3D, do alto, com rotação e zoom) selecionável; semente fixa por zona; **território vizinho visível** nas câmeras 3D nas regiões abertas (chão pintado, água pintada, relevo contínuo, mata do kit do Blender); a zona de origem vira vizinha sem custo | **feita** |
-| 2 | Vizinhas também com as estruturas GLB (prédios, ruínas, pontes), a água (superfície) e a vegetação 3D; travessia sem o dissolve; a vista isométrica clássica mostrando as vizinhas | falta |
+| 2 | Vizinhas também com as estruturas GLB e a paisagem gerada (árvores grandes, rochas, ruínas) e a travessia com dissolve curto (0,12 s) quando a vizinha já está à vista — **feito**; falta a superfície da água, a grama 3D e a vista isométrica clássica mostrando as vizinhas | parcial |
 | 3 | Zonas de cidade como bairros abertos: tirar as paredes entre zonas da mesma região (ruas que continuam), portões só na muralha; Refúgio da Aurora integrado à região inicial com a estrada saindo pelos portões | falta |
 | 4 | Regiões maiores: mais zonas por região (estradas entre vilas, campos, rios com pontes) usando o kit e as estruturas que já existem | falta |
 | 5 | Viagem entre regiões e masmorras com tela de carregamento própria (salvar → descarregar → carregar → posicionar) e o Mapa do Mundo com as regiões | falta |
@@ -63,3 +63,20 @@ além da borda é exatamente o que se encontra ao entrar).
 Limites desta etapa: as vizinhas ainda não mostram as estruturas GLB, a superfície da água nem a grama 3D;
 a vista isométrica clássica não as mostra; nas regiões de cidade (salas com paredes) nada muda ainda; no
 renderizador realista (Three.js) o chão vizinho ainda projeta sombra.
+
+## 5. Etapa 2 — o que foi feito até agora
+
+- As vizinhas mostram também as **estruturas GLB** da lista da zona (`Estruturas.ZONAS`) e a **paisagem
+  gerada pela semente** dela (`Paisagem.fantasma`): árvores grandes, plantas, rochas e ruínas nos mesmos
+  lugares (a geração usa a água, o relevo, as passagens, o portal e os baús da definição da zona). Já
+  visitada, a lista é a de verdade; não visitada, a gerada fica à parte (a carga de verdade gera a dela,
+  com tudo o que estiver na zona). Os modelos vêm sob demanda, um arquivo por estrutura.
+- Travessia: com a vizinha já à vista, o disfarce da troca cai de 0,28 s para 0,12 s.
+- Testes: mais 3 verificações em `EclipseTests.regioesContinuas`.
+- **Distância de visão** (pedido "campo de visão grande até o horizonte"): Configurações → Vídeo → Distância
+  de visão (Curta, Média, Longa, Horizonte; perfil Desktop em Longa, Extreme PC em Horizonte). A névoa
+  recua (até ×3,2), o plano de corte vai a 12 mil (Longa) ou 20 mil (Horizonte), o chão distante vai até
+  o horizonte e, em Longa e Horizonte, também o **segundo anel** de zonas (a duas casas) aparece, com o
+  atlas em 512 e só as estruturas grandes. O renderizador realista usa a mesma lente e o mesmo corte.
+- Limite conhecido: cada vizinha é montada de uma vez no tempo livre (a pintura do chão leva de dezenas a
+  centenas de milissegundos): numa máquina lenta, um pequeno engasgo por zona na primeira vez.

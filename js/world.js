@@ -484,7 +484,7 @@ const World = {
     // cima (0,28 s). Os modelos da vizinha já vinham carregando (preCarregar). Portais e passagens
     // das cidades continuam com o escurecer (são outra coisa: teletransporte e portas)
     if (dir && along !== null && game.world) {
-      game.dissolver();
+      game.dissolver(typeof Vizinhos !== 'undefined' && Vizinhos.pronta(id) ? 0.12 : 0.28);   // (a vizinha já estava à vista: a troca quase não aparece)
       const vx = game.player.vx, vy = game.player.vy, f = game.player.facing;
       this.loadZone(id, dir, along, chegada, true);
       const p = game.player; p.vx = vx; p.vy = vy; p.facing = p.viewFacing = f;
