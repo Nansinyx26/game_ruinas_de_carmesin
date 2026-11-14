@@ -68,6 +68,18 @@ TECIDO_AZUL = dict(cor=(0.05, 0.09, 0.26), aspereza=0.92, desgaste=0.4, padrao='
 LINHO = dict(cor=(0.62, 0.58, 0.5), aspereza=0.95, desgaste=0.35, padrao='tecido', escala=0.3)
 PALHA = dict(cor=(0.44, 0.34, 0.14), aspereza=0.95, desgaste=0.45, padrao='pelo', escala=0.22)
 LIVROS = dict(cor=(0.30, 0.09, 0.06), aspereza=0.75, desgaste=0.5, padrao='couro', escala=0.2)
+# o pub cyberpunk do Mercado Neon (Nexus): metal grafite, cromo, couro sintético e neon
+GRAFITE = dict(cor=(0.07, 0.075, 0.09), metal=0.85, aspereza=0.35, desgaste=0.3, padrao='paineis', escala=0.6, borda_metal=True)
+CROMO = dict(cor=(0.55, 0.58, 0.62), metal=1.0, aspereza=0.18, desgaste=0.15, borda_metal=True)
+VIDRO_ESCURO = dict(cor=(0.03, 0.035, 0.05), metal=0.6, aspereza=0.08, desgaste=0.05)
+COURO_ROXO = dict(cor=(0.16, 0.035, 0.2), aspereza=0.55, desgaste=0.3, padrao='couro', escala=0.3)
+NEON_MAGENTA = dict(cor=(1.0, 0.2, 0.8), aspereza=0.3, emissao=(1.0, 0.2, 0.8), desgaste=0)
+NEON_CIANO = dict(cor=(0.2, 0.9, 1.0), aspereza=0.3, emissao=(0.2, 0.9, 1.0), desgaste=0)
+NEON_AMBAR = dict(cor=(1.0, 0.62, 0.15), aspereza=0.3, emissao=(1.0, 0.6, 0.12), desgaste=0)
+# as placas da pista: cor funda (o brilho do jogo satura; com a cor clara a pista ficava branca)
+LED_MAGENTA = dict(cor=(0.5, 0.02, 0.38), aspereza=0.25, emissao=(0.55, 0.02, 0.42), desgaste=0)
+LED_CIANO = dict(cor=(0.02, 0.36, 0.5), aspereza=0.25, emissao=(0.02, 0.4, 0.55), desgaste=0)
+LED_AMBAR = dict(cor=(0.55, 0.22, 0.02), aspereza=0.25, emissao=(0.6, 0.25, 0.02), desgaste=0)
 
 
 # ------------------------------------------------------------ montagem
@@ -733,6 +745,149 @@ def casa_c(rng):
     _casa('casa_c', rng, 6.4, 4.2, 2, [['j', '/', 'j'], ['\\', 'j', '/']], TELHA, PEDRA, chamine_x=1.9)
 
 
+# ------------------------------------------------------------ mobília do pub cyberpunk (frente para -Y)
+# células: 0 grafite, 1 cromo, 2 vidro escuro / couro, 3 neon magenta, 4 neon ciano, 5 neon âmbar
+def balcao_neon(o, larg=4.2, prof=0.75, alt=1.1):
+    """Balcão do bar: corpo de chapas de grafite, frente com faixas de luz, tampo de vidro escuro com a
+    borda de cromo, filete magenta no rodapé e o apoio de pé cromado."""
+    o.caixa(0, larg, prof, alt - 0.06, (0, 0, 0), chanfro=0.02)
+    o.caixa(2, larg + 0.16, prof + 0.2, 0.05, (0, 0.02, alt - 0.06), chanfro=0.01)
+    o.caixa(1, larg + 0.2, 0.03, 0.04, (0, -prof / 2 - 0.1, alt - 0.07))
+    n = 6
+    for k in range(n):   # painéis da frente com a luz por trás
+        x = -larg / 2 + (k + 0.5) * larg / n
+        o.caixa(4 if k % 2 else 3, 0.03, 0.02, alt - 0.38, (x - larg / n / 2 + 0.04, -prof / 2 - 0.012, 0.2))
+    o.caixa(3, larg - 0.04, 0.02, 0.03, (0, -prof / 2 - 0.012, 0.06))
+    o.caixa(4, larg - 0.04, 0.02, 0.025, (0, -prof / 2 - 0.012, alt - 0.16))
+    cil_h(o, 1, 0.025, larg - 0.2, (0, -prof / 2 - 0.2, 0.22), 'x', lados=8)
+    for x in (-larg / 2 + 0.2, 0, larg / 2 - 0.2):
+        o.caixa(1, 0.03, 0.2, 0.03, (x, -prof / 2 - 0.1, 0.21))
+    for k, x in enumerate((-1.4, -0.5, 0.6, 1.5)):   # copos acesos e a torneira de chope
+        o.cilindro(2, 0.035, 0.14, (x, 0.12, alt - 0.01), lados=8, r2=0.045)
+        o.cilindro(3 if k % 2 else 4, 0.03, 0.09, (x, 0.12, alt), lados=8, r2=0.04)
+    o.caixa(1, 0.5, 0.08, 0.36, (0.1, 0.25, alt - 0.01))
+    for x in (-0.05, 0.1, 0.25):
+        o.cilindro(5, 0.016, 0.12, (x, 0.2, alt + 0.2), lados=6, rot=(rad(90), 0, 0))
+
+
+def prateleira_bar(o, larg=3.6, alt=2.4, prof=0.36):
+    """Fundo do bar: estante de grafite com prateleiras de vidro acesas por baixo e garrafas brilhando."""
+    o.caixa(0, larg, 0.05, alt, (0, prof / 2 - 0.025, 0))
+    for s in (-1, 1):
+        o.caixa(0, 0.06, prof, alt, (s * (larg / 2 - 0.03), 0, 0))
+    o.caixa(0, larg, prof, 0.85, (0, 0, 0), chanfro=0.01)
+    o.caixa(4, larg - 0.1, 0.02, 0.03, (0, -prof / 2 - 0.01, 0.8))
+    rng = random.Random(23)
+    for k, z in enumerate((1.0, 1.45, 1.9)):
+        o.caixa(2, larg - 0.12, prof - 0.04, 0.025, (0, 0, z))
+        o.caixa(3 if k % 2 else 4, larg - 0.14, 0.015, 0.012, (0, -prof / 2 + 0.03, z - 0.012))
+        x = -larg / 2 + 0.16
+        while x < larg / 2 - 0.16:
+            r = rng.uniform(0.035, 0.05)
+            h = rng.uniform(0.2, 0.3)
+            cel = rng.choice((2, 2, 3, 4, 5))
+            o.cilindro(cel, r, h * 0.7, (x, 0.0, z + 0.025), lados=8)
+            o.cilindro(cel, r, h * 0.3, (x, 0.0, z + 0.025 + h * 0.7), lados=8, r2=r * 0.35)
+            x += r * 2 + rng.uniform(0.03, 0.08)
+    o.caixa(3, larg * 0.5, 0.03, 0.22, (0, prof / 2 - 0.06, alt - 0.32))   # letreiro aceso no alto
+
+
+def banqueta_neon(o):
+    """Banqueta alta do balcão: base de cromo, coluna, apoio de pé e o assento de couro com anel ciano."""
+    o.cilindro(1, 0.2, 0.03, (0, 0, 0), lados=16, r2=0.18)
+    o.cilindro(1, 0.03, 0.72, (0, 0, 0.03), lados=8)
+    o.anel(1, 0.15, 0.012, (0, 0, 0.3), lados=16, seg=4)
+    o.cilindro(2, 0.19, 0.08, (0, 0, 0.74), lados=16, r2=0.2)
+    o.anel(4, 0.19, 0.008, (0, 0, 0.745), lados=20, seg=4)
+
+
+def mesa_alta_neon(o):
+    """Mesa alta redonda: tampo de vidro escuro com o aro aceso, coluna de cromo e base pesada."""
+    o.cilindro(0, 0.28, 0.04, (0, 0, 0), lados=16, r2=0.25)
+    o.cilindro(1, 0.04, 1.0, (0, 0, 0.04), lados=8)
+    o.cilindro(2, 0.4, 0.04, (0, 0, 1.03), lados=24)
+    o.anel(3, 0.4, 0.012, (0, 0, 1.05), lados=28, seg=4)
+    o.cilindro(4, 0.05, 0.14, (0.12, 0.05, 1.07), lados=8, r2=0.06)
+
+
+def sofa_neon(o, larg=2.2):
+    """Sofá de canto (booth): couro roxo em gomos, encosto alto, base de grafite com a luz embaixo."""
+    o.caixa(0, larg, 0.7, 0.3, (0, 0, 0.02), chanfro=0.02)
+    o.caixa(5, larg - 0.1, 0.62, 0.02, (0, 0, 0.0))
+    n = 3
+    for k in range(n):
+        x = -larg / 2 + (k + 0.5) * larg / n
+        o.caixa(2, larg / n - 0.05, 0.6, 0.14, (x, -0.04, 0.32), chanfro=0.05)
+        o.caixa(2, larg / n - 0.05, 0.18, 0.62, (x, 0.27, 0.4), rot=(rad(-8), 0, 0), chanfro=0.05)
+    o.caixa(0, larg + 0.06, 0.24, 1.1, (0, 0.36, 0.02), chanfro=0.02)
+    o.caixa(3, larg, 0.02, 0.02, (0, 0.235, 1.1))
+    for s in (-1, 1):
+        o.caixa(0, 0.12, 0.72, 0.62, (s * (larg / 2 + 0.03), 0, 0.02), chanfro=0.02)
+
+
+def cabine_dj(o, larg=2.4):
+    """Cabine do DJ: móvel de grafite com a frente de LED, dois toca-discos, o mixer com botões acesos,
+    o notebook e as luzes de palco em cima."""
+    o.caixa(0, larg, 0.8, 1.0, (0, 0, 0), chanfro=0.02)
+    for k in range(8):   # a frente: barras de luz (o equalizador)
+        x = -larg / 2 + 0.2 + k * (larg - 0.4) / 7
+        h = 0.25 + 0.5 * abs(math.sin(k * 1.3 + 0.4))
+        o.caixa(3 if k % 2 else 4, 0.12, 0.02, h, (x, -0.41, 0.15))
+    o.caixa(1, larg + 0.08, 0.86, 0.04, (0, 0, 1.0))
+    for s in (-1, 1):   # toca-discos
+        o.caixa(0, 0.5, 0.42, 0.06, (s * 0.7, 0, 1.04), chanfro=0.01)
+        o.cilindro(2, 0.17, 0.015, (s * 0.7 - 0.03, 0, 1.1), lados=20)
+        o.anel(4, 0.17, 0.006, (s * 0.7 - 0.03, 0, 1.11), lados=20, seg=4)
+        o.cilindro(1, 0.02, 0.03, (s * 0.7 - 0.03, 0, 1.11), lados=6)
+        o.caixa(1, 0.015, 0.2, 0.012, (s * 0.7 + 0.15, 0.03, 1.12), rot=(0, 0, rad(25 * s)))
+    o.caixa(0, 0.36, 0.36, 0.08, (0, 0, 1.04), chanfro=0.01)   # mixer
+    for i in range(3):
+        for j in range(3):
+            o.cilindro((3, 4, 5)[(i + j) % 3], 0.018, 0.02, (-0.1 + i * 0.1, -0.1 + j * 0.1, 1.12), lados=8)
+    o.caixa(2, 0.34, 0.24, 0.015, (0.05, 0.28, 1.04), rot=(0, 0, rad(-6)))   # notebook
+    o.caixa(4, 0.32, 0.015, 0.2, (0.05, 0.4, 1.05), rot=(rad(-15), 0, rad(-6)))
+    for s in (-1, 1):   # luzes de palco nos postes
+        o.cilindro(1, 0.025, 1.3, (s * (larg / 2 - 0.05), 0.35, 1.0), lados=6)
+        o.cilindro(0, 0.07, 0.16, (s * (larg / 2 - 0.05), 0.35, 2.3), lados=10, r2=0.1, rot=(rad(160), 0, 0))
+        o.cilindro(3 if s < 0 else 4, 0.095, 0.02, (s * (larg / 2 - 0.05), 0.33, 2.16), lados=10)
+
+
+def caixa_som(o, alt=1.7):
+    """Torre de som: gabinete de grafite, dois alto-falantes com o anel aceso e a corneta em cima."""
+    o.caixa(0, 0.7, 0.6, alt, (0, 0, 0), chanfro=0.02)
+    for z, r in ((0.45, 0.24), (1.05, 0.24)):
+        o.cilindro(2, r, 0.04, (0, -0.31, z), lados=20, rot=(rad(90), 0, 0))
+        o.anel(3, r + 0.01, 0.012, (0, -0.33, z), lados=24, seg=4, rot=(rad(90), 0, 0))
+        o.cilindro(1, r * 0.3, 0.05, (0, -0.33, z), lados=12, rot=(rad(90), 0, 0))
+    o.caixa(2, 0.5, 0.04, 0.2, (0, -0.31, alt - 0.32))
+    o.caixa(4, 0.62, 0.02, 0.02, (0, -0.31, alt - 0.06))
+
+
+def pista_led(o, n=6, lado=0.75):
+    """Pista de dança: placas de LED em grade (magenta, ciano e âmbar) com as juntas de cromo."""
+    L = n * lado
+    o.caixa(0, L + 0.1, L + 0.1, 0.03, (0, 0, 0))
+    for i in range(n):
+        for j in range(n):
+            x = -L / 2 + (i + 0.5) * lado
+            y = -L / 2 + (j + 0.5) * lado
+            cel = (3, 4, 5, 2)[(i * 2 + j * 3 + (i * j) % 2) % 4]
+            o.caixa(cel, lado - 0.05, lado - 0.05, 0.012, (x, y, 0.03))
+    for s in (-1, 1):
+        o.caixa(1, L + 0.12, 0.04, 0.05, (0, s * (L / 2 + 0.05), 0))
+        o.caixa(1, 0.04, L + 0.12, 0.05, (s * (L / 2 + 0.05), 0, 0))
+
+
+def coluna_holo(o):
+    """Projetor de holograma: pedestal de grafite com o anel, o feixe e a figura de luz girando (os anéis)."""
+    o.cilindro(0, 0.32, 0.4, (0, 0, 0), lados=12, r2=0.26)
+    o.anel(4, 0.27, 0.015, (0, 0, 0.4), lados=20, seg=4)
+    o.cilindro(4, 0.2, 1.5, (0, 0, 0.42), lados=12, r2=0.04)
+    for k, z in enumerate((0.75, 1.15, 1.55)):
+        o.anel(3 if k % 2 else 4, 0.22 - k * 0.04, 0.008, (0, 0, z), lados=20, seg=4, rot=(rad(12 * (k - 1)), 0, 0))
+    o.esfera(4, 0.12, (0, 0, 1.95), seg=10, aneis=6)
+
+
 # ------------------------------------------------------------ peças avulsas (o kit e a mobília)
 def _peca(nome, fn, celulas, tipo='movel', pasta=PASTA, angulo=(60, 0, 30), **kw):
     o = Montagem(nome, tipo)
@@ -754,6 +909,16 @@ MOVEIS = {
     'armeiro': lambda r: _peca('armeiro', armeiro, [MADEIRA, FERRO, LIVROS]),
     'lampiao_rua': lambda r: _peca('lampiao_rua', lampiao, [PEDRA, MADEIRA, MADEIRA, MADEIRA, FERRO, VIDRO], rua=True),
     'estandarte_rubro': lambda r: _peca('estandarte_rubro', estandarte, [PEDRA, MADEIRA, MADEIRA, TECIDO_RUBRO, FERRO], alt=3.2),
+    # o pub cyberpunk (Mercado Neon)
+    'balcao_neon': lambda r: _peca('balcao_neon', balcao_neon, [GRAFITE, CROMO, VIDRO_ESCURO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'prateleira_bar': lambda r: _peca('prateleira_bar', prateleira_bar, [GRAFITE, CROMO, VIDRO_ESCURO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'banqueta_neon': lambda r: _peca('banqueta_neon', banqueta_neon, [GRAFITE, CROMO, COURO_ROXO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'mesa_alta_neon': lambda r: _peca('mesa_alta_neon', mesa_alta_neon, [GRAFITE, CROMO, VIDRO_ESCURO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'sofa_neon': lambda r: _peca('sofa_neon', sofa_neon, [GRAFITE, CROMO, COURO_ROXO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'cabine_dj': lambda r: _peca('cabine_dj', cabine_dj, [GRAFITE, CROMO, VIDRO_ESCURO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'caixa_som': lambda r: _peca('caixa_som', caixa_som, [GRAFITE, CROMO, VIDRO_ESCURO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
+    'pista_led': lambda r: _peca('pista_led', pista_led, [GRAFITE, CROMO, VIDRO_ESCURO, LED_MAGENTA, LED_CIANO, LED_AMBAR]),
+    'coluna_holo': lambda r: _peca('coluna_holo', coluna_holo, [GRAFITE, CROMO, VIDRO_ESCURO, NEON_MAGENTA, NEON_CIANO, NEON_AMBAR]),
 }
 MODULOS = {   # o kit (assets/models/arquitetura/modulos/): para montar outros prédios
     'parede_pedra': lambda r: _peca('parede_pedra', parede_pedra, [PEDRA], 'modulo', PASTA + '/modulos', larg=3.0, alt=3.0, esp=0.5),

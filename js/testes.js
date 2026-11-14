@@ -73,6 +73,7 @@ const EclipseTests = {
       await this.agua();
       await this.solSombras();
       await this.poderesDiario();
+      this.graficosPC();
       this.megacidades();
       this.mundoContinuo();
       this.metropoleSegura();
@@ -917,7 +918,7 @@ const EclipseTests = {
     const pessoas = WORLD_POVO.map((P) => P.id), zonaDe = (P) => P.zona || P.chave.split(':')[0];
     this.ok('povo: cada morador mora numa zona que existe e está nela', WORLD_POVO.every((P) => WORLD_ZONES[zonaDe(P)] && WORLD_ZONES[zonaDe(P)].npcs.some((d) => d.persona === P)), WORLD_POVO.filter((P) => !WORLD_ZONES[zonaDe(P)]).map((P) => P.id).join(','));
     this.ok('povo: ids únicos', new Set(pessoas).size === pessoas.length);
-    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias', 'gm'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
+    const servicos = ['loja', 'curandeiro', 'ferreiro', 'artesao', 'treinador', 'armazem', 'armeiro', 'pesquisa', 'guilda', 'missoes', 'descanso', 'refeicao', 'animais', 'montarias', 'gm', 'bar_neon'].concat(Object.keys(FAB_ESTACOES));   // + os da cidade (js/mundo/cidade.js e bairro.js)
     this.ok('povo: serviços conhecidos', WORLD_POVO.every((P) => (P.servicos || []).every((sv) => servicos.includes(sv))), WORLD_POVO.flatMap((P) => (P.servicos || []).filter((sv) => !servicos.includes(sv))).join(','));
     this.ok('povo: cada morador tem função e saudação', WORLD_POVO.every((P) => P.papel && P.ola && P.ola.length));
     const rv = WORLD_POVO.flatMap((P) => (P.rumores || []).map((r) => r.revela).filter(Boolean));
@@ -1480,9 +1481,9 @@ const EclipseTests = {
     // renderizador realista (Three.js, js/realista/realista.js): módulo carregado por http, opções no
     // vídeo, e numa placa de vídeo emulada por software (a dos testes) ele mesmo cede ao clássico
     const vid = SETTINGS_TABS.find((t) => t.id === 'video').opts;
-    this.ok('realista: opções de renderizador e cinco qualidades (Baixo a Cinematográfico) no vídeo', vid.some((o) => o.key === 'render3d') && vid.find((o) => o.key === 'realQual').names.join(',') === 'Baixo,Médio,Alto,Ultra,Cinematográfico');
+    this.ok('realista: opções de renderizador e seis qualidades (Baixo a Extreme PC) no vídeo', vid.some((o) => o.key === 'render3d') && vid.find((o) => o.key === 'realQual').names.join(',') === 'Baixo,Médio,Alto,Ultra,Cinematográfico,Extreme PC');
     const RL = typeof window !== 'undefined' ? window.Realista3D : null, atv = RL ? RL.ativo() : false;
-    this.ok('realista: módulo do Three.js carregado (por http) e pronto ou cedendo ao clássico com o motivo', !!RL && RL.QUAL.length === 5 && (RL.ok || /software|WebGL 2/.test(RL.erro || '')), RL ? `ok=${RL.ok} erro=${RL.erro}` : 'sem módulo');
+    this.ok('realista: módulo do Three.js carregado (por http) e pronto ou cedendo ao clássico com o motivo', !!RL && RL.QUAL.length === 6 && (RL.ok || /software|WebGL 2/.test(RL.erro || '')), RL ? `ok=${RL.ok} erro=${RL.erro}` : 'sem módulo');
     if (RL && !atv) {
       // cedeu: a 3ª pessoa desenha pelo motor clássico e a camada do Three.js fica escondida
       ThirdView.set(true, true); g.render(); ThirdView.set(false, true);
@@ -1908,7 +1909,7 @@ const EclipseTests = {
     const fade = () => { if (g.fadeCb) { const cb = g.fadeCb; g.fadeCb = null; cb(); } };
     let erro = null;
     try {
-      const Z = WORLD_ZONES[BAIRRO_ID], ints = Object.keys(BAIRRO_INTERIORES);
+      const Z = WORLD_ZONES[BAIRRO_ID], ints = Object.keys(BAIRRO_INTERIORES).filter((id) => !BAIRRO_INTERIORES[id].saida);   // (o pub do Mercado Neon também é um interior, mas fica na Metrópole: js/mundo/pub_neon.js)
       this.ok('bairro: zona da cidade, fora da grade e do mapa', Z && Z.cidade && Z.distrito === 'bairro' && !worldZonesOf('nexus').includes(Z) && !World.mapTargets().includes(BAIRRO_ID));
       this.ok('bairro: 5 interiores (taverna, hospedaria, conselho, quartel e o viveiro)', ints.length === 5 && ints.every((id) => WORLD_ZONES[id] && WORLD_ZONES[id].distrito === 'interior' && THEMES[WORLD_ZONES[id].theme]));
       this.ok('bairro: cada interior tem quem trabalhe nele (2+ moradores)', ints.every((id) => WORLD_ZONES[id].npcs.length >= 2));
@@ -2486,10 +2487,10 @@ const EclipseTests = {
       const Sg = { fl: 0, fi: 0 }, clg = new Set();
       for (let i = 0; i < 60; i++) clg.add(gal.petClipe(Sg, Criaturas3D.dados.galinha, 0.2)[0]);
       this.ok('animais: a galinha parada cisca (comer) e olha em volta', clg.has('comer') && clg.has('idle'), [...clg].join(','));
-      // peças das espécies presas aos ossos: bico chato do pato (a cabra real já traz os chifres na malha
-      // e a galinha enviada, crista e barbela: nenhuma peça a mais nas duas)
+      // peças das espécies presas aos ossos: bico chato do pato (a galinha e a cabra reais já trazem
+      // crista e chifres na própria malha: nenhuma peça a mais)
       const peca = (id, osso) => { const mm = g.model3('cri_' + id); return mm && mm.nodes[osso].kids.some((k) => k.name.startsWith('acess_') && k.geo && k.geo.length > 60); };
-      this.ok('animais: bico chato no pato; a cabra com os chifres e a galinha com a crista da própria malha', !peca('cabra', 'cabeca') && peca('pato', 'cabeca') && !peca('galinha', 'cabeca'));
+      this.ok('animais: bico chato no pato; a galinha e a cabra reais com crista e chifres da própria malha', !peca('cabra', 'cabeca') && peca('pato', 'cabeca') && !peca('galinha', 'cabeca'));
       const GA = Criaturas3D.dados.galinha;
       this.ok('animais: a galinha é a malha enviada (esqueleto de ave com as asas dobradas, 11 animações de galinha)', GA && GA.nb === 26 && ['idle', 'andar', 'comer', 'dormir', 'voar', 'chamar'].every((k) => GA.clipes[k]) && !GA.base, GA && Object.keys(GA.clipes).join(','));
       // a ave da Metrópole levanta voo quando o herói chega perto
@@ -3390,6 +3391,38 @@ const EclipseTests = {
   },
 
   // ---------------------------------------------------------------- poderes (js/heroes/poderes.js) e o diário redesenhado
+  // Perfis gráficos, benchmark, medidor de desempenho e o app de PC (js/graficos.js, desktop/)
+  graficosPC() {
+    if (typeof Graficos === 'undefined') { this.ok('gráficos: módulo carregado', false); return; }
+    const g = game, V0 = Object.assign({}, Settings.v), sv = Settings.save, ult = Graficos.ultimo;
+    let erro = null;
+    Settings.save = () => {};
+    try {
+      this.ok('gráficos: quatro perfis (Celular, Web, Desktop, Extreme PC) com as opções de vídeo', ['celular', 'web', 'desktop', 'extremo'].every((k) => GRAFICOS_PERFIS[k] && GRAFICOS_PERFIS[k].nome && 'sombras' in GRAFICOS_PERFIS[k]));
+      Graficos.aplicarPerfil('extremo', g);
+      this.ok('gráficos: Extreme PC liga o máximo (qualidade realista Extreme PC, sombras Ultra, 4K, vegetação cinematográfica, supersampling)', Settings.v.realQual === 5 && Settings.v.sombras === 4 && Settings.v.texHD === 2 && Settings.v.vegQ === 4 && Settings.v.renderScale > 100 && Settings.v.perfilGfx === 'extremo');
+      Graficos.aplicarPerfil('desktop', g); Settings.v.sombras = 1; Settings.apply(g);
+      this.ok('gráficos: mexer numa opção do perfil vira Personalizado', Settings.v.perfilGfx === 'custom', Settings.v.perfilGfx);
+      const hw = (o) => Object.assign({ gpu: 'x', maxTex: 16384, nucleos: 8, memoria: 8, toque: false, software: false, dedicada: false }, o);
+      this.ok('gráficos: o benchmark escolhe pelo aparelho e pelos quadros', Graficos.escolher(hw({ software: true }), 90) === 'web' && Graficos.escolher(hw({ toque: true, memoria: 4 }), 60) === 'celular'
+        && Graficos.escolher(hw({ dedicada: true, nucleos: 12, memoria: 16 }), 60) === 'extremo' && Graficos.escolher(hw({}), 60) === 'desktop' && Graficos.escolher(hw({}), 35) === 'web');
+      this.ok('gráficos: nos testes automáticos o benchmark não roda sozinho', !Graficos.precisa());
+      Graficos.iniciar(0.5); for (let i = 0; i < 90; i++) Graficos.quadro(1 / 60, g);
+      this.ok('gráficos: benchmark mede, escolhe, aplica e guarda o perfil', !Graficos.bench && Graficos.ultimo && GRAFICOS_PERFIS[Graficos.ultimo.perfil] && Graficos.ultimo.fps >= 55 && Settings.v.perfilGfx === Graficos.ultimo.perfil, JSON.stringify(Graficos.ultimo));
+      Object.assign(Graficos.med, { i: 0, n: 0, cpu: 0, cpuAcc: 0, cpuN: 0 });   // (sem os quadros de verdade da suíte)
+      for (let i = 0; i < 30; i++) { Graficos.ini(); Graficos.fim(1 / 50); }
+      const E = Graficos.estatisticas();
+      Settings.v.medidor = true; Graficos.desenhar(g.ctx, g); Settings.v.medidor = false;
+      this.ok('gráficos: medidor com FPS, tempo do quadro (média e pior 1%) e CPU', E.fps >= 45 && E.fps <= 55 && E.pior >= E.ms * 0.9 && E.cpu >= 0, JSON.stringify(E));
+      this.ok('gráficos: a placa de vídeo é identificada', !!Graficos.hardware().gpu && Graficos.hardware().gpu !== '?', Graficos.hardware().gpu);
+      this.ok('gráficos: resolução interna até 200% e a opção do medidor (F4)', SETTINGS_TABS.find((t) => t.id === 'video').opts.find((o) => o.key === 'renderScale').values.includes(200) && SETTINGS_TABS.find((t) => t.id === 'video').opts.some((o) => o.key === 'medidor') && KEYMAP.medidor);
+      if (typeof Realista3D !== 'undefined') this.ok('gráficos: o realista tem o perfil Extreme PC (150%, 8 amostras) e o passe de cinema', Realista3D.QUAL.length === 6 && Realista3D.QUAL[5].escala === 1.5 && Realista3D.QUAL[5].amostras === 8);
+      this.ok('gráficos: no navegador automático não aparece BAIXAR PARA PC (só no computador, fora do app)', !MENU_PC() && /releases\/latest$/.test(PC_DOWNLOAD));
+    } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }
+    Object.assign(Settings.v, V0); Settings.save = sv; Graficos.ultimo = ult; Graficos.bench = null; Settings._perfil = V0.perfilGfx; Settings.apply(g, true);
+    this.ok('gráficos: sem exceção', !erro, erro);
+  },
+
   async poderesDiario() {
     const g = game, p = g.player;
     let erro = null;
@@ -3408,10 +3441,76 @@ const EclipseTests = {
       for (let i = 0; i < 80; i++) Poderes.update(0.05);
       this.ok('poderes: etapa 3 (desintegração) e nada fica no cenário', Poderes.ativos.length === 0);
       this.ok('poderes: o Guerreiro tem a manifestação própria; os outros, não (sem cópia com outra cor)', Poderes.temaDe({ def: { id: 'drakos' } }) === 'rubro' && Poderes.temaDe({ def: { id: 'kael' } }) === null);
+      // as outras classes: forma e geometria próprias (não a erupção com outra cor)
+      const PC = PoderesClasses; PC.limpar();
+      this.ok('poderes: cada classe com a sua manifestação (Arqueira violeta, Sacerdote celeste, Arcano azul)', PC.temaDe({ def: { id: 'lyra' } }) === 'violeta' && PC.temaDe({ def: { id: 'sera' } }) === 'celeste' && PC.temaDe({ def: { id: 'kael' } }) === 'arcano' && PC.temaDe({ def: { id: 'drakos' } }) === null);
+      const Ev = PC.estilhacos(p.x, p.y, 30, 0.5, true), Ec = PC.celeste(p.x, p.y, 90, 'cura', p), Ea = PC.arcano(p.x, p.y, 120, { carga: 0.3 });
+      const ch = (E) => E.nos.map((n) => n[0]).join(',');
+      this.ok('poderes: geometrias diferentes por classe (lascas finas; halo, glifos e coluna; círculos e octaedros)', /lascaV/.test(ch(Ev)) && /halo/.test(ch(Ec)) && /coluna/.test(ch(Ec)) && /circA/.test(ch(Ea)) && /octa/.test(ch(Ea)) && !/lasca/.test(ch(Ea)) && !/circ/.test(ch(Ec)));
+      for (let i = 0; i < 4; i++) PC.update(0.05);
+      PC.manifestarArcano(Ea);
+      for (let i = 0; i < 60; i++) PC.update(0.05);
+      this.ok('poderes: Arqueira, Sacerdote e Arcano terminam sem deixar nada no cenário', PC.ativos.length === 0, JSON.stringify(PC.estado()));
+      this.ok('poderes: os ganchos estão nas classes (acerto e chuva da Arqueira, cura e campo do Sacerdote)', !!(lyraHitEnemy._pc && LyraRain.prototype._pc && ABILITIES.sera_cura._pc));
       if (g.world) {
         WorldInv.abrir('diario'); WorldInv.ui.cat = 'disponiveis'; WorldInv.ui.sel = 0; WorldInv.draw(g.ctx, 0);
         const R = WorldInv.ui.rects;
         this.ok('diário: categorias, lista e botão clicáveis', R.filter((r) => r.cat).length === 3 && R.some((r) => r.idx === 0) && (R.some((r) => r.btn === 'main') || !Aventuras.diarioLista('disponiveis').length));
+        // aba PETS & MONTARIAS: sempre visível; a ave de montaria só se compra no viveiro; a compra salva
+        { const b0 = g.stats.soulsBank, lv0 = g.activeProgress().level, M0 = JSON.stringify(Montarias.S()), sv = World.save; World.save = () => {};
+          this.ok('loja: aba PETS & MONTARIAS no inventário, com Pets, Montarias, Minhas montarias e Meus pets', WorldInv.abas().includes('animais') && LojaAnimais.CATS.length === 4);
+          g.stats.soulsBank = 9000; g.activeProgress().level = 25; LojaAnimais.abrir('estrebaria', 'montarias');
+          const ave = LojaAnimais.cartoes().find((c) => c.id === 'ave_asa_noturna');
+          this.ok('loja: a ave de montaria aparece com nome, raridade, preço, velocidade e nível, e na estrebaria diz onde vende', !!ave && ave.E.preco > 0 && ave.E.vel > 1 && ave.E.nivel > 0 && /VIVEIRO/.test(LojaAnimais.botao(ave)[0]));
+          LojaAnimais.abrir('viveiro', 'montarias');
+          const bt = LojaAnimais.botao(ave), ok = bt[2] === 'comprarMont' && LojaAnimais.executar('comprarMont', ave);
+          this.ok('loja: COMPRAR MONTARIA desconta as células e guarda a ave no progresso (equipada)', ok && g.stats.soulsBank === 9000 - ave.E.preco && Montarias.S().lista.includes('ave_asa_noturna') && Montarias.S().ativa === 'ave_asa_noturna', `${g.stats.soulsBank}`);
+          g.stats.soulsBank = 10; const arara = LojaAnimais.cartoes().find((c) => c.id === 'ave_arara');
+          this.ok('loja: sem dinheiro, SALDO INSUFICIENTE (sem botão de compra)', /SALDO INSUFICIENTE/.test(LojaAnimais.botao(arara)[0]) && !LojaAnimais.botao(arara)[2]);
+          LojaAnimais.trocar('minhas'); const mi = LojaAnimais.cartoes().find((c) => c.id === 'ave_asa_noturna');
+          this.ok('loja: MINHAS MONTARIAS equipa e desequipa', LojaAnimais.botao(mi)[2] === 'desequipar' && LojaAnimais.executar('desequipar', mi) && Montarias.S().ativa === null && LojaAnimais.botao(mi)[2] === 'equipar');
+          WorldInv.draw(g.ctx, 0); g.state = 'playing';
+          Montarias.guardar(); Object.assign(World.state.montarias, JSON.parse(M0)); g.stats.soulsBank = b0; g.activeProgress().level = lv0; World.save = sv; }
+        // taverna viva (js/mundo/taverna_viva.js): lotação pela hora, Horário do Bardo, reservas sem sobreposição
+        if (typeof TavernaViva !== 'undefined' && NpcModelo.ok()) {
+          const h0t = World.state.hora, dm = Settings.v.diaMin; Settings.v.diaMin = 1e6;
+          World.state.hora = 9; World.loadZone('aurora_taverna', null); const manha = TavernaViva.estado();
+          World.state.hora = 21; World.loadZone('aurora_taverna', null); const bardo = TavernaViva.estado();
+          for (let i = 0; i < 40; i++) { TavernaViva.update(0.25); for (const f of TavernaViva.ativos) f.update(0.25); }
+          const Lt = TavernaViva.ativos.filter((f) => f.lugar), chaves = new Set(Lt.map((f) => f.lugar.i));
+          this.ok('taverna: de manhã quase vazia; no Horário do Bardo, cheia (até o limite)', manha.fregueses <= 2 && bardo.fregueses > manha.fregueses + 4 && bardo.fregueses <= TavernaViva.LIMITE && bardo.bardo, `${manha.fregueses} / ${bardo.fregueses}`);
+          this.ok('taverna: cada freguês com o seu lugar (reserva: ninguém no mesmo assento)', chaves.size === Lt.length && Lt.length > 4);
+          const E = TavernaViva.estado();
+          this.ok('taverna: bebendo, comendo e, perto do palco, palmas ou dança', E.bebendo + E.comendo > 0 && (E.fases.de_pe ? E.dancando + E.palmas > 0 : true), JSON.stringify(E));
+          this.ok('taverna: caneca e prato são os GLB dos utensílios (presos à mão e à mesa)', ['caneca_cerveja', 'prato_sopa', 'prato_vazio', 'copo_neon'].every((id) => WEAPON3D[id]) && NPC3D.freg_a.props.some((q) => q.id === 'caneca_cerveja' && q.no === 'handR'));
+          World.state.hora = h0t; Settings.v.diaMin = dm; World.loadZone('aurora', null);
+        }
+        // pub do Mercado Neon (js/mundo/pub_neon.js): a porta no Bar Neon, a mobília do Blender, a Cyber Night com o DJ
+        if (typeof PubNeon !== 'undefined' && NpcModelo.ok()) {
+          const h0t = World.state.hora, dm = Settings.v.diaMin; Settings.v.diaMin = 1e6;
+          World.state.hora = 15; World.loadZone('metro_mercado', null);
+          const porta = PubNeon.porta, ch = BAIRRO_INTERIORES.metro_pub.saida.chegada;
+          this.ok('pub: a porta do Pulso Neon fica no Mercado Neon, num lugar livre, e a saída do pub volta para ela', !!porta && g.npcs.includes(porta) && g.room.canStand(porta.x, porta.y, 10) && Math.abs(ch[0] * g.room.w - porta.x) < 2, porta && `${porta.x | 0},${porta.y | 0}`);
+          porta.talk(); const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;   // (a passagem escurece a tela: aqui, na hora)
+          const tarde = PubNeon.estado();
+          this.ok('pub: entrar leva ao interior (zona segura, tema neon) com a saída para o mercado', World.zone.id === 'metro_pub' && g.room.theme === THEMES.interior_neon && g.npcs.some((n) => n.kind === 'gate' && n.data && n.data.to === 'metro_mercado'));
+          this.ok('pub: de tarde, sem Cyber Night: sem DJ, casa vazia e som de lounge', !tarde.cyberNight && !tarde.dj && tarde.fregueses <= 4, JSON.stringify(tarde));
+          const ids = Bairro.objetos.map((o) => o.cenId), pista = Bairro.objetos.find((o) => o.cenId === 'pista_led');
+          this.ok('pub: a mobília é a do Blender (balcão, garrafas, banquetas, mesas altas, sofás, cabine do DJ, som, holograma e pista)', !Bairro.pronto() || ['balcao_neon', 'prateleira_bar', 'banqueta_neon', 'mesa_alta_neon', 'sofa_neon', 'cabine_dj', 'caixa_som', 'coluna_holo', 'pista_led'].every((id) => ids.includes(id)), ids.join(','));
+          this.ok('pub: a pista de LED é rente ao chão (desenhada com o chão, sem colisor: dá para dançar em cima)', !Bairro.pronto() || (!!pista && pista.chao && !g.room.pillars.some((q) => q.cenId === 'pista_led') && g.room.canStand(pista.x, pista.y, 12)));
+          this.ok('pub: a Kira atende no balcão (drinque)', g.npcs.some((n) => n.P && n.P.id === 'pub_kira' && (n.P.servicos || []).includes('bar_neon')));
+          World.state.hora = 23; World.loadZone('metro_pub', null);
+          for (let i = 0; i < 40; i++) { PubNeon.update(0.25); for (const f of PubNeon.ativos) f.update(0.25); if (PubNeon.dj) PubNeon.dj.update(0.25); }
+          const noite = PubNeon.estado(), Lp = PubNeon.ativos.filter((f) => f.lugar), chs = new Set(Lp.map((f) => f.lugar.i));
+          this.ok('pub: Cyber Night (23h): DJ VOLTA mixando na cabine, casa cheia e música eletrônica', noite.cyberNight && noite.dj === 'mixando' && PubNeon.dj.state === 'dj' && noite.fregueses > tarde.fregueses + 4 && noite.fregueses <= PubNeon.LIMITE, JSON.stringify(noite));
+          this.ok('pub: a pista dança no ritmo (dança e palmas) e ninguém divide lugar', noite.dancando + noite.palmas > 0 && chs.size === Lp.length, JSON.stringify(noite));
+          this.ok('pub: o copo neon é o GLB (na mão e na mesa); a taverna continua com caneca', NPC3D.pub_a.props.every((q) => q.id === 'copo_neon') && NPC3D.freg_a.props.some((q) => q.id === 'caneca_cerveja'));
+          this.ok('pub: a Cyber Night passa da meia-noite e acaba às 3h', PubNeon.bardo(1) && PubNeon.bardo(22.5) && !PubNeon.bardo(3.5) && !PubNeon.bardo(21));
+          World.state.hora = 4; for (let i = 0; i < 8; i++) PubNeon.update(0.25);
+          this.ok('pub: às 4h o DJ vai embora', !PubNeon.dj || PubNeon.dj.fase === 'saindo');
+          World.state.hora = h0t; Settings.v.diaMin = dm; World.loadZone('aurora', null);
+          this.ok('pub: fora do pub, a música para', !Batida.tocando);
+        }
         this.ok('diário: recompensas em cartões', !Aventuras.diarioLista('disponiveis')[0] || Aventuras.cartoesRec(Aventuras.diarioLista('disponiveis')[0]).length >= 1);
         g.state = 'playing';
       }

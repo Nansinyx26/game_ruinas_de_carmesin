@@ -544,11 +544,13 @@ class Player extends Entity {
     if (d.slamRing && typeof Poderes !== 'undefined' && a.t < tW) {
       const off = d.shape.offset || 0, cx = this.x + Math.cos(a.dir) * off, cy = this.y + Math.sin(a.dir) * off;
       if (a.poderS !== a.serial) {
-        a.poderS = a.serial; a.poder = null;
-        const tema = Poderes.temaDe(this);
-        if (tema) a.poder = Poderes.cristais(cx, cy, d.shape.radius || 120, { tema, carga: Math.max(0.12, tW - a.t), dono: a, evitar: [-Math.cos(a.dir) * off, -Math.sin(a.dir) * off] });
+        a.poderS = a.serial; a.poder = null; a.poderArc = false;
+        const tema = Poderes.temaDe(this), arc = typeof PoderesClasses !== 'undefined' && PoderesClasses.temaDe(this) === 'arcano';
+        if (arc) { a.poder = PoderesClasses.arcano(cx, cy, d.shape.radius || 120, { carga: Math.max(0.12, tW - a.t), dono: a }); a.poderArc = true; }
+        else if (tema) a.poder = Poderes.cristais(cx, cy, d.shape.radius || 120, { tema, carga: Math.max(0.12, tW - a.t), dono: a, evitar: [-Math.cos(a.dir) * off, -Math.sin(a.dir) * off] });
         if (a.poder) game.audio.play('cristaisCarga', 0.8);
-      } else if (a.poder) Poderes.mover(a.poder, cx, cy);
+      } else if (a.poder && !a.poderArc) Poderes.mover(a.poder, cx, cy);
+      else if (a.poder) { a.poder.x = cx; a.poder.y = cy; }
     }
 
     // Pesado segurado: ao fim da preparação, entra no estado de carga
@@ -774,6 +776,16 @@ class Player extends Entity {
     const off = d && d.shape && d.shape.offset ? d.shape.offset : 46, x = this.x + Math.cos(dir) * off, y = this.y + Math.sin(dir) * off;
     // Classe com manifestação própria (Guerreiro: erupção de cristais rubros, js/heroes/poderes.js): no
     // lugar dos anéis e dos raios azuis de sempre
+    // Arcano (Kael, Guardião Arcano): os círculos de runas e os fragmentos implodem; a onda de runas se expande
+    if (typeof PoderesClasses !== 'undefined' && PoderesClasses.temaDe(this) === 'arcano') {
+      const E = a && a.poderArc && a.poderS === a.serial && PoderesClasses.ativos.includes(a.poder) ? a.poder : PoderesClasses.arcano(x, y, (d && d.shape && d.shape.radius) || 120);
+      PoderesClasses.manifestarArcano(E, x, y);
+      if (a) { a.poder = null; a.poderArc = false; }
+      game.particles.debris(x, y, 10); game.camera.shake(0.35);
+      game.audio.play('stomp'); game.audio.play('zap', 0.8);
+      game.room.addScorch(x, y, 50);
+      return;
+    }
     const tema = typeof Poderes !== 'undefined' ? Poderes.temaDe(this) : null;
     if (tema) {
       const I = a && a.poder && a.poderS === a.serial && Poderes.ativos.includes(a.poder) ? a.poder : Poderes.cristais(x, y, (d && d.shape && d.shape.radius) || 120, { tema, evitar: [-Math.cos(dir) * off, -Math.sin(dir) * off] });

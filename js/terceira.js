@@ -429,7 +429,8 @@ const ThirdView = {
       n.spr = place(g.queue3(n.key, n, g.opts3(n, 0)), n);
     }
     if (g.world && World.zone) Clima.fila3P(Q);
-    if (typeof Poderes !== 'undefined') Poderes.fila3P(Q);   // manifestações das habilidades: cristais, anéis e rachaduras (js/heroes/poderes.js)
+    if (typeof Poderes !== 'undefined') Poderes.fila3P(Q);
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.fila3P(Q);   // manifestações das habilidades: cristais, anéis e rachaduras (js/heroes/poderes.js)
     if (typeof Agua !== 'undefined') Agua.fila3P(Q);   // rios e lagos (js/mundo/agua.js)   // poças, neve no chão e fogueiras (js/mundo/clima.js)
     let cells = 0;
     for (let i = 0; i < g.pickups.count; i++) {
@@ -447,7 +448,7 @@ const ThirdView = {
       if (typeof Fogo !== 'undefined') {
         const V = Fogo.VENTO, ag = typeof Agua !== 'undefined' && Agua.estado3P ? Agua.estado3P() : [0, 0, 0, 0];
         const molhado = g.world && typeof Clima !== 'undefined' ? Math.min(1, Clima.chuva() * 1.2 + (Clima.chao ? Clima.chao().agua || 0 : 0) * 0.6) : 0;
-        R3D.quadro3P(Fogo.luzes3P(typeof Poderes !== 'undefined' ? Poderes.luzes3P([]) : [], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
+        R3D.quadro3P(Fogo.luzes3P(typeof Poderes !== 'undefined' ? (typeof PoderesClasses !== 'undefined' ? PoderesClasses.luzes3P(Poderes.luzes3P(typeof PubNeon !== 'undefined' ? PubNeon.luzes3P([]) : [])) : Poderes.luzes3P([])) : [], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
       }
       try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
     }

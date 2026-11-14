@@ -123,14 +123,15 @@ const Montarias = {
   // ------------------------------------------------------------------ estrebaria (serviço do Tobias)
   servico(npc, s, o, volta) {
     if (s !== 'montarias') return false;
-    o.push({ id: 'montarias', tag: '$', txt: 'Ver as montarias', fn: () => this.catalogo(volta) });
+    o.push({ id: 'loja', tag: '$', txt: '🐎 Abrir a loja: PETS & MONTARIAS', fn: () => { Dialogo.fechar(); LojaAnimais.abrir('estrebaria', 'montarias'); } });
+    o.push({ id: 'montarias', tag: '$', txt: 'Ver as montarias (conversa)', fn: () => this.catalogo(volta) });
     const S = this.S();
     if (S.lista.length) o.push({ id: 'minhas', tag: '✚', txt: `Suas montarias (${S.lista.length})`, fn: () => this.minhas(volta) });
     return true;
   },
   catalogo(volta) {
     const lv = game.activeProgress().level, cel = game.stats.soulsBank, S = this.S();
-    const o = Object.keys(MONTARIAS_TIPOS).map((t) => {
+    const o = Object.keys(MONTARIAS_TIPOS).filter((t) => MONTARIAS_TIPOS[t].loja !== 'viveiro').map((t) => {   // (as aves são da Cora)
       const T = MONTARIAS_TIPOS[t];
       const off = S.lista.includes(t) ? 'já é seu' : lv < T.nivel ? `nível ${T.nivel}` : cel < T.preco ? `faltam ${T.preco - cel} células` : null;
       return { id: 'm_' + t, tag: '$', txt: `${T.nome} (${T.raridade}) — ${T.preco} células`, off, fn: () => this.confirmar(t, volta) };

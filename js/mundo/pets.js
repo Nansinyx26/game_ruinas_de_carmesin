@@ -255,7 +255,8 @@ const Pets = {
   // Serviço da tratadora (Povo.servico → Bairro.servico): catálogo, compra, guardar e retirar
   servico(npc, s, o, volta) {
     if (s !== 'animais') return false;
-    o.push({ id: 'catalogo', tag: '$', txt: 'Ver os animais à venda', fn: () => this.catalogo(npc, volta) });
+    o.push({ id: 'loja', tag: '$', txt: '🐾 Abrir a loja: PETS & AVES DE MONTARIA', fn: () => { Dialogo.fechar(); LojaAnimais.abrir('viveiro', 'pets'); } });
+    o.push({ id: 'catalogo', tag: '$', txt: 'Ver os animais à venda (conversa)', fn: () => this.catalogo(npc, volta) });
     o.push({ id: 'coleiras', tag: '$', txt: 'Coleiras e acessórios', fn: () => this.lojaColeiras(npc, volta) });
     const S = this.S();
     if (S.lista.length) o.push({ id: 'meus', tag: '✚', txt: `Seus animais (${S.lista.length})`, fn: () => this.meus(npc, volta) });

@@ -185,9 +185,12 @@ class Game {
     this.fpsAcc += raw; this.fpsFrames++;
     if (this.fpsAcc >= 0.5) { this.fps = Math.round(this.fpsFrames / this.fpsAcc); this.fpsAcc = 0; this.fpsFrames = 0; }
     const dt = Math.min(raw, MAX_DT);
+    const GF = typeof Graficos !== 'undefined' ? Graficos : null;   // medidor de desempenho e benchmark (js/graficos.js)
+    if (GF) GF.ini();
     try {
       this.update(dt);
       this.render(dt);
+      if (GF) { GF.fim(raw); GF.quadro(raw, this); }
     } catch (e) {
       // Um erro inesperado nunca deve congelar o jogo; registra uma única vez
       const key = String(e && e.message);
@@ -213,6 +216,7 @@ class Game {
       if (this.state === 'playing') this.hud.message(R3D.enabled ? 'GRÁFICOS 3D' : 'GRÁFICOS 2D', '', 1.2, true);
     }
     if (inp.pressed.debug) this.debug = !this.debug;
+    if (inp.pressed.medidor) this.medidor = !this.medidor;   // F4: medidor de desempenho (js/graficos.js)
     // fadeTo com a tela já escura também chama o retorno (ex.: sem evoluções para escolher
     // num novo ciclo, a troca de setor pedia outro escurecimento e a tela ficava preta)
     if (this.dissolve && (this.dissolve.t -= dt) <= 0) this.dissolve = null;
@@ -417,6 +421,7 @@ class Game {
     this.particles.update(sdt);
     if (typeof Fogo !== 'undefined') Fogo.update(sdt);   // fogo, fumaça e explosões (js/fogo.js)
     if (typeof Poderes !== 'undefined') Poderes.update(sdt);   // manifestações das habilidades (js/heroes/poderes.js)
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.update(sdt);   // Arqueira, Sacerdote e Arcano (js/heroes/poderes_classes.js)
     this.texts.update(sdt);
     this.trails.update(sdt);
     this.arcs.update(sdt);
@@ -1273,6 +1278,7 @@ class Game {
       else if (this.state === 'victory') this.screens.drawEnd(ctx, true, this.realTime);
     }
     if (this.debug) this.drawDebugInfo(ctx);
+    if (typeof Graficos !== 'undefined') Graficos.desenhar(ctx, this);
     if (this.dissolve) { ctx.save(); ctx.globalAlpha = clamp(this.dissolve.t / this.dissolve.T, 0, 1); ctx.drawImage(this.dissolve.canvas, 0, 0, VIEW_W, VIEW_H); ctx.restore(); }
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade.toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     DevTools.draw(ctx);
@@ -1457,16 +1463,17 @@ class Game {
     room.drawDoor(ctx);
     if (typeof Agua !== 'undefined') Agua.desenhar(ctx);   // rios e lagos por cima do chão
     if (this.world) Clima.desenharChao(ctx);   // poças, neve acumulada, pegadas e respingos (js/mundo/clima.js)
+    for (const n of this.npcs) if (n.chao) { n.draw(ctx); n.drawEmissive(ctx); }   // objetos rentes ao chão (a pista de LED do pub): debaixo de todos
     if (typeof Poderes !== 'undefined') Poderes.desenharChao(ctx);   // anéis e rachaduras das habilidades, rente ao chão
     p.drawShadow(ctx);
     for (const e of this.enemies) if (e.state !== 'spawn') e.drawShadow(ctx);
-    for (const n of this.npcs) if (!n.holo) n.drawShadow(ctx);
+    for (const n of this.npcs) if (!n.holo && !n.chao) n.drawShadow(ctx);
     this.projectiles.drawShadows(ctx);
     const list = this.drawList;
     list.length = 0;
     list.push(p);
     for (const e of this.enemies) list.push(e);
-    for (const n of this.npcs) list.push(n);
+    for (const n of this.npcs) if (!n.chao) list.push(n);
     for (const pl of room.pillars) if (!pl.cenario) list.push(pl);   // (cenario: só o colisor de um objeto do Blender, js/mundo/cenario.js)
     if (typeof Poderes !== 'undefined') Poderes.listaIso(list);   // cristais das habilidades, na ordem de profundidade
     list.sort((a, b) => (a.x + a.y) - (b.x + b.y));
@@ -1486,6 +1493,7 @@ class Game {
     room.addLights(L, this.realTime);
     if (this.world) Clima.luzes(L);   // fogueiras
     if (typeof Fogo !== 'undefined') Fogo.luzes(L);   // a luz que tremula de cada foco de fogo e das explosões
+    if (typeof PubNeon !== 'undefined') PubNeon.luzes(L);   // a pista e o palco do pub, na batida
     for (const n of this.npcs) if (n.lightRgb) L.add(isoX(n.x, n.y), isoY(n.x, n.y) - 30, n.holo ? 150 : 95, 0.5);
     this.projectiles.addLights(L);
     HeroObjects.addLights(L);
@@ -1525,11 +1533,12 @@ class Game {
     this.projectiles.draw(ctx);
     HeroObjects.draw(ctx);
     this.particles.drawEmissive(ctx);
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.desenharIso(ctx);
     this.trails.draw(ctx);
     p.drawEmissive(ctx);
     if (this.use3D) {
       for (const e of this.enemies) e.drawEmissive(ctx);
-      for (const n of this.npcs) n.drawEmissive(ctx);
+      for (const n of this.npcs) if (!n.chao) n.drawEmissive(ctx);
     }
     this.drawEclipseFx(ctx);
     this.arcs.draw(ctx, this.realTime);

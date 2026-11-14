@@ -1318,6 +1318,49 @@ function buildTempestadeNula(g, k, part, lod) {
     P.hp += 0.05 * g2; P.hyw += 0.08 * g3; P.ty += 0.06 * g1; P.tp += 0.02;
     return P;
   }
+  // Plateia da taverna e do pub (js/mundo/taverna_viva.js): PALMAS no ritmo (cada um no seu tempo) e
+  // DANÇA com estilos diferentes (e.danca: 0 lenta, 1 energética, 2 braços para cima, 3 passinhos e cabeça),
+  // com a fase própria de cada pessoa (e.fase) para ninguém fazer o mesmo movimento ao mesmo tempo
+  function palmasPose(P, e) {
+    rest(P, e);
+    const t = num(e.animTime) * num(e.ritmo, 1) + num(e.fase), w = t * Math.PI * 2 * 1.6, b = Math.abs(Math.sin(w));
+    set3(P.hL, 7.2, -1.4 - 2.6 * b, 30.5 + 1.2 * Math.sin(w * 0.5)); set3(P.hR, 7.2, 1.4 + 2.6 * b, 30.5 + 1.2 * Math.sin(w * 0.5));
+    P.hp += 0.05 * Math.sin(t * 2.1); P.tp += 0.03 + 0.02 * b; P.hz += 0.25 * b;
+    return P;
+  }
+  function dancarPose(P, e) {
+    rest(P, e);
+    const st = num(e.danca) % 4, rit = num(e.ritmo, 1), t = num(e.animTime) * rit + num(e.fase), w = t * Math.PI * 2;
+    const s1 = Math.sin(w), s2 = Math.sin(w * 2), c1 = Math.cos(w);
+    if (st === 0) {   // lenta: balanço de lado, braços soltos acompanhando
+      P.hy += 1.6 * s1; P.tr += 0.07 * s1; P.ty += 0.12 * Math.sin(w * 0.5);
+      set3(P.hL, 2 + 2 * c1, -8.5, 22 + 3 * Math.max(0, s1)); set3(P.hR, 2 - 2 * c1, 8.5, 22 + 3 * Math.max(0, -s1));
+    } else if (st === 1) {   // energética: pulinhos e punhos no ar alternando
+      P.hz += 1.6 * Math.abs(s2); P.tp += 0.06 * Math.abs(s2); P.ty += 0.18 * s1;
+      set3(P.hL, 5, -6, 31 + 8 * Math.max(0, s1)); set3(P.hR, 5, 6, 31 + 8 * Math.max(0, -s1));
+    } else if (st === 2) {   // braços para cima, ondulando
+      P.hy += 1.0 * s1; P.tr += 0.05 * s1; P.hp -= 0.08;
+      set3(P.hL, 1 + 1.5 * c1, -6.5 + 1.5 * s1, 44 + 2 * s2); set3(P.hR, 1 - 1.5 * c1, 6.5 + 1.5 * s1, 44 - 2 * s2);
+    } else {   // passinhos e cabeça no ritmo
+      P.hy += 1.4 * s1; P.hp += 0.12 * Math.max(0, s2); P.ty += 0.08 * s1;
+      set3(P.fL, 1.6 * s1, -4.4, 1.2 * Math.max(0, s1)); set3(P.fR, -1.6 * s1, 4.6, 1.2 * Math.max(0, -s1));
+      set3(P.hL, 6, -6.5, 26 + 2 * s2); set3(P.hR, 6, 6.5, 26 - 2 * s2);
+    }
+    return P;
+  }
+  // DJ do pub (js/mundo/pub_neon.js): atrás da cabine, a mão direita no toca-discos (o scratch no compasso),
+  // a esquerda no fone ou no mixer, a cabeça marcando a batida; de vez em quando a mão sobe para a pista
+  function djPose(P, e) {
+    rest(P, e);
+    const bpm = num(e.ritmo, 124) / 60, t = num(e.animTime), b = t * bpm, w = b * Math.PI * 2, bate = Math.pow(Math.abs(Math.sin(w * 0.5)), 3);
+    const frase = Math.floor(b / 16) % 4, alto = frase === 3 && (b % 16) > 8;
+    P.hp += 0.14 * bate - 0.04; P.tp += 0.12 + 0.03 * bate; P.hz -= 0.5 * bate; P.hy += 0.5 * Math.sin(w * 0.25);
+    set3(P.hR, 10.5 + 1.6 * Math.sin(w), 6.5 + 0.8 * Math.sin(w * 2), 26.5 + 0.4 * Math.sin(w));   // scratch
+    if (alto) set3(P.hL, 4 + 1.5 * Math.sin(w), -5.5, 46 + 2 * bate);   // a mão para a pista
+    else if (frase === 1) set3(P.hL, 1.2, -4.2, 39.5);   // segurando o fone na orelha
+    else set3(P.hL, 9.5 + 0.8 * Math.sin(w * 0.5 + 1), -2.5, 26.8 + 0.5 * bate);   // no mixer
+    return P;
+  }
   function guardaPose(P, e) {
     rest(P, e);
     const t = num(e.animTime);
@@ -1505,6 +1548,9 @@ function buildTempestadeNula(g, k, part, lod) {
       if (st === 'npc_sentar') P = sentarPose(POSE, e, m.props || KAEL_PROPS);
       else if (st === 'montado') P = montarPose(POSE, e, m.props || KAEL_PROPS);
       else if (st === 'npc_falar') P = falarPose(POSE, e);
+      else if (st === 'npc_palmas') P = palmasPose(POSE, e);
+      else if (st === 'npc_dancar') P = dancarPose(POSE, e);
+      else if (st === 'npc_dj') P = djPose(POSE, e);
       else if (st === 'npc_guarda') P = guardaPose(POSE, e);
       else if (st === 'npc_tocar') P = tocarPose(POSE, e);
       else if (st === 'zb_andar') P = zumbiPose(POSE, e);

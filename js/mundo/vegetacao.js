@@ -65,7 +65,7 @@ const Vegetacao = (() => {
   // Exclusões fixas da zona: construções e colisores, passagens e pontos de interação, trilhas
   function exclusoes(R) {
     const g = typeof game !== 'undefined' ? game : null, E = [];
-    for (const p of R.pillars || []) if (!p.deco) E.push({ x: p.x, y: p.y, r: (p.r || 20) + 6 });
+    for (const p of R.pillars || []) if (!p.deco) E.push({ x: p.x, y: p.y, r: (p.r || 20) + 6, t: !p.estrutura && !p.cenario });   // (t: os obstáculos que a zona sorteia a cada visita)
     if (typeof Estruturas !== 'undefined' && Estruturas.atual) {
       const A = Estruturas.atual();
       if (A && A.room === R) for (const L of A.lug) { const I = Estruturas.IDX[L.id]; if (I && I.tipo !== 'planta') E.push({ x: L.x, y: L.y, r: I.r * L.esc * (I.tipo === 'arvore' ? 0.5 : 1) + 10 }); }
