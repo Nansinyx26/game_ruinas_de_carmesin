@@ -3451,6 +3451,32 @@ const EclipseTests = {
           this.ok('taverna: caneca e prato são os GLB dos utensílios (presos à mão e à mesa)', ['caneca_cerveja', 'prato_sopa', 'prato_vazio', 'copo_neon'].every((id) => WEAPON3D[id]) && NPC3D.freg_a.props.some((q) => q.id === 'caneca_cerveja' && q.no === 'handR'));
           World.state.hora = h0t; Settings.v.diaMin = dm; World.loadZone('aurora', null);
         }
+        // pub do Mercado Neon (js/mundo/pub_neon.js): a porta no Bar Neon, a mobília do Blender, a Cyber Night com o DJ
+        if (typeof PubNeon !== 'undefined' && NpcModelo.ok()) {
+          const h0t = World.state.hora, dm = Settings.v.diaMin; Settings.v.diaMin = 1e6;
+          World.state.hora = 15; World.loadZone('metro_mercado', null);
+          const porta = PubNeon.porta, ch = BAIRRO_INTERIORES.metro_pub.saida.chegada;
+          this.ok('pub: a porta do Pulso Neon fica no Mercado Neon, num lugar livre, e a saída do pub volta para ela', !!porta && g.npcs.includes(porta) && g.room.canStand(porta.x, porta.y, 10) && Math.abs(ch[0] * g.room.w - porta.x) < 2, porta && `${porta.x | 0},${porta.y | 0}`);
+          porta.talk(); const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;   // (a passagem escurece a tela: aqui, na hora)
+          const tarde = PubNeon.estado();
+          this.ok('pub: entrar leva ao interior (zona segura, tema neon) com a saída para o mercado', World.zone.id === 'metro_pub' && g.room.theme === THEMES.interior_neon && g.npcs.some((n) => n.kind === 'gate' && n.data && n.data.to === 'metro_mercado'));
+          this.ok('pub: de tarde, sem Cyber Night: sem DJ, casa vazia e som de lounge', !tarde.cyberNight && !tarde.dj && tarde.fregueses <= 4, JSON.stringify(tarde));
+          const ids = Bairro.objetos.map((o) => o.cenId), pista = Bairro.objetos.find((o) => o.cenId === 'pista_led');
+          this.ok('pub: a mobília é a do Blender (balcão, garrafas, banquetas, mesas altas, sofás, cabine do DJ, som, holograma e pista)', !Bairro.pronto() || ['balcao_neon', 'prateleira_bar', 'banqueta_neon', 'mesa_alta_neon', 'sofa_neon', 'cabine_dj', 'caixa_som', 'coluna_holo', 'pista_led'].every((id) => ids.includes(id)), ids.join(','));
+          this.ok('pub: a pista de LED é rente ao chão (desenhada com o chão, sem colisor: dá para dançar em cima)', !Bairro.pronto() || (!!pista && pista.chao && !g.room.pillars.some((q) => q.cenId === 'pista_led') && g.room.canStand(pista.x, pista.y, 12)));
+          this.ok('pub: a Kira atende no balcão (drinque)', g.npcs.some((n) => n.P && n.P.id === 'pub_kira' && (n.P.servicos || []).includes('bar_neon')));
+          World.state.hora = 23; World.loadZone('metro_pub', null);
+          for (let i = 0; i < 40; i++) { PubNeon.update(0.25); for (const f of PubNeon.ativos) f.update(0.25); if (PubNeon.dj) PubNeon.dj.update(0.25); }
+          const noite = PubNeon.estado(), Lp = PubNeon.ativos.filter((f) => f.lugar), chs = new Set(Lp.map((f) => f.lugar.i));
+          this.ok('pub: Cyber Night (23h): DJ VOLTA mixando na cabine, casa cheia e música eletrônica', noite.cyberNight && noite.dj === 'mixando' && PubNeon.dj.state === 'dj' && noite.fregueses > tarde.fregueses + 4 && noite.fregueses <= PubNeon.LIMITE, JSON.stringify(noite));
+          this.ok('pub: a pista dança no ritmo (dança e palmas) e ninguém divide lugar', noite.dancando + noite.palmas > 0 && chs.size === Lp.length, JSON.stringify(noite));
+          this.ok('pub: o copo neon é o GLB (na mão e na mesa); a taverna continua com caneca', NPC3D.pub_a.props.every((q) => q.id === 'copo_neon') && NPC3D.freg_a.props.some((q) => q.id === 'caneca_cerveja'));
+          this.ok('pub: a Cyber Night passa da meia-noite e acaba às 3h', PubNeon.bardo(1) && PubNeon.bardo(22.5) && !PubNeon.bardo(3.5) && !PubNeon.bardo(21));
+          World.state.hora = 4; for (let i = 0; i < 8; i++) PubNeon.update(0.25);
+          this.ok('pub: às 4h o DJ vai embora', !PubNeon.dj || PubNeon.dj.fase === 'saindo');
+          World.state.hora = h0t; Settings.v.diaMin = dm; World.loadZone('aurora', null);
+          this.ok('pub: fora do pub, a música para', !Batida.tocando);
+        }
         this.ok('diário: recompensas em cartões', !Aventuras.diarioLista('disponiveis')[0] || Aventuras.cartoesRec(Aventuras.diarioLista('disponiveis')[0]).length >= 1);
         g.state = 'playing';
       }

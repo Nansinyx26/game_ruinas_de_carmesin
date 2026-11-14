@@ -461,6 +461,7 @@ const World = {
     if (typeof Vegetacao !== 'undefined') Vegetacao.aoCarregar(z);   // grama 3D, flores e juncos por setor, com a semente da zona (js/mundo/vegetacao.js)   // a grade do relevo com os ajustes do lugar: água no baixo, patamar sob as construções
     if (typeof Agua !== 'undefined') Agua.depois();   // quem nasceu dentro d'água vai para a margem   // estruturas enviadas e geradas no Meshy (js/mundo/estruturas.js)
     Bairro.aoCarregar(z);       // Bairro da Muralha, interiores e a passagem da praça (js/mundo/bairro.js)
+    if (typeof PubNeon !== 'undefined') PubNeon.aoCarregar(z);   // o pub do Mercado Neon: a porta, os fregueses, o DJ e a música (js/mundo/pub_neon.js)
     Aventuras.aoCarregar(z);    // pistas, desaparecidos, escoltas e chefes das missões ativas (js/mundo/aventuras.js)
     Eventos.montar();           // evento dinâmico desta zona, se houver (js/mundo/eventos.js)
     this.save();
@@ -555,6 +556,7 @@ const World = {
     if (typeof Guardiao !== 'undefined') Guardiao.update(dt);   // bênçãos do Guardião: regeneração, avisos e fim pelo relógio de verdade
     if (typeof Pets !== 'undefined') Pets.update(dt);   // fome e humor do animal de companhia
     if (typeof TavernaViva !== 'undefined') TavernaViva.update(dt);   // a casa enche e esvazia com a hora e o Bardo
+    if (typeof PubNeon !== 'undefined') PubNeon.update(dt);   // o pub: Cyber Night, o DJ e a batida
     this.saveT += dt;
     if (this.saveT > 20) { this.saveT = 0; this.save(); }
   },

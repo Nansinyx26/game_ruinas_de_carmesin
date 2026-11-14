@@ -198,6 +198,7 @@ const Oficios = {
     if (p.buffs.pele > 0) B.push(['shield', p.buffs.pele, WORLD_CONSUMIVEIS.pele.rgb, 'Pele de Pedra']);
     if (p.buffs.cha > 0) B.push(['flame', p.buffs.cha, WORLD_CONSUMIVEIS.cha.rgb, 'Chá Quente']);
     if (p.buffs.refresco > 0) B.push(['bolt', p.buffs.refresco, WORLD_CONSUMIVEIS.refresco.rgb, 'Refresco']);
+    if (p.buffs.neon > 0) B.push(['bolt', p.buffs.neon, '90,230,255', 'Pulso Azul']);   // o drinque do pub (js/mundo/pub_neon.js)
   },
 
   // ------------------------------------------------------------ serviços

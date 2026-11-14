@@ -53,15 +53,21 @@ const TAVERNA_RUMORES = [
   'Falam de um cofre nas Ruínas Engolidas, atrás das raízes. Só os corajosos acham.',
   'O Guardião do Mundo abençoa quem ajuda a cidade. Já vi gente lutando com o dobro da força.',
 ];
+// (o pub do Mercado Neon, js/mundo/pub_neon.js, é a mesma casa com outra configuração: Object.create(TavernaViva))
 const TavernaViva = {
   ZONA: 'aurora_taverna', LIMITE: 14, BARDO: [20, 23],
+  TIPOS: TAVERNA_FREGUESES, PEDIDOS: TAVERNA_PEDIDOS, PAPO: TAVERNA_PAPO, RUMORES: TAVERNA_RUMORES,
+  VIVAS: ['Isso, Cosme!', 'Mais uma!', 'Bravo!', 'Toca a do Javali!'], PAPEL: 'Freguês da taverna',
+  OLA: ['Hm? Senta aí, a casa é de todos.', 'Se veio pela música, chegou cedo.', 'Paga uma rodada e eu te conto uma coisa.'],
+  SHOW: ['Quem é o bardo?', 'O Cosme. Canta do Javali Dourado e das ruínas. Das oito às onze a casa enche.'],
+  SENTAR: 0.8, SENTAR_SHOW: 0.8, SENTAR_ENTRAR: 0.5, COMIDA: true,   // (chance de querer sentar: fora do show, no show, entrando no show; e se a casa serve comida)
   ativos: [], reservas: new Map(), _t: 0, _prox: 0, _reg: false,
   // ------------------------------------------------------------ registro dos corpos (npc3d.js)
   registrar() {
     if (this._reg || typeof NPC3D === 'undefined') return;
     this._reg = true;
     const U = TAVERNA_UTENSILIOS;
-    for (const F of TAVERNA_FREGUESES) {
+    for (const F of this.TIPOS) {
       NPC3D[F.id] = { ap: F.ap, roupa: F.roupa, props: [
         Object.assign({}, U.maoCaneca, { se: (c) => c.temCaneca && (c.npcAcao === 'beber' || c.state === 'npc_falar' || c.state === 'npc_palmas' && false) }),
         Object.assign({}, U.mesaCaneca, { se: (c) => c.temCaneca && c.state === 'npc_sentar' && c.npcAcao !== 'beber' }),
@@ -118,17 +124,18 @@ const TavernaViva = {
     this._prox = rand(3, 6);
   },
   criar(R, pelaPorta) {
-    const usados = new Set(this.ativos.map((f) => f.T.id)), tipos = TAVERNA_FREGUESES.filter((F) => !usados.has(F.id) || this.ativos.length >= TAVERNA_FREGUESES.length);
-    const T = pick(tipos.length ? tipos : TAVERNA_FREGUESES);
+    const usados = new Set(this.ativos.map((f) => f.T.id)), tipos = this.TIPOS.filter((F) => !usados.has(F.id) || this.ativos.length >= this.TIPOS.length);
+    const T = pick(tipos.length ? tipos : this.TIPOS);
     const porta = { x: R.w * 0.5, y: R.h - 70 };
-    const f = new Fregues(T, porta.x, porta.y);
+    const f = new Fregues(T, porta.x, porta.y, this);
     f.uid = (this._uid = (this._uid || 0) + 1);
     if (!f.key) return null;   // sem as peças da criação: não cria
     if (!pelaPorta) {
-      const s = this.escolher(R, f, Math.random() < 0.8);
+      const s = this.escolher(R, f, Math.random() < (this.bardo() ? this.SENTAR_SHOW : this.SENTAR));
       if (!s) return null;
       f.x = s.x; f.y = s.y; f.lugar = s; f.facing = s.giro; f.fase = s.tipo === 'assento' ? 'sentado' : 'de_pe';
-      if (s.tipo === 'assento') { f.temCaneca = Math.random() < 0.7; f.temPrato = !f.temCaneca && Math.random() < 0.5; f.refeicaoK = rand(0.3, 1); f.timer = rand(4, 20); }
+      f.semMesa = !!s.semMesa;
+      if (s.tipo === 'assento') { f.temCaneca = Math.random() < 0.7 || !this.COMIDA; f.temPrato = !f.temCaneca && Math.random() < 0.5; f.refeicaoK = rand(0.3, 1); f.timer = rand(4, 20); }
     } else f.fase = 'entrar';
     game.npcs.push(f); this.ativos.push(f);
     return f;
@@ -156,6 +163,8 @@ const TavernaViva = {
     }
     for (let i = this.ativos.length - 1; i >= 0; i--) if (this.ativos[i].sumiu) { const f = this.ativos[i]; this.soltar(f); game.npcs.splice(game.npcs.indexOf(f), 1); this.ativos.splice(i, 1); }
   },
+  // de pé perto do palco no show: palmas ou dança (cada um no seu tempo)
+  plateia(f) { const c = (f.animTime * 0.11 + f.fase0) % 1; return c < (f.danca === 0 ? 0.3 : 0.55) ? 'clap' : 'dance'; },
   estado() {
     const c = {};
     for (const f of this.ativos) c[f.fase] = (c[f.fase] || 0) + 1;
@@ -166,19 +175,17 @@ const TavernaViva = {
 
 // O freguês: um morador de corpo inteiro com as decisões da taverna
 class Fregues extends Morador {
-  constructor(T, x, y) {
-    const P = { id: T.id, nome: T.nome.toUpperCase(), papel: 'Freguês da taverna',
-      ola: ['Hm? Senta aí, a casa é de todos.', 'Se veio pela música, chegou cedo.', 'Paga uma rodada e eu te conto uma coisa.'],
-      temas: [['O que se fala por aqui?', pick(TAVERNA_RUMORES)], ['Quem é o bardo?', 'O Cosme. Canta do Javali Dourado e das ruínas. Das oito às onze a casa enche.']] };
+  constructor(T, x, y, casa = TavernaViva) {
+    const P = { id: T.id, nome: T.nome.toUpperCase(), papel: casa.PAPEL, ola: casa.OLA, temas: [['O que se fala por aqui?', pick(casa.RUMORES)], casa.SHOW] };
     super({ model: 'civil', name: P.nome, lines: ['…'], persona: P }, x, y);
-    this.T = T; this.fase = 'entrar'; this.timer = 0; this.lugar = null; this.alvoXY = null;
+    this.T = T; this.casa = casa; this.fase = 'entrar'; this.timer = 0; this.lugar = null; this.alvoXY = null;
     this.temCaneca = false; this.temPrato = false; this.refeicaoK = 1; this.goles = 0;
     this.danca = Math.floor(Math.random() * 4); this.ritmo = rand(0.88, 1.15); this.fase0 = Math.random() * 6;   // (estilo, ritmo e fase da dança: de cada um)
     this.verb = 'Conversar'; this.radius = 12;
   }
   ir(f) {
     const R = game.room;
-    if (f === 'saindo') { TavernaViva.soltar(this); this.lugar = null; this.alvoXY = { x: R.w * 0.5, y: R.h - 40 }; this.temPrato = false; }
+    if (f === 'saindo') { this.casa.soltar(this); this.lugar = null; this.alvoXY = { x: R.w * 0.5, y: R.h - 40 }; this.temPrato = false; }
     this.fase = f; this.timer = 0;
   }
   falar(txt, d = 2.6) { this.balao(txt, txt, d); }
@@ -199,13 +206,13 @@ class Fregues extends Morador {
     if (this.bolha) this.bolha.t -= dt;
     if (this.respT > 0 && (this.respT -= dt) <= 0) this.falar(this.resp, 3.2);
     this.verso = null;
-    const R = game.room, TV = TavernaViva;
+    const R = game.room, TV = this.casa;
     this.assento = this.lugar && this.lugar.assento;
     switch (this.fase) {
       case 'entrar': {
-        if (!this.lugar) { this.lugar = TV.escolher(R, this, !TV.bardo() || Math.random() < 0.5); if (!this.lugar) { this.ir('saindo'); break; } }
+        if (!this.lugar) { this.lugar = TV.escolher(R, this, !TV.bardo() || Math.random() < TV.SENTAR_ENTRAR); if (!this.lugar) { this.ir('saindo'); break; } }
         this.setState('walk');
-        if (this.andar(dt, this.lugar)) { this.x = this.lugar.x; this.y = this.lugar.y; this.fase = this.lugar.tipo === 'assento' ? 'sentado' : 'de_pe'; this.timer = 0; if (this.fase === 'sentado') this.pedir(); }
+        if (this.andar(dt, this.lugar)) { this.x = this.lugar.x; this.y = this.lugar.y; this.semMesa = !!this.lugar.semMesa; this.fase = this.lugar.tipo === 'assento' ? 'sentado' : 'de_pe'; this.timer = 0; if (this.fase === 'sentado') this.pedir(); }
         break;
       }
       case 'sentado': {
@@ -231,10 +238,10 @@ class Fregues extends Morador {
         // de pé: no balcão bebe e conversa; perto do palco, no Horário do Bardo, bate palmas ou dança
         if (this.lugar) this.facing = angleLerp(this.facing, this.lugar.giro, 0.1);
         let st = 'standDrink';
-        if (this.lugar && this.lugar.tipo === 'palco' && TV.bardo()) { const c = (this.animTime * 0.11 + this.fase0) % 1; st = c < (this.danca === 0 ? 0.3 : 0.55) ? 'clap' : 'dance'; }
+        if (this.lugar && this.lugar.tipo === 'palco' && TV.bardo()) st = TV.plateia(this);
         else if (this.lugar && this.lugar.tipo === 'balcao' && !this.temCaneca && this.timer > 3) { this.temCaneca = true; }
         this.setState(st);
-        if (st === 'clap' && Math.random() < dt / 14) this.falar(pick(['Isso, Cosme!', 'Mais uma!', 'Bravo!', 'Toca a do Javali!']));
+        if ((st === 'clap' || st === 'dance' && TV.VIVAS_DANCA) && Math.random() < dt / 14) this.falar(pick(TV.VIVAS));
         if (st === 'standDrink' && Math.random() < dt / 12) this.papo();
         // sem assento, quando abre um, senta
         if (!TV.bardo() && this.timer > 12 && Math.random() < dt / 6) { const s = TV.assentos(R).find((q) => TV.livre(R, q)); if (s) { TV.soltar(this); TV.reservar(s, this); this.lugar = s; this.fase = 'entrar'; } }
@@ -249,15 +256,16 @@ class Fregues extends Morador {
     }
   }
   pedir() {
-    this.pediu = this.temCaneca || Math.random() < 0.65 ? 'cerveja' : 'sopa';
-    this.falar(pick(TAVERNA_PEDIDOS[this.pediu]));
+    const P = this.casa.PEDIDOS;
+    this.pediu = this.temCaneca || !P.sopa || Math.random() < 0.65 ? 'cerveja' : 'sopa';
+    this.falar(pick(P[this.pediu]));
     this.espera = rand(4, 8);
     if (this.pediu === 'cerveja') this.temCaneca = false;
   }
   papo() {
-    const outro = TavernaViva.ativos.find((o) => o !== this && o.fase === this.fase && dist2(o.x, o.y, this.x, this.y) < 90 * 90 && !(o.bolha && o.bolha.t > 0));
+    const outro = this.casa.ativos.find((o) => o !== this && o.fase === this.fase && dist2(o.x, o.y, this.x, this.y) < 90 * 90 && !(o.bolha && o.bolha.t > 0));
     if (!outro || (this.bolha && this.bolha.t > 0)) return;
-    const [a, b] = pick(TAVERNA_PAPO);
+    const [a, b] = pick(this.casa.PAPO);
     this.falar(a, 3.4);
     outro.resp = b; outro.respT = 2.2;   // (o outro responde logo depois)
   }

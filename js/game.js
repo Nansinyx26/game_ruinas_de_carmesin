@@ -1458,16 +1458,17 @@ class Game {
     room.drawDoor(ctx);
     if (typeof Agua !== 'undefined') Agua.desenhar(ctx);   // rios e lagos por cima do chão
     if (this.world) Clima.desenharChao(ctx);   // poças, neve acumulada, pegadas e respingos (js/mundo/clima.js)
+    for (const n of this.npcs) if (n.chao) { n.draw(ctx); n.drawEmissive(ctx); }   // objetos rentes ao chão (a pista de LED do pub): debaixo de todos
     if (typeof Poderes !== 'undefined') Poderes.desenharChao(ctx);   // anéis e rachaduras das habilidades, rente ao chão
     p.drawShadow(ctx);
     for (const e of this.enemies) if (e.state !== 'spawn') e.drawShadow(ctx);
-    for (const n of this.npcs) if (!n.holo) n.drawShadow(ctx);
+    for (const n of this.npcs) if (!n.holo && !n.chao) n.drawShadow(ctx);
     this.projectiles.drawShadows(ctx);
     const list = this.drawList;
     list.length = 0;
     list.push(p);
     for (const e of this.enemies) list.push(e);
-    for (const n of this.npcs) list.push(n);
+    for (const n of this.npcs) if (!n.chao) list.push(n);
     for (const pl of room.pillars) if (!pl.cenario) list.push(pl);   // (cenario: só o colisor de um objeto do Blender, js/mundo/cenario.js)
     if (typeof Poderes !== 'undefined') Poderes.listaIso(list);   // cristais das habilidades, na ordem de profundidade
     list.sort((a, b) => (a.x + a.y) - (b.x + b.y));
@@ -1487,6 +1488,7 @@ class Game {
     room.addLights(L, this.realTime);
     if (this.world) Clima.luzes(L);   // fogueiras
     if (typeof Fogo !== 'undefined') Fogo.luzes(L);   // a luz que tremula de cada foco de fogo e das explosões
+    if (typeof PubNeon !== 'undefined') PubNeon.luzes(L);   // a pista e o palco do pub, na batida
     for (const n of this.npcs) if (n.lightRgb) L.add(isoX(n.x, n.y), isoY(n.x, n.y) - 30, n.holo ? 150 : 95, 0.5);
     this.projectiles.addLights(L);
     HeroObjects.addLights(L);
@@ -1531,7 +1533,7 @@ class Game {
     p.drawEmissive(ctx);
     if (this.use3D) {
       for (const e of this.enemies) e.drawEmissive(ctx);
-      for (const n of this.npcs) n.drawEmissive(ctx);
+      for (const n of this.npcs) if (!n.chao) n.drawEmissive(ctx);
     }
     this.drawEclipseFx(ctx);
     this.arcs.draw(ctx, this.realTime);

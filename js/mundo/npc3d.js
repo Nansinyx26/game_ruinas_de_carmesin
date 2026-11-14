@@ -42,7 +42,7 @@ const NpcModelo = {
   TOCAR: ['npc_tocar', null],
   ESTADOS: { walk: ['run', null], talk: ['npc_falar', null], listen: ['npc_falar', 'ouvir'], sit: ['npc_sentar', null], eat: ['npc_sentar', 'comer'],
     drink: ['npc_sentar', 'beber'], sleep: ['npc_dormir', null], guard: ['npc_guarda', null], fear: ['block', null], idle: ['idle', null],
-    clap: ['npc_palmas', null], dance: ['npc_dancar', null], standDrink: ['npc_falar', 'ouvir'] },
+    clap: ['npc_palmas', null], dance: ['npc_dancar', null], standDrink: ['npc_falar', 'ouvir'], dj: ['npc_dj', null] },
   ok() { return typeof PersonagemModelo !== 'undefined' && typeof Criacao3D !== 'undefined' && typeof Player !== 'undefined' && typeof persAparenciaPadrao === 'function'; },
   // Chave do modelo próprio do morador (registrada na primeira vez) ou null (fica o de sempre)
   chave(P) {
@@ -115,7 +115,7 @@ const NpcModelo = {
     c.animTime = e.animTime; c.stateTime = e.stateTime;
     c.moveSpeed = e.state === 'walk' ? 58 : 0; c.vx = e.state === 'walk' ? Math.cos(e.facing) * 38 : 0; c.vy = e.state === 'walk' ? Math.sin(e.facing) * 38 : 0;
     c.assento = e.assento; c.camaZ = e.camaZ; c.camaPe = e.camaPe;
-    c.danca = e.danca; c.ritmo = e.ritmo; c.fase = e.fase0 || 0; c.refeicaoK = e.refeicaoK; c.temCaneca = e.temCaneca; c.temPrato = e.temPrato; c.bebida = e.bebida;   // (a taverna viva)
+    c.danca = e.danca; c.ritmo = e.ritmo; c.fase = e.fase0 || 0; c.refeicaoK = e.refeicaoK; c.temCaneca = e.temCaneca; c.temPrato = e.temPrato; c.bebida = e.bebida; c.semMesa = e.semMesa;   // (a taverna viva)
     c.hp = c.maxHp; c.flash = 0;
     return c;
   },
@@ -123,7 +123,7 @@ const NpcModelo = {
   // (pelo estado: andando, quase todo quadro; falando, comendo ou bebendo, 10 vezes por segundo;
   // parado, 6; sentado, 4; dormindo, 2), em vez de entrar com 50 mil triângulos na fila de todo
   // quadro. Fora da tela, a foto espera. No começo do quadro, uma foto (motor 3D livre).
-  INTERVALO: { walk: 0.034, talk: 0.1, eat: 0.1, drink: 0.1, listen: 0.16, idle: 0.16, guard: 0.16, fear: 0.05, sit: 0.25, sleep: 0.5, clap: 0.08, dance: 0.06, standDrink: 0.16 },
+  INTERVALO: { walk: 0.034, talk: 0.1, eat: 0.1, drink: 0.1, listen: 0.16, idle: 0.16, guard: 0.16, fear: 0.05, sit: 0.25, sleep: 0.5, clap: 0.08, dance: 0.06, standDrink: 0.16, dj: 0.06 },
   processar() {
     const g = game;
     if (!g.world || typeof R3D === 'undefined' || !R3D.active || R3D.used || (typeof ThirdView !== 'undefined' && ThirdView.on)) {

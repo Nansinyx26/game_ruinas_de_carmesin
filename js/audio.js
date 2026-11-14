@@ -254,7 +254,8 @@ class MusicPlayer {
     // Quando a voz fala: abaixa para 0.15 (voz reina com clareza cristalina)
     // Na tela de história entre falas: 0.40 (ambiente sutil para leitura)
     // No jogo/menu normal: 1.0
-    const targetDuck = isNarrating ? 0.15 : (inStory ? 0.40 : 1.0);
+    const pub = typeof PubNeon !== 'undefined' && typeof game !== 'undefined' && game.world ? PubNeon.abafar() : 1;   // dentro do pub, a música do DJ (js/mundo/pub_neon.js)
+    const targetDuck = (isNarrating ? 0.15 : (inStory ? 0.40 : 1.0)) * pub;
     if (Math.abs(this.duckGain - targetDuck) > 0.005) {
       const duckSpeed = isNarrating ? 4.5 : 1.2; // abaixa instantaneamente (~0.18s), volta suave
       if (this.duckGain > targetDuck) {

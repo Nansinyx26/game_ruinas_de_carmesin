@@ -898,6 +898,17 @@ const Terreno = (function () {
       T.sujeira(18, ['30,20,10'], 14, 40, 0.12, 0.25);
       T.luzes(90, 0.2); T.sombras(true); T.variacao(0.16);
     } },
+    // o pub cyberpunk do Mercado Neon (js/mundo/pub_neon.js): concreto escuro polido com o filete de neon
+    // rente às paredes (magenta por fora, ciano por dentro)
+    interior_neon: { det: 'concreto', pintar(T, R) {
+      T.base('concreto', { cor: 'magenta' });
+      const w = R.w, h = R.h, filete = (g, a) => {
+        g.lineWidth = 5; g.strokeStyle = `rgba(${NEON.magenta},${a})`; g.strokeRect(16, 16, w - 32, h - 32);
+        g.lineWidth = 3; g.strokeStyle = `rgba(${NEON.ciano},${a * 0.8})`; g.strokeRect(34, 34, w - 68, h - 68);
+      };
+      T.no('emi', (g) => filete(g, 0.8)); T.no('cor', (g) => filete(g, 0.5)); T.temEmi = true;
+      T.sujeira(10, ['20,16,30'], 14, 40, 0.1, 0.2); T.luzes(80, 0.16); T.sombras(true); T.variacao(0.1);
+    } },
     interior_pedra: { det: 'pedra', pintar(T, R) { T.base('lajes'); T.sujeira(20, ['30,26,20'], 14, 44, 0.12, 0.26); T.rachaduras(6, 100); T.luzes(90, 0.2); T.sombras(true); T.variacao(0.18); } },
     // ---- campanha e regiões urbanas
     city: { det: 'concreto', pintar(T, R) {
@@ -1050,6 +1061,7 @@ const Terreno = (function () {
   function receita(R) {
     if (!R || !R.def) return null;
     const th = R.def.theme, id = R.def.id;
+    if (th === 'interior_neon') return RECEITAS.interior_neon;
     if (R.bairro || th === 'bairro') return RECEITAS.bairro;
     if (R.cidade || th === 'aurora') return RECEITAS.aurora;
     if (id && ZONAS_TEC[id]) return RECEITAS.metropole;

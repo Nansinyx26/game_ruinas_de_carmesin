@@ -258,7 +258,10 @@ const Bairro = {
       for (const B of BAIRRO_PREDIOS) { const d = this.porta(B, R); g.npcs.push(new PortaBairro(d.x, d.y, B)); }
       g.npcs.push(new WorldProp('gate', R.w * 0.3, R.h - 64, { to: CIDADE_ID, dir: null, chegada: [0.92, 0.2], rotulo: '← PRAÇA DA AURORA' }));
     } else {
-      // interior: a saída fica na frente da sala e leva para a porta do prédio no bairro
+      // interior: a saída fica na frente da sala e leva para a porta do prédio no bairro (ou para onde o
+      // interior disser: o pub do Mercado Neon, js/mundo/pub_neon.js)
+      const S = (BAIRRO_INTERIORES[z.id] || {}).saida;
+      if (S) { g.npcs.push(new WorldProp('gate', R.w * 0.5, R.h - 60, Object.assign({ dir: null }, S))); if (this.pronto()) this.colocarObjetos(z); return; }
       const B = this.predio(z.predio), Rb = { w: this.zona().tiles * TILE, h: this.zona().tiles * TILE }, d = B ? this.porta(B, Rb) : { x: Rb.w / 2, y: Rb.h / 2 };
       const ch = B && B.lado === 'W' ? [(BAIRRO_RECUO + 60) / Rb.w, d.y / Rb.h] : [d.x / Rb.w, (BAIRRO_RECUO + 30) / Rb.h];
       g.npcs.push(new WorldProp('gate', R.w * 0.5, R.h - 60, { to: BAIRRO_ID, dir: null, chegada: ch, rotulo: '↓ SAIR · BAIRRO DA MURALHA' }));
@@ -281,6 +284,7 @@ const Bairro = {
       if (portas.some((q) => dist(q.x, q.y, x, y) < W.r * esc + 50)) continue;   // nunca na frente de uma porta ou passagem
       const o = new Cenario.Objeto(id, x, y, giro, esc);
       g.npcs.push(o); this.objetos.push(o);
+      if (W.h * esc < 6) { o.chao = true; continue; }   // rente ao chão (a pista de LED do pub): pisa-se em cima, desenhado com o chão
       for (const c of this.colisores(W, x, y, giro, esc)) R.pillars.push(Object.assign(c, { h: W.h * esc, cenario: true, cenId: id, sprite: null }));
     }
     return this.objetos.length;
@@ -470,6 +474,8 @@ const Bairro = {
   objetivo() {
     const z = World.zone;
     if (z.id === BAIRRO_ID) return 'Bairro da Muralha: taverna (refeição e rumores), hospedaria (descanso), conselho (missões e contratos) e quartel (treino) · a praça fica a oeste';
+    const I = BAIRRO_INTERIORES[z.id];
+    if (I && I.objetivo) return `${z.name}: ${I.objetivo} · saída na frente da sala`;
     const txt = { aurora_taverna: 'refeição quente e rumores com o Bento', aurora_hospedaria: 'descanso e o armário com a Rosa', aurora_conselho: 'missões e contratos com a Conselheira Helena', aurora_quartel: 'treino, desafio da arena e habilidades com a Capitã Irene' }[z.id] || '';
     return `${z.name}: ${txt} · saída na frente da sala`;
   },
@@ -478,6 +484,7 @@ const Bairro = {
   servico(npc, s, o, volta) {
     if (typeof Pets !== 'undefined' && Pets.servico(npc, s, o, volta)) return true;   // a tratadora do viveiro (js/mundo/pets.js)
     if (typeof Montarias !== 'undefined' && Montarias.servico(npc, s, o, volta)) return true;   // a estrebaria da Guarda (js/mundo/montarias.js)
+    if (typeof PubNeon !== 'undefined' && PubNeon.servico(npc, s, o, volta)) return true;   // a bartender do pub (js/mundo/pub_neon.js)
     if (s !== 'refeicao') return false;
     const preco = this.precoRefeicao();
     o.push({ id: 'refeicao', tag: '♨', txt: `Pedir o ensopado do dia (${preco} células: vida, energia e o corpo aquecido)`, fn: () => volta(this.refeicao()) });

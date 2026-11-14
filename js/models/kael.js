@@ -1348,6 +1348,19 @@ function buildTempestadeNula(g, k, part, lod) {
     }
     return P;
   }
+  // DJ do pub (js/mundo/pub_neon.js): atrás da cabine, a mão direita no toca-discos (o scratch no compasso),
+  // a esquerda no fone ou no mixer, a cabeça marcando a batida; de vez em quando a mão sobe para a pista
+  function djPose(P, e) {
+    rest(P, e);
+    const bpm = num(e.ritmo, 124) / 60, t = num(e.animTime), b = t * bpm, w = b * Math.PI * 2, bate = Math.pow(Math.abs(Math.sin(w * 0.5)), 3);
+    const frase = Math.floor(b / 16) % 4, alto = frase === 3 && (b % 16) > 8;
+    P.hp += 0.14 * bate - 0.04; P.tp += 0.12 + 0.03 * bate; P.hz -= 0.5 * bate; P.hy += 0.5 * Math.sin(w * 0.25);
+    set3(P.hR, 10.5 + 1.6 * Math.sin(w), 6.5 + 0.8 * Math.sin(w * 2), 26.5 + 0.4 * Math.sin(w));   // scratch
+    if (alto) set3(P.hL, 4 + 1.5 * Math.sin(w), -5.5, 46 + 2 * bate);   // a mão para a pista
+    else if (frase === 1) set3(P.hL, 1.2, -4.2, 39.5);   // segurando o fone na orelha
+    else set3(P.hL, 9.5 + 0.8 * Math.sin(w * 0.5 + 1), -2.5, 26.8 + 0.5 * bate);   // no mixer
+    return P;
+  }
   function guardaPose(P, e) {
     rest(P, e);
     const t = num(e.animTime);
@@ -1537,6 +1550,7 @@ function buildTempestadeNula(g, k, part, lod) {
       else if (st === 'npc_falar') P = falarPose(POSE, e);
       else if (st === 'npc_palmas') P = palmasPose(POSE, e);
       else if (st === 'npc_dancar') P = dancarPose(POSE, e);
+      else if (st === 'npc_dj') P = djPose(POSE, e);
       else if (st === 'npc_guarda') P = guardaPose(POSE, e);
       else if (st === 'npc_tocar') P = tocarPose(POSE, e);
       else if (st === 'zb_andar') P = zumbiPose(POSE, e);

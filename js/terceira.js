@@ -448,7 +448,7 @@ const ThirdView = {
       if (typeof Fogo !== 'undefined') {
         const V = Fogo.VENTO, ag = typeof Agua !== 'undefined' && Agua.estado3P ? Agua.estado3P() : [0, 0, 0, 0];
         const molhado = g.world && typeof Clima !== 'undefined' ? Math.min(1, Clima.chuva() * 1.2 + (Clima.chao ? Clima.chao().agua || 0 : 0) * 0.6) : 0;
-        R3D.quadro3P(Fogo.luzes3P(typeof Poderes !== 'undefined' ? (typeof PoderesClasses !== 'undefined' ? PoderesClasses.luzes3P(Poderes.luzes3P([])) : Poderes.luzes3P([])) : [], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
+        R3D.quadro3P(Fogo.luzes3P(typeof Poderes !== 'undefined' ? (typeof PoderesClasses !== 'undefined' ? PoderesClasses.luzes3P(Poderes.luzes3P(typeof PubNeon !== 'undefined' ? PubNeon.luzes3P([]) : [])) : Poderes.luzes3P([])) : [], this.eye), typeof Agua !== 'undefined' && Agua.ondas3P ? Agua.ondas3P() : [], ag, molhado, [V.k, 0, V.x, V.y]);
       }
       try { res = R3D.renderScene(this.view, W, H); } catch (err) { console.error(err); }
     }
