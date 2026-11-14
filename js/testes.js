@@ -3528,6 +3528,14 @@ const EclipseTests = {
           this.ok('loja: MINHAS MONTARIAS equipa e desequipa', LojaAnimais.botao(mi)[2] === 'desequipar' && LojaAnimais.executar('desequipar', mi) && Montarias.S().ativa === null && LojaAnimais.botao(mi)[2] === 'equipar');
           WorldInv.draw(g.ctx, 0); g.state = 'playing';
           Montarias.guardar(); Object.assign(World.state.montarias, JSON.parse(M0)); g.stats.soulsBank = b0; g.activeProgress().level = lv0; World.save = sv; }
+        // cavalos de montaria: à venda na Estrebaria (primeiros da loja), pastando no cercado ao lado do Tobias, e o Tobias fala deles
+        { World.loadZone(BAIRRO_ID, null);
+          const vit = g.npcs.filter((n) => n instanceof VitrineMontaria), cav = vit.filter((n) => /^cavalo/.test(n.tipo));
+          const tob = WORLD_POVO.find((P) => P.id === 'aur_tobias');
+          LojaAnimais.abrir('estrebaria', 'montarias'); const ids = LojaAnimais.cartoes().map((c) => c.id); WorldInv.draw(g.ctx, 0); g.state = 'playing';
+          this.ok('cavalos: os três cavalos de montaria abrem a loja da Estrebaria e pastam no cercado ao lado do Tobias', ids.slice(0, 3).join(',') === 'cavalo,cavalo_tordilho,cavalo_negro' && cav.length === 3 && g.room.pillars.some((q) => q.cenId === 'cerca'), `${ids.slice(0, 3)} / ${cav.length}`);
+          this.ok('cavalos: o Tobias vende cavalos (a conversa não diz mais que não tem)', tob && tob.temas.some(([q, r]) => /cavalo/i.test(q) && /Vendo/.test(r)) && !tob.temas.some(([, r]) => /não vendo o que não tenho/.test(r)));
+          World.loadZone('aurora', null); }
         // taverna viva (js/mundo/taverna_viva.js): lotação pela hora, Horário do Bardo, reservas sem sobreposição
         if (typeof TavernaViva !== 'undefined' && NpcModelo.ok()) {
           const h0t = World.state.hora, dm = Settings.v.diaMin; Settings.v.diaMin = 1e6;
