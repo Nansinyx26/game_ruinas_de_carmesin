@@ -2126,14 +2126,15 @@ const EclipseTests = {
             this.ok('vegetação: nada em cima de construções, colisores e pontos de interação', todas.every((b) => exc.every((e) => Math.hypot(b[0] - e.x, b[1] - e.y) > e.r - 9)), exc.length);
             this.ok('vegetação: flores do campo de várias espécies', new Set(todas.filter((b) => b[10] >= 2).map((b) => b[10])).size >= 2);
             this.ok('vegetação: cada lâmina no chão do relevo', todas.slice(0, 400).every((b) => Math.abs(b[2] - (Relevo.altura(b[0], b[1]) - 0.4)) < 0.7 || b[10] === 1));
-            // (baús, eventos e moradores mudam de lugar a cada visita e tiram a grama debaixo deles: a comparação
-            //  ignora o que fica perto deles; o resto tem de ser idêntico)
-            const transit = () => Vegetacao._exc().filter((e) => e.t), T1 = transit();
+            // (baús, eventos, moradores e os obstáculos sorteados da sala mudam de lugar a cada visita — e as
+            //  estruturas que cairiam em cima deles são postas ao lado — e tiram a grama debaixo deles: a
+            //  comparação ignora o que fica perto de toda exclusão que mudou; o resto tem de ser idêntico)
+            const chaveE = (e) => `${e.x.toFixed(1)},${e.y.toFixed(1)},${e.r.toFixed(1)}`, X1 = Vegetacao._exc().slice();
             const conj = (A, T) => { const o = new Set(); for (const S of A) for (let q = 0; q < S.n; q++) { const x = S.dados[q * 11], y = S.dados[q * 11 + 1]; if (!T.some((e) => Math.hypot(x - e.x, y - e.y) < e.r + 40)) o.add(x.toFixed(1) + ',' + y.toFixed(1)); } return o; };
             World.loadZone('aurora', null);
             this.ok('vegetação: cidade sem grama gerada', !Vegetacao.ativo());
             World.loadZone('velmora_lago', null); Vegetacao.gerarTudo();
-            { const T = T1.concat(transit()), A1 = conj(S1, T), A2 = conj(Vegetacao.setores(), T); let comum = 0; for (const k of A1) if (A2.has(k)) comum++;
+            { const X2 = Vegetacao._exc(), K1 = new Set(X1.map(chaveE)), K2 = new Set(X2.map(chaveE)), T = X1.filter((e) => e.t || !K2.has(chaveE(e))).concat(X2.filter((e) => e.t || !K1.has(chaveE(e)))), A1 = conj(S1, T), A2 = conj(Vegetacao.setores(), T); let comum = 0; for (const k of A1) if (A2.has(k)) comum++;
               this.ok('vegetação: voltar à zona dá a mesma grama (semente)', A1.size > 1000 && comum >= Math.min(A1.size, A2.size) * 0.99, `${comum} de ${A1.size}/${A2.size}`); }
             const olho = [Rv.w / 2 - 300, Rv.h / 2 - 300, 200], V = Vegetacao.visiveis(olho, [Rv.w / 2, Rv.h / 2, 0]).slice(), lods = new Set(V.map((S) => S.lod));
             this.ok('vegetação: setores visíveis com LOD por distância (perto cheio, longe ralo) e nada atrás da câmera', V.length > 0 && lods.size >= 2 && V.every((S) => S.qtd <= S.n), [...lods].join(','));
@@ -4210,7 +4211,7 @@ const EclipseTests = {
 
   async criacaoGLB() {
     const g = game, espera = (ms) => new Promise((r) => setTimeout(r, ms));
-    const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 30000); });
+    const carregar = (ids) => new Promise((res) => { let n = ids.length; if (!n) res(); for (const id of ids) Criacao3D.carregar(id, () => { if (--n === 0) res(); }); setTimeout(res, 90000); });   // (no runner lento os GLB dos cabelos passavam dos 30 s)
     // ------------------------------------------------ catálogo central e caminhos reais
     const pecas = CRIA_CATALOGO.filter((c) => c.tipo === 'peca'), ini = pecas.filter((c) => c.nivel === 1), n30 = pecas.filter((c) => c.nivel === 30);
     this.igual('catálogo: 4 corpos (os 2 de sempre e os 2 atléticos), 8 rostos, 25 cabelos (8 enviados do Meshy, 15 em mechas do Blender, 5 deles masculinos, e 2 gerados no Meshy por texto), 18 barbas e bigodes (5 do Meshy e 13 do Blender)', ['corpo', 'rosto', 'cabelo', 'barba'].map((t) => CRIA_CATALOGO.filter((c) => c.tipo === t).length).join(','), '4,8,25,18');

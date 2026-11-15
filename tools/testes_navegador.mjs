@@ -17,7 +17,7 @@ import { chromium } from 'playwright';
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (nome, padrao) => { const i = process.argv.indexOf(nome); return i > 0 ? process.argv[i + 1] : padrao; };
-const imagem = arg('--imagem', null), espera = +arg('--espera', 1500);   // (a suíte passa por dezenas de zonas; o job do CI tem 30 min)
+const imagem = arg('--imagem', null), espera = +arg('--espera', 2400);   // (a suíte passa por dezenas de zonas e leva até ~28 min no runner; o job do CI tem 45 min)
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
   '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
@@ -60,7 +60,9 @@ try {
     if (r.falhas || !r.total) codigo = 1;
   }
   if (excecoes.length) { console.log(`Exceções na página (${excecoes.length}):\n  ${[...new Set(excecoes)].join('\n  ')}`); codigo = 1; }
-  if (imagem) await pagina.screenshot({ path: imagem });
+  // (a imagem é só um registro: no SwiftShader, um quadro da zona com grama pode passar do tempo da
+  //  captura; isso não reprova a suíte, que já deu o resultado)
+  if (imagem) try { await pagina.screenshot({ path: imagem, timeout: 120000 }); } catch (e) { console.log(`Sem imagem da suíte: ${e.message.split('\n')[0]}`); }
 } catch (e) {
   console.log(`Erro ao rodar a suíte: ${e.message}`); codigo = 1;
 } finally {

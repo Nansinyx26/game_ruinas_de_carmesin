@@ -99,6 +99,10 @@ const CHARACTER_IDLE_PROFILES = {
   }
 };
 
+// Variantes da árvore que tocam o som do poder de base (tools/sfx/gerar_sfx.py: poder_<id>)
+const PODER_SOM = { lyra_tiro_preciso: 'lyra_tiro', lyra_armadilha_plasma: 'lyra_armadilha', lyra_flecha_explosiva: 'lyra_flecha', lyra_foco_batalha: 'lyra_foco',
+  drakos_golpe_pesado: 'drakos_golpe', drakos_escudo_energia: 'drakos_escudo' };
+
 class Player extends Entity {
   // def: ficha do personagem (js/data/characters.js); por padrão o ativo do roster
   constructor(x, y, def = RosterManager.activeDef) {
@@ -929,11 +933,14 @@ class Player extends Entity {
   // — mas desperta algo adormecido dentro de Kael
   fireSpecial() {
     const b = this.base;
-    if (b === 'lyra') this.fireLyraUltimate();
-    else if (b === 'drakos') this.fireDrakosUltimate();
-    else if (b === 'sera') this.fireSeraUltimate();
-    else if (b === 'orion') this.fireOrionUltimate();
-    else this.fireKaelUltimate();
+    // o especial de cada herói tem a própria gravação (especial_<herói>, js/audio.js lancarPoder)
+    game.audio.lancarPoder(`especial_${['lyra', 'drakos', 'sera', 'orion'].includes(b) ? b : 'kael'}`, () => {
+      if (b === 'lyra') this.fireLyraUltimate();
+      else if (b === 'drakos') this.fireDrakosUltimate();
+      else if (b === 'sera') this.fireSeraUltimate();
+      else if (b === 'orion') this.fireOrionUltimate();
+      else this.fireKaelUltimate();
+    });
   }
 
   // Especial Kael: "Eclipse Absoluto"
@@ -1352,7 +1359,8 @@ class Player extends Entity {
     if ((this.cds[inf.id] || 0) > 0) { game.hud.abilityDenied(k); game.audio.play('uiDeny'); return false; }
     const cost = this.abilityCost(inf.id);
     if (this.fury < cost) { game.hud.abilityDenied(k); game.hud.furyDenied(); game.audio.play('uiDeny'); return false; }
-    if (!inf.A.cast(this, inf.lv, wd)) return false;
+    // som do poder da classe (js/audio.js, lancarPoder); as variantes da árvore usam o som do poder de base
+    if (!game.audio.lancarPoder(`poder_${PODER_SOM[inf.id] || inf.id}`, () => inf.A.cast(this, inf.lv, wd))) return false;
     this.fury -= cost;
     this.convT = 2.5;               // Convergência (ramo Supremas): o próximo golpe é mais forte
     const cd = (inf.S && inf.S.cd !== undefined && inf.S.cd !== null) ? inf.S.cd : (inf.A.cooldown || 5);

@@ -53,14 +53,18 @@ começado. Ao terminar algo, mova o item e registre o commit.
 ## 2. Parcial (falta terminar)
 
 ### 2.1 Dublagem dos NPCs
-- [x] 190 de 311 falas gravadas (84 moradores).
-- [ ] **121 falas restantes** (respostas e rumores): a cota gratuita da conta ElevenLabs acabou. Quando renovar (ou com plano pago), rodar `python3 tools/dublagem/gerar_falas.py` — continua de onde parou.
+- [x] Todas as 596 falas dos 91 moradores gravadas: cumprimentos, respostas e rumores, e as falas fixas fora da ficha ("Quem é você?", começo e fim das missões que cada um dá, respostas dos serviços), em `dublagem/npcs/` e no manifesto `js/assets/vozes_npcs.js` (as fixas como `extras`, achadas pelo parágrafo do texto mostrado).
+- [x] **O herói pergunta com voz**: as 108 perguntas da conversa na voz de cada um dos 5 heróis (`dublagem/herois/`, `js/assets/vozes_herois.js`, `tools/dublagem/gerar_perguntas.py`); o morador responde quando a pergunta termina; personagem criado usa a voz da classe ou a do Kael/da Lyra pelo corpo.
+- [ ] Falas montadas na hora (preços, contagens, nomes de itens, a descrição da missão) e moradores sem ficha (`npc.lines`) seguem só com legenda.
 - [ ] Com plano pago: trocar as vozes padrão por vozes brasileiras da biblioteca (o elenco já está separado por sexo/idade).
 - [ ] Emoções/tags por fala e legendas sincronizadas.
 
 ### 2.1b Efeitos sonoros dos ataques e poderes (ElevenLabs)
 - [x] Gerador `tools/sfx/gerar_sfx.py` (19 efeitos: cortes, estocada, impactos, crítico, golpe no chão, ERUPÇÃO DE CRISTAIS e a carga dela, raio, esquiva, escudo, explosão, bola de fogo, especial, flecha; variações sorteadas) e o jogo já toca as gravações no lugar do som sintetizado (`js/audio.js`, `js/assets/sfx_gerados.js`).
-- [x] Gerados com a chave nova (26 gravações).
+- [x] Arquivos gerados: 19 efeitos (24 gravações com as variações) em `assets/sfx/gerados/` e no manifesto `js/assets/sfx_gerados.js`; todas decodificam no Web Audio do Chromium.
+- [x] **Impacto dos golpes** (`js/audio.js` `impacto`, chamado no acerto em `js/game.js`): gravação do material (metal nas máquinas, carne nas criaturas) com o impacto geral por baixo, baque grave, estalo do contato e o crítico; volume e tom pela força do golpe; a mesma gravação nunca toca duas vezes seguidas. O herói levando dano tem gravação própria (`hitMetal`, `hitCarne`, `playerHurt`).
+- [x] **Som próprio para cada poder, por classe**: 43 gravações (`poder_<id>`), uma por ativa das árvores (as variantes usam a do poder de base, `PODER_SOM` em `js/player.js`), com assinatura de cada classe (Arcano/Kael: eletricidade e runas; Arqueira/Lyra: flechas espectrais; Tanque/Drakos: ferro e terra; Sacerdote/Sera: luz e tecnologia; Assassino/Orion: sombra e lâminas), e o especial de cada herói (`especial_<herói>`). No lançamento, a gravação substitui os sons genéricos de carga (`js/audio.js` `lancarPoder`); sem gravação, fica o som de antes. Personagens criados usam o kit da classe deles.
+- [ ] Ouvir os efeitos no jogo e ajustar volume ou descrição dos que não combinarem.
 
 ### 2.2 Guardião do Mundo
 - [ ] Animações do GM_VARIOS MOVIMENTOS.glb (andar, atirar) no corpo do morador.

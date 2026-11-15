@@ -19,7 +19,7 @@ concurrency:
 jobs:
   testes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45   # (a suíte leva de 22 a 28 min no runner: com 30, execuções boas eram canceladas)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
 
