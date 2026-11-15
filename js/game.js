@@ -536,6 +536,7 @@ class Game {
         crit ? PAL.accentHi : def.heavy ? '#8fd0ff' : '#ffffff', crit ? 31 : def.heavy ? 25 : 21);
     }
     if (def.heavy || crit) this.input.rumble(0.25, 0.35, 70);
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.aoAcertar(p, e, def, crit, kx, ky);   // o destaque visual da classe no acerto
     // som do impacto: o material do alvo e a força do golpe contra a vida dele (js/audio.js)
     this.audio.impacto({ heavy: !!def.heavy, crit, mech: !!(e.T && e.T.mech), carne: !(e.T && e.T.mech),
       forca: dmg / Math.max(1, Math.min(e.maxHp || 100, 400)) * 2.5 });

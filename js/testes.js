@@ -3569,6 +3569,25 @@ const EclipseTests = {
       for (let i = 0; i < 60; i++) PC.update(0.05);
       this.ok('poderes: Arqueira, Sacerdote e Arcano terminam sem deixar nada no cenário', PC.ativos.length === 0, JSON.stringify(PC.estado()));
       this.ok('poderes: os ganchos estão nas classes (acerto e chuva da Arqueira, cura e campo do Sacerdote)', !!(lyraHitEnemy._pc && LyraRain.prototype._pc && ABILITIES.sera_cura._pc));
+      // assinaturas novas: a sombra do Assassino, o lançamento de cada classe e o destaque no acerto
+      { PC.limpar();
+        const fake = (id) => ({ x: p.x, y: p.y, z: 0, facing: 0.3, def: { id } });
+        const lancou = ['kael', 'lyra', 'sera', 'drakos', 'orion'].every((id) => { const E = PC.aoLancar(fake(id), id + '_x', 'attack'); return E && PC.ativos.includes(E); });
+        const formas = PC.estado().map((e) => e.forma);
+        this.ok('poderes: o Assassino tem a sombra e toda classe mostra a assinatura ao lançar um poder (a cura do Sacerdote já tem o efeito inteiro)', PC.temaDe({ def: { id: 'orion' } }) === 'sombra' && lancou && PC.aoLancar(fake('sera'), 'sera_cura', 'buff') === null, formas.join(','));
+        this.ok('poderes: a assinatura de lançamento é uma forma por classe (selo de runas, mira, bênção, coroa de lascas, véu)', ['selo', 'mira', 'bencao', 'veu'].every((f) => formas.includes(f)) && formas.filter((f) => f === 'selo').length === 2 && new Set(PC.ativos.map((E) => E.nos.map((n) => n[0]).join(','))).size === 5, formas.join(','));
+        PC.limpar();
+        const alvo = { x: p.x + 60, y: p.y, z: 0, height: 60, radius: 14 }, rt0 = g.realTime;
+        const acertos = ['orion', 'drakos', 'kael', 'sera'].map((id, k) => { g.realTime = rt0 + 1 + k; const E = PC.aoAcertar(fake(id), alvo, { heavy: true, hitstop: 0.05 }, false, 1, 0); return E && E.forma; });
+        g.realTime = rt0 + 9;
+        this.ok('poderes: destaque no acerto por classe (cortes, lascas de rubi, runa, centelhas); a Arqueira fica com os estilhaços e os campos que batem todo quadro não geram destaque',
+          acertos.join(',') === 'cortes,lascas,impacto,centelhas' && PC.aoAcertar(fake('lyra'), alvo, {}, false, 1, 0) === null && PC.aoAcertar(fake('kael'), alvo, { hitstop: 0.001 }, false, 1, 0) === null, acertos.join(','));
+        g.realTime = rt0;
+        const Ef = PC.estilhacos(p.x, p.y, 30, 0.5, true), Ecu = PC.celeste(p.x, p.y, 90, 'cura', p), Ear = PC.arcano(p.x, p.y, 120, {});
+        this.ok('poderes: efeitos antigos aprimorados (lança de luz no acerto forte da Arqueira, sol de raios e estrelas do Sacerdote, pilar de luz do Arcano)', Ef.forte && /flechaV/.test(ch(Ef)) && /raios/.test(ch(Ecu)) && /estrela/.test(ch(Ecu)) && /pilar/.test(ch(Ear)));
+        for (let i = 0; i < 60; i++) PC.update(0.05);
+        this.ok('poderes: as assinaturas novas terminam sem deixar nada no cenário', PC.ativos.length === 0, JSON.stringify(PC.estado()));
+      }
       if (g.world) {
         WorldInv.abrir('diario'); WorldInv.ui.cat = 'disponiveis'; WorldInv.ui.sel = 0; WorldInv.draw(g.ctx, 0);
         const R = WorldInv.ui.rects;
