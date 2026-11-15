@@ -773,6 +773,15 @@ const Criacao3D = (function () {
     if (P.bigode) por(m, 'bigode', P.bigode);
     { const ref = (P.barba || P.bigode || P.cabelo) && m.cria.peles.rosto ? refDe(m, P, B) : null; encaixarCabelo(m, P, B, ref); encaixarBarba(m, P, B, ref); }
     couroCabeludo(m, B);
+    // fios de verdade sobre o cabelo e a barba já encaixados (js/criacao/fios.js): só no herói e na prévia
+    if (!def.npc && typeof Fios !== 'undefined') {
+      let h = 2166136261;
+      for (const ch of String(def.id || 'p')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+      for (const cel of ['cabelo', 'barba', 'bigode']) {
+        const F = m.cria.peles[cel] ? Fios.gerar(m.cria.peles[cel], cel, h ^ cel.length * 7919) : [];
+        if (F.length) m.cria.peles['fios_' + cel] = F;
+      }
+    }
     // (o rosto pode ter sido pintado antes de o cabelo entrar: pinta de novo, agora com o couro)
     if (m.cria.couro && P.rosto && m.cria.pintadas.rosto === P.rosto) comImagens(P.rosto, (I) => pintar(m, 'rosto', P.rosto, I));
     juntar(m);
