@@ -288,21 +288,24 @@ class DJNeon extends Fregues {
 }
 
 // ---------------------------------------------------------------------------
-// A música do pub, tocada aqui (Web Audio): Cyber Night (124 BPM: bumbo, chimbal, palmas, baixo e
-// arpejo) ou lounge (90 BPM: pad e baixo macio). O volume e o lado (estéreo) seguem a distância e a
+// A música do pub: os loops gravados na ElevenLabs (o set do DJ na Cyber Night e o lounge; abaixo) ou,
+// enquanto eles carregam ou abrindo do disco, a batida tocada aqui (Web Audio): Cyber Night (124 BPM:
+// bumbo, chimbal, palmas, baixo e arpejo) ou lounge (90 BPM: pad e baixo macio). O volume e o lado (estéreo) seguem a distância e a
 // posição da cabine do DJ na tela; as notas são agendadas um pouco à frente (sem engasgo).
 // ---------------------------------------------------------------------------
 const Batida = {
   modo: null, tocando: false, batida: 0, _prox: 0, _passo: 0, saida: null, pan: null, t0: 0,
-  bpm() { return this.modo === 'noite' ? PUB_BPM : 90; },
+  bpm() { return this.modo === 'noite' ? (this.gravada ? 122 : PUB_BPM) : 90; },   // (os loops gravados da noite medem ~122 BPM)
   // 0–1, forte na cabeça de cada tempo (as luzes da pista)
   pulso() {
+    if (this.gravada && this.analise) return this.pulsoGravado();
     const A = typeof game !== 'undefined' && game.audio && game.audio.ctx;
     const t = A ? A.currentTime : (game.realTime || 0), b = (t - this.t0) * this.bpm() / 60;
     return Math.pow(1 - (b - Math.floor(b)), 3);
   },
   parar() {
     if (this.saida) { try { this.saida.gain.setTargetAtTime(0, this.saida.context.currentTime, 0.15); } catch (e) { /* nada */ } }
+    this.pararGravada(0.4);
     this.tocando = false; this.modo = null;
   },
   ligar(A) {
@@ -311,7 +314,10 @@ const Batida = {
       this.saida = c.createGain(); this.saida.gain.value = 0;
       this.pan = c.createStereoPanner ? c.createStereoPanner() : null;
       if (this.pan) { this.saida.connect(this.pan); this.pan.connect(A.master); } else this.saida.connect(A.master);
+      // o grave da música gravada acende as luzes da pista (pulsoGravado)
+      this.analise = c.createAnalyser(); this.analise.fftSize = 1024; this.analise.smoothingTimeConstant = 0.35; this.saida.connect(this.analise);
     }
+    this.pararGravada(0.6);
     this._prox = c.currentTime + 0.1; this._passo = 0; this.t0 = this._prox; this.tocando = true;
   },
   passo(dt, casa) {
@@ -326,9 +332,75 @@ const Batida = {
     const vol = (A.musicVol === undefined ? 0.6 : A.musicVol) * (modo === 'noite' ? 0.55 : 0.32) * clamp(1.15 - d / 900, 0.35, 1);
     this.saida.gain.setTargetAtTime(vol, c.currentTime, 0.25);
     if (this.pan) this.pan.pan.setTargetAtTime(clamp((isoX(cx, cy) - isoX(p.x, p.y)) / 600, -0.7, 0.7), c.currentTime, 0.3);
+    if (this.gravadaPronta(modo)) { this.passoGravado(c, modo); this.batida = Math.floor((c.currentTime - this.t0) * this.bpm() / 60); return; }
     const s16 = 60 / this.bpm() / 4;
     while (this._prox < c.currentTime + 0.25) { this.nota(c, this._prox, this._passo, modo); this._prox += s16; this._passo++; }
     this.batida = Math.floor(this._passo / 4);
+  },
+
+  // ------------------------------------------------------------ a música gravada (ElevenLabs)
+  // Loops de 22 s (tools/sfx/gerar_musica_pub.py → js/assets/musica_pub.js). Na Cyber Night o DJ toca as
+  // seções na ordem do set (aquecimento, groove, drop, pausa, pico, fim de noite), cada uma 2 ou 3 vezes;
+  // no lounge, os loops calmos sorteados. Cada repetição entra com uma passagem cruzada de 1,5 s (esconde
+  // a emenda e as trocas de seção). Enquanto os arquivos carregam (ou abrindo do disco), a batida sintetizada.
+  CRUZA: 1.5, bufs: null, gravada: null, fila: [],
+  carregar(A) {
+    if (this.bufs || typeof MUSICA_PUB === 'undefined' || typeof fetch === 'undefined' || location.protocol === 'file:') return;
+    this.bufs = { noite: [], lounge: [] };
+    for (const modo of ['noite', 'lounge']) (MUSICA_PUB[modo] || []).forEach((L, k) => {
+      fetch(L.src).then((r) => (r.ok ? r.arrayBuffer() : null)).then((b) => b && A.ctx.decodeAudioData(b))
+        .then((buf) => { if (buf) this.bufs[modo][k] = { buf, ganho: L.ganho || 1 }; }).catch(() => {});
+    });
+  },
+  gravadaPronta(modo) {
+    const A = game.audio;
+    if (!this.bufs) this.carregar(A);
+    const L = this.bufs && this.bufs[modo], n = typeof MUSICA_PUB !== 'undefined' && MUSICA_PUB[modo] ? MUSICA_PUB[modo].length : 0;
+    // começa com a primeira seção pronta (as outras chegam enquanto ela toca)
+    return !!(L && n && (this.gravada || L[0]));
+  },
+  proximo(modo) {
+    const L = this.bufs[modo], n = MUSICA_PUB[modo].length;
+    if (!this.fila.length) {
+      if (modo === 'noite') for (let k = 0; k < n; k++) { const rep = k === 3 ? 1 : 2 + (Math.random() < 0.4 ? 1 : 0); for (let r = 0; r < rep; r++) this.fila.push(k); }
+      else { const ks = [...Array(n).keys()].sort(() => Math.random() - 0.5); for (const k of ks) this.fila.push(k, k); }
+    }
+    // pula seção que ainda não carregou
+    for (let t = 0; t < this.fila.length; t++) { const k = this.fila.shift(); if (L[k]) return L[k]; }
+    return L[0] || L.find(Boolean);
+  },
+  passoGravado(c, modo) {
+    const G = this.gravada;
+    if (G && G.modo === modo && c.currentTime < G.fim - this.CRUZA - 0.3) return;
+    const L = this.proximo(modo);
+    if (!L) return;
+    const t0 = G && G.modo === modo ? Math.max(c.currentTime + 0.05, G.fim - this.CRUZA) : c.currentTime + 0.05;
+    const s = c.createBufferSource(), g = c.createGain();
+    s.buffer = L.buf;
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(L.ganho, t0 + this.CRUZA);
+    s.connect(g); g.connect(this.saida); s.start(t0);
+    const fim = t0 + L.buf.duration;
+    g.gain.setValueAtTime(L.ganho, fim - this.CRUZA); g.gain.linearRampToValueAtTime(0.0001, fim);
+    s.stop(fim + 0.05);
+    this.gravada = { modo, s, g, fim };
+  },
+  pararGravada(fade) {
+    const G = this.gravada;
+    this.gravada = null; this.fila = [];
+    if (!G) return;
+    try { const t = G.g.context.currentTime; G.g.gain.cancelScheduledValues(t); G.g.gain.setValueAtTime(G.g.gain.value, t); G.g.gain.linearRampToValueAtTime(0.0001, t + fade); G.s.stop(t + fade + 0.05); } catch (e) { /* nada */ }
+  },
+  // 0–1: a energia do grave da música agora (o bumbo acende a pista), normalizada pelo pico recente
+  pulsoGravado() {
+    const t = game.realTime || 0;
+    if (this._pT === t) return this._p;
+    const an = this.analise, d = this._fd || (this._fd = new Uint8Array(an.frequencyBinCount));
+    an.getByteFrequencyData(d);
+    let e = 0; for (let i = 1; i < 6; i++) e += d[i];   // até ~200 Hz
+    e /= 5 * 255;
+    this._pico = Math.max(e, (this._pico || 0.3) * 0.995);
+    this._pT = t; this._p = clamp((e / Math.max(0.15, this._pico) - 0.55) / 0.45, 0, 1);
+    return this._p;
   },
   // um dezesseis avos do compasso
   nota(c, t, k, modo) {
