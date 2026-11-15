@@ -278,15 +278,18 @@ const WorldMapArt = (function () {
       g.addColorStop(0, 'rgba(255,40,80,0.45)'); g.addColorStop(1, 'rgba(255,40,80,0)');
       c.fillStyle = g; c.beginPath(); c.arc(cm.cx, cm.cy + cm.rad * 0.3, cm.rad * 0.7, 0, TAU); c.fill();
     }
-    // estradas: de Carmesin (o centro do mundo) para cada região
-    c.setLineDash([5, 4]); c.lineCap = 'round';
-    for (const g of G) {
-      if (g === cm) continue;
-      const mx = (cm.cx + g.cx) / 2 + (g.cy - cm.cy) * 0.12, my = (cm.cy + g.cy) / 2 - (g.cx - cm.cx) * 0.12;
-      c.strokeStyle = 'rgba(20,14,10,0.5)'; c.lineWidth = 3;
-      c.beginPath(); c.moveTo(cm.cx, cm.cy); c.quadraticCurveTo(mx, my, g.cx, g.cy); c.stroke();
-      c.strokeStyle = 'rgba(214,190,140,0.55)'; c.lineWidth = 1.4;
-      c.beginPath(); c.moveTo(cm.cx, cm.cy); c.quadraticCurveTo(mx, my, g.cx, g.cy); c.stroke();
+    // estradas: as que se anda de verdade entre as regiões (js/mundo/ligacoes.js), de uma região à outra,
+    // saindo pelo lado da borda de cada uma; o nome no meio do caminho
+    const L = typeof Ligacoes !== 'undefined' ? Ligacoes.LISTA : [];
+    const saida = (g, lado) => { const d = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] }[lado] || [0, 0]; return [g.cx + d[0] * g.rad * 0.55, g.cy + d[1] * g.rad * 0.55, d]; };
+    c.lineCap = 'round';
+    for (const [[ra, , , la], [rb, , , lb]] of L) {
+      const A = R(ra), B = R(rb);
+      if (!A || !B) continue;
+      const [x0, y0, d0] = saida(A, la), [x1, y1, d1] = saida(B, lb), k = Math.hypot(x1 - x0, y1 - y0) * 0.4;
+      const cam = () => { c.beginPath(); c.moveTo(A.cx, A.cy); c.lineTo(x0, y0); c.bezierCurveTo(x0 + d0[0] * k, y0 + d0[1] * k, x1 + d1[0] * k, y1 + d1[1] * k, x1, y1); c.lineTo(B.cx, B.cy); c.stroke(); };
+      c.setLineDash([]); c.strokeStyle = 'rgba(20,14,10,0.55)'; c.lineWidth = 4; cam();
+      c.setLineDash([6, 4]); c.strokeStyle = 'rgba(226,200,150,0.75)'; c.lineWidth = 1.8; cam();
     }
     c.setLineDash([]);
   }

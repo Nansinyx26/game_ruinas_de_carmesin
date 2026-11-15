@@ -513,7 +513,8 @@ def marcos_cabeca_extra(V, m, topo):
 def processar_corpo(c):
     t0 = time.time()
     arq = sem_draco(os.path.join(RAIZ, c['arq'])) if c.get('inteiro') else os.path.join(ORIG, c['arq'])
-    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=c.get('tris', 18000), tex=c.get('tex', 1024), pose=abaixar_bracos if c.get('abaixar') else None)
+    a = SimpleNamespace(arquivo=arq, id=c['id'], cima='+y', frente='+z', max_tri=c.get('tris', 18000), tex=c.get('tex', 1024), pose=abaixar_bracos if c.get('abaixar') else None,
+                        pernas_medidas=c.get('tipo') == 'npc')   # (as pernas medidas na malha: o pé dos NPCs não estica)
     r = im.rigar(a, c['altura'], False)
     V, F, Fo, Uo, o2r, rot, nomes, ix = r['V'], r['F'], r['Fo'], r['Uo'], r['o2r'], r['rot'], r['nomes'], r['ix']
     k, H, props, inv = r['k'], r['H'], r['props'], dict(r['inv'])

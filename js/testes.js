@@ -3715,8 +3715,8 @@ const EclipseTests = {
     this.ok('terrenos: detalhe de perto (relevo repetido pela posição, com parallax) em todas', ZS.every((id) => R0[id] && R0[id].det));
     this.ok('terrenos: leito e margem molhada sob a água da lagoa', !!(R0.lagoa_cais && R0.lagoa_cais.usados.includes('leito')), R0.lagoa_cais && R0.lagoa_cais.usados.join(','));
     const geo = (id, t) => R0[id] && R0[id].geo.includes(t);
-    this.ok('terrenos: geometria de detalhe — meio-fio, trilhos, canaletas, tubulações e passarelas', geo('metro_centro', 'meiofio') && geo('metro_trilhos', 'trilho') && geo('galerias', 'canaleta') && geo('galerias', 'tubos') && geo('metro_centro', 'passarela'),
-      JSON.stringify({ c: R0.metro_centro && R0.metro_centro.geo, t: R0.metro_trilhos && R0.metro_trilhos.geo, g: R0.galerias && R0.galerias.geo }));
+    this.ok('terrenos: geometria de detalhe — meio-fio, trilhos, canaletas, tubulações e passarelas', geo('metro_centro', 'meiofio') && geo('metro_trilhos', 'trilho') && geo('galerias', 'canaleta') && geo('metro_industrial', 'tubos') && geo('metro_centro', 'passarela'),
+      JSON.stringify({ c: R0.metro_centro && R0.metro_centro.geo, t: R0.metro_trilhos && R0.metro_trilhos.geo, g: R0.galerias && R0.galerias.geo, i: R0.metro_industrial && R0.metro_industrial.geo }));
     // 3ª pessoa: o piso vem do atlas (cor, material, emissão e detalhe) e a geometria entra na sala
     if (R3D.active) {
       let e3 = null, m = null, nos = [];

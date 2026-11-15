@@ -1006,6 +1006,15 @@ const Terreno = (function () {
       T.camada('destrocos', T.manchas(0.16, 220, 143, 0.04));
       T.camada('terra', T.manchas(0.12, 260, 145, 0.04));
       T.camada('contaminado', T.manchas(0.1, 200, 147, 0.03));
+      // o chão próprio de cada zona (js/mundo/carmesin_aberto.js: lajes na praça e no mercado, grade e canaletas nas
+      // galerias de serviço, basalto nas fendas, vidro e plataforma no laboratório…)
+      const X = (R.def && R.def.chaoCarmesin) || {};
+      (X.manchas || []).forEach(([m, k, e], i) => T.camada(m, T.manchas(k, e, 151 + i * 2, 0.04)));
+      for (const f of X.canais || []) {
+        const x = f * R.w;
+        T.camada('grade', T.forma((g) => g.fillRect(x - 16, -T.m, 32, R.h + 2 * T.m)), { alt: -0.3, rot: 90 });
+        T.geo.push({ t: 'canaleta', x0: x, y0: 0, x1: x, y1: R.h, larg: 32 });
+      }
       T.rachaduras(40, 280); T.sujeira(34, ['24,8,10', '44,24,20'], 20, 90, 0.16, 0.34); T.pocas(8, 16, 54, '34,8,12');
       T.luzes(100, 0.22); T.sombras(true); T.variacao(0.24, ['160,40,50', '70,60,64']);
     } },

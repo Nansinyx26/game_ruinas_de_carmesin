@@ -735,7 +735,7 @@ const World = {
   mapLayout() {
     const M = this.map, W = VIEW_W, H = VIEW_H, mw = Math.min(W - 80, 1100) * M.zoom, mh = (H - 150) * M.zoom;
     // com zoom, centra na região onde o herói está
-    const reg = worldRegion(this.zone ? this.zone.region : 'carmesin'), at = this.zone && this.zone.cidade ? this.zone.mapa : reg.at;
+    const reg = worldRegion(this.zone ? this.zone.region : 'carmesin'), at = this.zone && this.zone.cidade && !this.zone.aberto ? this.zone.mapa : reg.at;
     const cx = W / 2 - (at[0] - 0.5) * mw * (M.zoom - 1) / M.zoom, cy = 82 + (H - 150) / 2 - (at[1] - 0.5) * mh * (M.zoom - 1) / M.zoom;
     const x0 = cx - mw / 2, y0 = cy - mh / 2;
     const pos = (a) => ({ x: x0 + a[0] * mw, y: y0 + a[1] * mh });
@@ -746,7 +746,8 @@ const World = {
     for (const id in WORLD_ZONES) {
       const z = WORLD_ZONES[id], c = pos(worldRegion(z.region).at), d = dims[z.region];
       if (z.instancia || z.distrito) continue;   // (os distritos da cidade ficam no marcador da cidade)
-      if (z.cidade) { const q = pos(z.mapa); zones[id] = { x: q.x, y: q.y, s: s * 1.5 }; continue; }   // a cidade: no seu lugar do mapa, maior
+      if (z.cidade && !z.aberto) { const q = pos(z.mapa); zones[id] = { x: q.x, y: q.y, s: s * 1.5 }; continue; }   // a cidade: no seu lugar do mapa, maior
+      if (z.cidade) { zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.5, y: c.y + (z.r - d[0] / 2) * s * 1.5, s: s * 1.3 }; continue; }   // (a cidade a céu aberto: na grade da região, ao norte dos Portões)
       zones[id] = { x: c.x + (z.c - d[1] / 2) * s * 1.5, y: c.y + (z.r - d[0] / 2) * s * 1.5, s };
     }
     return { x0, y0, mw, mh, pos, zones };

@@ -362,6 +362,37 @@ def ajustar_braços(V, k, bones, props):
     props['AFO'] = round(np.mean([L(bones['arm' + n + 'f'][0], k['punho'][n]) for n in 'RL']), 3)
 
 
+def ajustar_pernas(V, k, bones, props, H):
+    """Como ajustar_braços, para as pernas: a profundidade (x) do quadril, do joelho e do tornozelo e a ponta
+    do pé são medidas na própria malha. Sem isso o esqueleto fica numa profundidade fixa (x=0 no quadril):
+    em modelos com as pernas mais para trás ou para a frente (o GM tem as pernas entre x=-4 e -7), a bota e a
+    barra da calça ficam longe do osso, caem no quadril e a bota estica quando o pé anda (um pé "maior")."""
+    L = lambda a, b: float(np.linalg.norm(b - a))
+    r = 0.05 * H
+
+    def x_em(p, lado):
+        perto = (np.hypot(V[:, 1] - p[1], V[:, 2] - p[2]) < r) & (np.sign(V[:, 1]) == lado)
+        return float(np.median(V[perto, 0])) if perto.sum() > 8 else p[0]
+    for nm, lado in (('R', 1), ('L', -1)):
+        hip, joe = [q.copy() for q in bones['thigh' + nm][:2]]
+        ank = bones['shin' + nm][1].copy()
+        for q in (hip, joe, ank):
+            q[0] = x_em(q, lado)
+        # o pé: os vértices abaixo do tornozelo, do lado dele; a ponta é a parte mais à frente (+x)
+        pe = (V[:, 2] < ank[2]) & (np.sign(V[:, 1]) == lado) & (np.abs(V[:, 1] - ank[1]) < 0.07 * H)
+        if pe.sum() > 20:
+            ponta = np.array([float(np.percentile(V[pe, 0], 96)), ank[1], float(np.percentile(V[pe, 2], 10))])
+        else:
+            ponta = ank + np.array([0.05 * H, 0, -0.058 * H])
+        bones['thigh' + nm] = (hip, joe, bones['thigh' + nm][2])
+        bones['shin' + nm] = (joe, ank, bones['shin' + nm][2])
+        bones['foot' + nm] = (ank, ponta, bones['foot' + nm][2])
+    props['LTH'] = round(np.mean([L(*bones['thigh' + n][:2]) for n in 'RL']), 3)
+    props['LSH'] = round(np.mean([L(*bones['shin' + n][:2]) for n in 'RL']), 3)
+    print('pernas medidas na malha: quadril x', [round(float(bones['thigh' + n][0][0]), 2) for n in 'RL'],
+          'joelho x', [round(float(bones['thigh' + n][1][0]), 2) for n in 'RL'], 'tornozelo x', [round(float(bones['shin' + n][1][0]), 2) for n in 'RL'])
+
+
 def suavizar_pesos(W, F, n, it=6):
     """Pesos de pele suavizados pela malha: média com os vizinhos (it vezes)."""
     i = np.concatenate([F[:, 0], F[:, 1], F[:, 2], F[:, 1], F[:, 2], F[:, 0]])
@@ -619,6 +650,8 @@ def rigar(a, H, casaco):
     k = marcos_robustos(masks, P, H)
     bones, props = ossos_e_proporcoes(k, H)
     ajustar_braços(V, k, bones, props)
+    if getattr(a, 'pernas_medidas', False):   # (NPCs inteiros do rig automático: tools/importar_criacao.py)
+        ajustar_pernas(V, k, bones, props, H)
     props['HAIR'] = round(0.06 * H, 3)
     Wn = esqueleto(props)
     print('proporções', props)
