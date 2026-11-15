@@ -50,6 +50,10 @@ começado. Ao terminar algo, mova o item e registre o commit.
 
 ---
 
+### Música do DJ do pub (Pulso Neon)
+- [x] **Música gravada na ElevenLabs** (`tools/sfx/gerar_musica_pub.py`, `assets/musica/pub/`, `js/assets/musica_pub.js`): a API de música só existe no plano pago, então a música sai da API de efeitos em loops de 22 s sem emenda. Na Cyber Night, o DJ VOLTA toca o set (aquecimento, groove, drop, pausa, pico, fim de noite; ~122 BPM), cada seção 2 ou 3 vezes; fora dela, 3 loops de lounge. Passagem cruzada de 1,5 s entre repetições e seções, volume igualado por loop, as luzes da pista pulsam pelo grave da música (`js/mundo/pub_neon.js`, `Batida`). Sem os arquivos, fica a batida sintetizada.
+- [ ] Ouvir o set no jogo; com plano pago, trocar por faixas inteiras da API de música.
+
 ## 2. Parcial (falta terminar)
 
 ### 2.1 Dublagem dos NPCs
