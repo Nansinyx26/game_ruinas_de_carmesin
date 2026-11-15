@@ -114,6 +114,16 @@ começado. Ao terminar algo, mova o item e registre o commit.
 
 ---
 
+2g. **PRIORIDADE — Sistema de personagens modular (AAA)**: armadura inicial em todos os corpos, rostos, barbas
+   conectadas à mandíbula, os 12 cabelos de `assets/cabelos` (e a segunda pasta a confirmar), encaixe universal
+   por perfis anatômicos e testes de todas as combinações parado e em movimento. Auditoria feita:
+   `docs/AUDITORIA_PERSONAGENS.md` (com o plano em 6 passos). Inclui o pedido "ajustar corpo, coldre com arma do GM
+   e o pé um maior que o outro" (causa medida: botas do GM presas ao quadril pelo rig automático).
+2h. **Motor gráfico AAA para PC** (Graphics Engine, Renderer Adapter WebGL2/WebGPU, LOD, occlusion e frustum
+   culling, instancing, streaming de texturas, carregamento progressivo, FPS e memória): **Fase A (auditoria)
+   feita** em `docs/AUDITORIA_GRAFICA.md`, com o plano A–J; as fases seguintes esperam a autorização do dono.
+2i. **Mapa do Mundo redesenhado** para a geografia nova (estradas reais entre as regiões, a Aurora em Carmesin).
+
 ## 4. Regras que valem sempre
 - Usar os GLB do projeto; nada de primitivas, cubos ou canvas no lugar de uma peça que tem GLB.
 - Não recriar em Python o que já existe como GLB (Python só para processar fora do jogo).
