@@ -37,7 +37,7 @@ além da borda é exatamente o que se encontra ao entrar).
 |---|---|---|
 | 1 | Câmera **Isométrica 3D** (o mesmo mundo 3D, do alto, com rotação e zoom) selecionável; semente fixa por zona; **território vizinho visível** nas câmeras 3D nas regiões abertas (chão pintado, água pintada, relevo contínuo, mata do kit do Blender); a zona de origem vira vizinha sem custo | **feita** |
 | 2 | Vizinhas também com as estruturas GLB e a paisagem gerada (árvores grandes, rochas, ruínas) e a travessia com dissolve curto (0,12 s) quando a vizinha já está à vista — **feito**; falta a superfície da água, a grama 3D e a vista isométrica clássica mostrando as vizinhas | parcial |
-| 3 | Zonas de cidade como bairros abertos: tirar as paredes entre zonas da mesma região (ruas que continuam), portões só na muralha; Refúgio da Aurora integrado à região inicial com a estrada saindo pelos portões | falta |
+| 3 | Zonas de cidade como bairros abertos: tirar as paredes entre zonas da mesma região (ruas que continuam), portões só na muralha; Refúgio da Aurora integrado à região inicial com a estrada saindo pelos portões | **Carmesin e Aurora feitas**; faltam Nexus, Metrópole, Ruínas e Nexus Zero |
 | 4 | Regiões maiores: mais zonas por região (estradas entre vilas, campos, rios com pontes) usando o kit e as estruturas que já existem | falta |
 | 5 | Viagem entre regiões e masmorras com tela de carregamento própria (salvar → descarregar → carregar → posicionar) e o Mapa do Mundo com as regiões | falta |
 | 6 | Desempenho em mapa grande: LOD das vizinhas, distância de renderização configurável, culling por setor, memória (atlas das vizinhas em 1024, cache de 8 já feitos) | parcial |
@@ -91,3 +91,16 @@ renderizador realista (Three.js) o chão vizinho ainda projeta sombra.
   estradas para as outras regiões e o herói. R alterna com o Mapa do Mundo.
 - **Estradas entre regiões** (`js/mundo/ligacoes.js`): as 11 regiões se ligam pela borda (13 estradas). A troca
   de região tem a tela curta de carregamento que o pedido permite; região fechada não deixa passar.
+
+## 7. Etapa 3 — Carmesin e o Refúgio da Aurora sem paredes
+
+- As 9 zonas de Carmesin (`js/mundo/carmesin_aberto.js`) são campo aberto de ~2.600 u (eram salas de 15–17 tiles)
+  com o tema `carmesin`: avenida rachada, calçadas, entulho, mato seco e as veias vermelhas da corrupção
+  (`js/terreno.js`, receita `carmesin`). As quadras são prédios GLB do projeto nos cantos (prédios em ruínas, a
+  catedral, torres, galpões, a clínica, a estufa, bancas no mercado) e entulho solto pela semente da zona; os
+  acampamentos, baús e terminais vão para as ruas. Nomes, níveis, moradores, terminais, chefe e missões não mudaram.
+- O Refúgio da Aurora entrou na grade de Carmesin (linha -1, coluna 0: ao norte dos Portões Partidos), também a
+  céu aberto: as fachadas dos distritos continuam no fundo (norte e oeste), a rua do sul desce até os Portões e os
+  portões de viagem rápida ficam todos na borda leste. Caminho a pé: Velmora → Estrada da Floresta → Portões
+  Partidos → Aurora. Vista dos Portões, a cidade aparece além da borda com as fachadas e a torre.
+- Testes: mais 6 verificações em `EclipseTests.regioesContinuas` (39 no grupo).
