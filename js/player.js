@@ -934,6 +934,7 @@ class Player extends Entity {
   fireSpecial() {
     const b = this.base;
     // o especial de cada herói tem a própria gravação (especial_<herói>, js/audio.js lancarPoder)
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.aoLancar(this, 'especial', 'buff');   // a assinatura da classe também no especial
     game.audio.lancarPoder(`especial_${['lyra', 'drakos', 'sera', 'orion'].includes(b) ? b : 'kael'}`, () => {
       if (b === 'lyra') this.fireLyraUltimate();
       else if (b === 'drakos') this.fireDrakosUltimate();
@@ -1361,6 +1362,7 @@ class Player extends Entity {
     if (this.fury < cost) { game.hud.abilityDenied(k); game.hud.furyDenied(); game.audio.play('uiDeny'); return false; }
     // som do poder da classe (js/audio.js, lancarPoder); as variantes da árvore usam o som do poder de base
     if (!game.audio.lancarPoder(`poder_${PODER_SOM[inf.id] || inf.id}`, () => inf.A.cast(this, inf.lv, wd))) return false;
+    if (typeof PoderesClasses !== 'undefined') PoderesClasses.aoLancar(this, inf.id, inf.A.type);   // a assinatura visual da classe (js/heroes/poderes_classes.js)
     this.fury -= cost;
     this.convT = 2.5;               // Convergência (ramo Supremas): o próximo golpe é mais forte
     const cd = (inf.S && inf.S.cd !== undefined && inf.S.cd !== null) ? inf.S.cd : (inf.A.cooldown || 5);
