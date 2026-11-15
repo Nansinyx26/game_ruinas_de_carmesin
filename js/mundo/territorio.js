@@ -142,7 +142,7 @@ const Territorio = (() => {
       if (X.secret) z.secret = { at: [[0.92, 0.1], [0.08, 0.9], [0.92, 0.9]][c % 3], cells: cells * 2, xp: lv * 18 };
       if (X.terminal) z.terminal = { at: [0.5, 0.62], lines: X.terminal };
       if (seguro) {
-        z.vila = { nome: name }; z.clareira = 0.3;   // a praça: sem mata entre as casas
+        z.vila = { nome: name }; z.clareira = 0.34;   // a praça: sem mata entre as casas
         z.npcs = [{ model: 'civil', variant: 2, name: 'MERCADOR', merchant: true, at: [0.53, 0.56], facing: 2.6, lines: ['Da estrada para o vilarejo: tenho o que você precisa.', 'Vendo e compro. Pago bem por couro e erva luminosa.'] }];
       }
       worldPrepZone(id, z);

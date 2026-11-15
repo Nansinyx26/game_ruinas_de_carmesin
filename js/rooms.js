@@ -136,7 +136,7 @@ class Room {
 
   generate() {
     const r = mulberry32(this.seed), w = this.w, h = this.h, n = this.def.tiles, th = this.theme;
-    if (this.aberto) { this.generateAberto(r); return; }
+    if (this.aberto) { this.generateAberto(r); if (this.cidade) this.torches = Cidade.postes(this); return; }   // (a cidade a céu aberto: js/mundo/carmesin_aberto.js)
     // Luminárias nas duas paredes do fundo (evitando a porta)
     for (let x = TILE * 1.5; x < w - TILE; x += TILE * 3) {
       if (Math.abs(x - this.door.x) < TILE * 1.6) continue;
@@ -206,6 +206,7 @@ class Room {
     while (this.pillars.length < this.def.pillars && tries++ < 500) {
       const px = TILE + r() * (w - 2 * TILE), py = TILE + r() * (h - 2 * TILE);
       if (dist(px, py, w / 2, h / 2) < Math.max(210, (this.def.clareira || 0) * w)) continue;   // (a praça dos vilarejos: js/mundo/territorio.js)
+      if (this.def.vila && dist(px, py, w / 2, h / 2) < this.def.clareira * w * 2.1 && (px - w / 2) + (py - h / 2) > -this.def.clareira * w * 0.35) continue;   // (e o campo na frente dele, do lado da câmera)
       if ((Math.abs(px - w / 2) < 120 && (py < 190 || py > h - 190)) || (Math.abs(py - h / 2) < 120 && (px < 190 || px > w - 190))) continue;
       if (this.pillars.some((p) => dist(px, py, p.x, p.y) < 150)) continue;
       this.pillars.push(this.makePillar(r, px, py, r() < 0.6));

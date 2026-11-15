@@ -3477,11 +3477,28 @@ const EclipseTests = {
         World.loadZone('velmora_colinas', null); const p = g.player, R = g.room; p.x = R.w - 10; p.y = R.h * 0.4; p.vx = 200; p.vy = 0; p.state = 'run';
         World.update(0.016); const indo = !!g.fadeCb, card = Ligacoes.carregando; const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;
         this.ok('estradas: andar para fora da borda leva à região vizinha, com a tela curta de carregamento (sem portal)', indo && card && World.zone.id === E.z.id && World.zone.region === 'carmesin' && g.player.x < g.room.w * 0.3, `${World.zone.id} ${g.player.x | 0}`);
-        this.ok('estradas: a zona de cidade do outro lado tem a passagem de volta, com o nome da estrada', g.npcs.some((n) => n.kind === 'gate' && n.data.to === 'velmora_colinas' && /ESTRADA DA FLORESTA/.test(n.data.rotulo || '')));
+        { const pv = g.player; pv.x = 8; pv.y = g.room.h * 0.5; pv.vx = -200; pv.vy = 0; pv.state = 'run'; World.update(0.016); const volta = !!g.fadeCb; const cbv = g.fadeCb; g.fadeCb = null; if (cbv) cbv(); g.fadeTarget = 0; g.fade = 0;
+          this.ok('estradas: dos Portões Partidos (agora a céu aberto) volta-se a Velmora andando pela borda oeste, sem portão', volta && World.zone.id === 'velmora_colinas' && !g.npcs.some((n) => n.kind === 'gate' && n.data.to === 'velmora_colinas'), World.zone.id); }
         g.progress.level = 1; World.loadZone('velmora_pedramusgo', null); const p2 = g.player, R2 = g.room; p2.x = R2.w - 10; p2.y = R2.h * 0.5; p2.vx = 200; p2.vy = 0;
         World.update(0.016); const travou = !g.fadeCb && World.zone.id === 'velmora_pedramusgo'; if (g.fadeCb) { g.fadeCb = null; g.fadeTarget = 0; g.fade = 0; }
         this.ok('estradas: região ainda fechada (nível ou chefe): o herói não passa e vê o cadeado', !World.regionOpen('asterion') ? travou : true);
         g.progress.level = sv0; }
+      // Carmesin a céu aberto e o Refúgio da Aurora na grade dela (js/mundo/carmesin_aberto.js)
+      { const zs = worldZonesOf('carmesin');
+        this.ok('Carmesin aberta: as 9 zonas sem paredes, maiores (≥ 44 tiles), com o tema da cidade em ruínas', zs.length === 9 && zs.every((z) => z.aberto && z.theme === 'carmesin' && z.tiles >= 44), zs.map((z) => z.id + ':' + z.aberto).join(' '));
+        this.ok('Carmesin aberta: as quadras são prédios GLB do projeto (lista de estruturas em cada zona)', zs.every((z) => (Estruturas.ZONAS[z.id] || []).filter((L) => Estruturas.IDX[L[0]]).length >= 8));
+        const A = WORLD_ZONES.aurora;
+        this.ok('Aurora: na grade de Carmesin, ao norte dos Portões Partidos, a céu aberto', A.region === 'carmesin' && worldZoneAt(-1, 0, 'carmesin') === A && A.aberto && A.cidade);
+        Settings.v.vizinhos = true; World.loadZone('portoes', null);
+        const p = g.player, R = g.room; p.x = R.w * 0.5; p.y = 6; p.vx = 0; p.vy = -200; p.state = 'run';
+        World.update(0.016); const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;
+        this.ok('Aurora: dos Portões, andando para o norte, chega-se à cidade sem portão nem carregamento', World.zone.id === 'aurora' && g.player.y > g.room.h * 0.7, `${World.zone.id} ${g.player.y | 0}`);
+        const portoes = g.npcs.filter((n) => n instanceof PortaoCidade);
+        this.ok('Aurora: os portões de viagem ficam na borda leste; a rua do sul fica livre até os Portões', portoes.length >= 10 && portoes.every((n) => n.x > g.room.w - 100));
+        this.ok('Aurora: sem as paredes da sala (a muralha alta saiu), as fachadas dos distritos continuam no fundo', g.room.aberto && g.room.cidade && g.room.torches.some((t) => t.poste));
+        World.loadZone('portoes', null); Vizinhos.montarJa();
+        const VA = Vizinhos.cache.get('aurora') || {};
+        this.ok('Aurora: vista dos Portões, a cidade aparece além da borda com as fachadas', Vizinhos.estado().vizinhas.includes('aurora') && VA.pronto && !!VA.cidade, Vizinhos.estado().vizinhas.join(',')); }
       Settings.v.vizinhos = false; World.loadZone('velmora_clareira', null);
       this.ok('regiões: desligado nas configurações, nada é montado', Vizinhos.estado().vizinhas.length === 0);
     } catch (e) { erro = e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message; }

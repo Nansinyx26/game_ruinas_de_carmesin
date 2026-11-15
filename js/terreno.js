@@ -996,6 +996,19 @@ const Terreno = (function () {
       T.rachaduras(34, 260); T.sujeira(36, ['18,20,18', '40,44,36'], 20, 90, 0.16, 0.34); T.pocas(9, 18, 60, '22,28,30');
       T.luzes(100, 0.2); T.sombras(true); T.variacao(0.24, ['70,90,60', '90,90,96']);
     } },
+    // Ruínas de Carmesin a céu aberto (js/mundo/carmesin_aberto.js): a avenida rachada da cidade antiga, o
+    // entulho, o mato seco e as veias vermelhas da corrupção abrindo o asfalto
+    carmesin: { det: 'concreto', pintar(T, R) {
+      const C = (R.def && R.def.ruasCarmesin) || [['v', 0.5], ['h', 0.5]];
+      T.base('asfalto');
+      T.camada('concreto', T.manchas(0.2, 300, 141, 0.04));
+      ruas(T, R, { circuito: false, calcadaMat: 'calcada', ruas: C, larg: 230, calcada: 56, neon: 'vermelho', neon2: 'ambar' });
+      T.camada('destrocos', T.manchas(0.16, 220, 143, 0.04));
+      T.camada('terra', T.manchas(0.12, 260, 145, 0.04));
+      T.camada('contaminado', T.manchas(0.1, 200, 147, 0.03));
+      T.rachaduras(40, 280); T.sujeira(34, ['24,8,10', '44,24,20'], 20, 90, 0.16, 0.34); T.pocas(8, 16, 54, '34,8,12');
+      T.luzes(100, 0.22); T.sombras(true); T.variacao(0.24, ['160,40,50', '70,60,64']);
+    } },
     // ---- masmorras (por nome da zona)
     caverna: { det: 'pedra', pintar(T, R) {
       T.base('rocha');
@@ -1181,7 +1194,7 @@ const Terreno = (function () {
     const R = { def, theme: THEMES && THEMES[def.theme], w: 1000, h: 1000 }, rec = receita(R);
     if (!rec) return;
     const ids = new Set();
-    const base = { floresta: ['grama', 'terra', 'folhas', 'rocha'], deserto: ['areia', 'rachado', 'rocha', 'destrocos'], neve: ['neve', 'gelo', 'rocha', 'terra'], lagoa: ['grama', 'lama', 'folhas', 'cascalho', 'leito'], vulcao: ['basalto', 'cinza', 'contaminado', 'destrocos', 'rocha'], metropole: ['concreto', 'calcada', 'asfalto', 'grade', 'circuito', 'plataforma'], abandonada: ['asfalto', 'concreto', 'destrocos', 'grama', 'terra'] }[def.theme] || [];
+    const base = { floresta: ['grama', 'terra', 'folhas', 'rocha'], deserto: ['areia', 'rachado', 'rocha', 'destrocos'], neve: ['neve', 'gelo', 'rocha', 'terra'], lagoa: ['grama', 'lama', 'folhas', 'cascalho', 'leito'], vulcao: ['basalto', 'cinza', 'contaminado', 'destrocos', 'rocha'], metropole: ['concreto', 'calcada', 'asfalto', 'grade', 'circuito', 'plataforma'], carmesin: ['asfalto', 'concreto', 'calcada', 'destrocos', 'terra', 'contaminado'], abandonada: ['asfalto', 'concreto', 'destrocos', 'grama', 'terra'] }[def.theme] || [];
     base.forEach((id) => ids.add(id));
     detalhe(rec.det);
     const fila = [...ids], vez = () => { const id = fila.shift(); if (!id) return; material(id, def.theme === 'metropole' ? 'ciano' : undefined); agenda(vez); };

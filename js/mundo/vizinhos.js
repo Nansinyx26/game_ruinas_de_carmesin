@@ -47,6 +47,9 @@ const Vizinhos = (() => {
     if (!E.G) { E.G = new Room(0, z); E.G._atlas = anel > 1 ? 512 : 1024; }   // (o segundo anel, mais longe: atlas menor)
     E.campo = typeof Relevo !== 'undefined' && Relevo.campo ? Relevo.campo(z, E.G) : null;
     E.modelo = malha(E);
+    // a cidade a céu aberto (o Refúgio da Aurora ao norte dos Portões): as fachadas dos distritos e a torre também aparecem de longe
+    E.cidade = null;
+    if (E.G.cidade && typeof Cidade !== 'undefined' && Cidade.modelo3D) { const raiz = new N3('vizinhaCidade'); Cidade.modelo3D(raiz, E.G); E.cidade = new Model3(raiz); }
     // as estruturas dela (GLB: árvores, rochas, ruínas, construções) e a paisagem gerada pela semente
     // (o segundo anel, mais longe: só a lista fixa da zona, sem gerar a paisagem — é a parte cara)
     E.estr = anel === 1 && typeof Paisagem !== 'undefined' && Paisagem.fantasma ? Paisagem.fantasma(z, E.G, E.campo) : ((typeof Estruturas !== 'undefined' && Estruturas.ZONAS[z.id]) || []);
@@ -127,6 +130,7 @@ const Vizinhos = (() => {
       V.o = V.o || { m: M3.make(), emi: 1 };
       M3.trs(V.o.m, [T.ox, T.oy, 0], [0, 0, 0], [T.sx, T.sy, 1]);
       const it = R3D.queue(V.modelo, null, null, V.o); it.ent = null; Q.push(it); n++;
+      if (V.cidade) { const ic = R3D.queue(V.cidade, null, null, V.o); ic.ent = null; Q.push(ic); }
       // as estruturas da vizinha (GLB), perto do herói
       if (V.estr && typeof Estruturas !== 'undefined') {
         V.estr.forEach((L, k) => {

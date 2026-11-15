@@ -37,6 +37,7 @@ const Vegetacao = (() => {
     floresta: { dens: 5.2, alt: [9, 22], larg: [0.95, 1.65], cor: [[0.12, 0.24, 0.07], [0.42, 0.62, 0.2]], seca: [[0.3, 0.27, 0.1], [0.72, 0.62, 0.3]], flores: 1, juncos: 0.7 },
     lagoa: { dens: 5.4, alt: [10, 25], larg: [0.95, 1.7], cor: [[0.08, 0.22, 0.08], [0.36, 0.6, 0.24]], seca: [[0.22, 0.26, 0.1], [0.55, 0.58, 0.28]], flores: 0.8, juncos: 1 },
     deserto: { dens: 0.5, alt: [6, 14], larg: [0.6, 1.1], cor: [[0.32, 0.28, 0.12], [0.78, 0.68, 0.36]], seca: [[0.34, 0.28, 0.12], [0.82, 0.7, 0.38]], flores: 0.1, so: ['oasis', 'planalto', 'beira'] },
+    carmesin: { dens: 0.55, alt: [6, 15], larg: [0.8, 1.35], cor: [[0.2, 0.16, 0.08], [0.52, 0.42, 0.2]], seca: [[0.34, 0.2, 0.12], [0.6, 0.36, 0.24]], flores: 0.08 },
     abandonada: { dens: 0.9, alt: [7, 18], larg: [0.85, 1.45], cor: [[0.14, 0.2, 0.08], [0.46, 0.5, 0.2]], seca: [[0.3, 0.26, 0.12], [0.64, 0.56, 0.3]], flores: 0.15 },
   };
   // flores: cor da cabeça, forma, altura (u), preferência de umidade

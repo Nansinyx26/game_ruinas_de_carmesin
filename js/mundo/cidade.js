@@ -124,7 +124,9 @@ const Cidade = {
     if (Z) Z[z.id] = this._base.concat(extra);
     // portões de saída: um por região, nas bordas da frente (metade no sul, metade no leste)
     const regs = WORLD_REGIONS.slice().sort((a, b) => a.order - b.order), nS = Math.ceil(regs.length / 2), nL = regs.length - nS;
+    // (a céu aberto, a borda sul é a rua que desce até os Portões Partidos: os portões ficam todos no leste)
     regs.forEach((reg, k) => {
+      if (z.aberto) { g.npcs.push(new PortaoCidade(R.w - 64, R.h * (0.2 + k * (0.7 / Math.max(1, regs.length - 1))), reg)); return; }
       const sul = k < nS, f = sul ? 0.14 + k * (0.74 / Math.max(1, nS - 1)) : 0.24 + (k - nS) * (0.62 / Math.max(1, nL - 1));
       const x = sul ? R.w * f : R.w - 64, y = sul ? R.h - 64 : R.h * f;
       g.npcs.push(new PortaoCidade(x, y, reg));

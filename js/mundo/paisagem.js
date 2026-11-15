@@ -202,6 +202,9 @@ const Paisagem = (() => {
     const fixos = (A.fixos || []).map((f) => ({ x: f.x, y: f.y, r: f.r || 40 }));
     const R = rotas(A, C, A.passagens || [], fixos);
     const centro = { x: A.w / 2, y: A.h / 2, r: A.clareira || 130 };   // onde o herói chega (num vilarejo, a praça inteira: js/mundo/territorio.js)
+    // vilarejo: na frente dele, do lado de onde as câmeras do alto olham (sudeste), fica um campo sem árvore
+    // grande (as casas não somem atrás dos pinheiros); a mata fecha só atrás e dos lados
+    const frenteVila = (x, y) => { const dx = x - centro.x, dy = y - centro.y, d = Math.hypot(dx, dy); return d < centro.r * 2.1 && dx + dy > -centro.r * 0.35; };
     const serve = (E, x, y) => { const a = C.alt(x, y), u = C.umid(x, y), t = C.temp(x, y); return a >= E.alt[0] && a <= E.alt[1] && u >= E.umid[0] && u <= E.umid[1] && t >= E.temp[0] && t <= E.temp[1] && C.incl(x, y) <= E.incl; };
     const cabe = (x, y, r, folga) => {
       if (x < M || y < M || x > A.w - M || y > A.h - M) return 'regra';
@@ -224,6 +227,7 @@ const Paisagem = (() => {
         const a = rnd(), e = E.esc[0] + rnd() * (E.esc[1] - E.esc[0]), g = rnd() * 6.2832;   // (sorteados sempre: a ordem não muda com as recusas)
         if (a > chance) continue;
         if (!serve(E, x, y)) { fora.regra++; continue; }
+        if (A.vila && E.tipo === 'arvore' && frenteVila(x, y)) { fora.fixo++; continue; }
         const motivo = cabe(x, y, r * escM * (E.tipo === 'arvore' ? 0.45 : 0.8), E.tipo === 'arvore' ? 40 : 14);
         if (motivo) { fora[motivo]++; continue; }
         itens.push({ id: E.id, tipo: E.tipo, x, y, giro: g, esc: +e.toFixed(2), r: r * e * (E.tipo === 'arvore' ? 0.45 : 0.8), bioma: C.bioma(x, y), ordem: rnd() });
@@ -293,7 +297,7 @@ const Paisagem = (() => {
   function entrada(z, R) {
     const g = game, I = typeof ESTRUTURAS_INDICE !== 'undefined' ? ESTRUTURAS_INDICE : {};
     const lista = base[z.id] || [];
-    return { id: z.id, w: R.w, h: R.h, tema: R.def && R.def.theme || z.theme, hub: !!(z.hub || z.seguro), clareira: z.clareira ? z.clareira * R.w : 0,
+    return { id: z.id, w: R.w, h: R.h, tema: R.def && R.def.theme || z.theme, hub: !!(z.hub || z.seguro), clareira: z.clareira ? z.clareira * R.w : 0, vila: !!z.vila,
       agua: typeof Agua !== 'undefined' && Agua.profundidade ? (x, y) => Agua.profundidade(x, y) : null,
       fixos: lista.filter((L) => I[L[0]]).map((L) => ({ x: R.w * L[1], y: R.h * L[2], r: I[L[0]].r * (L[4] || 1) }))
         .concat(g.npcs.filter((q) => q.kind === 'chest' || q.kind === 'terminal' || q.kind === 'portal' || q.kind === 'entrada' || q.kind === 'tesouro' || q.kind === 'quadro').map((q) => ({ x: q.x, y: q.y, r: (q.radius || 20) + 40 }))),
@@ -335,7 +339,7 @@ const Paisagem = (() => {
       for (const [dir, [dr, dc]] of Object.entries(typeof WORLD_DIRS !== 'undefined' ? WORLD_DIRS : {})) if (typeof worldZoneAt === 'function' && worldZoneAt(z.r + dr, z.c + dc, z.region)) pass.push({ N: { x: R.w / 2, y: m }, S: { x: R.w / 2, y: R.h - m }, W: { x: m, y: R.h / 2 }, E: { x: R.w - m, y: R.h / 2 } }[dir]);
       const fixos = lista.filter((L) => I[L[0]]).map((L) => fr([L[1], L[2]], I[L[0]].r * (L[4] || 1)))
         .concat((z.chests || []).map((c) => fr(c.at, 60)), z.portal ? [fr([0.5, 0.5], 60)] : [], z.secret ? [fr(z.secret.at, 60)] : [], z.terminal ? [fr(z.terminal.at, 60)] : []);
-      G = gerar({ id: z.id, w: R.w, h: R.h, tema, hub: !!(z.hub || z.seguro), clareira: z.clareira ? z.clareira * R.w : 0, agua: prof ? (x, y) => Math.max(0, prof(x, y)) : null, fixos, passagens: pass,
+      G = gerar({ id: z.id, w: R.w, h: R.h, tema, hub: !!(z.hub || z.seguro), clareira: z.clareira ? z.clareira * R.w : 0, vila: !!z.vila, agua: prof ? (x, y) => Math.max(0, prof(x, y)) : null, fixos, passagens: pass,
         raio: (id) => (I[id] ? I[id].r : 40), temPeca: (id) => !!I[id], alt: campo && campo.amp ? (x, y) => cl(campo.bruta(x, y) / campo.amp, 0, 1) : null });
       G.chave = chave; fant[z.id] = G;
     }
