@@ -18,7 +18,7 @@ const Fios = (() => {
   const TIPOS = {
     barba: { dens: 9, teto: 2600, comp: [0.055, 0.12], larg: 0.16, sai: 0.42, peso: 0.55 },
     bigode: { dens: 9, teto: 700, comp: [0.06, 0.12], larg: 0.12, sai: 0.3, peso: 0.6 },
-    cabelo: { dens: 5, teto: 4200, comp: [0.05, 0.11], larg: 0.2, sai: 0.28, peso: 0.7 },
+    cabelo: { dens: 5, teto: 4200, comp: [0.04, 0.085], larg: 0.2, sai: 0.12, peso: 0.85 },
   };
   const SEG = 3;   // segmentos por fio (4 pares de vértices)
   const quantos = () => { const q = typeof Settings !== 'undefined' && Settings.v ? Settings.v.quality : 2; return q >= 3 ? 1 : q >= 2 ? 0.75 : q >= 1 ? 0.45 : 0; };

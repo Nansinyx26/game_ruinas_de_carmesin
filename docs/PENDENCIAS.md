@@ -49,6 +49,7 @@ começado. Ao terminar algo, mova o item e registre o commit.
 | Carmesin a céu aberto e a Aurora sem paredes | As 9 zonas de Carmesin viraram campo aberto (~2.600 u, tema 'carmesin': avenida rachada, entulho, veias vermelhas), quadras com prédios GLB do projeto, acampamentos e baús nas ruas; o Refúgio da Aurora entrou na grade de Carmesin ao norte dos Portões Partidos, sem a sala com paredes (fachadas dos distritos no fundo, portões de viagem na borda leste); Velmora → Estrada da Floresta → Portões → Aurora a pé; a cidade aparece de longe com as fachadas | `js/mundo/carmesin_aberto.js`, `js/terreno.js`, `js/mundo/vizinhos.js`, `js/mundo/cidade.js` |
 | Vilarejos visíveis do alto | Campo sem árvores grandes na frente do vilarejo (lado de onde as câmeras do alto olham) e praça maior; a mata fecha só atrás e dos lados | `js/mundo/paisagem.js`, `js/rooms.js`, `js/mundo/territorio.js` |
 | Site: baixar no celular | Botão "Baixar no celular" na capa e cartão Android/iPhone (pedido de instalação do Android; instruções do Safari no iPhone) | `index.html` |
+| Fios no cabelo e na barba da criação | Fitas finas que afinam até a ponta nascem sobre a casca do cabelo e da barba já encaixados (cor da textura, pesos da cabeça e das mechas); barba com volume e contorno de pelo, cabelo com fios soltos deitados; só no herói e na prévia, pela qualidade dos efeitos (referência: barba do Witcher 3) | `js/criacao/fios.js`, `js/criacao/montagem.js`, `capturas_armaduras/fios_antes_depois.png` |
 | Cache do app (erro `aplicarConjuntos`) | O service worker servia scripts antigos misturados com novos; agora o código vem da rede primeiro | `sw.js` |
 
 ---
@@ -127,6 +128,7 @@ começado. Ao terminar algo, mova o item e registre o commit.
    por perfis anatômicos e testes de todas as combinações parado e em movimento. Auditoria feita:
    `docs/AUDITORIA_PERSONAGENS.md` (com o plano em 6 passos). Inclui o pedido "ajustar corpo, coldre com arma do GM
    e o pé um maior que o outro" (causa medida: botas do GM presas ao quadril pelo rig automático).
+2h0. **Tag v1.0.0**: o `main` está atualizado, mas o envio de tags é bloqueado nesta sessão; criar pelo GitHub (Releases → Draft a new release → tag v1.0.0 no main → Publish), o que dispara o instalador.
 2h. **Motor gráfico AAA para PC** (Graphics Engine, Renderer Adapter WebGL2/WebGPU, LOD, occlusion e frustum
    culling, instancing, streaming de texturas, carregamento progressivo, FPS e memória): **Fase A (auditoria)
    feita** em `docs/AUDITORIA_GRAFICA.md`, com o plano A–J; as fases seguintes esperam a autorização do dono.
