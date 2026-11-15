@@ -111,3 +111,10 @@ Electron 45; abre a URL publicada; `force_high_performance_gpu`, `ignore-gpu-blo
 | J. Clássico e PC | R3D congelado como fallback (ou WebGL2), `getGPUInfo` no benchmark, flags de GPU no app | engine3d.js, game.js, desktop/main.js | Regressões no celular |
 
 Ordem sugerida: **A → B → C** (maior ganho, menor risco); WebGPU (I) só depois de E e H escritos em nós.
+
+## 11. Andamento (autorizado pelo dono)
+
+- **Fase B, parte 1 — feita:** o modo de teste da 3ª pessoa só abre o contexto WebGL dele quando se entra nele
+  (`js/game.js`); a geometria clonada de cada setor de grama é descartada ao sair do alcance (`js/mundo/vegetacao.js`).
+- **Fase B, falta:** podar `texs`/`mats` do realista por zona e `preserveDrawingBuffer:false` (precisa de teste em placa de verdade).
+- **Fases A e C:** a seguir.

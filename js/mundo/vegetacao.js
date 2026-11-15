@@ -227,9 +227,10 @@ const Vegetacao = (() => {
     S.vClassico = outF; S.nGrama = n * VPL; S.nFlor = nf * 3;
     return outF;
   }
+  // (a geometria clonada de cada setor também sai da placa: InstancedMesh.dispose não a descarta)
   function liberar(S) {
     if (S.vbo && typeof R3D !== 'undefined' && R3D.gl) { R3D.gl.deleteBuffer(S.vbo); S.vbo = null; }
-    if (S.three) { for (const m of S.three) { if (m.parent) m.parent.remove(m); m.dispose && m.dispose(); } S.three = null; }
+    if (S.three) { for (const m of S.three) { if (m.parent) m.parent.remove(m); if (m.geometry && !(RT && (m.geometry === RT.geo || m.geometry === RT.disco))) m.geometry.dispose(); m.dispose && m.dispose(); } S.three = null; }
     S.vClassico = null;
   }
   // ------------------------------------------------------------ a cada quadro

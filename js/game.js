@@ -48,7 +48,7 @@ class Game {
     this.upgrades = new UpgradeSystem();
     TouchControls.init(this.canvas, this.input);   // controles de toque (js/touch.js)
     LoyaltyQuests.init();   // missões de lealdade dos aliados (js/quests.js)
-    this.thirdPerson = (typeof ThirdPersonMode !== 'undefined') ? new ThirdPersonMode(this) : null;
+    this.thirdPerson = null;   // (o modo de teste abre um contexto WebGL próprio: só é criado quando se entra nele)
     this.world = null;   // modo mundo aberto (World, js/world.js) quando ativo
     this.progress = new Progress();
     this.flags = {};
