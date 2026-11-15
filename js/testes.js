@@ -3602,6 +3602,10 @@ const EclipseTests = {
           porta.talk(); const cb = g.fadeCb; g.fadeCb = null; if (cb) cb(); g.fadeTarget = 0; g.fade = 0;   // (a passagem escurece a tela: aqui, na hora)
           const tarde = PubNeon.estado();
           this.ok('pub: entrar leva ao interior (zona segura, tema neon) com a saída para o mercado', World.zone.id === 'metro_pub' && g.room.theme === THEMES.interior_neon && g.npcs.some((n) => n.kind === 'gate' && n.data && n.data.to === 'metro_mercado'));
+          // a música gravada do pub (tools/sfx/gerar_musica_pub.py): o set do DJ e o lounge, com o volume igualado
+          this.ok('pub: música gravada — 6 seções do set da Cyber Night e 3 loops do lounge, com o ganho de cada um',
+            typeof MUSICA_PUB !== 'undefined' && MUSICA_PUB.noite.length === 6 && MUSICA_PUB.lounge.length === 3 && MUSICA_PUB.noite.concat(MUSICA_PUB.lounge).every((L) => /^assets\/musica\/pub\/.+\.mp3$/.test(L.src) && L.ganho > 0.4 && L.ganho < 1.7),
+            typeof MUSICA_PUB !== 'undefined' && `${MUSICA_PUB.noite.length}/${MUSICA_PUB.lounge.length}`);
           this.ok('pub: de tarde, sem Cyber Night: sem DJ, casa vazia e som de lounge', !tarde.cyberNight && !tarde.dj && tarde.fregueses <= 4, JSON.stringify(tarde));
           const ids = Bairro.objetos.map((o) => o.cenId), pista = Bairro.objetos.find((o) => o.cenId === 'pista_led');
           this.ok('pub: a mobília é a do Blender (balcão, garrafas, banquetas, mesas altas, sofás, cabine do DJ, som, holograma e pista)', !Bairro.pronto() || ['balcao_neon', 'prateleira_bar', 'banqueta_neon', 'mesa_alta_neon', 'sofa_neon', 'cabine_dj', 'caixa_som', 'coluna_holo', 'pista_led'].every((id) => ids.includes(id)), ids.join(','));
