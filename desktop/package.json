@@ -16,11 +16,44 @@
   "build": {
     "appId": "io.github.eclipsezero.jogo",
     "productName": "ECLIPSE ZERO",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "config.json", "offline.html"],
-    "win": { "target": ["nsis", "portable"], "artifactName": "EclipseZero-${version}-${arch}-${target}.${ext}" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "ECLIPSE ZERO" },
-    "linux": { "target": ["AppImage"], "category": "Game", "artifactName": "EclipseZero-${version}-${arch}.${ext}" },
-    "mac": { "target": ["dmg"], "category": "public.app-category.action-games", "artifactName": "EclipseZero-${version}-${arch}.${ext}" }
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "config.json",
+      "offline.html"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "ECLIPSE ZERO",
+      "artifactName": "EclipseZero-${version}-${arch}-nsis.${ext}"
+    },
+    "portable": {
+      "artifactName": "EclipseZero-${version}-${arch}-portable.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game",
+      "artifactName": "EclipseZero-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.action-games",
+      "artifactName": "EclipseZero-${version}-${arch}.${ext}"
+    }
   }
 }
