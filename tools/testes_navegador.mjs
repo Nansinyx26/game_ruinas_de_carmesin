@@ -38,12 +38,24 @@ const url = `http://127.0.0.1:${servidor.address().port}/jogar.html?testes=1`;
 
 const navegador = await chromium.launch({
   executablePath: process.env.CHROMIUM || undefined,
-  args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'],
+  args: [
+    '--use-gl=angle',
+    '--use-angle=swiftshader',
+    '--enable-unsafe-swiftshader',
+    '--autoplay-policy=no-user-gesture-required',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+  ],
 });
 const pagina = await navegador.newPage({ viewport: { width: 1280, height: 720 } });
 const excecoes = [];
 pagina.on('pageerror', (e) => excecoes.push(`${e.message} ${(e.stack || '').split('\n')[1] || ''}`.trim()));
-pagina.on('console', (m) => { if (m.type() === 'error') console.log(`[console] ${m.text()}`); });
+pagina.on('console', (m) => {
+  const txt = m.text();
+  if (m.type() === 'error') console.log(`[console] ${txt}`);
+  else if (txt.startsWith('[')) console.log(txt);
+});
 
 let r = null, codigo = 0;
 try {
